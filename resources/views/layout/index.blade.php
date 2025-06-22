@@ -453,10 +453,10 @@
                     </li>
 
                     <li class="nav-item">
-                        <a class="nav-link menu-link {{ in_array($title, ['Purchase Order', 'Quality Control']) ? 'active' : '' }}" href="#sidebarInbound" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="sidebarInbound">
+                        <a class="nav-link menu-link {{ in_array($title, ['Purchase Order', 'Quality Control', 'Put Away']) ? 'active' : '' }}" href="#sidebarInbound" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="sidebarInbound">
                             <i class="mdi mdi-package-down"></i> <span data-key="t-dashboards">Inbound</span>
                         </a>
-                        <div class="collapse menu-dropdown {{ in_array($title, ['Purchase Order', 'Quality Control']) ? 'show' : '' }}" id="sidebarInbound">
+                        <div class="collapse menu-dropdown {{ in_array($title, ['Purchase Order', 'Quality Control', 'Put Away']) ? 'show' : '' }}" id="sidebarInbound">
                             <ul class="nav nav-sm flex-column">
                                 <li class="nav-item">
                                     <a href="{{ route('inbound.purchase-order') }}" class="nav-link {{ in_array($title, ['Purchase Order']) ? 'active' : '' }}" data-key="t-analytics"> Purchase Order </a>
@@ -465,7 +465,7 @@
                                     <a href="{{ route('inbound.quality-control') }}" class="nav-link {{ in_array($title, ['Quality Control']) ? 'active' : '' }}" data-key="t-analytics"> Quality Control </a>
                                 </li>
                                 <li class="nav-item">
-                                    <a href="#" class="nav-link" data-key="t-analytics"> Put Away </a>
+                                    <a href="{{ route('inbound.put-away') }}" class="nav-link {{ in_array($title, ['Put Away']) ? 'active' : '' }}" data-key="t-analytics"> Put Away </a>
                                 </li>
                             </ul>
                         </div>

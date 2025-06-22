@@ -145,7 +145,10 @@
             let html = '';
             let number = 1;
 
+            // Simpan halaman aktif sebelum destroy
+            let currentPage = 0;
             if ($.fn.DataTable.isDataTable('#masterMaterial')) {
+                currentPage = $('#masterMaterial').DataTable().page();
                 $('#masterMaterial').DataTable().destroy();
             }
 
@@ -156,27 +159,29 @@
                 }
 
                 html += `
-                    <tr>
-                        <td>${number}</td>
-                        <td class="text-center">${item.item}</td>
-                        <td>${item.sku}</td>
-                        <td>${item.name}</td>
-                        <td>${item.type}</td>
-                        <td class="text-center">${item.qty}</td>
-                        <td>
-                            <div class="d-flex gap-2">
-                                ${button}
-                            </div>
-                        </td>
-                    </tr>
-                `;
+            <tr>
+                <td>${number}</td>
+                <td class="text-center">${item.item}</td>
+                <td>${item.sku}</td>
+                <td>${item.name}</td>
+                <td>${item.type}</td>
+                <td class="text-center">${item.qty}</td>
+                <td>
+                    <div class="d-flex gap-2">
+                        ${button}
+                    </div>
+                </td>
+            </tr>
+        `;
 
                 number++;
             });
 
             document.getElementById('listItemMaster').innerHTML = html;
 
-            new DataTable('#masterMaterial');
+            // Re-init DataTable dan kembali ke halaman sebelumnya
+            const table = new DataTable('#masterMaterial');
+            table.page(currentPage).draw('page');
         }
 
         function addToMapping(index) {

@@ -6,6 +6,9 @@ use App\Models\Customer;
 use App\Models\Product;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderDetail;
+use App\Models\QualityControl;
+use App\Models\QualityControlDetail;
+use App\Models\QualityControlItem;
 use App\Models\Vendor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -213,22 +216,146 @@ class InboundController extends Controller
 
         $products = [];
         foreach ($data as $item) {
-            $products[] = [
-                'id'        => $item->id,
-                'sku'       => $item->material,
-                'name'      => $item->po_item_desc,
-                'type'      => $item->prod_hierarchy_desc,
-                'qty'       => $item->po_item_qty,
-                'item'      => $item->item,
-                'qty_qc'    => 0,
-            ];
+            if ($item->qty !== $item->qty_quality_control) {
+                $products[] = [
+                    'id'        => $item->id,
+                    'sku'       => $item->material,
+                    'name'      => $item->po_item_desc,
+                    'type'      => $item->prod_hierarchy_desc,
+                    'qty'       => $item->po_item_qty,
+                    'item'      => $item->item,
+                    'qty_qc'    => 0,
+                ];
+            }
         }
 
         $title = "Quality Control";
         return view('inbound.quality-control.qc', compact('title', 'request', 'products', 'purchaseOrder'));
     }
 
+    public function qualityControlStoreProcess(Request $request): \Illuminate\Http\JsonResponse
+    {
+        try {
+            DB::beginTransaction();
 
+            $qualityControl = QualityControl::create([
+                'number'            => 'QC-' . date('ymd') . str_pad(rand(0, 999), 3, '0', STR_PAD_LEFT),
+                'purchase_order_id' => $request->post('purchaseOrderId'),
+                'sales_doc'         => $request->post('salesDoc'),
+                'qty_parent'        => 0,
+                'status'            => 'qc',
+                'created_by'        => 1
+            ]);
+
+            $qty_parent = 0;
+            foreach ($request->post('qualityControl') as $item) {
+                $detail = QualityControlDetail::create([
+                    'quality_control_id'        => $qualityControl->id,
+                    'purchase_order_detail_id'  => $item['id'],
+                    'qty'                       => $item['qty'],
+                    'status'                    => 'qc'
+                ]);
+                $qty_parent += 1;
+
+                PurchaseOrderDetail::find($item['id'])->increment('qty_quality_control', $item['qty']);
+                $checkPoDetail = PurchaseOrderDetail::find($item['id']);
+                if ($checkPoDetail->po_item_qty === $checkPoDetail->qty_quality_control) {
+                    PurchaseOrderDetail::find($item['id'])->update(['status' => 'qc']);
+                }
+
+                foreach ($item['child'] as $child) {
+                    QualityControlItem::create([
+                        'quality_control_detail_id' => $detail->id,
+                        'purchase_order_detail_id'  => $child['id'],
+                        'qty'                       => $child['qty']
+                    ]);
+
+                    PurchaseOrderDetail::find($child['id'])->increment('qty_quality_control', $child['qty']);
+                    $checkPoDetail = PurchaseOrderDetail::find($child['id']);
+                    if ($checkPoDetail->po_item_qty === $checkPoDetail->qty_quality_control) {
+                        PurchaseOrderDetail::find($child['id'])->update(['status' => 'qc']);
+                    }
+                }
+            }
+
+            QualityControl::find($qualityControl->id)->update(['qty_parent' => $qty_parent]);
+
+            $checkQC = PurchaseOrderDetail::where('purchase_order_id', $request->post('purchaseOrderId'))
+                ->where('status', 'new')
+                ->count();
+
+            if ($checkQC == 0) {
+                PurchaseOrder::find($request->post('purchaseOrderId'))->update(['status' => 'done']);
+            } else {
+                PurchaseOrder::find($request->post('purchaseOrderId'))->update(['status' => 'process']);
+            }
+
+            DB::commit();
+            return response()->json([
+                'status' => true,
+            ]);
+        } catch (\Exception $err) {
+            DB::rollBack();
+            Log::error($err->getMessage());
+            Log::error($err->getLine());
+            return response()->json([
+                'status' => false,
+            ]);
+        }
+    }
+
+    public function putAway(): View
+    {
+        $putAway = QualityControl::with('purchaseOrder', 'user')->latest()->paginate(10);
+
+        $title = 'Put Away';
+        return view('inbound.put-away.index', compact('title', 'putAway'));
+    }
+
+    public function putAwayDetail(): View
+    {
+        $title = 'Put Away';
+        return view('inbound.put-away.detail', compact('title'));
+    }
+
+    public function putAwayProcess(Request $request): View
+    {
+        $qualityControl = QualityControl::where('number', $request->query('number'))->first();
+        $productParent = QualityControlDetail::where('quality_control_id', $qualityControl->id)->get();
+
+        $products = [];
+        foreach ($productParent as $parent) {
+            $poDetail = PurchaseOrderDetail::find($parent->purchase_order_detail_id);
+            $productChild = QualityControlItem::where('quality_control_detail_id', $parent->id)->get();
+            $child = [];
+            foreach ($productChild as $item) {
+                $detail = PurchaseOrderDetail::find($item->purchase_order_detail_id);
+                $child[] = [
+                    'sku'   => $detail->material,
+                    'name'  => $detail->po_item_desc,
+                    'type'  => $detail->prod_hierarchy_desc,
+                    'qty'   => $item->qty,
+                    'item'  => $detail->item,
+                ];
+            }
+
+            $products[] = [
+                'id'                        => $parent->id,
+                'quality_control_id'        => $qualityControl->id,
+                'purchase_order_detail_id'  => $parent->purchase_order_detail_id,
+                'qty'                       => $parent->qty,
+                'sku'                       => $poDetail->material,
+                'name'                      => $poDetail->po_item_desc,
+                'type'                      => $poDetail->prod_hierarchy_desc,
+                'item'                      => $poDetail->item,
+                'child'                     => $child,
+                'location'                  => ''
+            ];
+        }
+
+        $title = 'Put Away';
+        return view('inbound.put-away.process', compact('title', 'products'));
+    }
 }
 
 

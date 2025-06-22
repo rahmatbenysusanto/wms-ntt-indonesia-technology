@@ -53,4 +53,10 @@ Route::prefix('/inbound')->controller(InboundController::class)->group(function 
         Route::get('/process', 'qualityControlProcess')->name('inbound.quality-control-process');
         Route::post('/process', 'qualityControlStoreProcess')->name('inbound.quality-control-store-process');
     });
+
+    Route::prefix('/put-away')->group(function () {
+        Route::get('/', 'putAway')->name('inbound.put-away');
+        Route::get('/detail', 'putAwayDetail')->name('inbound.put-away-detail');
+        Route::get('/process', 'putAwayProcess')->name('inbound.put-away-process');
+    });
 });

@@ -31,10 +31,9 @@
                             <thead>
                                 <tr>
                                     <th>#</th>
+                                    <th>Raw</th>
                                     <th>Area</th>
-                                    <th>Rak</th>
-                                    <th>Lantai</th>
-                                    <th>Palet</th>
+                                    <th>Level</th>
                                     <th>Action</th>
                                 </tr>
                             </thead>
@@ -42,10 +41,9 @@
                             @foreach($storage as $index => $item)
                                 <tr>
                                     <td>{{ $storage->firstItem() + $index }}</td>
+                                    <td>{{ $item->raw }}</td>
                                     <td>{{ $item->area }}</td>
-                                    <td>{{ $item->rak }}</td>
-                                    <td>{{ $item->lantai }}</td>
-                                    <td>{{ $item->palet }}</td>
+                                    <td>{{ $item->level }}</td>
                                     <td>
                                         <div class="d-flex gap-2">
                                             <a class="btn btn-info btn-sm">Edit</a>

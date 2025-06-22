@@ -7,5 +7,5 @@ use Illuminate\Database\Eloquent\Model;
 class Storage extends Model
 {
     protected $table = 'storage';
-    protected $fillable = ['area', 'rak', 'lantai', 'palet', 'deleted_at'];
+    protected $fillable = ['raw', 'area', 'level', 'deleted_at'];
 }
