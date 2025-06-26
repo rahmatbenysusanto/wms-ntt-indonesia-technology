@@ -73,6 +73,7 @@
                                     <td>{{ $po->user->name }}</td>
                                     <td>
                                         <div class="d-flex gap-2">
+                                            <a href="{{ route('inbound.upload.serial-number', ['id' => $po->id]) }}" class="btn btn-primary btn-sm">Serial Number</a>
                                             @if($po->status == 'new')
                                                 <a class="btn btn-info btn-sm" onclick="approvedPurchaseOrder('{{ $po->id }}')">Approved PO</a>
                                                 <a class="btn btn-danger btn-sm" onclick="cancelPurchaseOrder('{{ $po->id }}')">Cancel PO</a>

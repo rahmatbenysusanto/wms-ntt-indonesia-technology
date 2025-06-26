@@ -3,12 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\Customer;
+use App\Models\Inventory;
 use App\Models\Product;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderDetail;
 use App\Models\QualityControl;
 use App\Models\QualityControlDetail;
 use App\Models\QualityControlItem;
+use App\Models\Storage;
 use App\Models\Vendor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -43,8 +45,13 @@ class InboundController extends Controller
                 $checkPO = PurchaseOrder::where('purc_doc', $item['purc_doc'])->first();
 
                 if ($checkPO) {
+                    $checkPoDetail = PurchaseOrderDetail::where('purchase_order_id', $checkPO->id)
+                        ->where('item', $item['item'])
+                        ->first();
+                    if ($checkPoDetail) {
+                        continue;
+                    }
                     $this->storePurchaseOrderDetail($checkPO, $item);
-                    PurchaseOrder::find($checkPO->id)->increment('sales_docs_qty');
                 } else {
                     // PO belum ada, buat PO terlebih dahulu
                     $checkVendor = Vendor::where('name', $item['vendor_name'])->first();
@@ -85,8 +92,8 @@ class InboundController extends Controller
             foreach ($masterPO as $po) {
                 $query = PurchaseOrderDetail::where('purchase_order_id', $po);
 
-                $salesDocsQty = (clone $query)->select('sales_doc')->groupBy('sales_doc')->get()->count();
-                $materialQty = (clone $query)->select('product_id')->groupBy('product_id')->get()->count();
+                $salesDocsQty = (clone $query)->groupBy('sales_doc')->count();
+                $materialQty = (clone $query)->groupBy('material')->count();
                 $itemQty = (clone $query)->sum('po_item_qty');
 
                 PurchaseOrder::where('id', $po)->update([
@@ -322,6 +329,7 @@ class InboundController extends Controller
     {
         $qualityControl = QualityControl::where('number', $request->query('number'))->first();
         $productParent = QualityControlDetail::where('quality_control_id', $qualityControl->id)->get();
+        $storageRaw = Storage::where('area', null)->where('level', null)->get();
 
         $products = [];
         foreach ($productParent as $parent) {
@@ -354,7 +362,41 @@ class InboundController extends Controller
         }
 
         $title = 'Put Away';
-        return view('inbound.put-away.process', compact('title', 'products'));
+        return view('inbound.put-away.process', compact('title', 'products', 'storageRaw'));
+    }
+
+    public function putAwaySetLocation(Request $request): \Illuminate\Http\JsonResponse
+    {
+        try {
+            DB::beginTransaction();
+
+            $inventory = Inventory::create([
+                'purchase_order_id' => '',
+                'purc_doc'          => '',
+                'sales_doc'         => ''
+            ]);
+
+
+
+            DB::commit();
+            return response()->json([
+                'status' => true,
+            ]);
+        } catch (\Exception $err) {
+            DB::rollBack();
+            Log::error($err->getMessage());
+            return response()->json([
+                'status' => false,
+            ]);
+        }
+    }
+
+    public function purchaseOrderSerialNumber(Request $request): View
+    {
+        $purchaseOrder = PurchaseOrder::find($request->query('id'));
+
+        $title = 'Purchase Order';
+        return view('inbound.purchase-order.serial-number', compact('title', 'purchaseOrder'));
     }
 }
 

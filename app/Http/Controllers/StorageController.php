@@ -20,4 +20,25 @@ class StorageController extends Controller
         $title = 'Storage';
         return view('storage.index', compact('title', 'storage'));
     }
+
+    public function getArea(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $area = Storage::where('raw', $request->get('raw'))->where('level', null)->where('area', '!=', null)->get();
+
+        return response()->json([
+            'data' => $area
+        ]);
+    }
+
+    public function getLevel(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $area = Storage::where('raw', $request->get('raw'))
+            ->where('area', $request->get('area'))
+            ->where('level', '!=', null)
+            ->get();
+
+        return response()->json([
+            'data' => $area
+        ]);
+    }
 }

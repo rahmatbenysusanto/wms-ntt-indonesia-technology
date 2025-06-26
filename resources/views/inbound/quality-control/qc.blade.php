@@ -44,7 +44,10 @@
                 <div class="col-6">
                     <div class="card">
                         <div class="card-header">
-                            <h4 class="card-title mb-0">List Item</h4>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h4 class="card-title mb-0">List Item</h4>
+                                <a class="btn btn-info btn-sm" onclick="pilihSemua()">Pilih Semua</a>
+                            </div>
                         </div>
                         <div class="card-body">
                             <table class="table table-striped align-middle" id="masterMaterial">
@@ -56,6 +59,7 @@
                                         <th>Desc</th>
                                         <th>Hierarchy Desc</th>
                                         <th class="text-center">QTY</th>
+                                        <th class="text-center">QTY QC</th>
                                         <th>Action</th>
                                     </tr>
                                 </thead>
@@ -81,7 +85,7 @@
                                         <th>#</th>
                                         <th class="text-center">Item</th>
                                         <th>Material</th>
-                                        <th class="text-center">QTY</th>
+                                        <th style="width: 100px">QTY</th>
                                         <th>Parent</th>
                                         <th>Action</th>
                                     </tr>
@@ -166,6 +170,7 @@
                 <td>${item.name}</td>
                 <td>${item.type}</td>
                 <td class="text-center">${item.qty}</td>
+                <td class="text-center">${item.qty_qc}</td>
                 <td>
                     <div class="d-flex gap-2">
                         ${button}
@@ -184,19 +189,78 @@
             table.page(currentPage).draw('page');
         }
 
+        function pilihSemua() {
+            const products = JSON.parse(localStorage.getItem('master')) ?? [];
+            let mapping = JSON.parse(localStorage.getItem('mapping')) ?? [];
+
+            products.forEach((item, index) => {
+                const product = products[index];
+
+                product.parent = 0;
+                product.index = index;
+
+                const existingIndex = mapping.findIndex(m => m.id === product.id);
+
+                if (existingIndex !== -1) {
+                    // Jika sudah ada, tambahkan qty
+                    mapping[existingIndex].qty = Number(mapping[existingIndex].qty) + 1;
+                    products[index].qty_qc = Number(products[index].qty_qc + 1);
+                } else {
+                    // Jika belum ada, tambahkan produk baru ke mapping
+                    mapping.push({
+                        id: product.id,
+                        index: product.index,
+                        item: product.item,
+                        name: product.name,
+                        parent: product.parent,
+                        qty: product.qty - product.qty_qc,
+                        sku: product.sku,
+                        type: product.type,
+                    });
+                    products[index].qty_qc += product.qty - product.qty_qc;
+                }
+            });
+
+            localStorage.setItem('master', JSON.stringify(products));
+            localStorage.setItem('mapping', JSON.stringify(mapping));
+
+            viewListMaster();
+            viewMappingList();
+        }
+
         function addToMapping(index) {
             const products = JSON.parse(localStorage.getItem('master')) ?? [];
             const product = products[index];
 
-            const mapping = JSON.parse(localStorage.getItem('mapping')) ?? [];
+            let mapping = JSON.parse(localStorage.getItem('mapping')) ?? [];
+
             product.parent = 0;
             product.index = index;
-            mapping.push(product);
 
-            products[index].qty_qc = product.qty;
+            const existingIndex = mapping.findIndex(m => m.id === product.id);
+
+            if (existingIndex !== -1) {
+                // Jika sudah ada, tambahkan qty
+                mapping[existingIndex].qty = Number(mapping[existingIndex].qty) + 1;
+                products[index].qty_qc = Number(products[index].qty_qc + 1);
+            } else {
+                // Jika belum ada, tambahkan produk baru ke mapping
+                mapping.push({
+                    id: product.id,
+                    index: product.index,
+                    item: product.item,
+                    name: product.name,
+                    parent: product.parent,
+                    qty: product.qty - product.qty_qc,
+                    sku: product.sku,
+                    type: product.type,
+                });
+                products[index].qty_qc += product.qty - product.qty_qc;
+            }
 
             localStorage.setItem('master', JSON.stringify(products));
             localStorage.setItem('mapping', JSON.stringify(mapping));
+
             viewListMaster();
             viewMappingList();
         }
@@ -216,7 +280,7 @@
                             <p class="mb-1">${item.name}</p>
                             <p>${item.type}</p>
                         </td>
-                        <td class="text-center">${item.qty}</td>
+                        <td><input type="number" class="form-control" value="${item.qty}" onchange="changeQtyMapping(${item.index}, ${index}, this.value)"></td>
                         <td>
                             <div class="form-check form-switch form-switch-md">
                                 <input class="form-check-input" type="checkbox" role="switch" id="parent_${index}" value="${item.parent}" ${item.parent === 1 ? 'checked' : ''} onchange="changeParent(${index}, this.checked)">
@@ -231,6 +295,25 @@
             });
 
             document.getElementById('listMapping').innerHTML = html;
+        }
+
+        function changeQtyMapping(itemIndex, index, value) {
+            // Change Data Mapping
+            const mapping = JSON.parse(localStorage.getItem('mapping')) ?? [];
+            mapping[index].qty = value;
+            localStorage.setItem('mapping', JSON.stringify(mapping));
+            viewMappingList();
+
+            // Calculate QTY QC Master Item
+            const products = JSON.parse(localStorage.getItem('master')) ?? [];
+            const listItemMapping = mapping.filter(item => parseInt(item.index) === itemIndex);
+            let qty = 0;
+            listItemMapping.forEach((item) => {
+                qty += parseInt(item.qty);
+            });
+            products[itemIndex].qty_qc = qty;
+            localStorage.setItem('master', JSON.stringify(products));
+            viewListMaster();
         }
 
         function changeParent(index, isChecked) {

@@ -43,6 +43,7 @@
                                     <th>Sales Doc</th>
                                     <th class="text-center">Material QTY</th>
                                     <th class="text-center">Item QTY</th>
+                                    <th class="text-center">Status</th>
                                     <th>Action</th>
                                 </tr>
                             </thead>
@@ -53,6 +54,7 @@
                                     <td>{{ $item->sales_doc }}</td>
                                     <td class="text-center fw-bold">{{ number_format($item->product_qty) }}</td>
                                     <td class="text-center fw-bold">{{ number_format($item->item_qty) }}</td>
+                                    <td class="text-center"><span class="badge bg-success-subtle text-success">Done</span></td>
                                     <td>
                                         <a class="btn btn-info btn-sm" href="{{ route('inbound.quality-control-process', ['sales-doc' => $item->sales_doc, 'po' => $purchaseOrder->id]) }}">Process</a>
                                     </td>

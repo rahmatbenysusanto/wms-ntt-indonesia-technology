@@ -49,7 +49,7 @@
                                     <td>{{ $product['location'] }}</td>
                                     <td>
                                         @if($product['location'] == '')
-                                            <a class="btn btn-info btn-sm">Set Location</a></td>
+                                            <a class="btn btn-info btn-sm" onclick="setLocation('{{ $product['id'] }}')">Set Location</a></td>
                                         @endif
                                 </tr>
                                 @foreach($product['child'] as $child)
@@ -73,4 +73,95 @@
             </div>
         </div>
     </div>
+
+    <!-- Set Location Modals -->
+    <div id="setLocationModal" class="modal fade" tabindex="-1" aria-labelledby="myModalLabel" aria-hidden="true" style="display: none;">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="myModalLabel">Set Location Item</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"> </button>
+                </div>
+                <div class="modal-body">
+                    <form>
+                        <div class="mb-3">
+                            <label class="form-label">Raw</label>
+                            <select class="form-control" onchange="changeRaw(this.value)" id="raw">
+                                <option value="">-- Select Raw --</option>
+                                @foreach($storageRaw as $raw)
+                                    <option value="{{ $raw->raw }}">{{ $raw->raw }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Area</label>
+                            <select class="form-control" id="area" onchange="changeArea(this.value)">
+
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Level</label>
+                            <select class="form-control" id="level">
+
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary ">Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+@endsection
+
+@section('js')
+    <script>
+        function setLocation(id) {
+            $('#setLocationModal').modal('show');
+        }
+
+        function changeRaw(raw) {
+            $.ajax({
+                url: '{{ route('storage.find.area') }}',
+                method: 'GET',
+                data: {
+                    raw: raw
+                },
+                success: (res) => {
+                    const data = res.data;
+                    let html = '<option value="">-- Select Area --</option>';
+
+                    data.forEach((item) => {
+                        html += `<option value="${item.area}">${item.area}</option>`;
+                    });
+
+                    document.getElementById('area').innerHTML = html;
+                }
+            });
+        }
+
+        function changeArea(area) {
+            $.ajax({
+                url: '{{ route('storage.find.level') }}',
+                method: 'GET',
+                data: {
+                    raw: document.getElementById('raw').value,
+                    area: area
+                },
+                success: (res) => {
+                    const data = res.data;
+                    console.log(data);
+                    let html = '<option value="">-- Select Level --</option>';
+
+                    data.forEach((item) => {
+                        html += `<option value="${item.level}">${item.level}</option>`;
+                    });
+
+                    document.getElementById('level').innerHTML = html;
+                }
+            });
+        }
+    </script>
 @endsection

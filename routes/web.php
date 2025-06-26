@@ -36,6 +36,8 @@ Route::prefix('/warehouse')->controller(WarehouseController::class)->group(funct
 
 Route::prefix('/storage')->controller(StorageController::class)->group(function () {
     Route::get('/', 'index')->name('storage');
+    Route::get('/find/area', 'getArea')->name('storage.find.area');
+    Route::get('/find/level', 'getLevel')->name('storage.find.level');
 });
 
 Route::prefix('/inbound')->controller(InboundController::class)->group(function () {
@@ -45,6 +47,9 @@ Route::prefix('/inbound')->controller(InboundController::class)->group(function 
         Route::get('/upload', 'purchaseOrderUpload')->name('inbound.purchase-order-upload');
         Route::post('/upload', 'purchaseOrderUploadProcess')->name('inbound.purchase-order-upload-process');
         Route::post('/update-status', 'changeStatusPurchaseOrder')->name('inbound.changeStatusPurchaseOrder');
+
+        // Upload Serial Number
+        Route::get('/upload/serial-number', 'purchaseOrderSerialNumber')->name('inbound.upload.serial-number');
     });
 
     Route::prefix('/quality-control')->group(function () {
