@@ -19,10 +19,10 @@
             <div class="card">
                 <div class="card-header">
                     <div class="d-flex justify-content-end gap-2">
-                        <a class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addArea">Add Area</a>
+                        <a class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addRaw">Add Raw</a>
+                        <a class="btn btn-dark" data-bs-toggle="modal" data-bs-target="#addArea">Add Area</a>
                         <a class="btn btn-info" data-bs-toggle="modal" data-bs-target="#addRak">Add Rak</a>
-                        <a class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#addLantai">Add Lantai</a>
-                        <a class="btn btn-dark" data-bs-toggle="modal" data-bs-target="#addPalet">Add Palet</a>
+                        <a class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#addBin">Add Bin</a>
                     </div>
                 </div>
                 <div class="card-body">
@@ -33,7 +33,8 @@
                                     <th>#</th>
                                     <th>Raw</th>
                                     <th>Area</th>
-                                    <th>Level</th>
+                                    <th>Rak</th>
+                                    <th>Bin</th>
                                     <th>Action</th>
                                 </tr>
                             </thead>
@@ -43,7 +44,8 @@
                                     <td>{{ $storage->firstItem() + $index }}</td>
                                     <td>{{ $item->raw }}</td>
                                     <td>{{ $item->area }}</td>
-                                    <td>{{ $item->level }}</td>
+                                    <td>{{ $item->rak }}</td>
+                                    <td>{{ $item->bin }}</td>
                                     <td>
                                         <div class="d-flex gap-2">
                                             <a class="btn btn-info btn-sm">Edit</a>
@@ -60,20 +62,21 @@
         </div>
     </div>
 
-    <!-- Add Area Modals -->
-    <div id="addArea" class="modal fade" tabindex="-1" aria-labelledby="myModalLabel" aria-hidden="true" style="display: none;">
+    <!-- Add Raw Modals -->
+    <div id="addRaw" class="modal fade" tabindex="-1" aria-labelledby="myModalLabel" aria-hidden="true" style="display: none;">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="myModalLabel">Add Area</h5>
+                    <h5 class="modal-title" id="myModalLabel">Add Raw</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"> </button>
                 </div>
                 <div class="modal-body">
-                    <form action="{{ route('customer.store') }}" method="POST">
+                    <form action="{{ route('storage.create') }}" method="POST">
                         @csrf
+                        <input type="hidden" name="type" value="raw">
                         <div class="mb-3">
-                            <label class="form-label">Area Name</label>
-                            <input type="text" class="form-control" name="name" required>
+                            <label class="form-label">Raw Name</label>
+                            <input type="text" class="form-control" name="raw" required>
                         </div>
                         <div class="d-flex justify-content-end">
                             <button type="submit" class="btn btn-primary">Create</button>
@@ -84,8 +87,8 @@
         </div>
     </div>
 
-    <!-- Add Rak Modals -->
-    <div id="addRak" class="modal fade" tabindex="-1" aria-labelledby="myModalLabel" aria-hidden="true" style="display: none;">
+    <!-- Add Area Modals -->
+    <div id="addArea" class="modal fade" tabindex="-1" aria-labelledby="myModalLabel" aria-hidden="true" style="display: none;">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
@@ -93,17 +96,21 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"> </button>
                 </div>
                 <div class="modal-body">
-                    <form action="{{ route('customer.store') }}" method="POST">
+                    <form action="{{ route('storage.create') }}" method="POST">
                         @csrf
+                        <input type="hidden" name="type" value="area">
                         <div class="mb-3">
-                            <label class="form-label">Area Name</label>
-                            <select class="form-control" name="area">
+                            <label class="form-label">Raw Name</label>
+                            <select class="form-control" name="raw">
                                 <option>-- Select Area --</option>
+                                @foreach($raw as $item)
+                                    <option value="{{ $item->raw }}">{{ $item->raw }}</option>
+                                @endforeach
                             </select>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Rak Name</label>
-                            <input type="text" class="form-control" name="rak" required>
+                            <label class="form-label">Area Name</label>
+                            <input type="text" class="form-control" name="area" required>
                         </div>
                         <div class="d-flex justify-content-end">
                             <button type="submit" class="btn btn-primary">Create</button>

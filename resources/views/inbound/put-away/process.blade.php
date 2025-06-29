@@ -83,7 +83,10 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"> </button>
                 </div>
                 <div class="modal-body">
-                    <form>
+                    <form action="{{ route('inbound.put-away.store') }}" method="POST">
+                        @csrf
+                        <input type="hidden" name="id" id="setLocationId">
+                        <input type="hidden" name="number" value="{{ request()->get('number') }}">
                         <div class="mb-3">
                             <label class="form-label">Raw</label>
                             <select class="form-control" onchange="changeRaw(this.value)" id="raw">
@@ -100,16 +103,21 @@
                             </select>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Level</label>
-                            <select class="form-control" id="level">
+                            <label class="form-label">Rak</label>
+                            <select class="form-control" id="rak" onchange="changeRak(this.value)">
 
                             </select>
                         </div>
+                        <div class="mb-3">
+                            <label class="form-label">Bin</label>
+                            <select class="form-control" id="bin" name="bin">
+
+                            </select>
+                        </div>
+                        <div class="d-flex justify-content-end">
+                            <button type="submit" class="btn btn-primary">Set Location</button>
+                        </div>
                     </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
-                    <button type="button" class="btn btn-primary ">Save Changes</button>
                 </div>
             </div>
         </div>
@@ -119,6 +127,7 @@
 @section('js')
     <script>
         function setLocation(id) {
+            document.getElementById('setLocationId').value = id;
             $('#setLocationModal').modal('show');
         }
 
@@ -144,7 +153,7 @@
 
         function changeArea(area) {
             $.ajax({
-                url: '{{ route('storage.find.level') }}',
+                url: '{{ route('storage.find.rak') }}',
                 method: 'GET',
                 data: {
                     raw: document.getElementById('raw').value,
@@ -152,14 +161,39 @@
                 },
                 success: (res) => {
                     const data = res.data;
-                    console.log(data);
-                    let html = '<option value="">-- Select Level --</option>';
+                    let html = '<option value="">-- Select Rak --</option>';
 
                     data.forEach((item) => {
-                        html += `<option value="${item.level}">${item.level}</option>`;
+                        html += `<option value="${item.rak}">${item.rak}</option>`;
                     });
 
-                    document.getElementById('level').innerHTML = html;
+                    document.getElementById('rak').innerHTML = html;
+                }
+            });
+        }
+
+        function changeRak(rak) {
+            $.ajax({
+                url: '{{ route('storage.find.bin') }}',
+                method: 'GET',
+                data: {
+                    raw: document.getElementById('raw').value,
+                    area: document.getElementById('area').value,
+                    rak: rak
+                },
+                success: (res) => {
+                    console.log(document.getElementById('raw').value)
+                    console.log(document.getElementById('area').value)
+                    console.log(document.getElementById('rak').value)
+                    const data = res.data;
+                    console.log(data);
+                    let html = '<option value="">-- Select Bin --</option>';
+
+                    data.forEach((item) => {
+                        html += `<option value="${item.id}">${item.bin}</option>`;
+                    });
+
+                    document.getElementById('bin').innerHTML = html;
                 }
             });
         }

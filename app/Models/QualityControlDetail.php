@@ -11,6 +11,7 @@ class QualityControlDetail extends Model
         'quality_control_id',
         'purchase_order_detail_id',
         'qty',
-        'status'
+        'status',
+        'storage_id'
     ];
 }

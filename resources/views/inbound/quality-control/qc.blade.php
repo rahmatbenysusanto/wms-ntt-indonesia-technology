@@ -163,21 +163,21 @@
                 }
 
                 html += `
-            <tr>
-                <td>${number}</td>
-                <td class="text-center">${item.item}</td>
-                <td>${item.sku}</td>
-                <td>${item.name}</td>
-                <td>${item.type}</td>
-                <td class="text-center">${item.qty}</td>
-                <td class="text-center">${item.qty_qc}</td>
-                <td>
-                    <div class="d-flex gap-2">
-                        ${button}
-                    </div>
-                </td>
-            </tr>
-        `;
+                    <tr>
+                        <td>${number}</td>
+                        <td class="text-center">${item.item}</td>
+                        <td>${item.sku}</td>
+                        <td>${item.name}</td>
+                        <td>${item.type}</td>
+                        <td class="text-center">${item.qty}</td>
+                        <td class="text-center">${item.qty_qc}</td>
+                        <td>
+                            <div class="d-flex gap-2">
+                                ${button}
+                            </div>
+                        </td>
+                    </tr>
+                `;
 
                 number++;
             });
@@ -475,7 +475,18 @@
                             salesDoc: '{{ request()->get('sales-doc') }}'
                         },
                         success: (res) => {
-
+                            Swal.fire({
+                                title: 'Success!',
+                                text: 'Quality Control successfully!',
+                                icon: 'success',
+                                confirmButtonText: 'OK',
+                                customClass: {
+                                    confirmButton: "btn btn-primary w-xs mt-2"
+                                },
+                                buttonsStyling: false
+                            }).then(() => {
+                                window.location.href = '{{ route('inbound.quality-control') }}';
+                            });
                         }
                     });
 

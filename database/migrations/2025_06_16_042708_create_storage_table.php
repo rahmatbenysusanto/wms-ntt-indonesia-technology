@@ -13,10 +13,10 @@ return new class extends Migration
     {
         Schema::create('storage', function (Blueprint $table) {
             $table->id();
-            $table->string('area');
+            $table->string('raw');
+            $table->string('area')->nullable();
             $table->string('rak')->nullable();
-            $table->string('lantai')->nullable();
-            $table->string('palet')->nullable();
+            $table->string('bin')->nullable();
             $table->timestamp('deleted_at')->nullable();
             $table->timestamps();
         });

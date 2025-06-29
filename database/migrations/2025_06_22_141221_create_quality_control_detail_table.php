@@ -17,6 +17,7 @@ return new class extends Migration
             $table->integer('purchase_order_detail_id');
             $table->integer('qty')->default(0);
             $table->string('status');
+            $table->integer('storage_id')->nullable();
             $table->timestamps();
         });
     }

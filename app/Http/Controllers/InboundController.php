@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Customer;
 use App\Models\Inventory;
+use App\Models\InventoryDetail;
 use App\Models\Product;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderDetail;
@@ -207,6 +208,13 @@ class InboundController extends Controller
             $doc->item_qty = PurchaseOrderDetail::where('purchase_order_id', $request->query('id'))
                 ->where('sales_doc', $doc->sales_doc)
                 ->sum('po_item_qty');
+
+            $status = PurchaseOrderDetail::where('purchase_order_id', $request->query('id'))
+                ->where('sales_doc', $doc->sales_doc)
+                ->where('status', 'new')
+                ->count();
+
+            $doc->status = $status == 0 ? 'done' : 'process';
         }
 
         $title = "Quality Control";
@@ -223,15 +231,16 @@ class InboundController extends Controller
 
         $products = [];
         foreach ($data as $item) {
-            if ($item->qty !== $item->qty_quality_control) {
+            if ($item->po_item_qty > $item->qty_quality_control) {
                 $products[] = [
                     'id'        => $item->id,
                     'sku'       => $item->material,
                     'name'      => $item->po_item_desc,
                     'type'      => $item->prod_hierarchy_desc,
-                    'qty'       => $item->po_item_qty,
+                    'qty'       => $item->po_item_qty - $item->qty_quality_control,
                     'item'      => $item->item,
                     'qty_qc'    => 0,
+                    'qty_qc_done' => $item->qty_quality_control
                 ];
             }
         }
@@ -329,7 +338,7 @@ class InboundController extends Controller
     {
         $qualityControl = QualityControl::where('number', $request->query('number'))->first();
         $productParent = QualityControlDetail::where('quality_control_id', $qualityControl->id)->get();
-        $storageRaw = Storage::where('area', null)->where('level', null)->get();
+        $storageRaw = Storage::where('area', null)->where('rak', null)->where('bin', null)->get();
 
         $products = [];
         foreach ($productParent as $parent) {
@@ -347,6 +356,12 @@ class InboundController extends Controller
                 ];
             }
 
+            $location = null;
+            if ($parent->storage_id != null) {
+                $storage = Storage::find($parent->storage_id);
+                $location = $storage->raw.' - '.$storage->area.' - '.$storage->rak.' - '.$storage->bin;
+            }
+
             $products[] = [
                 'id'                        => $parent->id,
                 'quality_control_id'        => $qualityControl->id,
@@ -357,7 +372,7 @@ class InboundController extends Controller
                 'type'                      => $poDetail->prod_hierarchy_desc,
                 'item'                      => $poDetail->item,
                 'child'                     => $child,
-                'location'                  => ''
+                'location'                  => $location
             ];
         }
 
@@ -397,6 +412,81 @@ class InboundController extends Controller
 
         $title = 'Purchase Order';
         return view('inbound.purchase-order.serial-number', compact('title', 'purchaseOrder'));
+    }
+
+    public function putAwayStore(Request $request): \Illuminate\Http\RedirectResponse
+    {
+        try {
+            DB::beginTransaction();
+
+            $qualityControl = QualityControl::where('number', $request->post('number'))->first();
+
+            // Check apakah data sudah ada di inventory
+            $inventory = Inventory::where('purchase_order_id', $qualityControl->purchase_order_id)
+                ->where('sales_doc', $qualityControl->sales_doc)
+                ->where('storage_id', $request->post('bin'))
+                ->first();
+
+            $purchaseOrder = PurchaseOrder::where('id', $qualityControl->purchase_order_id)->first();
+            if ($inventory == null) {
+                $inventory = Inventory::create([
+                    'purchase_order_id' => $qualityControl->purchase_order_id,
+                    'purc_doc'          => $purchaseOrder->purc_doc,
+                    'sales_doc'         => $qualityControl->sales_doc,
+                    'qty_item'          => 0,
+                    'storage_id'        => $request->post('bin'),
+                ]);
+            }
+
+            // Insert Parent Item
+            $qualityControlDetail = QualityControlDetail::where('id', $request->post('id'))->first();
+            InventoryDetail::create([
+                'inventory_id'              => $inventory->id,
+                'purchase_order_detail_id'  => $qualityControlDetail->purchase_order_detail_id,
+                'quality_control_detail_id' => $qualityControlDetail->id,
+                'type'                      => 'parent',
+                'purc_doc'                  => $purchaseOrder->purc_doc,
+                'sales_doc'                 => $qualityControl->sales_doc,
+                'qty'                       => $qualityControlDetail->qty
+            ]);
+
+            // Insert Child Item
+            $qualityControlItem = QualityControlItem::where('quality_control_detail_id', $qualityControlDetail->id)->get();
+            foreach ($qualityControlItem as $item) {
+                InventoryDetail::create([
+                    'inventory_id'              => $inventory->id,
+                    'purchase_order_detail_id'  => $item->purchase_order_detail_id,
+                    'quality_control_detail_id' => $item->quality_control_detail_id,
+                    'type'                      => 'child',
+                    'purc_doc'                  => $purchaseOrder->purc_doc,
+                    'sales_doc'                 => $qualityControl->sales_doc,
+                    'qty'                       => $item->qty
+                ]);
+            }
+
+            QualityControlDetail::where('id', $request->post('id'))->update(['status' => 'put away', 'storage_id' => $request->post('bin')]);
+            QualityControl::where('number', $request->post('number'))->update([
+                'status' => 'put away'
+            ]);
+
+            // Cek apakah semua sudah di Put Away
+            $check = QualityControlDetail::where('quality_control_id', $qualityControl->id)
+                ->where('status', 'qc')
+                ->count();
+            if ($check == 0) {
+                QualityControl::where('number', $request->post('number'))->update([
+                    'status' => 'done'
+                ]);
+            }
+
+            DB::commit();
+            return back()->with('success', 'Set lokasi item berhasil');
+        } catch (\Exception $err) {
+            DB::rollBack();
+            Log::error($err->getMessage());
+            Log::error($err->getLine());
+            return back()->with('error', 'Set Lokasi Gagal');
+        }
     }
 }
 
