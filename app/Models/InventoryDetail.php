@@ -14,6 +14,12 @@ class InventoryDetail extends Model
         'purc_doc',
         'sales_doc',
         'type',
-        'qty'
+        'qty',
+        'parent_id'
     ];
+
+    public function purchaseOrderDetail(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(PurchaseOrderDetail::class, 'id', 'purchase_order_detail_id');
+    }
 }

@@ -4,6 +4,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\InboundController;
+use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\StorageController;
 use App\Http\Controllers\VendorController;
 use App\Http\Controllers\WarehouseController;
@@ -71,6 +72,11 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
             Route::get('/process', 'putAwayProcess')->name('inbound.put-away-process');
             Route::post('/store', 'putAwayStore')->name('inbound.put-away.store');
         });
+    });
+
+    Route::prefix('/inventory')->controller(InventoryController::class)->group(function () {
+        Route::get('/', 'index')->name('inventory.index');
+        Route::get('/detail', 'detail')->name('inventory.detail');
     });
 });
 

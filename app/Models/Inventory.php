@@ -14,4 +14,9 @@ class Inventory extends Model
         'qty_item',
         'storage_id'
     ];
+
+    public function storage(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Storage::class, 'storage_id', 'id');
+    }
 }

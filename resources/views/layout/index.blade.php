@@ -472,13 +472,13 @@
                     </li>
 
                     <li class="nav-item">
-                        <a class="nav-link menu-link" href="#sidebarInventory" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="sidebarInventory">
+                        <a class="nav-link menu-link {{ in_array($title, ['Inventory']) ? 'active' : '' }}" href="#sidebarInventory" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="sidebarInventory">
                             <i class="mdi mdi-package-variant"></i> <span data-key="t-dashboards">Inventory</span>
                         </a>
-                        <div class="collapse menu-dropdown" id="sidebarInventory">
+                        <div class="collapse menu-dropdown {{ in_array($title, ['Inventory']) ? 'show' : '' }}" id="sidebarInventory">
                             <ul class="nav nav-sm flex-column">
                                 <li class="nav-item">
-                                    <a href="#" class="nav-link" data-key="t-analytics"> Produk List </a>
+                                    <a href="{{ route('inventory.index') }}" class="nav-link {{ $title == 'Inventory' ? 'active' : '' }}" data-key="t-analytics"> Produk List </a>
                                 </li>
                                 <li class="nav-item">
                                     <a href="#" class="nav-link" data-key="t-analytics"> Transfer List </a>

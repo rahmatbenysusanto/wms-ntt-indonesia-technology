@@ -20,6 +20,7 @@ return new class extends Migration
             $table->string('purc_doc');
             $table->string('sales_doc');
             $table->integer('qty');
+            $table->integer('parent_id')->nullable();
             $table->timestamps();
         });
     }

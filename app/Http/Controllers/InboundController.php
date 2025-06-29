@@ -440,7 +440,7 @@ class InboundController extends Controller
 
             // Insert Parent Item
             $qualityControlDetail = QualityControlDetail::where('id', $request->post('id'))->first();
-            InventoryDetail::create([
+            $parent = InventoryDetail::create([
                 'inventory_id'              => $inventory->id,
                 'purchase_order_detail_id'  => $qualityControlDetail->purchase_order_detail_id,
                 'quality_control_detail_id' => $qualityControlDetail->id,
@@ -449,6 +449,8 @@ class InboundController extends Controller
                 'sales_doc'                 => $qualityControl->sales_doc,
                 'qty'                       => $qualityControlDetail->qty
             ]);
+
+            Inventory::where('id', $inventory->id)->increment('qty_item', $qualityControlDetail->qty);
 
             // Insert Child Item
             $qualityControlItem = QualityControlItem::where('quality_control_detail_id', $qualityControlDetail->id)->get();
@@ -460,8 +462,11 @@ class InboundController extends Controller
                     'type'                      => 'child',
                     'purc_doc'                  => $purchaseOrder->purc_doc,
                     'sales_doc'                 => $qualityControl->sales_doc,
-                    'qty'                       => $item->qty
+                    'qty'                       => $item->qty,
+                    'parent_id'                 => $parent->id
                 ]);
+
+                Inventory::where('id', $inventory->id)->increment('qty_item', $item->qty);
             }
 
             QualityControlDetail::where('id', $request->post('id'))->update(['status' => 'put away', 'storage_id' => $request->post('bin')]);
