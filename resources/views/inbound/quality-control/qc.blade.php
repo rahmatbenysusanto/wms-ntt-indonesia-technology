@@ -144,6 +144,30 @@
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
+                        <table>
+                            <tr>
+                                <td class="fw-bold">Item</td>
+                                <td class="fw-bold ps-3">:</td>
+                                <td class="ps-1" id="SN_item"></td>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold">Material</td>
+                                <td class="fw-bold ps-3">:</td>
+                                <td class="ps-1" id="SN_material"></td>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold">Desc</td>
+                                <td class="fw-bold ps-3">:</td>
+                                <td class="ps-1" id="SN_desc"></td>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold">Hierarchy</td>
+                                <td class="fw-bold ps-3">:</td>
+                                <td class="ps-1" id="SN_hie"></td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="mb-3">
                         <div class="row">
                             <div class="col-10">
                                 <label class="form-label">Upload Excel Serial Number</label>
@@ -182,6 +206,60 @@
             </div>
         </div>
     </div>
+
+    <div id="detailSerialNumberModal" class="modal fade" tabindex="-1" aria-labelledby="myModalLabel" aria-hidden="true" style="display: none;">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="myModalLabel">Detail Serial Number</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"> </button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <table>
+                            <tr>
+                                <td class="fw-bold">Item</td>
+                                <td class="fw-bold ps-3">:</td>
+                                <td class="ps-1" id="detail_SN_item"></td>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold">Material</td>
+                                <td class="fw-bold ps-3">:</td>
+                                <td class="ps-1" id="detail_SN_material"></td>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold">Desc</td>
+                                <td class="fw-bold ps-3">:</td>
+                                <td class="ps-1" id="detail_SN_desc"></td>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold">Hierarchy</td>
+                                <td class="fw-bold ps-3">:</td>
+                                <td class="ps-1" id="detail_SN_hie"></td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <table class="table table-striped align-middle">
+                        <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Serial Number</th>
+                        </tr>
+                        </thead>
+                        <tbody id="listDetailSerialNumberUpload">
+
+                        </tbody>
+                    </table>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
 @endsection
 
 @section('js')
@@ -501,6 +579,19 @@
             document.getElementById('SN_index').value = index;
             document.getElementById('SN_index_detail').value = indexDetail;
 
+            const qc = JSON.parse(localStorage.getItem('qc')) ?? [];
+            if (type === 'parent') {
+                document.getElementById('SN_item').innerText = qc[index].item;
+                document.getElementById('SN_material').innerText = qc[index].sku;
+                document.getElementById('SN_desc').innerText = qc[index].name;
+                document.getElementById('SN_hie').innerText = qc[index].type;
+            } else {
+                document.getElementById('SN_item').innerText = qc[index].child[indexDetail].item;
+                document.getElementById('SN_material').innerText = qc[index].child[indexDetail].sku;
+                document.getElementById('SN_desc').innerText = qc[index].child[indexDetail].name;
+                document.getElementById('SN_hie').innerText = qc[index].child[indexDetail].type;
+            }
+
             viewSerialNumber();
             $('#uploadSerialNumberModal').modal('show');
         }
@@ -597,7 +688,39 @@
         }
 
         function detailSN(type, index, indexDetail) {
+            const qc = JSON.parse(localStorage.getItem('qc')) ?? [];
+            if (type === 'parent') {
+                document.getElementById('detail_SN_item').innerText = qc[index].item;
+                document.getElementById('detail_SN_material').innerText = qc[index].sku;
+                document.getElementById('detail_SN_desc').innerText = qc[index].name;
+                document.getElementById('detail_SN_hie').innerText = qc[index].type;
 
+                const serialNumber = qc[index].sn;
+            } else {
+                document.getElementById('detail_SN_item').innerText = qc[index].child[indexDetail].item;
+                document.getElementById('detail_SN_material').innerText = qc[index].child[indexDetail].sku;
+                document.getElementById('detail_SN_desc').innerText = qc[index].child[indexDetail].name;
+                document.getElementById('detail_SN_hie').innerText = qc[index].child[indexDetail].type;
+
+                const serialNumber = qc[index].child[indexDetail].sn;
+            }
+
+            let html = '';
+            let number = 1;
+
+            serialNumber.forEach((sn) => {
+                html += `
+                    <tr>
+                        <td>${number}</td>
+                        <td>${sn.serialNumber}</td>
+                    </tr>
+                `;
+                number++;
+            });
+
+            document.getElementById('listDetailSerialNumberUpload').innerHTML = html;
+
+            $('#detailSerialNumberModal').modal('show');
         }
 
         function deleteQC(index) {
