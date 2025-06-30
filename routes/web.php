@@ -5,6 +5,7 @@ use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\InboundController;
 use App\Http\Controllers\InventoryController;
+use App\Http\Controllers\OutboundController;
 use App\Http\Controllers\StorageController;
 use App\Http\Controllers\VendorController;
 use App\Http\Controllers\WarehouseController;
@@ -77,6 +78,14 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
     Route::prefix('/inventory')->controller(InventoryController::class)->group(function () {
         Route::get('/', 'index')->name('inventory.index');
         Route::get('/detail', 'detail')->name('inventory.detail');
+    });
+
+    Route::prefix('/outbound')->controller(OutboundController::class)->group(function () {
+        Route::get('/', 'index')->name('outbound.index');
+        Route::get('/create', 'create')->name('outbound.create');
+
+        // JSON
+        Route::get('/sales-doc', 'getItemBySalesDoc')->name('outbound.sales-doc');
     });
 });
 

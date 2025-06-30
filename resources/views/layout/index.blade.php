@@ -491,13 +491,13 @@
                     </li>
 
                     <li class="nav-item">
-                        <a class="nav-link menu-link" href="#sidebarOutbound" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="sidebarOutbound">
+                        <a class="nav-link menu-link {{ $title == 'Outbound' ? 'active' : '' }}" href="#sidebarOutbound" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="sidebarOutbound">
                             <i class="mdi mdi-package-up"></i> <span data-key="t-dashboards">Outbound</span>
                         </a>
-                        <div class="collapse menu-dropdown" id="sidebarOutbound">
+                        <div class="collapse menu-dropdown {{ $title == 'Outbound' ? 'show' : '' }}" id="sidebarOutbound">
                             <ul class="nav nav-sm flex-column">
                                 <li class="nav-item">
-                                    <a href="#" class="nav-link" data-key="t-analytics"> Order List </a>
+                                    <a href="{{ route('outbound.index') }}" class="nav-link {{ $title == 'Outbound' ? 'active' : '' }}" data-key="t-analytics"> Order List </a>
                                 </li>
                             </ul>
                         </div>

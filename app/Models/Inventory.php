@@ -19,4 +19,9 @@ class Inventory extends Model
     {
         return $this->belongsTo(Storage::class, 'storage_id', 'id');
     }
+
+    public function inventoryDetail(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(InventoryDetail::class, 'inventory_id', 'id');
+    }
 }

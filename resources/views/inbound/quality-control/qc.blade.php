@@ -120,6 +120,7 @@
                                     <th>Desc</th>
                                     <th>Hierarchy Desc</th>
                                     <th class="text-center">QTY</th>
+                                    <th>Serial Number</th>
                                     <th>Action</th>
                                 </tr>
                             </thead>
@@ -132,9 +133,59 @@
             </div>
         </div>
     </div>
+
+    <!-- Default Modals -->
+    <div id="uploadSerialNumberModal" class="modal fade" tabindex="-1" aria-labelledby="myModalLabel" aria-hidden="true" style="display: none;">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="myModalLabel">Upload Serial Number</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"> </button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <div class="row">
+                            <div class="col-10">
+                                <label class="form-label">Upload Excel Serial Number</label>
+                                <input type="file" class="form-control" id="uploadFileSN">
+                            </div>
+                            <div class="col-2">
+                                <label class="form-label text-white">-</label>
+                                <div>
+                                    <a class="btn btn-info w-100" onclick="processDateUploadSN()">Proses Data</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <table class="table table-striped align-middle">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Serial Number</th>
+                            </tr>
+                        </thead>
+                        <tbody id="listSerialNumberUpload">
+
+                        </tbody>
+                    </table>
+
+                    <input type="hidden" id="SN_type">
+                    <input type="hidden" id="SN_index">
+                    <input type="hidden" id="SN_index_detail">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" onclick="uploadSerialNumberProcess()">Upload</button>
+                </div>
+
+            </div>
+        </div>
+    </div>
 @endsection
 
 @section('js')
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script>
         localStorage.clear();
         loadMasterItem();
@@ -254,6 +305,7 @@
                     qty: product.qty - product.qty_qc,
                     sku: product.sku,
                     type: product.type,
+                    sn: null
                 });
                 products[index].qty_qc += product.qty - product.qty_qc;
             }
@@ -378,6 +430,7 @@
                 name: checkParent.name,
                 type: checkParent.type,
                 qty: checkParent.qty,
+                sn: null,
                 child: mapping.filter(item => item.parent === 0)
             });
 
@@ -393,6 +446,13 @@
             let number = 1;
 
             qualityControl.forEach((item, index) => {
+                let htmlSN = '';
+                if (item.sn === null) {
+                    htmlSN = `<a class="btn btn-info btn-sm" onclick="uploadSN('parent', ${index}, null)">Upload SN</a>`;
+                } else {
+                    htmlSN = `<a class="btn btn-success btn-sm" onclick="detailSN('parent', ${index}, null)">Detail SN</a>`;
+                }
+
                 html += `
                     <tr>
                         <td>${number}</td>
@@ -402,11 +462,19 @@
                         <td>${item.name}</td>
                         <td>${item.type}</td>
                         <td class="text-center fw-bold">${item.qty}</td>
+                        <td>${htmlSN}</td>
                         <td><a class="btn btn-danger btn-sm" onclick="deleteQC(${index})">Delete</a></td>
                     </tr>
                 `;
 
-                (item.child).forEach((child) => {
+                (item.child).forEach((child, indexDetail) => {
+                    let htmlSN = '';
+                    if (item.sn === null) {
+                        htmlSN = `<a class="btn btn-info btn-sm" onclick="uploadSN('child', ${index}, ${indexDetail})">Upload SN</a>`;
+                    } else {
+                        htmlSN = `<a class="btn btn-success btn-sm" onclick="detailSN('child', ${index}, ${indexDetail})">Detail SN</a>`;
+                    }
+
                     html += `
                         <tr>
                             <td></td>
@@ -416,6 +484,7 @@
                             <td>${child.name}</td>
                             <td>${child.type}</td>
                             <td class="text-center fw-bold">${child.qty}</td>
+                            <td>${htmlSN}</td>
                             <td></td>
                         </tr>
                     `;
@@ -425,6 +494,110 @@
             });
 
             document.getElementById('listQualityControl').innerHTML = html;
+        }
+
+        function uploadSN(type, index, indexDetail) {
+            document.getElementById('SN_type').value = type;
+            document.getElementById('SN_index').value = index;
+            document.getElementById('SN_index_detail').value = indexDetail;
+
+            viewSerialNumber();
+            $('#uploadSerialNumberModal').modal('show');
+        }
+
+        function processDateUploadSN() {
+            const fileInput = document.getElementById('uploadFileSN');
+            const file = fileInput.files[0];
+
+            if (!file) {
+                alert("Silakan pilih file Excel terlebih dahulu.");
+                return;
+            }
+
+            const reader = new FileReader();
+
+            reader.onload = function (e) {
+                localStorage.setItem('serialNumber', JSON.stringify([]));
+
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+
+                const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+
+                const filteredData = jsonData.map((row) => ({
+                    serialNumber: row["Serial Number"],
+                }));
+
+                localStorage.setItem('serialNumber', JSON.stringify(filteredData));
+                viewSerialNumber();
+            };
+
+            reader.readAsArrayBuffer(file);
+        }
+
+        function viewSerialNumber() {
+            const serialNumber = JSON.parse(localStorage.getItem('serialNumber')) ?? [];
+            let html = '';
+            let number = 1;
+
+            serialNumber.forEach((sn) => {
+                html += `
+                    <tr>
+                        <td>${number}</td>
+                        <td>${sn.serialNumber}</td>
+                    </tr>
+                `;
+                number++;
+            });
+
+            document.getElementById('listSerialNumberUpload').innerHTML = html;
+        }
+
+        function uploadSerialNumberProcess() {
+            const serialNumber = JSON.parse(localStorage.getItem('serialNumber')) ?? [];
+            const qc = JSON.parse(localStorage.getItem('qc')) ?? [];
+
+            const index = document.getElementById('SN_index').value;
+            const indexDetail = document.getElementById('SN_index_detail').value;
+
+            if (document.getElementById('SN_type').value === 'parent') {
+                if (parseInt(qc[index].qty) !== serialNumber.length) {
+                    Swal.fire({
+                        title: 'Warning',
+                        text: 'Jumlah serial number harus sama dengan qty product',
+                        icon: 'warning'
+                    });
+
+                    return true;
+                }
+
+                qc[index].sn = serialNumber;
+            } else {
+                if (parseInt(qc[index].child[indexDetail].qty) !== serialNumber.length) {
+                    Swal.fire({
+                        title: 'Warning',
+                        text: 'Jumlah serial number harus sama dengan qty product',
+                        icon: 'warning'
+                    });
+
+                    return true;
+                }
+
+                qc[index].child[indexDetail].sn = serialNumber;
+            }
+
+            localStorage.setItem('qc', JSON.stringify(qc));
+            localStorage.setItem('serialNumber', JSON.stringify([]));
+
+            $('#uploadSerialNumberModal').modal('hide');
+            viewListQC();
+        }
+
+        function detailSN(type, index, indexDetail) {
+
         }
 
         function deleteQC(index) {
