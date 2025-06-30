@@ -11,6 +11,7 @@ use App\Models\PurchaseOrderDetail;
 use App\Models\QualityControl;
 use App\Models\QualityControlDetail;
 use App\Models\QualityControlItem;
+use App\Models\SerialNumber;
 use App\Models\Storage;
 use App\Models\Vendor;
 use Illuminate\Http\Request;
@@ -271,6 +272,16 @@ class InboundController extends Controller
                     'qty'                       => $item['qty'],
                     'status'                    => 'qc'
                 ]);
+
+                // Input Serial Number
+                foreach ($item['sn'] as $sn) {
+                    SerialNumber::create([
+                        'purchase_order_id'         => $request->post('purchaseOrderId'),
+                        'purchase_order_detail_id'  => $item['id'],
+                        'serial_number'             => $sn
+                    ]);
+                }
+
                 $qty_parent += 1;
 
                 PurchaseOrderDetail::find($item['id'])->increment('qty_quality_control', $item['qty']);
@@ -285,6 +296,15 @@ class InboundController extends Controller
                         'purchase_order_detail_id'  => $child['id'],
                         'qty'                       => $child['qty']
                     ]);
+
+                    // Input Serial Number
+                    foreach ($child['sn'] as $sn) {
+                        SerialNumber::create([
+                            'purchase_order_id'         => $request->post('purchaseOrderId'),
+                            'purchase_order_detail_id'  => $item['id'],
+                            'serial_number'             => $sn
+                        ]);
+                    }
 
                     PurchaseOrderDetail::find($child['id'])->increment('qty_quality_control', $child['qty']);
                     $checkPoDetail = PurchaseOrderDetail::find($child['id']);

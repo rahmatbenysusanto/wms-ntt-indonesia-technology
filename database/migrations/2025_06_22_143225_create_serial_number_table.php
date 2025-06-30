@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->integer('purchase_order_id');
             $table->integer('purchase_order_detail_id');
-            $table->integer('product_id');
+            $table->integer('product_id')->nullable();
             $table->string('serial_number');
             $table->timestamps();
         });
