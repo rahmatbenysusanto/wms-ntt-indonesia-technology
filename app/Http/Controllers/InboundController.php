@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Customer;
 use App\Models\Inventory;
 use App\Models\InventoryDetail;
+use App\Models\InventoryHistory;
 use App\Models\Product;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderDetail;
@@ -470,12 +471,21 @@ class InboundController extends Controller
                 'qty'                       => $qualityControlDetail->qty
             ]);
 
+            InventoryHistory::create([
+                'inventory_id'              => $inventory->id,
+                'inventory_detail_id'       => $parent->id,
+                'quality_control_id'        => $qualityControl->id,
+                'quality_control_detail_id' => $qualityControlDetail->id,
+                'type'                      => 'inbound',
+                'qty'                       => $qualityControlDetail->qty
+            ]);
+
             Inventory::where('id', $inventory->id)->increment('qty_item', $qualityControlDetail->qty);
 
             // Insert Child Item
             $qualityControlItem = QualityControlItem::where('quality_control_detail_id', $qualityControlDetail->id)->get();
             foreach ($qualityControlItem as $item) {
-                InventoryDetail::create([
+                $inventoryDetail = InventoryDetail::create([
                     'inventory_id'              => $inventory->id,
                     'purchase_order_detail_id'  => $item->purchase_order_detail_id,
                     'quality_control_detail_id' => $item->quality_control_detail_id,
@@ -484,6 +494,15 @@ class InboundController extends Controller
                     'sales_doc'                 => $qualityControl->sales_doc,
                     'qty'                       => $item->qty,
                     'parent_id'                 => $parent->id
+                ]);
+
+                InventoryHistory::create([
+                    'inventory_id'              => $inventory->id,
+                    'inventory_detail_id'       => $inventoryDetail->id,
+                    'quality_control_id'        => $qualityControl->id,
+                    'quality_control_detail_id' => $item->quality_control_detail_id,
+                    'type'                      => 'inbound',
+                    'qty'                       => $item->qty
                 ]);
 
                 Inventory::where('id', $inventory->id)->increment('qty_item', $item->qty);

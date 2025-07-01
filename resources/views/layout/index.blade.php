@@ -447,7 +447,7 @@
                 <ul class="navbar-nav" id="navbar-nav">
                     <li class="menu-title"><span data-key="t-menu">Menu</span></li>
                     <li class="nav-item">
-                        <a class="nav-link menu-link" href="#">
+                        <a class="nav-link menu-link {{ $title == 'Dashboard'? 'active' : '' }}" href="{{ route('dashboard') }}">
                             <i class="mdi mdi-speedometer"></i> <span data-key="t-widgets">Dashboard</span>
                         </a>
                     </li>
@@ -472,10 +472,10 @@
                     </li>
 
                     <li class="nav-item">
-                        <a class="nav-link menu-link {{ in_array($title, ['Inventory']) ? 'active' : '' }}" href="#sidebarInventory" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="sidebarInventory">
+                        <a class="nav-link menu-link {{ in_array($title, ['Inventory', 'Cycle Count']) ? 'active' : '' }}" href="#sidebarInventory" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="sidebarInventory">
                             <i class="mdi mdi-package-variant"></i> <span data-key="t-dashboards">Inventory</span>
                         </a>
-                        <div class="collapse menu-dropdown {{ in_array($title, ['Inventory']) ? 'show' : '' }}" id="sidebarInventory">
+                        <div class="collapse menu-dropdown {{ in_array($title, ['Inventory', 'Cycle Count']) ? 'show' : '' }}" id="sidebarInventory">
                             <ul class="nav nav-sm flex-column">
                                 <li class="nav-item">
                                     <a href="{{ route('inventory.index') }}" class="nav-link {{ $title == 'Inventory' ? 'active' : '' }}" data-key="t-analytics"> Produk List </a>
@@ -484,7 +484,7 @@
                                     <a href="#" class="nav-link" data-key="t-analytics"> Transfer List </a>
                                 </li>
                                 <li class="nav-item">
-                                    <a href="#" class="nav-link" data-key="t-analytics"> Cycle Count </a>
+                                    <a href="{{ route('inventory.cycle-count') }}" class="nav-link {{ $title == 'Cycle Count' ? 'active' : '' }}" data-key="t-analytics"> Cycle Count </a>
                                 </li>
                             </ul>
                         </div>

@@ -34,7 +34,7 @@
                                     <th>Sales Doc</th>
                                     <th>Client</th>
                                     <th>Deliv Loc</th>
-                                    <th>QTY Item</th>
+                                    <th class="text-center">QTY Item</th>
                                     <th>Order Date</th>
                                     <th>Created By</th>
                                     <th>Action</th>
@@ -49,8 +49,8 @@
                                     <td>{{ $out->sales_doc }}</td>
                                     <td>{{ $out->client }}</td>
                                     <td>{{ $out->deliv_loc }}</td>
-                                    <td>{{ number_format($out->qty_item) }}</td>
-                                    <td>{{ \Carbon\Carbon::parse($po->created_at)->translatedFormat('d F Y H:i') }}</td>
+                                    <td class="text-center fw-bold">{{ number_format($out->qty_item) }}</td>
+                                    <td>{{ \Carbon\Carbon::parse($out->created_at)->translatedFormat('d F Y H:i') }}</td>
                                     <td>{{ $out->user->name }}</td>
                                     <td>
                                         <a class="btn btn-info btn-sm">Detail</a>

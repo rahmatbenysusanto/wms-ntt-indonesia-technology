@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Inventory;
 use App\Models\InventoryDetail;
+use App\Models\InventoryHistory;
 use App\Models\PurchaseOrderDetail;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -34,5 +35,27 @@ class InventoryController extends Controller
 
         $title = 'Inventory';
         return view('inventory.detail', compact('title', 'inventory', 'inventoryDetail'));
+    }
+
+    public function cycleCount(): View
+    {
+        $cycleCount = InventoryHistory::leftJoin('inventory_detail', 'inventory_detail.id', '=', 'inventory_history.inventory_detail_id')
+            ->leftJoin('purchase_order_detail', 'purchase_order_detail.id', '=', 'inventory_detail.purchase_order_detail_id')
+            ->whereBetween('inventory_history.created_at', [date('Y-m-d 00:00:00'), date('Y-m-d 23:59:59')])
+            ->select([
+                'inventory_detail.purc_doc',
+                'inventory_detail.sales_doc',
+                'inventory_history.qty',
+                'inventory_history.type',
+                'inventory_history.created_at',
+                'purchase_order_detail.item',
+                'purchase_order_detail.material',
+                'purchase_order_detail.po_item_desc',
+                'purchase_order_detail.prod_hierarchy_desc'
+            ])
+            ->paginate(10);
+
+        $title = 'Cycle Count';
+        return view('inventory.cycle-count', compact('title', 'cycleCount'));
     }
 }

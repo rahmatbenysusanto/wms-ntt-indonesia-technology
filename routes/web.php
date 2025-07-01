@@ -78,6 +78,7 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
     Route::prefix('/inventory')->controller(InventoryController::class)->group(function () {
         Route::get('/', 'index')->name('inventory.index');
         Route::get('/detail', 'detail')->name('inventory.detail');
+        Route::get('/cycle-count', 'cycleCount')->name('inventory.cycle-count');
     });
 
     Route::prefix('/outbound')->controller(OutboundController::class)->group(function () {

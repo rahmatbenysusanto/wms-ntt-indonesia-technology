@@ -105,6 +105,7 @@ class OutboundController extends Controller
                 'created_by'    => Auth::id()
             ]);
 
+            $qty_item = 0;
             foreach ($listItem as $item) {
                 $outboundDetail = OutboundDetail::create([
                     'outbound_id'           => $outbound->id,
@@ -117,7 +118,7 @@ class OutboundController extends Controller
                 foreach ($item['sn'] ?? [] as $sn) {
                     OutboundSerialNumber::create([
                         'outbound_detail_id'    => $outboundDetail->id,
-                        'serial_number'         => $sn,
+                        'serial_number'         => $sn['serialNumber'],
                     ]);
                 }
 
@@ -133,9 +134,13 @@ class OutboundController extends Controller
                     'type'                      => 'outbound',
                     'qty'                       => $item['qty']
                 ]);
+
+                $qty_item += $item['qty'];
             }
 
-//            DB::commit();
+            Outbound::where('id', $outbound->id)->update(['qty_item' => $qty_item]);
+
+            DB::commit();
 
             return response()->json([
                 'status' => true,
