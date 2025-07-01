@@ -22,4 +22,9 @@ class InventoryDetail extends Model
     {
         return $this->hasOne(PurchaseOrderDetail::class, 'id', 'purchase_order_detail_id');
     }
+
+    public function inventory(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(Inventory::class, 'id', 'inventory_id');
+    }
 }

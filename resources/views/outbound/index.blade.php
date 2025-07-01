@@ -44,15 +44,17 @@
                             @foreach($outbound as $index => $out)
                                 <tr>
                                     <td>{{ $outbound->firstItem() + $index }}</td>
-                                    <td></td>
-                                    <td></td>
-                                    <td></td>
-                                    <td></td>
-                                    <td></td>
-                                    <td></td>
-                                    <td></td>
-                                    <td></td>
-                                    <td></td>
+                                    <td>{{ $out->number }}</td>
+                                    <td>{{ $out->purc_doc }}</td>
+                                    <td>{{ $out->sales_doc }}</td>
+                                    <td>{{ $out->client }}</td>
+                                    <td>{{ $out->deliv_loc }}</td>
+                                    <td>{{ number_format($out->qty_item) }}</td>
+                                    <td>{{ \Carbon\Carbon::parse($po->created_at)->translatedFormat('d F Y H:i') }}</td>
+                                    <td>{{ $out->user->name }}</td>
+                                    <td>
+                                        <a class="btn btn-info btn-sm">Detail</a>
+                                    </td>
                                 </tr>
                             @endforeach
                             </tbody>

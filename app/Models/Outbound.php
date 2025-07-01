@@ -17,4 +17,9 @@ class Outbound extends Model
         'qty_item',
         'created_by'
     ];
+
+    public function user(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by', 'id');
+    }
 }

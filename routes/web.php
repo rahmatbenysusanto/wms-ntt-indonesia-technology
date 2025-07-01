@@ -83,9 +83,11 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
     Route::prefix('/outbound')->controller(OutboundController::class)->group(function () {
         Route::get('/', 'index')->name('outbound.index');
         Route::get('/create', 'create')->name('outbound.create');
+        Route::post('/create', 'store')->name('outbound.store');
 
         // JSON
         Route::get('/sales-doc', 'getItemBySalesDoc')->name('outbound.sales-doc');
+        Route::get('/find-inventory-detail', 'getItemByInventoryDetail')->name('outbound.inventory-detail');
     });
 });
 

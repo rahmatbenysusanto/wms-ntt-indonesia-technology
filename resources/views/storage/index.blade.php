@@ -122,31 +122,35 @@
     </div>
 
     <!-- Add Rak Modals -->
-    <div id="addLantai" class="modal fade" tabindex="-1" aria-labelledby="myModalLabel" aria-hidden="true" style="display: none;">
+    <div id="addRak" class="modal fade" tabindex="-1" aria-labelledby="myModalLabel" aria-hidden="true" style="display: none;">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="myModalLabel">Add Lantai</h5>
+                    <h5 class="modal-title" id="myModalLabel">Add Rak</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"> </button>
                 </div>
                 <div class="modal-body">
-                    <form action="{{ route('customer.store') }}" method="POST">
+                    <form action="{{ route('storage.create') }}" method="POST">
                         @csrf
+                        <input type="hidden" name="type" value="rak">
+                        <div class="mb-3">
+                            <label class="form-label">Raw Name</label>
+                            <select class="form-control" name="raw" onchange="changeRaw('rak', this.value)">
+                                <option>-- Select Area --</option>
+                                @foreach($raw as $item)
+                                    <option value="{{ $item->raw }}">{{ $item->raw }}</option>
+                                @endforeach
+                            </select>
+                        </div>
                         <div class="mb-3">
                             <label class="form-label">Area Name</label>
-                            <select class="form-control" name="area">
+                            <select class="form-control" name="form-rak_area">
                                 <option>-- Select Area --</option>
                             </select>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Rak Name</label>
-                            <select class="form-control" name="rak">
-                                <option>-- Select Rak --</option>
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Lantai Name</label>
-                            <input type="text" class="form-control" name="lantai" required>
+                            <input type="text" class="form-control" name="rak" required>
                         </div>
                         <div class="d-flex justify-content-end">
                             <button type="submit" class="btn btn-primary">Create</button>
@@ -158,16 +162,26 @@
     </div>
 
     <!-- Add Palet Modals -->
-    <div id="addPalet" class="modal fade" tabindex="-1" aria-labelledby="myModalLabel" aria-hidden="true" style="display: none;">
+    <div id="addBin" class="modal fade" tabindex="-1" aria-labelledby="myModalLabel" aria-hidden="true" style="display: none;">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="myModalLabel">Add Palet</h5>
+                    <h5 class="modal-title" id="myModalLabel">Add Bin</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"> </button>
                 </div>
                 <div class="modal-body">
                     <form action="{{ route('customer.store') }}" method="POST">
                         @csrf
+                        <input type="hidden" name="type" value="rak">
+                        <div class="mb-3">
+                            <label class="form-label">Raw Name</label>
+                            <select class="form-control" name="raw">
+                                <option>-- Select Area --</option>
+                                @foreach($raw as $item)
+                                    <option value="{{ $item->raw }}">{{ $item->raw }}</option>
+                                @endforeach
+                            </select>
+                        </div>
                         <div class="mb-3">
                             <label class="form-label">Area Name</label>
                             <select class="form-control" name="area">
@@ -178,12 +192,6 @@
                             <label class="form-label">Rak Name</label>
                             <select class="form-control" name="rak">
                                 <option>-- Select Rak --</option>
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Lantai Name</label>
-                            <select class="form-control" name="lantai">
-                                <option>-- Select Lantai --</option>
                             </select>
                         </div>
                         <div class="mb-3">
@@ -198,4 +206,12 @@
             </div>
         </div>
     </div>
+@endsection
+
+@section('js')
+    <script>
+        function changeRaw(type, value) {
+
+        }
+    </script>
 @endsection
