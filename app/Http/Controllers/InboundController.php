@@ -23,12 +23,33 @@ use Illuminate\View\View;
 
 class InboundController extends Controller
 {
-    public function purchaseOrder(): View
+    public function purchaseOrder(Request $request): View
     {
-        $purchaseOrder = PurchaseOrder::with('vendor', 'customer', 'user')->latest()->paginate(10);
+        $purchaseOrder = PurchaseOrder::with('vendor', 'customer', 'user');
+
+        if ($request->query('purcDoc') != null) {
+            $purchaseOrder = $purchaseOrder->where('purc_doc', $request->query('purcDoc'));
+        }
+
+        if ($request->query('vendor') != null) {
+            $purchaseOrder = $purchaseOrder->where('vendor_id', $request->query('vendor'));
+        }
+
+        if ($request->query('customer') != null) {
+            $purchaseOrder = $purchaseOrder->where('customer_id', $request->query('customer'));
+        }
+
+        if ($request->query('date') != null) {
+            $purchaseOrder = $purchaseOrder->where('created_at', $request->query('date'));
+        }
+
+        $purchaseOrder = $purchaseOrder->latest()->paginate(10);
+
+        $vendor = Vendor::all();
+        $customer = Customer::all();
 
         $title = "Purchase Order";
-        return view('inbound.purchase-order.index', compact('title', 'purchaseOrder'));
+        return view('inbound.purchase-order.index', compact('title', 'purchaseOrder', 'customer', 'vendor'));
     }
 
     public function purchaseOrderUpload(): View
@@ -183,14 +204,35 @@ class InboundController extends Controller
         return view('inbound.purchase-order.detail', compact('title', 'products', 'purchaseOrder'));
     }
 
-    public function qualityControl(): View
+    public function qualityControl(Request $request): View
     {
-        $purchaseOrder = PurchaseOrder::with('vendor', 'customer', 'user')->latest()
+        $purchaseOrder = PurchaseOrder::with('vendor', 'customer', 'user');
+
+        if ($request->query('purcDoc') != null) {
+            $purchaseOrder = $purchaseOrder->where('purc_doc', $request->query('purcDoc'));
+        }
+
+        if ($request->query('vendor') != null) {
+            $purchaseOrder = $purchaseOrder->where('vendor_id', $request->query('vendor'));
+        }
+
+        if ($request->query('customer') != null) {
+            $purchaseOrder = $purchaseOrder->where('customer_id', $request->query('customer'));
+        }
+
+        if ($request->query('date') != null) {
+            $purchaseOrder = $purchaseOrder->where('created_at', $request->query('date'));
+        }
+
+        $purchaseOrder = $purchaseOrder->latest()
             ->whereIn('status', ['open', 'process'])
             ->paginate(10);
 
+        $vendor = Vendor::all();
+        $customer = Customer::all();
+
         $title = "Quality Control";
-        return view('inbound.quality-control.index', compact('title', 'purchaseOrder'));
+        return view('inbound.quality-control.index', compact('title', 'purchaseOrder', 'vendor', 'customer'));
     }
 
     public function qualityControlList(Request $request): View
@@ -341,9 +383,19 @@ class InboundController extends Controller
         }
     }
 
-    public function putAway(): View
+    public function putAway(Request $request): View
     {
-        $putAway = QualityControl::with('purchaseOrder', 'user')->latest()->paginate(10);
+        $putAway = QualityControl::with('purchaseOrder', 'user');
+
+        if ($request->query('purcDoc') != null) {
+            $putAway = $putAway->where('purc_doc', $request->query('purcDoc'));
+        }
+
+        if ($request->query('salesDoc') != null) {
+            $putAway = $putAway->where('sales_doc', $request->query('salesDoc'));
+        }
+
+        $putAway = $putAway->latest()->paginate(10);
 
         $title = 'Put Away';
         return view('inbound.put-away.index', compact('title', 'putAway'));

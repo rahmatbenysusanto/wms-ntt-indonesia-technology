@@ -22,6 +22,45 @@
                         <a href="{{ route('inbound.purchase-order-upload') }}" class="btn btn-info">Upload PO Excel</a>
                     </div>
                 </div>
+                <div class="card-header">
+                    <form action="{{ url()->current() }}" method="GET">
+                        <div class="row">
+                            <div class="col-2">
+                                <label class="form-label">Purc Doc</label>
+                                <input type="text" class="form-control" value="{{ request()->get('purcDoc', null) }}" name="purcDoc">
+                            </div>
+                            <div class="col-2">
+                                <label class="form-label">Vendor</label>
+                                <select class="form-control" name="vendor">
+                                    <option value="">-- Select Vendor --</option>
+                                    @foreach($vendor as $item)
+                                        <option value="{{ $item->id }}" {{ request()->get('vendor') == $item->id ? 'selected' : '' }}>{{ $item->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-2">
+                                <label class="form-label">Customer</label>
+                                <select class="form-control" name="customer">
+                                    <option value="">-- Select Customer --</option>
+                                    @foreach($customer as $item)
+                                        <option value="{{ $item->id }}" {{ request()->get('customer') == $item->id ? 'selected' : '' }}>{{ $item->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-2">
+                                <label class="form-label">Created Date</label>
+                                <input type="date" class="form-control" value="{{ request()->get('date', null) }}" name="date">
+                            </div>
+                            <div class="col-2">
+                                <label class="form-label text-white">-</label>
+                                <div>
+                                    <button type="submit" class="btn btn-info">Search</button>
+                                    <a href="{{ route('inbound.purchase-order') }}" class="btn btn-danger">Clear</a>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
                 <div class="card-body">
                     <div class="table-responsive">
                         <table class="table table-striped align-middle">
@@ -73,7 +112,6 @@
                                     <td>{{ $po->user->name }}</td>
                                     <td>
                                         <div class="d-flex gap-2">
-{{--                                            <a href="{{ route('inbound.upload.serial-number', ['id' => $po->id]) }}" class="btn btn-primary btn-sm">Serial Number</a>--}}
                                             @if($po->status == 'new')
                                                 <a class="btn btn-info btn-sm" onclick="approvedPurchaseOrder('{{ $po->id }}')">Approved PO</a>
                                                 <a class="btn btn-danger btn-sm" onclick="cancelPurchaseOrder('{{ $po->id }}')">Cancel PO</a>

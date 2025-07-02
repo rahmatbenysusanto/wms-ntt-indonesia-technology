@@ -20,6 +20,27 @@
                 <div class="card-header">
                     <h4 class="card-title mb-0">List Put Away</h4>
                 </div>
+                <div class="card-header">
+                    <form action="{{ url()->current() }}" method="GET">
+                        <div class="row">
+                            <div class="col-2">
+                                <label class="form-label">Purc Doc</label>
+                                <input type="text" class="form-control" value="{{ request()->get('purcDoc', null) }}" name="purcDoc">
+                            </div>
+                            <div class="col-2">
+                                <label class="form-label">Sales Doc</label>
+                                <input type="text" class="form-control" value="{{ request()->get('salesDoc', null) }}" name="salesDoc">
+                            </div>
+                            <div class="col-2">
+                                <label class="form-label text-white">-</label>
+                                <div>
+                                    <button type="submit" class="btn btn-info">Search</button>
+                                    <a href="{{ route('inbound.put-away') }}" class="btn btn-danger">Clear</a>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
                 <div class="card-body">
                     <div class="table-responsive">
                         <table class="table table-striped">
