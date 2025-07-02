@@ -52,16 +52,16 @@
                         <div class="card-body">
                             <table class="table table-striped align-middle" id="masterMaterial">
                                 <thead>
-                                    <tr>
-                                        <th>#</th>
-                                        <th class="text-center">Item</th>
-                                        <th>Material</th>
-                                        <th>Desc</th>
-                                        <th>Hierarchy Desc</th>
-                                        <th class="text-center">QTY</th>
-                                        <th class="text-center">QTY QC</th>
-                                        <th>Action</th>
-                                    </tr>
+                                <tr>
+                                    <th>#</th>
+                                    <th class="text-center">Item</th>
+                                    <th>Material</th>
+                                    <th>Desc</th>
+                                    <th>Hierarchy Desc</th>
+                                    <th class="text-center">QTY</th>
+                                    <th class="text-center">QTY QC</th>
+                                    <th>Action</th>
+                                </tr>
                                 </thead>
                                 <tbody id="listItemMaster">
 
@@ -81,14 +81,14 @@
                         <div class="card-body">
                             <table class="table table-striped align-middle">
                                 <thead>
-                                    <tr>
-                                        <th>#</th>
-                                        <th class="text-center">Item</th>
-                                        <th>Material</th>
-                                        <th style="width: 100px">QTY</th>
-                                        <th>Parent</th>
-                                        <th>Action</th>
-                                    </tr>
+                                <tr>
+                                    <th>#</th>
+                                    <th class="text-center">Item</th>
+                                    <th>Material</th>
+                                    <th style="width: 100px">QTY</th>
+                                    <th>Parent</th>
+                                    <th>Action</th>
+                                </tr>
                                 </thead>
                                 <tbody id="listMapping">
 
@@ -112,17 +112,17 @@
                     <div class="card-table-responsive">
                         <table class="table table-striped align-middle">
                             <thead>
-                                <tr>
-                                    <th>#</th>
-                                    <th>Material</th>
-                                    <th class="text-center">Parent</th>
-                                    <th>Item</th>
-                                    <th>Desc</th>
-                                    <th>Hierarchy Desc</th>
-                                    <th class="text-center">QTY</th>
-                                    <th>Serial Number</th>
-                                    <th>Action</th>
-                                </tr>
+                            <tr>
+                                <th>#</th>
+                                <th>Material</th>
+                                <th class="text-center">Parent</th>
+                                <th>Item</th>
+                                <th>Desc</th>
+                                <th>Hierarchy Desc</th>
+                                <th class="text-center">QTY</th>
+                                <th>Serial Number</th>
+                                <th>Action</th>
+                            </tr>
                             </thead>
                             <tbody id="listQualityControl">
 
@@ -165,6 +165,11 @@
                                 <td class="fw-bold ps-3">:</td>
                                 <td class="ps-1" id="SN_hie"></td>
                             </tr>
+                            <tr>
+                                <td class="fw-bold">QTY</td>
+                                <td class="fw-bold ps-3">:</td>
+                                <td class="ps-1" id="SN_qty"></td>
+                            </tr>
                         </table>
                     </div>
                     <div class="mb-3">
@@ -182,7 +187,7 @@
                             <div class="col-2">
                                 <label class="form-label text-white">-</label>
                                 <div>
-                                    <a class="btn btn-secondary w-100" onclick="tambahSerialNumberManual()">Add Manual</a>
+                                    <a class="btn btn-info w-100" onclick="addSerialNumberManual()">SN Manual</a>
                                 </div>
                             </div>
                         </div>
@@ -190,10 +195,11 @@
 
                     <table class="table table-striped align-middle">
                         <thead>
-                            <tr>
-                                <th>#</th>
-                                <th>Serial Number</th>
-                            </tr>
+                        <tr>
+                            <th>#</th>
+                            <th>Serial Number</th>
+                            <th>Action</th>
+                        </tr>
                         </thead>
                         <tbody id="listSerialNumberUpload">
 
@@ -242,6 +248,11 @@
                                 <td class="fw-bold">Hierarchy</td>
                                 <td class="fw-bold ps-3">:</td>
                                 <td class="ps-1" id="detail_SN_hie"></td>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold">QTY</td>
+                                <td class="fw-bold ps-3">:</td>
+                                <td class="ps-1" id="detail_SN_qty"></td>
                             </tr>
                         </table>
                     </div>
@@ -553,7 +564,7 @@
 
                 (item.child).forEach((child, indexDetail) => {
                     let htmlSN = '';
-                    if (item.sn === null) {
+                    if (child.sn === null) {
                         htmlSN = `<a class="btn btn-info btn-sm" onclick="uploadSN('child', ${index}, ${indexDetail})">Upload SN</a>`;
                     } else {
                         htmlSN = `<a class="btn btn-success btn-sm" onclick="detailSN('child', ${index}, ${indexDetail})">Detail SN</a>`;
@@ -591,11 +602,13 @@
                 document.getElementById('SN_material').innerText = qc[index].sku;
                 document.getElementById('SN_desc').innerText = qc[index].name;
                 document.getElementById('SN_hie').innerText = qc[index].type;
+                document.getElementById('SN_qty').innerText = qc[index].qty;
             } else {
                 document.getElementById('SN_item').innerText = qc[index].child[indexDetail].item;
                 document.getElementById('SN_material').innerText = qc[index].child[indexDetail].sku;
                 document.getElementById('SN_desc').innerText = qc[index].child[indexDetail].name;
                 document.getElementById('SN_hie').innerText = qc[index].child[indexDetail].type;
+                document.getElementById('SN_qty').innerText = qc[index].child[indexDetail].qty;
             }
 
             viewSerialNumber();
@@ -644,8 +657,8 @@
                 html += `
                     <tr>
                         <td>${number}</td>
-                        <td><input type="text" class="form-control" value="${sn.serialNumber}" onchange="changeSN(${index}, this.value)"></td>
-                        <td><a class="btn btn-danger btn-sm" onclick="deleteSN(${index})">Delete</a></td>
+                        <td><input type="text" class="form-control" value="${sn.serialNumber}" onchange="changeSerialNumber(${index}, this.value)"></td>
+                        <td><a class="btn btn-danger btn-sm" onclick="deleteSerialNumber(${index})">Delete</a></td>
                     </tr>
                 `;
                 number++;
@@ -654,19 +667,19 @@
             document.getElementById('listSerialNumberUpload').innerHTML = html;
         }
 
-        function deleteSN(index) {
+        function changeSerialNumber(index, value) {
             const serialNumber = JSON.parse(localStorage.getItem('serialNumber')) ?? [];
 
-            serialNumber.splice(index, 1);
+            serialNumber[index].serialNumber = value;
 
             localStorage.setItem('serialNumber', JSON.stringify(serialNumber));
             viewSerialNumber();
         }
 
-        function changeSN(index, value) {
+        function deleteSerialNumber(index) {
             const serialNumber = JSON.parse(localStorage.getItem('serialNumber')) ?? [];
 
-            serialNumber[index].serialNumber = value;
+            serialNumber.splice(index, 1);
 
             localStorage.setItem('serialNumber', JSON.stringify(serialNumber));
             viewSerialNumber();
@@ -714,20 +727,60 @@
 
         function detailSN(type, index, indexDetail) {
             const qc = JSON.parse(localStorage.getItem('qc')) ?? [];
+            let serialNumber = [];
+
             if (type === 'parent') {
                 document.getElementById('detail_SN_item').innerText = qc[index].item;
                 document.getElementById('detail_SN_material').innerText = qc[index].sku;
                 document.getElementById('detail_SN_desc').innerText = qc[index].name;
                 document.getElementById('detail_SN_hie').innerText = qc[index].type;
+                document.getElementById('detail_SN_qty').innerText = qc[index].qty;
 
-                const serialNumber = qc[index].sn;
+                serialNumber = qc[index].sn;
             } else {
                 document.getElementById('detail_SN_item').innerText = qc[index].child[indexDetail].item;
                 document.getElementById('detail_SN_material').innerText = qc[index].child[indexDetail].sku;
                 document.getElementById('detail_SN_desc').innerText = qc[index].child[indexDetail].name;
                 document.getElementById('detail_SN_hie').innerText = qc[index].child[indexDetail].type;
+                document.getElementById('detail_SN_qty').innerText = qc[index].child[indexDetail].qty;
 
-                const serialNumber = qc[index].child[indexDetail].sn;
+                serialNumber = qc[index].child[indexDetail].sn;
+            }
+
+            let html = '';
+            let number = 1;
+
+            serialNumber.forEach((sn, indexSN) => {
+                html += `
+                    <tr>
+                        <td>${number}</td>
+                        <td>
+                            <input type="text" class="form-control" value="${sn.serialNumber}"
+                                onchange="changeSerialNumberDetail('${type}', ${index}, ${indexDetail}, ${indexSN}, this.value)">
+                        </td>
+                    </tr>
+                `;
+
+                number++;
+            });
+
+            document.getElementById('listDetailSerialNumberUpload').innerHTML = html;
+
+            $('#detailSerialNumberModal').modal('show');
+        }
+
+        function changeSerialNumberDetail(type, index, indexDetail, indexSN, value) {
+            const qc = JSON.parse(localStorage.getItem('qc')) ?? [];
+            let serialNumber = [];
+
+            console.info(type)
+
+            if (type === 'parent') {
+                qc[index].sn[indexSN].serialNumber = value;
+                serialNumber = qc[index].sn;
+            } else {
+                qc[index].child[indexDetail].sn[indexSN].serialNumber = value;
+                serialNumber = qc[index].child[indexDetail].sn;
             }
 
             let html = '';
@@ -737,7 +790,7 @@
                 html += `
                     <tr>
                         <td>${number}</td>
-                        <td>${sn.serialNumber}</td>
+                        <td><input type="text" class="form-control" value="${sn.serialNumber}" onchange="changeSerialNumberDetail(type, index, indexDetail, this.value)"></td>
                     </tr>
                 `;
                 number++;
@@ -745,7 +798,7 @@
 
             document.getElementById('listDetailSerialNumberUpload').innerHTML = html;
 
-            $('#detailSerialNumberModal').modal('show');
+            localStorage.setItem('qc', JSON.stringify(qc));
         }
 
         function deleteQC(index) {
@@ -823,11 +876,12 @@
                             }
                         }
                     });
+
                 }
             });
         }
 
-        function tambahSerialNumberManual() {
+        function addSerialNumberManual() {
             const serialNumber = JSON.parse(localStorage.getItem('serialNumber')) ?? [];
 
             serialNumber.push({
@@ -839,7 +893,6 @@
         }
     </script>
 @endsection
-
 
 
 

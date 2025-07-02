@@ -279,7 +279,7 @@ class InboundController extends Controller
                     SerialNumber::create([
                         'purchase_order_id'         => $request->post('purchaseOrderId'),
                         'purchase_order_detail_id'  => $item['id'],
-                        'serial_number'             => $sn
+                        'serial_number'             => $sn['serialNumber']
                     ]);
                 }
 
@@ -291,7 +291,7 @@ class InboundController extends Controller
                     PurchaseOrderDetail::find($item['id'])->update(['status' => 'qc']);
                 }
 
-                foreach ($item['child'] as $child) {
+                foreach ($item['child'] ?? [] as $child) {
                     QualityControlItem::create([
                         'quality_control_detail_id' => $detail->id,
                         'purchase_order_detail_id'  => $child['id'],
@@ -299,11 +299,11 @@ class InboundController extends Controller
                     ]);
 
                     // Input Serial Number
-                    foreach ($child['sn'] as $sn) {
+                    foreach ($child['sn'] ?? [] as $sn) {
                         SerialNumber::create([
                             'purchase_order_id'         => $request->post('purchaseOrderId'),
                             'purchase_order_detail_id'  => $item['id'],
-                            'serial_number'             => $sn
+                            'serial_number'             => $sn['serialNumber']
                         ]);
                     }
 
@@ -327,7 +327,7 @@ class InboundController extends Controller
                 PurchaseOrder::find($request->post('purchaseOrderId'))->update(['status' => 'process']);
             }
 
-            DB::commit();
+//            DB::commit();
             return response()->json([
                 'status' => true,
             ]);
