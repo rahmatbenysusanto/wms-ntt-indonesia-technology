@@ -169,7 +169,7 @@
                     </div>
                     <div class="mb-3">
                         <div class="row">
-                            <div class="col-10">
+                            <div class="col-8">
                                 <label class="form-label">Upload Excel Serial Number</label>
                                 <input type="file" class="form-control" id="uploadFileSN">
                             </div>
@@ -177,6 +177,12 @@
                                 <label class="form-label text-white">-</label>
                                 <div>
                                     <a class="btn btn-info w-100" onclick="processDateUploadSN()">Proses Data</a>
+                                </div>
+                            </div>
+                            <div class="col-2">
+                                <label class="form-label text-white">-</label>
+                                <div>
+                                    <a class="btn btn-secondary w-100" onclick="tambahSerialNumberManual()">Add Manual</a>
                                 </div>
                             </div>
                         </div>
@@ -634,17 +640,36 @@
             let html = '';
             let number = 1;
 
-            serialNumber.forEach((sn) => {
+            serialNumber.forEach((sn, index) => {
                 html += `
                     <tr>
                         <td>${number}</td>
-                        <td>${sn.serialNumber}</td>
+                        <td><input type="text" class="form-control" value="${sn.serialNumber}" onchange="changeSN(${index}, this.value)"></td>
+                        <td><a class="btn btn-danger btn-sm" onclick="deleteSN(${index})">Delete</a></td>
                     </tr>
                 `;
                 number++;
             });
 
             document.getElementById('listSerialNumberUpload').innerHTML = html;
+        }
+
+        function deleteSN(index) {
+            const serialNumber = JSON.parse(localStorage.getItem('serialNumber')) ?? [];
+
+            serialNumber.splice(index, 1);
+
+            localStorage.setItem('serialNumber', JSON.stringify(serialNumber));
+            viewSerialNumber();
+        }
+
+        function changeSN(index, value) {
+            const serialNumber = JSON.parse(localStorage.getItem('serialNumber')) ?? [];
+
+            serialNumber[index].serialNumber = value;
+
+            localStorage.setItem('serialNumber', JSON.stringify(serialNumber));
+            viewSerialNumber();
         }
 
         function uploadSerialNumberProcess() {
@@ -771,23 +796,46 @@
                             salesDoc: '{{ request()->get('sales-doc') }}'
                         },
                         success: (res) => {
-                            Swal.fire({
-                                title: 'Success!',
-                                text: 'Quality Control successfully!',
-                                icon: 'success',
-                                confirmButtonText: 'OK',
-                                customClass: {
-                                    confirmButton: "btn btn-primary w-xs mt-2"
-                                },
-                                buttonsStyling: false
-                            }).then(() => {
-                                window.location.href = '{{ route('inbound.quality-control') }}';
-                            });
+                            if (res.status) {
+                                Swal.fire({
+                                    title: 'Success!',
+                                    text: 'Quality Control successfully!',
+                                    icon: 'success',
+                                    confirmButtonText: 'OK',
+                                    customClass: {
+                                        confirmButton: "btn btn-primary w-xs mt-2"
+                                    },
+                                    buttonsStyling: false
+                                }).then(() => {
+                                    window.location.href = '{{ route('inbound.quality-control') }}';
+                                });
+                            } else {
+                                Swal.fire({
+                                    title: 'Error!',
+                                    text: 'Quality Control Failed!',
+                                    icon: 'error',
+                                    confirmButtonText: 'OK',
+                                    customClass: {
+                                        confirmButton: "btn btn-primary w-xs mt-2"
+                                    },
+                                    buttonsStyling: false
+                                });
+                            }
                         }
                     });
-
                 }
             });
+        }
+
+        function tambahSerialNumberManual() {
+            const serialNumber = JSON.parse(localStorage.getItem('serialNumber')) ?? [];
+
+            serialNumber.push({
+                serialNumber: ''
+            });
+
+            localStorage.setItem('serialNumber', JSON.stringify(serialNumber));
+            viewSerialNumber();
         }
     </script>
 @endsection

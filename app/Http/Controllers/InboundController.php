@@ -275,7 +275,7 @@ class InboundController extends Controller
                 ]);
 
                 // Input Serial Number
-                foreach ($item['sn'] as $sn) {
+                foreach ($item['sn'] ?? [] as $sn) {
                     SerialNumber::create([
                         'purchase_order_id'         => $request->post('purchaseOrderId'),
                         'purchase_order_detail_id'  => $item['id'],
