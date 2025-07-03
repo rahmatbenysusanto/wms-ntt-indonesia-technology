@@ -13,7 +13,17 @@ class InventoryController extends Controller
 {
     public function index(Request $request): View
     {
-        $inventory = Inventory::with('storage')->latest()->paginate(10);
+        $inventory = Inventory::with('storage');
+
+        if ($request->query('purcDoc') != null) {
+            $inventory = $inventory->where('purc_doc', $request->query('purcDoc'));
+        }
+
+        if ($request->query('salesDoc') != null) {
+            $inventory = $inventory->where('sales_doc', $request->query('salesDoc'));
+        }
+
+        $inventory = $inventory->latest()->paginate(10);
 
         foreach ($inventory as $item) {
             $item->child = InventoryDetail::where('inventory_id', $item->id)->where('type', 'child')->count();
