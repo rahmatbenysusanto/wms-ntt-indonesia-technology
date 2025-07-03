@@ -369,7 +369,7 @@ class InboundController extends Controller
                 PurchaseOrder::find($request->post('purchaseOrderId'))->update(['status' => 'process']);
             }
 
-//            DB::commit();
+            DB::commit();
             return response()->json([
                 'status' => true,
             ]);
