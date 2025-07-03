@@ -73,7 +73,19 @@ class StorageController extends Controller
                 ]);
                 break;
             case 'rak':
+                Storage::create([
+                    'raw'   => $request->post('raw'),
+                    'area'  => $request->post('area'),
+                    'rak'   => $request->post('rak'),
+                ]);
+                break;
             case 'bin':
+                Storage::create([
+                    'raw'   => $request->post('raw'),
+                    'area'  => $request->post('area'),
+                    'rak'   => $request->post('rak'),
+                    'bin'   => $request->post('bin'),
+                ]);
         }
 
         return redirect()->back()->with('success', 'Storage created successfully');

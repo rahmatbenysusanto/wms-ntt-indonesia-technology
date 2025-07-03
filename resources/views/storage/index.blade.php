@@ -144,7 +144,7 @@
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Area Name</label>
-                            <select class="form-control" name="form-rak_area">
+                            <select class="form-control" name="area" id="formRak_area">
                                 <option>-- Select Area --</option>
                             </select>
                         </div>
@@ -172,10 +172,10 @@
                 <div class="modal-body">
                     <form action="{{ route('customer.store') }}" method="POST">
                         @csrf
-                        <input type="hidden" name="type" value="rak">
+                        <input type="hidden" name="type" value="bin">
                         <div class="mb-3">
                             <label class="form-label">Raw Name</label>
-                            <select class="form-control" name="raw">
+                            <select class="form-control" name="raw" id="formBin_raw" onchange="changeRaw('bin', this.value)">
                                 <option>-- Select Area --</option>
                                 @foreach($raw as $item)
                                     <option value="{{ $item->raw }}">{{ $item->raw }}</option>
@@ -184,19 +184,19 @@
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Area Name</label>
-                            <select class="form-control" name="area">
+                            <select class="form-control" name="area" id="formBin_area" onchange="changeArea(this.value)">
                                 <option>-- Select Area --</option>
                             </select>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Rak Name</label>
-                            <select class="form-control" name="rak">
+                            <select class="form-control" name="rak" id="formBin_rak">
                                 <option>-- Select Rak --</option>
                             </select>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Palet Name</label>
-                            <input type="text" class="form-control" name="lantai" required>
+                            <label class="form-label">Bin Name</label>
+                            <input type="text" class="form-control" name="bin" required>
                         </div>
                         <div class="d-flex justify-content-end">
                             <button type="submit" class="btn btn-primary">Create</button>
@@ -211,7 +211,53 @@
 @section('js')
     <script>
         function changeRaw(type, value) {
+            $.ajax({
+                url: '{{ route('storage.find.area') }}',
+                method: 'GET',
+                data: {
+                    raw: value
+                },
+                success: (res) => {
+                    const data = res.data;
 
+                    let html = '<option value="">-- Select Area --</option>';
+
+                    data.forEach((item) => {
+                        html += `<option value="${item.area}">${item.area}</option>`;
+                    });
+
+                    if (type === 'rak') {
+                        document.getElementById('formRak_area').innerHTML = html;
+                    } else {
+                        document.getElementById('formBin_area').innerHTML = html;
+                    }
+                }
+            });
+        }
+
+        function changeArea(value) {
+            console.info(document.getElementById('formBin_raw').value);
+            console.info(value);
+
+            $.ajax({
+                url: '{{ route('storage.find.rak') }}',
+                method: 'GET',
+                data: {
+                    raw: document.getElementById('formBin_raw').value,
+                    area: value
+                },
+                success: (res) => {
+                    const data = res.data;
+
+                    let html = '<option value="">-- Select Rak --</option>';
+
+                    data.forEach((item) => {
+                        html += `<option value="${item.id}">${item.rak}</option>`;
+                    });
+
+                    document.getElementById('formBin_rak').innerHTML = html;
+                }
+            });
         }
     </script>
 @endsection
