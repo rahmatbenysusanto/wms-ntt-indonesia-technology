@@ -267,9 +267,8 @@ class InboundController extends Controller
 
     public function qualityControlProcess(Request $request): View
     {
-        $purchaseOrder = PurchaseOrder::find($request->query('po'));
-        $data = PurchaseOrderDetail::where('purchase_order_id', $request->query('po'))
-            ->where('sales_doc', $request->query('sales-doc'))
+        $purchaseOrder = PurchaseOrder::find($request->query('id'));
+        $data = PurchaseOrderDetail::where('purchase_order_id', $purchaseOrder->id)
             ->orderBy('product_id')
             ->get();
 
@@ -284,7 +283,8 @@ class InboundController extends Controller
                     'qty'       => $item->po_item_qty - $item->qty_quality_control,
                     'item'      => $item->item,
                     'qty_qc'    => 0,
-                    'qty_qc_done' => $item->qty_quality_control
+                    'qty_qc_done' => $item->qty_quality_control,
+                    'sales_doc' => $item->sales_doc,
                 ];
             }
         }
@@ -623,6 +623,19 @@ class InboundController extends Controller
             Log::error($err->getLine());
             return back()->with('error', 'Set Lokasi Gagal');
         }
+    }
+
+    public function qualityControlProcessCcw(Request $request): View
+    {
+        $purcDocDetail = PurchaseOrderDetail::where('purchase_order_id', $request->query('id'))->get();
+
+        $title = 'Quality Control';
+        return view('inbound.quality-control.ccw.index', compact('title', 'purcDocDetail'));
+    }
+
+    public function compareSapCcw(Request $request)
+    {
+
     }
 }
 

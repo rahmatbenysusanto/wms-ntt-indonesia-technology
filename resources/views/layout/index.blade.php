@@ -472,16 +472,16 @@
                     </li>
 
                     <li class="nav-item">
-                        <a class="nav-link menu-link {{ in_array($title, ['Inventory', 'Cycle Count']) ? 'active' : '' }}" href="#sidebarInventory" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="sidebarInventory">
+                        <a class="nav-link menu-link {{ in_array($title, ['Inventory', 'Cycle Count', 'Transfer Location']) ? 'active' : '' }}" href="#sidebarInventory" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="sidebarInventory">
                             <i class="mdi mdi-package-variant"></i> <span data-key="t-dashboards">Inventory</span>
                         </a>
-                        <div class="collapse menu-dropdown {{ in_array($title, ['Inventory', 'Cycle Count']) ? 'show' : '' }}" id="sidebarInventory">
+                        <div class="collapse menu-dropdown {{ in_array($title, ['Inventory', 'Cycle Count', 'Transfer Location']) ? 'show' : '' }}" id="sidebarInventory">
                             <ul class="nav nav-sm flex-column">
                                 <li class="nav-item">
                                     <a href="{{ route('inventory.index') }}" class="nav-link {{ $title == 'Inventory' ? 'active' : '' }}" data-key="t-analytics"> Produk List </a>
                                 </li>
                                 <li class="nav-item">
-                                    <a href="#" class="nav-link" data-key="t-analytics"> Transfer List </a>
+                                    <a href="{{ route('inventory.transfer-location') }}" class="nav-link {{ $title == 'Transfer Location' ? 'active' : '' }}" data-key="t-analytics"> Transfer Location </a>
                                 </li>
                                 <li class="nav-item">
                                     <a href="{{ route('inventory.cycle-count') }}" class="nav-link {{ $title == 'Cycle Count' ? 'active' : '' }}" data-key="t-analytics"> Cycle Count </a>
@@ -498,6 +498,19 @@
                             <ul class="nav nav-sm flex-column">
                                 <li class="nav-item">
                                     <a href="{{ route('outbound.index') }}" class="nav-link {{ $title == 'Outbound' ? 'active' : '' }}" data-key="t-analytics"> Order List </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link menu-link {{ $title == 'General Room' ? 'active' : '' }}" href="#sidebarGeneralRoom" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="sidebarGeneralRoom">
+                            <i class="mdi mdi-book-clock"></i> <span data-key="t-dashboards">General Room</span>
+                        </a>
+                        <div class="collapse menu-dropdown {{ $title == 'General Room' ? 'show' : '' }}" id="sidebarGeneralRoom">
+                            <ul class="nav nav-sm flex-column">
+                                <li class="nav-item">
+                                    <a href="{{ route('general-room.index') }}" class="nav-link {{ $title == 'General Room' ? 'active' : '' }}" data-key="t-analytics"> List </a>
                                 </li>
                             </ul>
                         </div>

@@ -25,7 +25,7 @@
                 </div>
                 <div class="card-body">
                     <div class="row">
-                        <div class="col-6">
+                        <div class="col-6 mb-3">
                             <label class="form-label">Customer</label>
                             <select class="form-control" id="customerId">
                                 <option value="">-- Select Customer --</option>
@@ -34,9 +34,16 @@
                                 @endforeach
                             </select>
                         </div>
-                        <div class="col-6">
+                        <div class="col-6 mb-3">
                             <label class="form-label">Delivery Location</label>
                             <input type="text" class="form-control" id="delivLocation">
+                        </div>
+                        <div class="col-6 mb-3">
+                            <label class="form-label">Delivery Destination</label>
+                            <select class="form-control">
+                                <option value="client">Client</option>
+                                <option value="general room">General Room</option>
+                            </select>
                         </div>
                     </div>
                 </div>

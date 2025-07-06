@@ -68,4 +68,16 @@ class InventoryController extends Controller
         $title = 'Cycle Count';
         return view('inventory.cycle-count', compact('title', 'cycleCount'));
     }
+
+    public function transferLocation(): View
+    {
+        $title = 'Transfer Location';
+        return view('inventory.transfer-location.index', compact('title'));
+    }
+
+    public function transferLocationCreate(): View
+    {
+        $title = 'Transfer Location';
+        return view('inventory.transfer-location.create', compact('title'));
+    }
 }

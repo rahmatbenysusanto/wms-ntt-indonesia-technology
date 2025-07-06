@@ -29,11 +29,6 @@
                             <td class="fw-bold ps-3">:</td>
                             <td class="ps-1">{{ $purchaseOrder->purc_doc }}</td>
                         </tr>
-                        <tr>
-                            <td class="fw-bold">Sales Doc</td>
-                            <td class="fw-bold ps-3">:</td>
-                            <td class="ps-1">{{ request()->get('sales-doc')  }}</td>
-                        </tr>
                     </table>
                 </div>
             </div>
@@ -54,6 +49,7 @@
                                 <thead>
                                 <tr>
                                     <th>#</th>
+                                    <th>Sales Doc</th>
                                     <th class="text-center">Item</th>
                                     <th>Material</th>
                                     <th>Desc</th>
@@ -311,6 +307,7 @@
                 html += `
                     <tr>
                         <td>${number}</td>
+                        <td>${item.sales_doc}</td>
                         <td class="text-center">${item.item}</td>
                         <td>${item.sku}</td>
                         <td>${item.name}</td>

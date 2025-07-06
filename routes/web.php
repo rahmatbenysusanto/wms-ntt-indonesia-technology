@@ -3,6 +3,7 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\GeneralRoomController;
 use App\Http\Controllers\InboundController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\OutboundController;
@@ -65,6 +66,9 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
             Route::get('/list', 'qualityControlList')->name('inbound.quality-control-list');
             Route::get('/process', 'qualityControlProcess')->name('inbound.quality-control-process');
             Route::post('/process', 'qualityControlStoreProcess')->name('inbound.quality-control-store-process');
+
+            // CCW Process
+            Route::get('/process-ccw', 'qualityControlProcessCcw')->name('inbound.quality-control-process-ccw');
         });
 
         Route::prefix('/put-away')->group(function () {
@@ -79,6 +83,15 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
         Route::get('/', 'index')->name('inventory.index');
         Route::get('/detail', 'detail')->name('inventory.detail');
         Route::get('/cycle-count', 'cycleCount')->name('inventory.cycle-count');
+
+        Route::prefix('/transfer-location')->group(function () {
+            Route::get('/', 'transferLocation')->name('inventory.transfer-location');
+            Route::get('/create', 'transferLocationCreate')->name('inventory.transfer-location-create');
+        });
+    });
+
+    Route::prefix('/general-room')->controller(GeneralRoomController::class)->group(function () {
+        Route::get('/', 'index')->name('general-room.index');
     });
 
     Route::prefix('/outbound')->controller(OutboundController::class)->group(function () {
@@ -91,6 +104,8 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
         Route::get('/find-inventory-detail', 'getItemByInventoryDetail')->name('outbound.inventory-detail');
     });
 });
+
+Route::get('/compare-sap-ccw', [InboundController::class, 'compareSapCcw'])->name('compare-sap-ccw');
 
 
 

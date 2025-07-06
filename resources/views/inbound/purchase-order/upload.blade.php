@@ -105,7 +105,7 @@
                     purc_doc: row["Purchasing Document"],
                     sales_doc: row["Sales Doc"],
                     item: row["Item"],
-                    material: row["Material"],
+                    material: row["Material"] = row["Material"].replace(/\./g, ""),
                     po_item_desc: row["PO Item Desc"],
                     prod_hierarchy_desc: row["Prod Hierarchy Desc"],
                     acc_ass_cat: row["Acc Ass Cat"],
@@ -115,8 +115,8 @@
                     sloc_desc: row["SLoc Desc"],
                     valuation: row["Valuation"],
                     po_item_qty: row["PO Itm Qty"],
-                    net_order_price: row["Net Order Price"],
-                    currency: row["Currency"],
+                    net_order_price: row["Net Order Price"] ?? "",
+                    currency: row["Currency"] ?? "",
                 }));
 
                 viewListData(filteredData);

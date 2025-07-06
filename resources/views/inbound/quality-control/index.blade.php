@@ -112,7 +112,8 @@
                                     <td>{{ $po->user->name }}</td>
                                     <td>
                                         <div class="d-flex gap-2">
-                                            <a href="{{ route('inbound.quality-control-list', ['id' => $po->id]) }}" class="btn btn-primary btn-sm">Process QC</a>
+                                            <a href="{{ route('inbound.quality-control-process', ['id' => $po->id]) }}" class="btn btn-primary btn-sm">Process QC</a>
+                                            <a href="{{ route('inbound.quality-control-process-ccw', ['id' => $po->id]) }}" class="btn btn-info btn-sm">Process QC CCW</a>
                                         </div>
                                     </td>
                                 </tr>
