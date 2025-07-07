@@ -8,20 +8,8 @@ class Inventory extends Model
 {
     protected $table = 'inventory';
     protected $fillable = [
-        'purchase_order_id',
         'purc_doc',
         'sales_doc',
-        'qty_item',
-        'storage_id'
+        'stock'
     ];
-
-    public function storage(): \Illuminate\Database\Eloquent\Relations\BelongsTo
-    {
-        return $this->belongsTo(Storage::class, 'storage_id', 'id');
-    }
-
-    public function inventoryDetail(): \Illuminate\Database\Eloquent\Relations\HasMany
-    {
-        return $this->hasMany(InventoryDetail::class, 'inventory_id', 'id');
-    }
 }

@@ -13,11 +13,9 @@ return new class extends Migration
     {
         Schema::create('inventory', function (Blueprint $table) {
             $table->id();
-            $table->integer('purchase_order_id');
             $table->string('purc_doc');
             $table->string('sales_doc');
-            $table->integer('qty_item')->default(0);
-            $table->integer('storage_id');
+            $table->integer('stock')->default(0);
             $table->timestamps();
         });
     }

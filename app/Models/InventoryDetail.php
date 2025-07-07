@@ -8,23 +8,8 @@ class InventoryDetail extends Model
 {
     protected $table = 'inventory_detail';
     protected $fillable = [
-        'inventory_id',
         'purchase_order_detail_id',
-        'quality_control_detail_id',
-        'purc_doc',
-        'sales_doc',
-        'type',
-        'qty',
-        'parent_id'
+        'storage_id',
+        'stock'
     ];
-
-    public function purchaseOrderDetail(): \Illuminate\Database\Eloquent\Relations\HasOne
-    {
-        return $this->hasOne(PurchaseOrderDetail::class, 'id', 'purchase_order_detail_id');
-    }
-
-    public function inventory(): \Illuminate\Database\Eloquent\Relations\HasOne
-    {
-        return $this->hasOne(Inventory::class, 'id', 'inventory_id');
-    }
 }

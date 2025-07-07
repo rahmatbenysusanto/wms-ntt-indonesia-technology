@@ -13,14 +13,9 @@ return new class extends Migration
     {
         Schema::create('inventory_detail', function (Blueprint $table) {
             $table->id();
-            $table->integer('inventory_id');
             $table->integer('purchase_order_detail_id');
-            $table->integer('quality_control_detail_id');
-            $table->enum('type', ['parent', 'child']);
-            $table->string('purc_doc');
-            $table->string('sales_doc');
-            $table->integer('qty');
-            $table->integer('parent_id')->nullable();
+            $table->integer('storage_id');
+            $table->integer('stock')->default(0);
             $table->timestamps();
         });
     }

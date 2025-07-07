@@ -396,6 +396,8 @@ class InboundController extends Controller
         try {
             DB::beginTransaction();
 
+            $purchaseOrder = PurchaseOrder::find($request->post('purchaseOrderId'));
+
             foreach ($request->post('qualityControl') as $qualityControl) {
                 // Insert Parent
                 $product = Product::where('material', $qualityControl['sku'])->first();
@@ -406,6 +408,8 @@ class InboundController extends Controller
                     'qty'               => 0,
                     'storage_id'        => $qualityControl['putAwayStep'] == 0 ? 1 : null
                 ]);
+
+                $qualityControl['parent'][0]['sn'] = $qualityControl['sn'];
                 foreach ($qualityControl['parent'] as $parent) {
                     $product = Product::where('material', $parent['sku'])->first();
                     $purcOrderDetail = PurchaseOrderDetail::find($parent['id']);
@@ -500,6 +504,26 @@ class InboundController extends Controller
                                 'qty'                       => 1
                             ]);
                         }
+
+                        // Insert Inventory & Inventory Detail
+                        $checkInventory = Inventory::where('sales_doc', $purcOrderDetail->sales_doc)
+                            ->where('purc_doc', $purchaseOrder->purc_doc)
+                            ->first();
+                        if ($checkInventory == null) {
+                            Inventory::create([
+                                'purc_doc'  => $purchaseOrder->purc_doc,
+                                'sales_doc' => $purcOrderDetail->sales_doc,
+                                'stock'     => $parent['qty']
+                            ]);
+                        } else {
+                            Inventory::where('id', $checkInventory->id)->increment('stock', $parent['qty']);
+                        }
+
+                        InventoryDetail::create([
+                            'purchase_order_detail_id'  => $parent['id'],
+                            'storage_id'                => 1,
+                            'stock'                     => $parent['qty']
+                        ]);
                     }
 
                     foreach ($qualityControl['child'] as $child) {
@@ -529,6 +553,26 @@ class InboundController extends Controller
                                 'qty'                       => 1
                             ]);
                         }
+
+                        // Insert Inventory & Inventory Detail
+                        $checkInventory = Inventory::where('sales_doc', $purcOrderDetail->sales_doc)
+                            ->where('purc_doc', $purchaseOrder->purc_doc)
+                            ->first();
+                        if ($checkInventory == null) {
+                            Inventory::create([
+                                'purc_doc'  => $purchaseOrder->purc_doc,
+                                'sales_doc' => $purcOrderDetail->sales_doc,
+                                'stock'     => $child['qty']
+                            ]);
+                        } else {
+                            Inventory::where('id', $checkInventory->id)->increment('stock', $child['qty']);
+                        }
+
+                        InventoryDetail::create([
+                            'purchase_order_detail_id'  => $child['id'],
+                            'storage_id'                => 1,
+                            'stock'                     => $child['qty']
+                        ]);
                     }
                 }
             }
@@ -551,7 +595,7 @@ class InboundController extends Controller
                 PurchaseOrder::where('id', $request->post('purchaseOrderId'))->update(['status' => 'close']);
             }
 
-//            DB::commit();
+            DB::commit();
             return response()->json([
                 'status' => true,
             ]);
