@@ -36,7 +36,10 @@
         <div class="col-12">
             <div class="card">
                 <div class="card-header">
-                    <h4 class="card-title mb-0">Purchase Order CCW</h4>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="card-title mb-0">Purchase Order CCW</h4>
+                        <a class="btn btn-primary" onclick="processQualityControl()">Process Quality Control</a>
+                    </div>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
@@ -44,6 +47,8 @@
                             <thead>
                                 <tr>
                                     <th>#</th>
+                                    <th>Type</th>
+                                    <th>Put Away Step</th>
                                     <th>Line Number</th>
                                     <th>Item Name</th>
                                     <th>Item Desc</th>
@@ -158,7 +163,7 @@
                             <input type="file" class="form-control" id="uploadFileSerialNumber">
                         </div>
                         <div class="col-2">
-                            <a class="btn btn-primary w-100">Upload Excel</a>
+                            <a class="btn btn-primary w-100" onclick="uploadSerialNumber()">Upload Excel</a>
                         </div>
                         <div class="col-2">
                             <a class="btn btn-info w-100" onclick="addManualSN()">Add SN Manual</a>
@@ -241,7 +246,8 @@
                     qtyAdd: 0,
                     salesDoc: [],
                     listSalesDoc: [],
-                    purchaseOrderDetailId: null
+                    purchaseOrderDetailId: null,
+                    putAwayStep: 1
                 }));
 
                 localStorage.setItem('ccw', JSON.stringify(filteredData));
@@ -278,6 +284,12 @@
             viewCompareSAPCCW();
         }
 
+        function isParentFormat(value) {
+            const str = String(value);
+            const parts = str.split('.');
+            return parts.length === 2 && parts[1] === '0';
+        }
+
         function viewCompareSAPCCW() {
             const compare = JSON.parse(localStorage.getItem('compare')) ?? [];
             let html = '';
@@ -298,9 +310,28 @@
                     htmlSalesDoc += `<p class="mb-0">${sales.salesDoc}</p>`;
                 });
 
+                // Check Parent
+                let statusParent = isParentFormat(item.lineNumber);
+                let putAwayStep = '';
+                if (statusParent) {
+                    putAwayStep = `
+                        <div class="form-check form-switch form-switch-md">
+                          <input
+                            class="form-check-input"
+                            type="checkbox"
+                            role="switch"
+                            ${parseInt(item.putAwayStep) === 1 ? 'checked' : ''}
+                            onchange="handlePutAwayStepChange(this, ${index})"
+                          >
+                        </div>
+                    `;
+                }
+
                 html += `
                     <tr class="${isEmptySalesDoc ? 'table-danger' : ''}">
                         <td>${number}</td>
+                        <td>${statusParent ? '<span class="badge bg-secondary-subtle text-secondary">Parent</span>' : ''}</td>
+                        <td>${putAwayStep}</td>
                         <td>${item.lineNumber}</td>
                         <td>${item.itemName}</td>
                         <td>${item.itemDesc}</td>
@@ -319,6 +350,15 @@
             table.page(currentPage).draw('page');
 
             viewPoSAP();
+        }
+
+        function handlePutAwayStepChange(checkbox, index) {
+            const compare = JSON.parse(localStorage.getItem('compare')) ?? [];
+
+            compare[index].putAwayStep = checkbox.checked ? 1 : 0;
+
+            localStorage.setItem('compare', JSON.stringify(compare));
+            viewCompareSAPCCW();
         }
 
         function hapusSalesDoc(index) {
@@ -386,6 +426,53 @@
             viewSerialNumber(index);
 
             $('#detailSerialNumberModal').modal('show');
+        }
+
+        function uploadSerialNumber() {
+            const fileInput = document.getElementById('uploadFileSerialNumber');
+            const file = fileInput.files[0];
+
+            if (!file) {
+                alert("Silakan pilih file Excel terlebih dahulu.");
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+
+                const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+
+                const serialNumber = jsonData.map((row) => ({
+                    serialNumber: row['Serial Number']
+                }));
+
+                const index = document.getElementById('detailSN_index').value;
+                const compare = JSON.parse(localStorage.getItem('compare')) ?? [];
+
+                if (serialNumber.length === parseInt(compare[index].qty)) {
+                    Swal.fire({
+                        title: 'Warning!',
+                        text: 'Jumlah Serial Number tidak boleh lebih dari QTY',
+                        icon: 'warning'
+                    });
+                    return true;
+                }
+
+                compare[index].serialNumber = serialNumber;
+
+                localStorage.setItem('compare', JSON.stringify(compare));
+                localStorage.setItem('serialNumber', JSON.stringify(serialNumber));
+                fileInput.value = "";
+
+                viewSerialNumber(index);
+            };
+
+            reader.readAsArrayBuffer(file);
         }
 
         function viewSerialNumber(index) {
@@ -538,6 +625,63 @@
 
             document.getElementById(`btn-sales-doc-${index}-${id}-${indexDetail}`).style.display = 'none';
             viewCompareSAPCCW();
+        }
+
+        function processQualityControl() {
+            Swal.fire({
+                title: "Are you sure?",
+                text: "Process Quality Control",
+                icon: "warning",
+                showCancelButton: true,
+                customClass: {
+                    confirmButton: "btn btn-primary w-xs me-2 mt-2",
+                    cancelButton: "btn btn-danger w-xs mt-2"
+                },
+                confirmButtonText: "Yes, Process it!",
+                buttonsStyling: false,
+                showCloseButton: true
+            }).then(function(t) {
+                if (t.value) {
+
+                    $.ajax({
+                        url: '{{ route('inbound.quality-control-process-ccw') }}',
+                        method: 'POST',
+                        data:{
+                            _token: '{{ csrf_token() }}',
+                            compare: JSON.parse(localStorage.getItem('compare')) ?? [],
+                            purchaseOrderId: '{{ request()->get('id') }}'
+                        },
+                        success: (res) => {
+                            if (res.status) {
+                                Swal.fire({
+                                    title: 'Success!',
+                                    text: 'Quality Control successfully!',
+                                    icon: 'success',
+                                    confirmButtonText: 'OK',
+                                    customClass: {
+                                        confirmButton: "btn btn-primary w-xs mt-2"
+                                    },
+                                    buttonsStyling: false
+                                }).then(() => {
+                                    window.location.href = '{{ route('inbound.quality-control') }}';
+                                });
+                            } else {
+                                Swal.fire({
+                                    title: 'Error!',
+                                    text: 'Quality Control Failed!',
+                                    icon: 'error',
+                                    confirmButtonText: 'OK',
+                                    customClass: {
+                                        confirmButton: "btn btn-primary w-xs mt-2"
+                                    },
+                                    buttonsStyling: false
+                                });
+                            }
+                        }
+                    });
+
+                }
+            });
         }
     </script>
 @endsection

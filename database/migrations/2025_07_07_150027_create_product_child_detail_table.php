@@ -11,14 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('quality_control', function (Blueprint $table) {
+        Schema::create('product_child_detail', function (Blueprint $table) {
             $table->id();
-            $table->string('number');
-            $table->integer('purchase_order_id');
-            $table->string('sales_doc')->nullable();
-            $table->integer('qty_parent')->default(0);
-            $table->string('status');
-            $table->integer('created_by');
+            $table->integer('product_child_id');
+            $table->integer('product_id');
+            $table->integer('purchase_order_detail_id');
+            $table->string('sales_doc');
+            $table->integer('qty');
             $table->timestamps();
         });
     }
@@ -28,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('quality_control');
+        Schema::dropIfExists('product_child_detail');
     }
 };

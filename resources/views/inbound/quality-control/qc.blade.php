@@ -112,6 +112,7 @@
                                 <th>#</th>
                                 <th>Material</th>
                                 <th class="text-center">Parent</th>
+                                <th>PA Step</th>
                                 <th>Item</th>
                                 <th>Desc</th>
                                 <th>Hierarchy Desc</th>
@@ -467,18 +468,18 @@
                 // Cek apakah sudah ada parent lain
                 const existingParentIndex = mapping.findIndex(item => item.parent === 1);
 
-                if (existingParentIndex !== -1 && existingParentIndex !== index) {
-                    Swal.fire({
-                        title: 'Warning',
-                        text: 'Parent hanya boleh 1',
-                        icon: 'warning'
-                    });
-
-                    const checkbox = document.getElementById(`parent_${index}`);
-                    if (checkbox) checkbox.checked = false;
-
-                    return;
-                }
+                // if (existingParentIndex !== -1 && existingParentIndex !== index) {
+                //     Swal.fire({
+                //         title: 'Warning',
+                //         text: 'Parent hanya boleh 1',
+                //         icon: 'warning'
+                //     });
+                //
+                //     const checkbox = document.getElementById(`parent_${index}`);
+                //     if (checkbox) checkbox.checked = false;
+                //
+                //     return;
+                // }
 
                 mapping[index].parent = 1;
             } else {
@@ -523,6 +524,8 @@
                 type: checkParent.type,
                 qty: checkParent.qty,
                 sn: null,
+                putAwayStep: 1,
+                parent: mapping.filter(item => item.parent === 1),
                 child: mapping.filter(item => item.parent === 0)
             });
 
@@ -550,6 +553,17 @@
                         <td>${number}</td>
                         <td>${item.sku}</td>
                         <td class="text-center"><span class="badge bg-success-subtle text-success">Parent</span></td>
+                        <td>
+                            <div class="form-check form-switch form-switch-md">
+                              <input
+                                class="form-check-input"
+                                type="checkbox"
+                                role="switch"
+                                ${parseInt(item.putAwayStep) === 1 ? 'checked' : ''}
+                                onchange="handlePutAwayStepChange(this, ${index})"
+                              >
+                            </div>
+                        </td>
                         <td>${item.item}</td>
                         <td>${item.name}</td>
                         <td>${item.type}</td>
@@ -558,6 +572,32 @@
                         <td><a class="btn btn-danger btn-sm" onclick="deleteQC(${index})">Delete</a></td>
                     </tr>
                 `;
+
+                (item.parent).forEach((parent, indexParent) => {
+                    if (indexParent !== 0) {
+                        let htmlSN = '';
+                        if (parent.sn === null) {
+                            htmlSN = `<a class="btn btn-info btn-sm" onclick="uploadSN('parent multi', '${index}', '${indexParent}')">Upload SN</a>`;
+                        } else {
+                            htmlSN = `<a class="btn btn-success btn-sm" onclick="detailSN('parent multi', '${index}', '${indexParent}')">Detail SN</a>`;
+                        }
+
+                        html += `
+                            <tr>
+                                <td></td>
+                                <td>${parent.sku}</td>
+                                <td class="text-center"><span class="badge bg-success-subtle text-success">Parent</span></td>
+                                <td></td>
+                                <td>${parent.item}</td>
+                                <td>${parent.name}</td>
+                                <td>${parent.type}</td>
+                                <td class="text-center fw-bold">${parent.qty}</td>
+                                <td>${htmlSN}</td>
+                                <td></td>
+                            </tr>
+                        `;
+                    }
+                });
 
                 (item.child).forEach((child, indexDetail) => {
                     let htmlSN = '';
@@ -572,6 +612,7 @@
                             <td></td>
                             <td>${child.sku}</td>
                             <td class="text-center"></td>
+                            <td></td>
                             <td>${child.item}</td>
                             <td>${child.name}</td>
                             <td>${child.type}</td>
@@ -588,6 +629,15 @@
             document.getElementById('listQualityControl').innerHTML = html;
         }
 
+        function handlePutAwayStepChange(checkbox, index) {
+            const qualityControl = JSON.parse(localStorage.getItem('qc')) ?? [];
+
+            qualityControl[index].putAwayStep = checkbox.checked ? 1 : 0;
+
+            localStorage.setItem('qc', JSON.stringify(qualityControl));
+            viewListQC();
+        }
+
         function uploadSN(type, index, indexDetail) {
             document.getElementById('SN_type').value = type;
             document.getElementById('SN_index').value = index;
@@ -600,6 +650,12 @@
                 document.getElementById('SN_desc').innerText = qc[index].name;
                 document.getElementById('SN_hie').innerText = qc[index].type;
                 document.getElementById('SN_qty').innerText = qc[index].qty;
+            } else if (type === 'parent multi') {
+                document.getElementById('SN_item').innerText = qc[index].parent[indexDetail].item;
+                document.getElementById('SN_material').innerText = qc[index].parent[indexDetail].sku;
+                document.getElementById('SN_desc').innerText = qc[index].parent[indexDetail].name;
+                document.getElementById('SN_hie').innerText = qc[index].parent[indexDetail].type;
+                document.getElementById('SN_qty').innerText = qc[index].parent[indexDetail].qty;
             } else {
                 document.getElementById('SN_item').innerText = qc[index].child[indexDetail].item;
                 document.getElementById('SN_material').innerText = qc[index].child[indexDetail].sku;
@@ -701,6 +757,18 @@
                 }
 
                 qc[index].sn = serialNumber;
+            } else if (document.getElementById('SN_type').value === 'parent multi') {
+                if (parseInt(qc[index].parent[indexDetail].qty) !== serialNumber.length) {
+                    Swal.fire({
+                        title: 'Warning',
+                        text: 'Jumlah serial number harus sama dengan qty product',
+                        icon: 'warning'
+                    });
+
+                    return true;
+                }
+
+                qc[index].parent[indexDetail].sn = serialNumber;
             } else {
                 if (parseInt(qc[index].child[indexDetail].qty) !== serialNumber.length) {
                     Swal.fire({
@@ -734,6 +802,14 @@
                 document.getElementById('detail_SN_qty').innerText = qc[index].qty;
 
                 serialNumber = qc[index].sn;
+            } else if (type === 'parent multi') {
+                document.getElementById('detail_SN_item').innerText = qc[index].parent[indexDetail].item;
+                document.getElementById('detail_SN_material').innerText = qc[index].parent[indexDetail].sku;
+                document.getElementById('detail_SN_desc').innerText = qc[index].parent[indexDetail].name;
+                document.getElementById('detail_SN_hie').innerText = qc[index].parent[indexDetail].type;
+                document.getElementById('detail_SN_qty').innerText = qc[index].parent[indexDetail].qty;
+
+                serialNumber = qc[index].parent[indexDetail].sn;
             } else {
                 document.getElementById('detail_SN_item').innerText = qc[index].child[indexDetail].item;
                 document.getElementById('detail_SN_material').innerText = qc[index].child[indexDetail].sku;
@@ -803,9 +879,11 @@
             const products = JSON.parse(localStorage.getItem('master')) ?? [];
             const data = qualityControl[index];
 
-            const product = products.find((item => item.id === data.id));
-            product.qty = data.qty;
-            product.qty_qc = 0;
+            (data.parent).forEach((parent) => {
+                const product = products.find((item => item.id === parent.id));
+                product.qty = parent.qty;
+                product.qty_qc = 0;
+            });
 
             (data.child).forEach((child) => {
                 const product = products.find((item => item.id === child.id));
@@ -842,8 +920,7 @@
                         data:{
                             _token: '{{ csrf_token() }}',
                             qualityControl: JSON.parse(localStorage.getItem('qc')) ?? [],
-                            purchaseOrderId: '{{ request()->get('po') }}',
-                            salesDoc: '{{ request()->get('sales-doc') }}'
+                            purchaseOrderId: '{{ request()->get('id') }}',
                         },
                         success: (res) => {
                             if (res.status) {
@@ -857,7 +934,7 @@
                                     },
                                     buttonsStyling: false
                                 }).then(() => {
-                                    window.location.href = '{{ route('inbound.quality-control') }}';
+                                    {{--window.location.href = '{{ route('inbound.quality-control') }}';--}}
                                 });
                             } else {
                                 Swal.fire({

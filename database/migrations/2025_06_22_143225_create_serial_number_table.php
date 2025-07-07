@@ -16,7 +16,16 @@ return new class extends Migration
             $table->integer('purchase_order_id');
             $table->integer('purchase_order_detail_id');
             $table->integer('product_id')->nullable();
+            $table->integer('product_parent_id')->nullable();
+            $table->integer('product_parent_detail_id')->nullable();
+            $table->integer('product_child_id')->nullable();
+            $table->integer('product_child_detail_id')->nullable();
+            $table->integer('inventory_parent_id')->nullable();
+            $table->integer('inventory_parent_detail_id')->nullable();
+            $table->integer('inventory_child_id')->nullable();
+            $table->integer('inventory_child_detail_id')->nullable();
             $table->string('serial_number');
+            $table->integer('qty')->default(0);
             $table->timestamps();
         });
     }
