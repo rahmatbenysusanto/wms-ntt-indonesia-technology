@@ -541,7 +541,7 @@
                             <td>${parent.material}</td>
                             <td class="text-center fw-bold">${parent.qtySelect}</td>
                             <td><a class="btn btn-info btn-sm" onclick="boxSerialNumber('parent', '${index}', '${indexParent}')">Detail Serial Number</a></td>
-                            <td><a class="btn btn-danger btn-sm">Delete</a></td>
+                            <td><a class="btn btn-danger btn-sm" onclick="deleteBox(${index})">Delete</a></td>
                         </tr>
                     `;
                 });
@@ -556,13 +556,57 @@
                             <td>${child.material}</td>
                             <td class="text-center fw-bold">${child.qtySelect}</td>
                             <td><a class="btn btn-info btn-sm" onclick="boxSerialNumber('child', '${index}', '${indexChild}')">Detail Serial Number</a></td>
-                            <td><a class="btn btn-danger btn-sm">Delete</a></td>
+                            <td></td>
                         </tr>
                     `;
                 });
             });
 
             document.getElementById('listBox').innerHTML = html;
+        }
+
+        function deleteBox(index) {
+            const box = JSON.parse(localStorage.getItem('box')) ?? [];
+            const master = JSON.parse(localStorage.getItem('master')) ?? [];
+
+            // Parent
+            (box[index].parent).forEach((parent) => {
+                master[parent.index].qtyPa = parseInt(master[parent.index].qtyPa) - parseInt(parent.qtySelect);
+
+                (parent.serialNumber).forEach((sn) => {
+                    const findSnMaster = master[parent.index].serialNumber.find(i => i.serial_number === sn);
+                    if (findSnMaster) {
+                        findSnMaster.select = 0;
+                    }
+                });
+            });
+
+            // Child
+            (box[index].child).forEach((child) => {
+                master[child.index].qtyPa = parseInt(master[child.index].qtyPa) - parseInt(child.qtySelect);
+
+                (child.serialNumber).forEach((sn) => {
+                    const findSnMaster = master[child.index].serialNumber.find(i => i.serial_number === sn);
+                    if (findSnMaster) {
+                        findSnMaster.select = 0;
+                    }
+                });
+            });
+
+            box.splice(index, 1);
+
+            const dataBox = [];
+            box.forEach((item, index) => {
+                dataBox.push({
+                    boxNumber: index + 1,
+                    parent: item.parent,
+                    child: item.child
+                });
+            });
+
+            localStorage.setItem('box', JSON.stringify(dataBox));
+            localStorage.setItem('master', JSON.stringify(master));
+            viewListBox();
         }
 
         function boxSerialNumber(type, index, indexDetail) {
