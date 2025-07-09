@@ -301,96 +301,6 @@ class InboundController extends Controller
         return view('inbound.quality-control.qc', compact('title', 'request', 'products', 'purchaseOrder'));
     }
 
-    public function qualityControlStoreProcessOld(Request $request): \Illuminate\Http\JsonResponse
-    {
-        try {
-            DB::beginTransaction();
-
-            $qualityControl = QualityControl::create([
-                'number'            => 'QC-' . date('ymd') . str_pad(rand(0, 999), 3, '0', STR_PAD_LEFT),
-                'purchase_order_id' => $request->post('purchaseOrderId'),
-                'sales_doc'         => $request->post('salesDoc'),
-                'qty_parent'        => 0,
-                'status'            => 'qc',
-                'created_by'        => 1
-            ]);
-
-            $qty_parent = 0;
-            foreach ($request->post('qualityControl') as $item) {
-                $detail = QualityControlDetail::create([
-                    'quality_control_id'        => $qualityControl->id,
-                    'purchase_order_detail_id'  => $item['id'],
-                    'qty'                       => $item['qty'],
-                    'status'                    => 'qc'
-                ]);
-
-                // Input Serial Number
-                foreach ($item['sn'] ?? [] as $sn) {
-                    SerialNumber::create([
-                        'purchase_order_id'         => $request->post('purchaseOrderId'),
-                        'purchase_order_detail_id'  => $item['id'],
-                        'serial_number'             => $sn['serialNumber']
-                    ]);
-                }
-
-                $qty_parent += 1;
-
-                PurchaseOrderDetail::find($item['id'])->increment('qty_quality_control', $item['qty']);
-                $checkPoDetail = PurchaseOrderDetail::find($item['id']);
-                if ($checkPoDetail->po_item_qty === $checkPoDetail->qty_quality_control) {
-                    PurchaseOrderDetail::find($item['id'])->update(['status' => 'qc']);
-                }
-
-                foreach ($item['child'] ?? [] as $child) {
-                    QualityControlItem::create([
-                        'quality_control_detail_id' => $detail->id,
-                        'purchase_order_detail_id'  => $child['id'],
-                        'qty'                       => $child['qty']
-                    ]);
-
-                    // Input Serial Number
-                    foreach ($child['sn'] ?? [] as $sn) {
-                        SerialNumber::create([
-                            'purchase_order_id'         => $request->post('purchaseOrderId'),
-                            'purchase_order_detail_id'  => $item['id'],
-                            'serial_number'             => $sn['serialNumber']
-                        ]);
-                    }
-
-                    PurchaseOrderDetail::find($child['id'])->increment('qty_quality_control', $child['qty']);
-                    $checkPoDetail = PurchaseOrderDetail::find($child['id']);
-                    if ($checkPoDetail->po_item_qty === $checkPoDetail->qty_quality_control) {
-                        PurchaseOrderDetail::find($child['id'])->update(['status' => 'qc']);
-                    }
-                }
-            }
-
-            QualityControl::find($qualityControl->id)->update(['qty_parent' => $qty_parent]);
-
-            $checkQC = PurchaseOrderDetail::where('purchase_order_id', $request->post('purchaseOrderId'))
-                ->where('status', 'new')
-                ->count();
-
-            if ($checkQC == 0) {
-                PurchaseOrder::find($request->post('purchaseOrderId'))->update(['status' => 'done']);
-            } else {
-                PurchaseOrder::find($request->post('purchaseOrderId'))->update(['status' => 'process']);
-            }
-
-            DB::commit();
-            return response()->json([
-                'status' => true,
-            ]);
-        } catch (\Exception $err) {
-            DB::rollBack();
-            Log::error($err->getMessage());
-            Log::error($err->getLine());
-            return response()->json([
-                'status' => false,
-            ]);
-        }
-    }
-
     public function qualityControlStoreProcess(Request $request): \Illuminate\Http\JsonResponse
     {
         try {
@@ -402,6 +312,7 @@ class InboundController extends Controller
                 // Insert Parent
                 $product = Product::where('material', $qualityControl['sku'])->first();
                 $qtyProductParent = 0;
+                $dataSalesDoc = [];
                 $productParent = ProductParent::create([
                     'product_id'        => $product->id,
                     'purchase_order_id' => $request->post('purchaseOrderId'),
@@ -436,6 +347,7 @@ class InboundController extends Controller
                     PurchaseOrderDetail::where('id', $parent['id'])->increment('qty_quality_control', $parent['qty']);
 
                     $qtyProductParent += $parent['qty'];
+                    $dataSalesDoc[] = $purcOrderDetail->sales_doc;
                 }
                 ProductParent::where('id', $productParent->id)->update(['qty' => $qtyProductParent]);
 
@@ -472,6 +384,8 @@ class InboundController extends Controller
                     }
 
                     PurchaseOrderDetail::where('id', $child['id'])->increment('qty_quality_control', $child['qty']);
+
+                    $dataSalesDoc[] = $purcOrderDetail->sales_doc;
                 }
 
                 // Jika Item langsung dioutbound tanpa di masukan ke gudang/disimpan
@@ -482,7 +396,8 @@ class InboundController extends Controller
                         'purchase_order_id' => $request->post('purchaseOrderId'),
                         'storage_id'        => 1,
                         'pa_number'         => 'PA-'.date('ymdHis').rand(111, 999),
-                        'stock'             => $qtyProductParent
+                        'stock'             => $qtyProductParent,
+                        'sales_docs'        => json_encode($dataSalesDoc),
                     ]);
 
                     foreach ($qualityControl['parent'] as $parent) {
@@ -611,17 +526,25 @@ class InboundController extends Controller
 
     public function putAway(Request $request): View
     {
-        $putAway = QualityControl::with('purchaseOrder', 'user');
-
-        if ($request->query('purcDoc') != null) {
-            $putAway = $putAway->where('purc_doc', $request->query('purcDoc'));
-        }
-
-        if ($request->query('salesDoc') != null) {
-            $putAway = $putAway->where('sales_doc', $request->query('salesDoc'));
-        }
-
-        $putAway = $putAway->latest()->paginate(10);
+        $putAway = ProductParent::with([
+            'purchaseOrder' => function ($purchaseOrder) {
+                $purchaseOrder->select([
+                    'id', 'purc_doc'
+                ]);
+            },
+            'productParentDetail' => function ($productParentDetail) {
+                $productParentDetail->select([
+                    'id', 'product_parent_id', 'sales_doc'
+                ]);
+            },
+            'product' => function ($product) {
+                $product->select([
+                    'id', 'material', 'po_item_desc'
+                ]);
+            }
+            ])
+            ->latest()
+            ->paginate(10);
 
         $title = 'Put Away';
         return view('inbound.put-away.index', compact('title', 'putAway'));
@@ -673,50 +596,53 @@ class InboundController extends Controller
         return view('inbound.put-away.detail', compact('title', 'products', 'storageRaw'));
     }
 
-    public function putAwayProcess(Request $request): View
+    public function putAwayProcess(Request $request)
     {
-        $qualityControl = QualityControl::where('number', $request->query('number'))->first();
-        $productParent = QualityControlDetail::where('quality_control_id', $qualityControl->id)->get();
-        $storageRaw = Storage::where('area', null)->where('rak', null)->where('bin', null)->get();
+        $products = ProductParent::with([
+            'product' => function ($product) {
+                $product->select([
+                    'id', 'material', 'po_item_desc', 'prod_hierarchy_desc'
+                ]);
+            },
+            'productParentDetail',
+            'productParentDetail.purchaseOrderDetail' => function ($purchaseOrderDetail) {
+                $purchaseOrderDetail->select([
+                    'id', 'item'
+                ]);
+            },
+            'productChild',
+            'productChild.product' => function ($productChildProduct) {
+                $productChildProduct->select([
+                    'id', 'material', 'po_item_desc', 'prod_hierarchy_desc'
+                ]);
+            },
+            'productChild.productChildDetail',
+            'productChild.productChildDetail.purchaseOrderDetail' => function ($purchaseOrderDetail) {
+                $purchaseOrderDetail->select([
+                    'id', 'item'
+                ]);
+            },
+            ])
+            ->where('id', $request->query('id'))
+            ->first();
 
-        $products = [];
-        foreach ($productParent as $parent) {
-            $poDetail = PurchaseOrderDetail::find($parent->purchase_order_detail_id);
-            $productChild = QualityControlItem::where('quality_control_detail_id', $parent->id)->get();
-            $child = [];
-            foreach ($productChild as $item) {
-                $detail = PurchaseOrderDetail::find($item->purchase_order_detail_id);
-                $child[] = [
-                    'sku'   => $detail->material,
-                    'name'  => $detail->po_item_desc,
-                    'type'  => $detail->prod_hierarchy_desc,
-                    'qty'   => $item->qty,
-                    'item'  => $detail->item,
-                ];
-            }
-
-            $location = null;
-            if ($parent->storage_id != null) {
-                $storage = Storage::find($parent->storage_id);
-                $location = $storage->raw.' - '.$storage->area.' - '.$storage->rak.' - '.$storage->bin;
-            }
-
-            $products[] = [
-                'id'                        => $parent->id,
-                'quality_control_id'        => $qualityControl->id,
-                'purchase_order_detail_id'  => $parent->purchase_order_detail_id,
-                'qty'                       => $parent->qty,
-                'sku'                       => $poDetail->material,
-                'name'                      => $poDetail->po_item_desc,
-                'type'                      => $poDetail->prod_hierarchy_desc,
-                'item'                      => $poDetail->item,
-                'child'                     => $child,
-                'location'                  => $location
-            ];
-        }
+        $storageRaw = Storage::where('raw', '!=', '-')->where('area', null)->where('rak', null)->where('bin', null)->get();
 
         $title = 'Put Away';
         return view('inbound.put-away.process', compact('title', 'products', 'storageRaw'));
+    }
+
+    public function findSerialNumber(Request $request): \Illuminate\Http\JsonResponse
+    {
+        if ($request->get('type') == 'parent') {
+            $serialNumber = SerialNumber::where('product_parent_id', $request->get('id'))->where('product_parent_detail_id', $request->get('detail'))->select(['id', 'serial_number'])->get();
+        } else {
+            $serialNumber = SerialNumber::where('product_child_id', $request->get('id'))->where('product_child_detail_id', $request->get('detail'))->select(['id', 'serial_number'])->get();
+        }
+
+        return response()->json([
+            'data' => $serialNumber
+        ]);
     }
 
     public function putAwaySetLocation(Request $request): \Illuminate\Http\JsonResponse

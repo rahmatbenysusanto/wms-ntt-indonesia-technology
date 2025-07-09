@@ -77,6 +77,9 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
             Route::get('/detail', 'putAwayDetail')->name('inbound.put-away-detail');
             Route::get('/process', 'putAwayProcess')->name('inbound.put-away-process');
             Route::post('/store', 'putAwayStore')->name('inbound.put-away.store');
+
+            // JSON
+            Route::get('/find-serial-number', 'findSerialNumber')->name('inbound.put-away.find-serial-number');
         });
     });
 

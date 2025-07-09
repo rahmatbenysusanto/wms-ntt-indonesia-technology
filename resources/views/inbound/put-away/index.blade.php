@@ -43,16 +43,17 @@
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
-                        <table class="table table-striped">
+                        <table class="table table-striped align-middle">
                             <thead>
                                 <tr>
                                     <th>#</th>
-                                    <th>Quality Control Number</th>
                                     <th>Purchasing Document</th>
                                     <th>Sales Doc</th>
+                                    <th>Parent Material</th>
+                                    <th>Parent Item Desc</th>
                                     <th class="text-center">QTY Parent</th>
                                     <th class="text-center">Status</th>
-                                    <th>Quality Control By</th>
+                                    <th>QC Date</th>
                                     <th>Action</th>
                                 </tr>
                             </thead>
@@ -60,29 +61,35 @@
                             @foreach($putAway as $index => $item)
                                 <tr>
                                     <td>{{ $loop->iteration }}</td>
-                                    <td>{{ $item->number }}</td>
                                     <td>{{ $item->purchaseOrder->purc_doc }}</td>
-                                    <td>{{ $item->sales_doc }}</td>
-                                    <td class="text-center">{{ number_format($item->qty_parent) }}</td>
-                                    <td class="text-center">
-                                        @switch($item->status)
-                                            @case('qc')
-                                                <span class="badge bg-info-subtle text-info">Quality Control</span>
-                                                @break
-                                            @case('put away')
-                                                <span class="badge bg-secondary-subtle text-secondary">Put Away</span>
-                                                @break
-                                            @case('done')
-                                                <span class="badge bg-primary-subtle text-primary">Done</span>
-                                                @break
-                                        @endswitch
+                                    <td>
+                                        @php $salesDoc = [] @endphp
+                                        @foreach($item->productParentDetail as $detail)
+                                            @php $salesDoc[] = $detail->sales_doc @endphp
+                                        @endforeach
+                                        @php
+                                            $salesDoc = array_unique($salesDoc);
+                                        @endphp
+                                        @foreach($salesDoc as $sales)
+                                            <p class="mb-1">{{ $sales }}</p>
+                                        @endforeach
                                     </td>
-                                    <td>{{ $item->user->name }}</td>
+                                    <td>{{ $item->product->material }}</td>
+                                    <td>{{ $item->product->po_item_desc }}</td>
+                                    <td class="text-center fw-bold">{{ number_format($item->qty) }}</td>
+                                    <td>
+                                        @if($item->storage_id == null)
+                                            <span class="badge bg-warning-subtle text-warning">Progress</span>
+                                        @else
+                                            <span class="badge bg-success-subtle text-success">Done</span>
+                                        @endif
+                                    </td>
+                                    <td>{{ \Carbon\Carbon::parse($item->created_at)->translatedFormat('d F Y H:i') }}</td>
                                     <td>
                                         <div class="d-flex gap-2">
-                                            <a href="{{ route('inbound.put-away-detail', ['number' => $item->number]) }}" class="btn btn-info btn-sm">Detail</a>
-                                            @if(in_array($item->status, ['qc', 'put away']))
-                                                <a href="{{ route('inbound.put-away-process', ['number' => $item->number]) }}" class="btn btn-secondary btn-sm">Proses Put Away</a>
+                                            <a href="{{ route('inbound.put-away-detail', ['id' => $item->id]) }}" class="btn btn-primary btn-sm">Detail</a>
+                                            @if($item->storage_id == null)
+                                                <a href="{{ route('inbound.put-away-process', ['id' => $item->id]) }}" class="btn btn-info btn-sm">Put Away</a>
                                             @endif
                                         </div>
                                     </td>
