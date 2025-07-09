@@ -697,11 +697,20 @@
             const indexDetail = document.getElementById('boxSerialNumber_indexDetail').value;
 
             if (type === 'parent') {
+                const masterIndex = box[index].parent[indexDetail].index;
+                const masterSN = master[masterIndex].serialNumber;
+
+                // Reset Master yang ada didalam box
+                (box[index].parent[indexDetail].serialNumber).forEach((sn) => {
+                    const findMasterSN = masterSN.find(i => i.serial_number === sn);
+                    if (findMasterSN) {
+                        findMasterSN.select = 0;
+                    }
+                });
+
                 box[index].parent[indexDetail].serialNumber = serialNumber;
 
                 // Hide Serial Number Master yang dipilih
-                const masterIndex = box[index].parent[indexDetail].index;
-                const masterSN = master[masterIndex].serialNumber;
                 serialNumber.forEach((sn) => {
                     const findMasterSN = masterSN.find(i => i.serial_number === sn);
                     if (findMasterSN) {
@@ -710,11 +719,20 @@
                 });
 
             } else {
+                const masterIndex = box[index].child[indexDetail].index;
+                const masterSN = master[masterIndex].serialNumber;
+
+                // Reset Master yang ada didalam box
+                (box[index].child[indexDetail].serialNumber).forEach((sn) => {
+                    const findMasterSN = masterSN.find(i => i.serial_number === sn);
+                    if (findMasterSN) {
+                        findMasterSN.select = 0;
+                    }
+                });
+
                 box[index].child[indexDetail].serialNumber = serialNumber;
 
                 // Hide Serial Number Master yang dipilih
-                const masterIndex = box[index].child[indexDetail].index;
-                const masterSN = master[masterIndex].serialNumber;
                 serialNumber.forEach((sn) => {
                     const findMasterSN = masterSN.find(i => i.serial_number === sn);
                     if (findMasterSN) {
