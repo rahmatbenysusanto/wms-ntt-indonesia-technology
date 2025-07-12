@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class InventoryDetail extends Model
 {
@@ -12,4 +13,14 @@ class InventoryDetail extends Model
         'storage_id',
         'stock'
     ];
+
+    public function purchaseOrderDetail(): BelongsTo
+    {
+        return $this->belongsTo(PurchaseOrderDetail::class, 'purchase_order_detail_id');
+    }
+
+    public function storage(): BelongsTo
+    {
+        return $this->belongsTo(Storage::class, 'storage_id');
+    }
 }
