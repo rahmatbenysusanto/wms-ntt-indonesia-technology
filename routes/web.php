@@ -80,6 +80,7 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
 
             // JSON
             Route::get('/find-serial-number', 'findSerialNumber')->name('inbound.put-away.find-serial-number');
+            Route::get('/fins-serial-number-inventory', 'findSNInventory')->name('inbound.put-away.find-serial-number-inventory');
         });
     });
 

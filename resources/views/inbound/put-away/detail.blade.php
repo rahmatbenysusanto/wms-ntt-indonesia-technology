@@ -50,7 +50,7 @@
                                             <td>{{ $parent->product->po_item_desc }}</td>
                                             <td>{{ $parent->product->prod_hierarchy_desc }}</td>
                                             <td class="text-center fw-bold">{{ number_format($parent->qty) }}</td>
-                                            <td class="text-center"><a class="btn btn-info btn-sm">Detail</a></td>
+                                            <td class="text-center"><a class="btn btn-info btn-sm" onclick="detailSerialNumber('parent', '{{ $parent->id }}')">Detail</a></td>
                                             <td class="text-center"><a class="btn btn-primary btn-sm" onclick="showBarcodeModal('{{ $product->pa_reff_number }}')">Download</a></td>
                                             <td>{{ $product->storage->raw }} - {{ $product->storage->area }} - {{ $product->storage->rak }} - {{ $product->storage->bin }}</td>
                                         </tr>
@@ -66,7 +66,7 @@
                                             <td>{{ $child->inventoryChildDetail->product->po_item_desc }}</td>
                                             <td>{{ $child->inventoryChildDetail->product->prod_hierarchy_desc }}</td>
                                             <td class="text-center fw-bold">{{ number_format($child->inventoryChildDetail->qty) }}</td>
-                                            <td class="text-center"><a class="btn btn-info btn-sm">Detail</a></td>
+                                            <td class="text-center"><a class="btn btn-info btn-sm" onclick="detailSerialNumber('child', '{{ $child->id }}')">Detail</a></td>
                                             <td></td>
                                             <td>{{ $product->storage->raw }} - {{ $product->storage->area }} - {{ $product->storage->rak }} - {{ $product->storage->bin }}</td>
                                         </tr>
@@ -112,6 +112,30 @@
         </div>
     </div>
 
+    <!-- Default Modals -->
+    <div id="detailSNModal" class="modal fade" tabindex="-1" aria-labelledby="myModalLabel" aria-hidden="true" style="display: none;">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="myModalLabel">Detail Serial Number</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"> </button>
+                </div>
+                <div class="modal-body">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Serial Number</th>
+                            </tr>
+                        </thead>
+                        <tbody id="listSerialNumber"></tbody>
+                    </table>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
 @endsection
 
 @section('js')
@@ -225,6 +249,29 @@
             });
         }
 
+        function detailSerialNumber(type, id) {
+            $.ajax({
+                url: '{{ route('inbound.put-away.find-serial-number-inventory') }}',
+                method: 'GET',
+                data: {
+                    type: type,
+                    id: id
+                },
+                success: (res) => {
+                    const serialNumber = res.data ?? [];
+                    let html = '';
+
+                    serialNumber.forEach((sn) => {
+                        html += `
+                            <tr><td>${sn.serial_number}</td></tr>
+                        `;
+                    });
+
+                    document.getElementById('listSerialNumber').innerHTML = html;
+                    $('#detailSNModal').modal('show');
+                }
+            });
+        }
     </script>
 
 @endsection

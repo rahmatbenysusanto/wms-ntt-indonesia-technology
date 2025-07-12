@@ -616,6 +616,19 @@ class InboundController extends Controller
         ]);
     }
 
+    public function findSNInventory(Request $request): \Illuminate\Http\JsonResponse
+    {
+        if ($request->get('type') == 'parent') {
+            $serialNumber = SerialNumber::where('inventory_parent_detail_id', $request->get('id'))->get();
+        } else {
+            $serialNumber = SerialNumber::where('inventory_child_detail_id', $request->get('id'))->get();
+        }
+
+        return response()->json([
+            'data' => $serialNumber
+        ]);
+    }
+
     public function putAwaySetLocation(Request $request): \Illuminate\Http\JsonResponse
     {
         try {
