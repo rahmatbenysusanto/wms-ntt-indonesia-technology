@@ -825,11 +825,33 @@
 
                     // Insert ke Database
                     $.ajax({
-                        url: '',
+                        url: '{{ route('inbound.put-away.store') }}',
                         method: 'POST',
                         data: {
                             _token: '{{ csrf_token() }}',
-                            box: JSON.parse(localStorage.getItem('box')) ?? []
+                            box: JSON.parse(localStorage.getItem('box')) ?? [],
+                            raw: document.getElementById('raw').value,
+                            area: document.getElementById('area').value,
+                            rak: document.getElementById('rak').value,
+                            bin: document.getElementById('bin').value,
+                            productParentId: '{{ request()->get('id') }}'
+                        },
+                        success: (res) => {
+                            if (res.status) {
+                                Swal.fire({
+                                    title: 'Success',
+                                    text: 'Put Away Product Success',
+                                    icon: 'success'
+                                }).then((e) => {
+
+                                });
+                            } else {
+                                Swal.fire({
+                                    title: 'Error',
+                                    text: 'Put Away Product Failed',
+                                    icon: 'error'
+                                });
+                            }
                         }
                     });
                 }

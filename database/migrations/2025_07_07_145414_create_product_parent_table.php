@@ -17,6 +17,7 @@ return new class extends Migration
             $table->integer('purchase_order_id');
             $table->integer('qty');
             $table->integer('storage_id')->nullable();
+            $table->string('pa_number')->nullable();
             $table->timestamps();
         });
     }

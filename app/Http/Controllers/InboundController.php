@@ -679,7 +679,194 @@ class InboundController extends Controller
         return view('inbound.purchase-order.serial-number', compact('title', 'purchaseOrder'));
     }
 
-    public function putAwayStore(Request $request): \Illuminate\Http\RedirectResponse
+    public function putAwayStore(Request $request): \Illuminate\Http\JsonResponse
+    {
+        try {
+            DB::beginTransaction();
+
+            $listBox = $request->post('box');
+            $putAwayNumber = 'PA-'.date('ymdHis').rand(111, 999);
+
+            $productParent = ProductParent::find($request->post('productParentId'));
+            $purchaseOrder = PurchaseOrder::where('id', $productParent->purchase_order_id)->first();
+
+            ProductParent::where('id', $productParent->id)->update([
+                'storage_id'    => $request->post('bin'),
+                'pa_number'     => $putAwayNumber,
+            ]);
+
+            foreach ($listBox as $box) {
+                $invParentStock = 0;
+                $invParentSalesDocs = [];
+
+                // Parent
+                $inventoryParent = InventoryParent::create([
+                    'product_id'        => $box['parent'][0]['productId'],
+                    'purchase_order_id' => $productParent->purchase_order_id,
+                    'storage_id'        => $request->post('bin'),
+                    'pa_number'         => $putAwayNumber,
+                    'pa_reff_number'    => $putAwayNumber.'-'.$box['boxNumber'],
+                    'stock'             => 0,
+                    'sales_docs'        => json_encode([]),
+                ]);
+                foreach ($box['parent'] as $parent) {
+                    $inventoryParentDetail = InventoryParentDetail::create([
+                        'product_id'                => $parent['productId'],
+                        'inventory_parent_id'       => $inventoryParent->id,
+                        'purchase_order_detail_id'  => $parent['purchaseOrderDetailId'],
+                        'sales_doc'                 => $parent['salesDoc'],
+                        'qty'                       => $parent['qtySelect']
+                    ]);
+
+                    // Serial Number
+                    foreach ($parent['serialNumber'] as $serialNumber) {
+                        $findSerialNumber = SerialNumber::where('purchase_order_id', $productParent->purchase_order_id)
+                            ->where('purchase_order_detail_id', $parent['purchaseOrderDetailId'])
+                            ->where('product_id', $parent['productId'])
+                            ->where('serial_number', $serialNumber)
+                            ->first();
+
+                        if ($findSerialNumber) {
+                            SerialNumber::where('id', $findSerialNumber->id)->update([
+                                'inventory_parent_id'        => $inventoryParent->id,
+                                'inventory_parent_detail_id' => $inventoryParentDetail->id,
+                            ]);
+                        } else {
+                            SerialNumber::create([
+                                'purchase_order_id'          => $productParent->purchase_order_id,
+                                'purchase_order_detail_id'   => $parent['purchaseOrderDetailId'],
+                                'product_id'                 => $parent['productId'],
+                                'inventory_parent_id'        => $inventoryParent->id,
+                                'inventory_parent_detail_id' => $inventoryParentDetail->id,
+                                'serial_number'              => $serialNumber,
+                                'qty'                        => 1
+                            ]);
+                        }
+                    }
+
+                    // Inventory & Inventory Detail
+                    $checkInventory = Inventory::where('purc_doc', $purchaseOrder->purc_doc)
+                        ->where('sales_doc', $parent['salesDoc'])
+                        ->first();
+                    if ($checkInventory) {
+                        Inventory::where('id', $checkInventory->id)->increment('stock', $parent['qtySelect']);
+                    } else {
+                        Inventory::create([
+                            'purc_doc'  => $purchaseOrder->id,
+                            'sales_doc' => $parent['salesDoc'],
+                            'stock'     => $parent['qtySelect']
+                        ]);
+                    }
+
+                    $checkInventoryDetail = InventoryDetail::where('purchase_order_detail_id', $parent['purchaseOrderDetailId'])
+                        ->where('storage_id', $request->post('bin'))
+                        ->first();
+                    if ($checkInventoryDetail) {
+                        InventoryDetail::where('id', $checkInventoryDetail->id)->increment('stock', $parent['qtySelect']);
+                    } else {
+                        InventoryDetail::create([
+                            'purchase_order_detail_id'  => $parent['purchaseOrderDetailId'],
+                            'storage_id'                => $request->post('bin'),
+                            'stock'                     => $parent['qtySelect']
+                        ]);
+                    }
+
+                    $invParentStock += $parent['qtySelect'];
+                    $invParentSalesDocs[] = $parent['salesDoc'];
+                }
+
+                // Child
+                foreach ($box['child'] as $child) {
+                    $inventoryChild = InventoryChild::create([
+                        'product_id'            => $child['productId'],
+                        'purchase_order_id'     => $productParent->purchase_order_id,
+                        'inventory_parent_id'   => $inventoryParent->id,
+                        'stock'                 => $child['qtySelect'],
+                    ]);
+
+                    $inventoryChildDetail = InventoryChildDetail::create([
+                        'product_id'                => $child['productId'],
+                        'purchase_order_detail_id'  => $child['purchaseOrderDetailId'],
+                        'inventory_child_id'        => $inventoryChild->id,
+                        'sales_doc'                 => $child['salesDoc'],
+                        'qty'                       => $child['qtySelect']
+                    ]);
+
+                    // Serial Number
+                    foreach ($child['serialNumber'] as $serialNumber) {
+                        $findSerialNumber = SerialNumber::where('purchase_order_id', $productParent->purchase_order_id)
+                            ->where('purchase_order_detail_id', $child['purchaseOrderDetailId'])
+                            ->where('product_id', $child['productId'])
+                            ->where('serial_number', $serialNumber)
+                            ->first();
+
+                        if ($findSerialNumber) {
+                            SerialNumber::where('id', $findSerialNumber->id)->update([
+                                'inventory_child_id'        => $inventoryChild->id,
+                                'inventory_child_detail_id' => $inventoryChildDetail->id,
+                            ]);
+                        } else {
+                            SerialNumber::create([
+                                'purchase_order_id'          => $productParent->purchase_order_id,
+                                'purchase_order_detail_id'   => $child['purchaseOrderDetailId'],
+                                'product_id'                 => $child['productId'],
+                                'inventory_child_id'         => $inventoryParent->id,
+                                'inventory_child_detail_id'  => $inventoryChildDetail->id,
+                                'serial_number'              => $serialNumber,
+                                'qty'                        => 1
+                            ]);
+                        }
+                    }
+
+                    // Inventory & Inventory Detail
+                    $checkInventory = Inventory::where('purc_doc', '')
+                        ->where('sales_doc', $child['salesDoc'])
+                        ->first();
+                    if ($checkInventory) {
+                        Inventory::where('id', $checkInventory->id)->increment('stock', $child['qtySelect']);
+                    } else {
+                        Inventory::create([
+                            'purc_doc'  => $purchaseOrder->id,
+                            'sales_doc' => $child['salesDoc'],
+                            'stock'     => $child['qtySelect']
+                        ]);
+                    }
+
+                    $checkInventoryDetail = InventoryDetail::where('purchase_order_detail_id', $child['purchaseOrderDetailId'])
+                        ->where('storage_id', $request->post('bin'))
+                        ->first();
+                    if ($checkInventoryDetail) {
+                        InventoryDetail::where('id', $checkInventoryDetail->id)->increment('stock', $child['qtySelect']);
+                    } else {
+                        InventoryDetail::create([
+                            'purchase_order_detail_id'  => $child['purchaseOrderDetailId'],
+                            'storage_id'                => $request->post('bin'),
+                            'stock'                     => $child['qtySelect']
+                        ]);
+                    }
+                }
+
+                InventoryParent::where('id', $inventoryParent->id)->update([
+                    'stock'         => $invParentStock,
+                    'sales_docs'    => $invParentSalesDocs
+                ]);
+            }
+
+            DB::commit();
+            return response()->json([
+                'status' => true,
+            ]);
+        } catch (\Exception $err) {
+            DB::rollBack();
+            Log::error($err->getMessage());
+            Log::error($err->getLine());
+            return response()->json([
+                'status' => false,
+            ]);
+        }
+    }
+
+    public function putAwayStore1(Request $request): \Illuminate\Http\RedirectResponse
     {
         try {
             DB::beginTransaction();
