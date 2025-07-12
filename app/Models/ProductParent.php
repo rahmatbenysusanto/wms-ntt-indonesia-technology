@@ -9,11 +9,16 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class ProductParent extends Model
 {
     protected $table = 'product_parent';
-    protected $fillable = ['product_id', 'purchase_order_id', 'storage_id', 'qty'];
+    protected $fillable = ['product_id', 'purchase_order_id', 'storage_id', 'qty', 'pa_number'];
 
     public function purchaseOrder(): BelongsTo
     {
         return $this->belongsTo(PurchaseOrder::class, 'purchase_order_id');
+    }
+
+    public function storage(): BelongsTo
+    {
+        return $this->belongsTo(Storage::class, 'storage_id');
     }
 
     public function productParentDetail(): HasMany

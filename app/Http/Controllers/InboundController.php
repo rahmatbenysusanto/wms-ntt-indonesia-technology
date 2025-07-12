@@ -550,53 +550,24 @@ class InboundController extends Controller
         return view('inbound.put-away.index', compact('title', 'putAway'));
     }
 
-    public function putAwayDetail(Request $request): View
+    public function putAwayDetail(Request $request)
     {
-        $qualityControl = QualityControl::where('number', $request->query('number'))->first();
-        $productParent = QualityControlDetail::where('quality_control_id', $qualityControl->id)->get();
-        $storageRaw = Storage::where('area', null)->where('rak', null)->where('bin', null)->get();
-
-        $products = [];
-        foreach ($productParent as $parent) {
-            $poDetail = PurchaseOrderDetail::find($parent->purchase_order_detail_id);
-            $productChild = QualityControlItem::where('quality_control_detail_id', $parent->id)->get();
-            $child = [];
-            foreach ($productChild as $item) {
-                $detail = PurchaseOrderDetail::find($item->purchase_order_detail_id);
-                $child[] = [
-                    'sku'   => $detail->material,
-                    'name'  => $detail->po_item_desc,
-                    'type'  => $detail->prod_hierarchy_desc,
-                    'qty'   => $item->qty,
-                    'item'  => $detail->item,
-                ];
-            }
-
-            $location = null;
-            if ($parent->storage_id != null) {
-                $storage = Storage::find($parent->storage_id);
-                $location = $storage->raw.' - '.$storage->area.' - '.$storage->rak.' - '.$storage->bin;
-            }
-
-            $products[] = [
-                'id'                        => $parent->id,
-                'quality_control_id'        => $qualityControl->id,
-                'purchase_order_detail_id'  => $parent->purchase_order_detail_id,
-                'qty'                       => $parent->qty,
-                'sku'                       => $poDetail->material,
-                'name'                      => $poDetail->po_item_desc,
-                'type'                      => $poDetail->prod_hierarchy_desc,
-                'item'                      => $poDetail->item,
-                'child'                     => $child,
-                'location'                  => $location
-            ];
-        }
+        $products = InventoryParent::with([
+            'inventoryParentDetail',
+            'inventoryParentDetail.product',
+            'inventoryParentDetail.purchaseOrderDetail',
+            'storage',
+            'inventoryChild',
+            'inventoryChild.inventoryChildDetail',
+            'inventoryChild.inventoryChildDetail.product',
+            'inventoryChild.inventoryChildDetail.purchaseOrderDetail',
+        ])->where('pa_number', $request->query('pa-number'))->get();
 
         $title = 'Put Away';
-        return view('inbound.put-away.detail', compact('title', 'products', 'storageRaw'));
+        return view('inbound.put-away.detail', compact('title', 'products'));
     }
 
-    public function putAwayProcess(Request $request)
+    public function putAwayProcess(Request $request): View
     {
         $products = ProductParent::with([
             'product' => function ($product) {
@@ -854,7 +825,8 @@ class InboundController extends Controller
 
             DB::commit();
             return response()->json([
-                'status' => true,
+                'status'    => true,
+                'data'      => $putAwayNumber
             ]);
         } catch (\Exception $err) {
             DB::rollBack();
