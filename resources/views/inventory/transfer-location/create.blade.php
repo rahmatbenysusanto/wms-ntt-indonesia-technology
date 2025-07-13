@@ -25,32 +25,7 @@
                     </div>
                 </div>
                 <div class="card-body">
-                    <div class="row">
-                        <div class="col-6">
-                            <div class="mb-3">
-                                <label class="form-label">Sales Doc</label>
-                                <select class="form-control">
-                                    <option value="">-- Select Sales Doc --</option>
-                                </select>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label">Old Location</label>
-                                <input type="text" class="form-control" readonly>
-                            </div>
-                        </div>
-                        <div class="col-6">
-                            <div class="mb-3">
-                                <label class="form-label">Product Parent</label>
-                                <select class="form-control">
-                                    <option value="">-- Select Product --</option>
-                                </select>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label">QTY</label>
-                                <input type="number" class="form-control" readonly>
-                            </div>
-                        </div>
-                    </div>
+                    <input type="text" class="form-control" id="putAwaySearchInput" placeholder="Search Put Away Number ..." autofocus>
                 </div>
             </div>
         </div>
@@ -61,7 +36,19 @@
                     <h4 class="card-title mb-0">List Product</h4>
                 </div>
                 <div class="card-body">
+                    <table class="table table-striped align-middle">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Type</th>
+                                <th>Material</th>
+                                <th>QTY</th>
+                            </tr>
+                        </thead>
+                        <tbody id="listMaterial">
 
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -74,26 +61,29 @@
                 <div class="card-body">
                     <div class="mb-3">
                         <label class="form-label">Raw</label>
-                        <select class="form-control">
+                        <select class="form-control" onchange="changeRaw(this.value)" id="raw">
                             <option value="">-- Select Raw --</option>
+                            @foreach($storageRaw as $raw)
+                                <option value="{{ $raw->raw }}">{{ $raw->raw }}</option>
+                            @endforeach
                         </select>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Area</label>
-                        <select class="form-control">
-                            <option value="">-- Select Area --</option>
+                        <select class="form-control" id="area" onchange="changeArea(this.value)">
+
                         </select>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Rak</label>
-                        <select class="form-control">
-                            <option value="">-- Select Rak --</option>
+                        <select class="form-control" id="rak" onchange="changeRak(this.value)">
+
                         </select>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Bin</label>
-                        <select class="form-control">
-                            <option value="">-- Select Bin --</option>
+                        <select class="form-control" id="bin" name="bin">
+
                         </select>
                     </div>
                 </div>
@@ -104,8 +94,171 @@
 
 @section('js')
     <script>
-        function processTransferLocation() {
+        document.getElementById('putAwaySearchInput').addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const value = this.value.trim();
+                searchPutAwayData(value);
+            }
+        });
 
+        function searchPutAwayData(keyword) {
+            $.ajax({
+                url: '{{ route('inventory.transfer-location-find-pa-number') }}',
+                method: 'GET',
+                data: {
+                    paNumber: keyword
+                },
+                success: (res) => {
+                    console.log(res);
+                    if (res.status) {
+                        localStorage.setItem('products', JSON.stringify(res.data));
+                        viewListProduct();
+                    } else {
+                        Swal.fire({
+                            title: 'Error!',
+                            text: 'Put Away Number tidak diketahui',
+                            icon: 'error'
+                        });
+                    }
+                }
+            });
+        }
+
+        function viewListProduct() {
+            const products = JSON.parse(localStorage.getItem('products')) ?? [];
+            let html = '';
+            let number = 1;
+
+            products.forEach((item) => {
+                html += `
+                    <tr>
+                        <td>${number}</td>
+                        <td>${item.type === 'parent' ? '<span class="badge bg-danger-subtle text-danger">Parent</span>' : ''}</td>
+                        <td>${item.material}</td>
+                        <td>${item.qty}</td>
+                    </tr>
+                `;
+
+                number++;
+            });
+
+            document.getElementById('listMaterial').innerHTML = html;
+        }
+
+        function changeRaw(raw) {
+            $.ajax({
+                url: '{{ route('storage.find.area') }}',
+                method: 'GET',
+                data: {
+                    raw: raw
+                },
+                success: (res) => {
+                    const data = res.data;
+                    let html = '<option value="">-- Select Area --</option>';
+
+                    data.forEach((item) => {
+                        html += `<option value="${item.area}">${item.area}</option>`;
+                    });
+
+                    document.getElementById('area').innerHTML = html;
+                }
+            });
+        }
+
+        function changeArea(area) {
+            $.ajax({
+                url: '{{ route('storage.find.rak') }}',
+                method: 'GET',
+                data: {
+                    raw: document.getElementById('raw').value,
+                    area: area
+                },
+                success: (res) => {
+                    const data = res.data;
+                    let html = '<option value="">-- Select Rak --</option>';
+
+                    data.forEach((item) => {
+                        html += `<option value="${item.rak}">${item.rak}</option>`;
+                    });
+
+                    document.getElementById('rak').innerHTML = html;
+                }
+            });
+        }
+
+        function changeRak(rak) {
+            $.ajax({
+                url: '{{ route('storage.find.bin') }}',
+                method: 'GET',
+                data: {
+                    raw: document.getElementById('raw').value,
+                    area: document.getElementById('area').value,
+                    rak: rak
+                },
+                success: (res) => {
+                    console.log(document.getElementById('raw').value)
+                    console.log(document.getElementById('area').value)
+                    console.log(document.getElementById('rak').value)
+                    const data = res.data;
+                    console.log(data);
+                    let html = '<option value="">-- Select Bin --</option>';
+
+                    data.forEach((item) => {
+                        html += `<option value="${item.id}">${item.bin}</option>`;
+                    });
+
+                    document.getElementById('bin').innerHTML = html;
+                }
+            });
+        }
+
+        function processTransferLocation() {
+            Swal.fire({
+                title: "Are you sure?",
+                text: "Process Transfer Location",
+                icon: "warning",
+                showCancelButton: true,
+                customClass: {
+                    confirmButton: "btn btn-primary w-xs me-2 mt-2",
+                    cancelButton: "btn btn-danger w-xs mt-2"
+                },
+                confirmButtonText: "Yes, Process it!",
+                buttonsStyling: false,
+                showCloseButton: true
+            }).then(function(t) {
+                if (t.value) {
+
+                    $.ajax({
+                        url: '{{ route('inventory.transfer-location-store') }}',
+                        method: 'POST',
+                        data: {
+                            _token: '{{ csrf_token() }}',
+                            paNumber: document.getElementById('putAwaySearchInput').value,
+                            storageId: document.getElementById('bin').value,
+                            products: JSON.parse(localStorage.getItem('products')) ?? []
+                        },
+                        success: (res) => {
+                            if (res.status) {
+                                Swal.fire({
+                                    title: 'Success',
+                                    text: 'Transfer Location Success',
+                                    icon: 'success'
+                                }).then((e) => {
+                                    window.location.href = '{{ route('inventory.transfer-location') }}'
+                                });
+                            } else {
+                                Swal.fire({
+                                    title: 'Error!',
+                                    text: 'Transfer Location Failed',
+                                    icon: 'error'
+                                });
+                            }
+                        }
+                    });
+
+                }
+            });
         }
     </script>
 @endsection

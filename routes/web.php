@@ -92,6 +92,10 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
         Route::prefix('/transfer-location')->group(function () {
             Route::get('/', 'transferLocation')->name('inventory.transfer-location');
             Route::get('/create', 'transferLocationCreate')->name('inventory.transfer-location-create');
+            Route::post('/store', 'transferLocationStore')->name('inventory.transfer-location-store');
+
+            // JSON
+            Route::get('/find-pa-number', 'transferLocationFindNumber')->name('inventory.transfer-location-find-pa-number');
         });
     });
 
