@@ -7,6 +7,7 @@ use App\Models\InventoryDetail;
 use App\Models\InventoryHistory;
 use App\Models\InventoryParent;
 use App\Models\InventoryParentDetail;
+use App\Models\Product;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderDetail;
 use App\Models\SerialNumber;
@@ -137,21 +138,32 @@ class InventoryController extends Controller
 
     public function cycleCount(): View
     {
-        $cycleCount = InventoryHistory::leftJoin('inventory_detail', 'inventory_detail.id', '=', 'inventory_history.inventory_detail_id')
-            ->leftJoin('purchase_order_detail', 'purchase_order_detail.id', '=', 'inventory_detail.purchase_order_detail_id')
+        $cycleCount = DB::table('inventory_history')
+            ->leftJoin('inventory_parent', 'inventory_parent.id', '=', 'inventory_history.inventory_parent_id')
+            ->leftJoin('inventory_child', 'inventory_child.id', '=', 'inventory_history.inventory_child_id')
             ->whereBetween('inventory_history.created_at', [date('Y-m-d 00:00:00'), date('Y-m-d 23:59:59')])
             ->select([
-                'inventory_detail.purc_doc',
-                'inventory_detail.sales_doc',
-                'inventory_history.qty',
+                'inventory_history.purc_doc',
+                'inventory_history.sales_doc',
                 'inventory_history.type',
+                'inventory_history.qty',
                 'inventory_history.created_at',
-                'purchase_order_detail.item',
-                'purchase_order_detail.material',
-                'purchase_order_detail.po_item_desc',
-                'purchase_order_detail.prod_hierarchy_desc'
+                'inventory_parent.product_id AS parent_product_id',
+                'inventory_child.product_id AS child_product_id',
             ])
             ->paginate(10);
+
+        foreach ($cycleCount as $count) {
+            if ($count->parent_product_id != null) {
+                $product = Product::find($count->parent_product_id);
+            } else {
+                $product = Product::find($count->child_product_id);
+            }
+
+            $count->material = $product->material;
+            $count->po_item_desc = $product->po_item_desc;
+            $count->prod_hierarchy_desc = $product->prod_hierarchy_desc;
+        }
 
         $title = 'Cycle Count';
         return view('inventory.cycle-count', compact('title', 'cycleCount'));

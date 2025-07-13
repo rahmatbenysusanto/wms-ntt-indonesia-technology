@@ -26,7 +26,6 @@
                                 <th>#</th>
                                 <th>Purc Doc</th>
                                 <th>Sales Doc</th>
-                                <th>Item</th>
                                 <th>Material</th>
                                 <th>Desc</th>
                                 <th>Hierarchy Desc</th>
@@ -40,7 +39,6 @@
                                 <td>{{ $cycleCount->firstItem() + $index }}</td>
                                 <td>{{ $item->purc_doc }}</td>
                                 <td>{{ $item->sales_doc }}</td>
-                                <td>{{ $item->item }}</td>
                                 <td>{{ $item->material }}</td>
                                 <td>{{ $item->po_item_desc }}</td>
                                 <td>{{ $item->prod_hierarchy_desc }}</td>
