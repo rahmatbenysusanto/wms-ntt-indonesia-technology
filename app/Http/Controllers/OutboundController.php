@@ -302,7 +302,7 @@ class OutboundController extends Controller
                     'number'        => 'GR-'.date('ymdHis').rand(111, 999),
                     'qty'           => 0,
                     'qty_item'      => $qty_item,
-                    'status'        => 'open'
+                    'status'        => 'open',
                 ]);
 
                 foreach ($products as $product) {

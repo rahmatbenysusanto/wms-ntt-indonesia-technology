@@ -550,7 +550,7 @@ class InboundController extends Controller
         return view('inbound.put-away.index', compact('title', 'putAway'));
     }
 
-    public function putAwayDetail(Request $request)
+    public function putAwayDetail(Request $request): View
     {
         $products = InventoryParent::with([
             'inventoryParentDetail',
@@ -627,32 +627,6 @@ class InboundController extends Controller
         return response()->json([
             'data' => $serialNumber
         ]);
-    }
-
-    public function putAwaySetLocation(Request $request): \Illuminate\Http\JsonResponse
-    {
-        try {
-            DB::beginTransaction();
-
-            $inventory = Inventory::create([
-                'purchase_order_id' => '',
-                'purc_doc'          => '',
-                'sales_doc'         => ''
-            ]);
-
-
-
-            DB::commit();
-            return response()->json([
-                'status' => true,
-            ]);
-        } catch (\Exception $err) {
-            DB::rollBack();
-            Log::error($err->getMessage());
-            return response()->json([
-                'status' => false,
-            ]);
-        }
     }
 
     public function purchaseOrderSerialNumber(Request $request): View
@@ -755,6 +729,15 @@ class InboundController extends Controller
                         ]);
                     }
 
+                    InventoryHistory::create([
+                        'purc_doc'                      => $purchaseOrder->purc_doc,
+                        'sales_doc'                     => $parent['salesDoc'],
+                        'inventory_parent_id'           => $inventoryParent->id,
+                        'inventory_parent_detail_id'    => $inventoryParentDetail->id,
+                        'type'                          => 'inbound',
+                        'qty'                           => $parent['qtySelect'],
+                    ]);
+
                     $invParentStock += $parent['qtySelect'];
                     $invParentSalesDocs[] = $parent['salesDoc'];
                 }
@@ -828,6 +811,15 @@ class InboundController extends Controller
                             'stock'                     => $child['qtySelect']
                         ]);
                     }
+
+                    InventoryHistory::create([
+                        'purc_doc'                      => $purchaseOrder->purc_doc,
+                        'sales_doc'                     => $child['salesDoc'],
+                        'inventory_child_id'            => $inventoryChild->id,
+                        'inventory_child_detail_id'     => $inventoryChildDetail->id,
+                        'type'                          => 'inbound',
+                        'qty'                           => $child['qtySelect'],
+                    ]);
                 }
 
                 InventoryParent::where('id', $inventoryParent->id)->update([
