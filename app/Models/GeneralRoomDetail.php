@@ -4,19 +4,17 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class InventoryHistory extends Model
+class GeneralRoomDetail extends Model
 {
-    protected $table = 'inventory_history';
+    protected $table = 'general_room_detail';
     protected $fillable = [
-        'purc_doc',
-        'sales_doc',
+        'general_room_id',
+        'product_id',
         'inventory_parent_id',
         'inventory_parent_detail_id',
         'inventory_child_id',
         'inventory_child_detail_id',
-        'outbound_id',
-        'outbound_detail_id',
-        'type',
-        'qty'
+        'qty',
+        'serial_number'
     ];
 }

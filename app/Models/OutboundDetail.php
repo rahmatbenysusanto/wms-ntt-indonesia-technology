@@ -10,8 +10,11 @@ class OutboundDetail extends Model
     protected $fillable = [
         'outbound_id',
         'product_id',
-        'inventory_id',
-        'inventory_detail_id',
-        'qty'
+        'inventory_parent_id',
+        'inventory_parent_detail_id',
+        'inventory_child_id',
+        'inventory_child_detail_id',
+        'qty',
+        'serial_number'
     ];
 }

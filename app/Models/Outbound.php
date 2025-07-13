@@ -14,6 +14,7 @@ class Outbound extends Model
         'client',
         'customer_id',
         'deliv_loc',
+        'deliv_dest',
         'qty_item',
         'created_by'
     ];

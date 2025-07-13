@@ -19,6 +19,7 @@ return new class extends Migration
             $table->string('client');
             $table->integer('customer_id')->nullable();
             $table->string('deliv_loc');
+            $table->string('deliv_dest');
             $table->integer('qty_item')->default(0);
             $table->integer('created_by');
             $table->timestamps();

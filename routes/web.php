@@ -111,6 +111,7 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
         // JSON
         Route::get('/sales-doc', 'getItemBySalesDoc')->name('outbound.sales-doc');
         Route::get('/find-inventory-detail', 'getItemByInventoryDetail')->name('outbound.inventory-detail');
+        Route::get('/find-product', 'getItemByProduct')->name('outbound.inventory-product');
     });
 });
 

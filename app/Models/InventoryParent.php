@@ -25,4 +25,14 @@ class InventoryParent extends Model
     {
         return $this->hasMany(InventoryChild::class, 'inventory_parent_id', 'id');
     }
+
+    public function product(): BelongsTo
+    {
+        return $this->belongsTo(Product::class, 'product_id', 'id');
+    }
+
+    public function purchaseOrder(): BelongsTo
+    {
+        return $this->belongsTo(PurchaseOrder::class, 'purchase_order_id', 'id');
+    }
 }

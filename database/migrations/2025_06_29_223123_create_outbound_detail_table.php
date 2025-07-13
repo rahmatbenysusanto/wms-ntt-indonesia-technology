@@ -15,9 +15,12 @@ return new class extends Migration
             $table->id();
             $table->integer('outbound_id');
             $table->integer('product_id');
-            $table->integer('inventory_id');
-            $table->integer('inventory_detail_id');
+            $table->integer('inventory_parent_id')->nullable();
+            $table->integer('inventory_parent_detail_id')->nullable();
+            $table->integer('inventory_child_id')->nullable();
+            $table->integer('inventory_child_detail_id')->nullable();
             $table->integer('qty');
+            $table->json('serial_number')->nullable();
             $table->timestamps();
         });
     }

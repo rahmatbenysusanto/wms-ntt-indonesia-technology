@@ -13,11 +13,12 @@ return new class extends Migration
     {
         Schema::create('inventory_history', function (Blueprint $table) {
             $table->id();
-            $table->integer('inventory_id');
-            $table->integer('inventory_detail_id');
-            $table->integer('quality_control_id')->nullable();
-            $table->integer('quality_control_detail_id')->nullable();
-            $table->integer('quality_control_item_id')->nullable();
+            $table->string('purc_doc');
+            $table->string('sales_doc');
+            $table->integer('inventory_parent_id')->nullable();
+            $table->integer('inventory_parent_detail_id')->nullable();
+            $table->integer('inventory_child_id')->nullable();
+            $table->integer('inventory_child_detail_id')->nullable();
             $table->integer('outbound_id')->nullable();
             $table->integer('outbound_detail_id')->nullable();
             $table->enum('type', ['inbound', 'outbound']);
