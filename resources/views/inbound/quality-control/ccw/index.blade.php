@@ -647,43 +647,45 @@
                     sendLocalStorageAsJsonFileToBackend({
                         key: 'compare',
                         filename: 'compare.json',
-                        uploadUrl: '{{ route('inbound.quality-control.upload.ccw') }}'
-                    });
-
-                    $.ajax({
-                        url: '{{ route('inbound.quality-control-process-ccw-store') }}',
-                        method: 'POST',
-                        data:{
-                            _token: '{{ csrf_token() }}',
-                            fileName: JSON.parse(localStorage.getItem('fileName')),
-                            purchaseOrderId: '{{ request()->get('id') }}'
-                        },
-                        success: (res) => {
-                            if (res.status) {
-                                Swal.fire({
-                                    title: 'Success!',
-                                    text: 'Quality Control successfully!',
-                                    icon: 'success',
-                                    confirmButtonText: 'OK',
-                                    customClass: {
-                                        confirmButton: "btn btn-primary w-xs mt-2"
-                                    },
-                                    buttonsStyling: false
-                                }).then(() => {
-                                    window.location.href = '{{ route('inbound.quality-control') }}';
-                                });
-                            } else {
-                                Swal.fire({
-                                    title: 'Error!',
-                                    text: 'Quality Control Failed!',
-                                    icon: 'error',
-                                    confirmButtonText: 'OK',
-                                    customClass: {
-                                        confirmButton: "btn btn-primary w-xs mt-2"
-                                    },
-                                    buttonsStyling: false
-                                });
-                            }
+                        uploadUrl: '{{ route('inbound.quality-control.upload.ccw') }}',
+                        onSuccess: (fileName) => {
+                            // Baru jalankan AJAX setelah upload selesai
+                            $.ajax({
+                                url: '{{ route('inbound.quality-control-process-ccw-store') }}',
+                                method: 'POST',
+                                data: {
+                                    _token: '{{ csrf_token() }}',
+                                    fileName: fileName,
+                                    purchaseOrderId: '{{ request()->get('id') }}'
+                                },
+                                success: (res) => {
+                                    if (res.status) {
+                                        Swal.fire({
+                                            title: 'Success!',
+                                            text: 'Quality Control successfully!',
+                                            icon: 'success',
+                                            confirmButtonText: 'OK',
+                                            customClass: {
+                                                confirmButton: "btn btn-primary w-xs mt-2"
+                                            },
+                                            buttonsStyling: false
+                                        }).then(() => {
+                                            window.location.href = '{{ route('inbound.quality-control') }}';
+                                        });
+                                    } else {
+                                        Swal.fire({
+                                            title: 'Error!',
+                                            text: 'Quality Control Failed!',
+                                            icon: 'error',
+                                            confirmButtonText: 'OK',
+                                            customClass: {
+                                                confirmButton: "btn btn-primary w-xs mt-2"
+                                            },
+                                            buttonsStyling: false
+                                        });
+                                    }
+                                }
+                            });
                         }
                     });
 
@@ -691,46 +693,39 @@
             });
         }
 
-        function sendLocalStorageAsJsonFileToBackend(options = {}) {
-            const {
-                key = 'compare',
-                filename = 'compare.json',
-                uploadUrl = '/upload-json'
-            } = options;
-
-            // Ambil data dari localStorage
+        function sendLocalStorageAsJsonFileToBackend({ key = 'compare', filename = 'compare.json', uploadUrl, onSuccess }) {
             const rawData = localStorage.getItem(key);
             if (!rawData) {
-                console.error(`❌ Tidak ada data untuk key "${key}" di localStorage.`);
+                console.error(`❌ Tidak ada data di localStorage untuk key "${key}"`);
                 return;
             }
 
-            // Buat file Blob dari string JSON
             const blob = new Blob([rawData], { type: 'application/json' });
             const file = new File([blob], filename, { type: 'application/json' });
 
-            // Siapkan FormData
             const formData = new FormData();
             formData.append('json_file', file);
-            formData.append('_token', '{{ csrf_token() }}'); // Laravel CSRF Token
+            formData.append('_token', '{{ csrf_token() }}');
 
-            // Kirim ke backend pakai AJAX
             fetch(uploadUrl, {
                 method: 'POST',
                 body: formData
             })
                 .then(response => response.json())
                 .then(result => {
-                    localStorage.setItem('fileName', JSON.stringify(result.fileName));
+                    console.log('✅ Upload selesai:', result);
+
+                    localStorage.setItem('fileName', filename);
+
+                    if (typeof onSuccess === 'function') {
+                        onSuccess(filename);
+                    }
                 })
                 .catch(error => {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Upload Gagal',
-                        text: error.message || 'Terjadi kesalahan saat upload'
-                    });
+                    console.error('❌ Upload gagal:', error);
                 });
         }
+
     </script>
 @endsection
 

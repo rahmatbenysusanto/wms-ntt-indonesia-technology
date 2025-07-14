@@ -955,7 +955,7 @@ class InboundController extends Controller
             DB::beginTransaction();
 
             $fileName = $request->post('fileName');
-            $path = storage_path('app/private/json_uploads/' . 'compare.json');
+            $path = storage_path('app/private/json_uploads/' . $fileName);
             $compare = json_decode(file_get_contents($path), true);
 
             $grouped = [];
