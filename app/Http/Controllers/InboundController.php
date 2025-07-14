@@ -1069,6 +1069,7 @@ class InboundController extends Controller
                     // Skip PA Step
                     if ($dataQC['parent']['putAwayStep'] == 0) {
                         // Insert Parent
+                        $salesDocs = [];
                         $product = Product::where('material', $dataQC['parent']['itemName'])->first();
                         $inventoryParent = InventoryParent::create([
                             'product_id'        => $product->id,
@@ -1092,6 +1093,7 @@ class InboundController extends Controller
                                 'sales_doc'                 => $parent['salesDoc'],
                                 'qty'                       => $parent['qty']
                             ]);
+                            $salesDocs[] = $parent['salesDoc'];
 
                             // Insert Inventory & Inventory Detail
                             $purcOrderDetail = PurchaseOrderDetail::find($parent['id']);
@@ -1151,6 +1153,7 @@ class InboundController extends Controller
                                     'sales_doc'                 => $salesDoc['salesDoc'],
                                     'qty'                       => $salesDoc['qty']
                                 ]);
+                                $salesDocs[] = $salesDoc['salesDoc'];
 
                                 $allocatedSNs = array_slice($allSN, $serialIndex, $salesDoc['qty']);
 
@@ -1166,6 +1169,10 @@ class InboundController extends Controller
                                 $serialIndex += count($allocatedSNs);
                             }
                         }
+
+                        InventoryParent::where('id', $inventoryParent->id)->update([
+                            'sales_docs'        => json_encode($salesDocs),
+                        ]);
                     }
                 }
             }
