@@ -643,12 +643,19 @@
             }).then(function(t) {
                 if (t.value) {
 
+                    // Kirim File JSON ke Backend Terlebih dahulu
+                    sendLocalStorageAsJsonFileToBackend({
+                        key: 'compare',
+                        filename: 'compare.json',
+                        uploadUrl: '{{ route('inbound.quality-control.upload.ccw') }}'
+                    });
+
                     $.ajax({
-                        url: '{{ route('inbound.quality-control-process-ccw') }}',
+                        url: '{{ route('inbound.quality-control-process-ccw-store') }}',
                         method: 'POST',
                         data:{
                             _token: '{{ csrf_token() }}',
-                            compare: JSON.parse(localStorage.getItem('compare')) ?? [],
+                            fileName: JSON.parse(localStorage.getItem('fileName')),
                             purchaseOrderId: '{{ request()->get('id') }}'
                         },
                         success: (res) => {
@@ -682,6 +689,47 @@
 
                 }
             });
+        }
+
+        function sendLocalStorageAsJsonFileToBackend(options = {}) {
+            const {
+                key = 'compare',
+                filename = 'compare.json',
+                uploadUrl = '/upload-json'
+            } = options;
+
+            // Ambil data dari localStorage
+            const rawData = localStorage.getItem(key);
+            if (!rawData) {
+                console.error(`❌ Tidak ada data untuk key "${key}" di localStorage.`);
+                return;
+            }
+
+            // Buat file Blob dari string JSON
+            const blob = new Blob([rawData], { type: 'application/json' });
+            const file = new File([blob], filename, { type: 'application/json' });
+
+            // Siapkan FormData
+            const formData = new FormData();
+            formData.append('json_file', file);
+            formData.append('_token', '{{ csrf_token() }}'); // Laravel CSRF Token
+
+            // Kirim ke backend pakai AJAX
+            fetch(uploadUrl, {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => response.json())
+                .then(result => {
+                    localStorage.setItem('fileName', JSON.stringify(result.fileName));
+                })
+                .catch(error => {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Upload Gagal',
+                        text: error.message || 'Terjadi kesalahan saat upload'
+                    });
+                });
         }
     </script>
 @endsection

@@ -954,7 +954,9 @@ class InboundController extends Controller
         try {
             DB::beginTransaction();
 
-            $compare = $request->post('compare');
+            $fileName = $request->post('fileName');
+            $path = storage_path('app/private/json_uploads/' . 'compare.json');
+            $compare = json_decode(file_get_contents($path), true);
 
             $grouped = [];
             $parents = [];
@@ -988,10 +990,16 @@ class InboundController extends Controller
                         'product_id'        => $product->id,
                         'purchase_order_id' => $request->post('purchaseOrderId'),
                         'qty'               => $dataQC['parent']['qty'],
-                        'storage_id'        => $dataQC['parent']['putAwayStep'] == 0 ? 0 : null
+                        'storage_id'        => $dataQC['parent']['putAwayStep'] == 0 ? 1 : null
                     ]);
+
+                    $serialIndex = 0;
+                    $allSN = $dataQC['parent']['serialNumber'];
+                    $totalSN = count($allSN);
+
                     foreach ($dataQC['parent']['salesDoc'] as $parentItem) {
                         $purcOrderDetail = PurchaseOrderDetail::find($parentItem['id']);
+
                         ProductParentDetail::create([
                             'product_parent_id'         => $productParent->id,
                             'product_id'                => $purcOrderDetail->product_id,
@@ -999,18 +1007,25 @@ class InboundController extends Controller
                             'sales_doc'                 => $purcOrderDetail->sales_doc,
                             'qty'                       => $parentItem['qty']
                         ]);
+
                         PurchaseOrderDetail::where('id', $purcOrderDetail->id)->increment('qty_quality_control', $parentItem['qty']);
-                    }
-                    foreach ($dataQC['parent']['serialNumber'] as $serialNumber) {
-                        SerialNumber::create([
-                            'purchase_order_id'     => $request->post('purchaseOrderId'),
-                            'product_id'            => $product->id,
-                            'serial_number'         => $serialNumber,
-                        ]);
+
+                        $allocatedSNs = array_slice($allSN, $serialIndex, $parentItem['qty']);
+
+                        foreach ($allocatedSNs as $serialNumber) {
+                            SerialNumber::create([
+                                'purchase_order_id'         => $request->post('purchaseOrderId'),
+                                'purchase_order_detail_id'  => $purcOrderDetail->id,
+                                'product_id'                => $purcOrderDetail->product_id,
+                                'serial_number'             => $serialNumber,
+                            ]);
+                        }
+
+                        $serialIndex += count($allocatedSNs); // bukan qty, agar tidak lompat kalau SN-nya kurang
                     }
 
                     // Insert Child dari Parent
-                    foreach ($dataQC['child'] as $childItem) {
+                    foreach ($dataQC['children'] as $childItem) {
                         $product = Product::where('material', $childItem['itemName'])->first();
                         $productChild = ProductChild::create([
                             'product_parent_id' => $productParent->id,
@@ -1018,8 +1033,14 @@ class InboundController extends Controller
                             'purchase_order_id' => $request->post('purchaseOrderId'),
                             'qty'               => $childItem['qty']
                         ]);
+
+                        $serialIndex = 0;
+                        $allSN = $childItem['serialNumber'];
+                        $totalSN = count($allSN);
+
                         foreach ($childItem['salesDoc'] as $childItemDetail) {
                             $purcOrderDetail = PurchaseOrderDetail::find($childItemDetail['id']);
+
                             ProductChildDetail::create([
                                 'product_child_id'          => $productChild->id,
                                 'product_id'                => $purcOrderDetail->product_id,
@@ -1027,14 +1048,123 @@ class InboundController extends Controller
                                 'sales_doc'                 => $purcOrderDetail->sales_doc,
                                 'qty'                       => $childItemDetail['qty']
                             ]);
+
                             PurchaseOrderDetail::where('id', $purcOrderDetail->id)->increment('qty_quality_control', $childItemDetail['qty']);
+
+                            $allocatedSNs = array_slice($allSN, $serialIndex, $childItemDetail['qty']);
+
+                            foreach ($allocatedSNs as $serialNumber) {
+                                SerialNumber::create([
+                                    'purchase_order_id'         => $request->post('purchaseOrderId'),
+                                    'purchase_order_detail_id'  => $purcOrderDetail->id,
+                                    'product_id'                => $purcOrderDetail->product_id,
+                                    'serial_number'             => $serialNumber,
+                                ]);
+                            }
+
+                            $serialIndex += count($allocatedSNs);
                         }
-                        foreach ($childItem['serialNumber'] as $serialNumber) {
-                            SerialNumber::create([
-                                'purchase_order_id'     => $request->post('purchaseOrderId'),
-                                'product_id'            => $product->id,
-                                'serial_number'         => $serialNumber,
+                    }
+
+                    // Skip PA Step
+                    if ($dataQC['parent']['putAwayStep'] == 0) {
+                        // Insert Parent
+                        $product = Product::where('material', $dataQC['parent']['itemName'])->first();
+                        $inventoryParent = InventoryParent::create([
+                            'product_id'        => $product->id,
+                            'purchase_order_id' => $request->post('purchaseOrderId'),
+                            'storage_id'        => 1,
+                            'pa_number'         => 'PA-'.date('ymdHis').rand(111, 999),
+                            'stock'             => $dataQC['parent']['qty'],
+                            'sales_docs'        => json_encode([]),
+                        ]);
+
+                        $serialIndex = 0;
+                        $allSN = $dataQC['parent']['serialNumber'];
+                        $totalSN = count($allSN);
+
+                        foreach ($dataQC['parent']['salesDoc'] as $parent) {
+                            $product = Product::where('material', $dataQC['parent']['itemName'])->first();
+                            InventoryParentDetail::create([
+                                'product_id'                => $product->id,
+                                'inventory_parent_id'       => $inventoryParent->id,
+                                'purchase_order_detail_id'  => $parent['id'],
+                                'sales_doc'                 => $parent['salesDoc'],
+                                'qty'                       => $parent['qty']
                             ]);
+
+                            // Insert Inventory & Inventory Detail
+                            $purcOrderDetail = PurchaseOrderDetail::find($parent['id']);
+                            $purcOrder = PurchaseOrder::find($purcOrderDetail->purchase_order_id);
+                            $checkInventory = Inventory::where('sales_doc', $parent['salesDoc'])
+                                ->where('purc_doc', $purcOrder->purc_doc)
+                                ->first();
+                            if ($checkInventory == null) {
+                                Inventory::create([
+                                    'purc_doc'  => $purcOrder->purc_doc,
+                                    'sales_doc' => $parent['salesDoc'],
+                                    'stock'     => $parent['qty']
+                                ]);
+                            } else {
+                                Inventory::where('id', $checkInventory->id)->increment('stock', $parent['qty']);
+                            }
+
+                            InventoryDetail::create([
+                                'purchase_order_detail_id'  => $parent['id'],
+                                'storage_id'                => 1,
+                                'stock'                     => $parent['qty']
+                            ]);
+
+                            $allocatedSNs = array_slice($allSN, $serialIndex, $parent['qty']);
+
+                            foreach ($allocatedSNs as $serialNumber) {
+                                SerialNumber::create([
+                                    'purchase_order_id'         => $request->post('purchaseOrderId'),
+                                    'purchase_order_detail_id'  => $purcOrderDetail->id,
+                                    'product_id'                => $purcOrderDetail->product_id,
+                                    'serial_number'             => $serialNumber,
+                                ]);
+                            }
+
+                            $serialIndex += count($allocatedSNs);
+                        }
+
+                        // Insert Child
+                        foreach ($dataQC['children'] as $child) {
+                            $product = Product::where('material', $child['itemName'])->first();
+                            $inventoryChild = InventoryChild::create([
+                                'product_id'            => $product->id,
+                                'purchase_order_id'     => $request->post('purchaseOrderId'),
+                                'inventory_parent_id'   => $inventoryParent->id,
+                                'stock'                 => $child['qty']
+                            ]);
+
+                            $serialIndex = 0;
+                            $allSN = $child['serialNumber'];
+                            $totalSN = count($allSN);
+
+                            foreach ($child['salesDoc'] as $salesDoc) {
+                                InventoryChildDetail::create([
+                                    'inventory_child_id'        => $inventoryChild->id,
+                                    'product_id'                => $product->id,
+                                    'purchase_order_detail_id'  => $salesDoc['id'],
+                                    'sales_doc'                 => $salesDoc['salesDoc'],
+                                    'qty'                       => $salesDoc['qty']
+                                ]);
+
+                                $allocatedSNs = array_slice($allSN, $serialIndex, $salesDoc['qty']);
+
+                                foreach ($allocatedSNs as $serialNumber) {
+                                    SerialNumber::create([
+                                        'purchase_order_id'         => $request->post('purchaseOrderId'),
+                                        'purchase_order_detail_id'  => $salesDoc['id'],
+                                        'product_id'                => $product->id,
+                                        'serial_number'             => $serialNumber,
+                                    ]);
+                                }
+
+                                $serialIndex += count($allocatedSNs);
+                            }
                         }
                     }
                 }
@@ -1058,7 +1188,7 @@ class InboundController extends Controller
                 PurchaseOrder::where('id', $request->post('purchaseOrderId'))->update(['status' => 'close']);
             }
 
-            DB::commit();
+//            DB::commit();
             return response()->json([
                 'status' => true
             ]);
@@ -1072,9 +1202,26 @@ class InboundController extends Controller
         }
     }
 
-    public function compareSapCcw(Request $request)
+    public function uploadFileCCW(Request $request): \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
     {
+        $file = $request->file('json_file');
 
+        if (!$file || !$file->isValid()) {
+            return back()->withErrors(['json_file' => 'File tidak valid.']);
+        }
+
+        $fileName = time() . rand(1000, 9999) . '.json';
+
+        $file->storeAs('json_uploads', $fileName);
+
+        $data = json_decode(file_get_contents($file), true);
+        $total = is_array($data) ? count($data) : 0;
+
+        return response()->json([
+            'fileName'  => $fileName,
+            'total'     => $total,
+            'data'      => $data,
+        ]);
     }
 }
 

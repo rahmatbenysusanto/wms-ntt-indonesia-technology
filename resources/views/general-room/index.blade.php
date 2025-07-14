@@ -30,15 +30,26 @@
                                     <th>#</th>
                                     <th>Purc Doc</th>
                                     <th>Sales Doc</th>
-                                    <th>Product Parent</th>
+                                    <th>Material Parent</th>
+                                    <th>Material Parent Desc</th>
                                     <th>QTY</th>
-                                    <th>Location</th>
                                     <th>Status</th>
                                     <th>Action</th>
                                 </tr>
                             </thead>
                             <tbody>
-
+                                @foreach($generalRoom as $index => $gr)
+                                    <tr>
+                                        <td>{{ $generalRoom->firstItem() + $index }}</td>
+                                        <td>{{ $gr->purc_doc }}</td>
+                                        <td>{{ $gr->sales_doc }}</td>
+                                        <td>{{ $gr->material }}</td>
+                                        <td>{{ $gr->po_item_desc }}</td>
+                                        <td>{{ $gr->qty_item }}</td>
+                                        <td>{{ $gr->status }}</td>
+                                        <td></td>
+                                    </tr>
+                                @endforeach
                             </tbody>
                         </table>
                     </div>

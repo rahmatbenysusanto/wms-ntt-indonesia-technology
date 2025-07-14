@@ -69,7 +69,8 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
 
             // CCW Process
             Route::get('/process-ccw', 'qualityControlProcessCcw')->name('inbound.quality-control-process-ccw');
-            Route::post('/process-ccw', 'qualityControlStoreProcessCcw')->name('inbound.quality-control-process-ccw');
+            Route::post('/process-ccw', 'qualityControlStoreProcessCcw')->name('inbound.quality-control-process-ccw-store');
+            Route::post('/upload-ccw', 'uploadFileCCW')->name('inbound.quality-control.upload.ccw');
         });
 
         Route::prefix('/put-away')->group(function () {
