@@ -30,6 +30,8 @@
                                     <th>#</th>
                                     <th>Purc Doc</th>
                                     <th>Sales Doc</th>
+                                    <th>Client</th>
+                                    <th>PA Number</th>
                                     <th>Material Parent</th>
                                     <th>Material Parent Desc</th>
                                     <th class="text-center">QTY</th>
@@ -48,6 +50,8 @@
                                                 <div>{{ $item }}</div>
                                             @endforeach
                                         </td>
+                                        <td>{{ $gr->client }}</td>
+                                        <td>{{ $gr->pa_number }}</td>
                                         <td>{{ $gr->material }}</td>
                                         <td>{{ $gr->po_item_desc }}</td>
                                         <td class="text-center fw-bold">{{ $gr->qty_item }}</td>
@@ -65,9 +69,9 @@
                                             <div class="d-flex gap-2">
                                                 <a href="{{ route('general-room.detail', ['id' => $gr->id]) }}" class="btn btn-secondary btn-sm">Detail</a>
                                                 @if($gr->status == 'open')
-                                                    <a class="btn btn-info btn-sm">Outbound All Product</a>
-                                                    <a class="btn btn-primary btn-sm">Outbound Partial Product</a>
-                                                    <a class="btn btn-warning btn-sm">Return Product to WH</a>
+                                                    <a class="btn btn-info btn-sm" onclick="outboundAll('{{ $gr->id }}')">Outbound All</a>
+                                                    <a class="btn btn-primary btn-sm">Outbound Partial</a>
+                                                    <a class="btn btn-warning btn-sm">Return to WH</a>
                                                 @endif
                                             </div>
                                         </td>
@@ -84,6 +88,44 @@
 
 @section('js')
     <script>
+        function outboundAll(id) {
+            Swal.fire({
+                title: "Are you sure?",
+                text: "Outbound All Product",
+                icon: "warning",
+                showCancelButton: true,
+                customClass: {
+                    confirmButton: "btn btn-primary w-xs me-2 mt-2",
+                    cancelButton: "btn btn-danger w-xs mt-2"
+                },
+                confirmButtonText: "Yes, Process it!",
+                buttonsStyling: false,
+                showCloseButton: true
+            }).then(function(t) {
+                if (t.value) {
 
+                    $.ajax({
+                        url: '{{ route('general-room.outbound.all') }}',
+                        method: 'POST',
+                        data: {
+                            _token: '{{ csrf_token() }}',
+                            id: id
+                        },
+                        success: (res) => {
+                            if (res.status) {
+                                Swal.fire({
+                                    title: 'Success',
+                                    text: 'Outbound Success',
+                                    icon: 'success'
+                                }).then((i) => {
+                                    window.location.reload();
+                                });
+                            }
+                        }
+                    });
+
+                }
+            });
+        }
     </script>
 @endsection

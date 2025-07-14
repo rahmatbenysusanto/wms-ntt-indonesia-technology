@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\GeneralRoom;
 use App\Models\GeneralRoomDetail;
+use App\Models\InventoryParent;
 use App\Models\Outbound;
 use App\Models\OutboundDetail;
 use Illuminate\Http\Request;
@@ -24,7 +25,8 @@ class GeneralRoomController extends Controller
                 'general_room.created_at',
                 'outbound.id As outbound_id',
                 'outbound.purc_doc',
-                'outbound.sales_doc'
+                'outbound.sales_doc',
+                'outbound.client'
             ])
             ->latest('general_room.created_at')
             ->paginate(10);
@@ -35,12 +37,16 @@ class GeneralRoomController extends Controller
                 ->where('inventory_parent_id', '!=', null)
                 ->select([
                     'product.material',
-                    'product.po_item_desc'
+                    'product.po_item_desc',
+                    'inventory_parent_id',
                 ])
                 ->first();
 
+            $idParent = InventoryParent::find($outboundDetail->inventory_parent_id);
+
             $item->material = $outboundDetail->material;
             $item->po_item_desc = $outboundDetail->po_item_desc;
+            $item->pa_number = $idParent->pa_reff_number ?? $idParent->pa_number;
 
             $salesDocRaw = $item->sales_doc;
             $decoded = json_decode($salesDocRaw, true);
@@ -64,4 +70,46 @@ class GeneralRoomController extends Controller
         $title = "General Room";
         return view('general-room.detail', compact('title', 'generalRoom', 'generalRoomDetail', 'outbound'));
     }
+
+    public function outboundAll(Request $request): \Illuminate\Http\JsonResponse
+    {
+        GeneralRoom::where('id', $request->post('id'))->update(['status' => 'outbound']);
+
+        return response()->json([
+            'status' => true
+        ]);
+    }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

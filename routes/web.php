@@ -103,12 +103,14 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
     Route::prefix('/general-room')->controller(GeneralRoomController::class)->group(function () {
         Route::get('/', 'index')->name('general-room.index');
         Route::get('/detail', 'detail')->name('general-room.detail');
+        Route::post('/outbound-all', 'outboundAll')->name('general-room.outbound.all');
     });
 
     Route::prefix('/outbound')->controller(OutboundController::class)->group(function () {
         Route::get('/', 'index')->name('outbound.index');
         Route::get('/create', 'create')->name('outbound.create');
         Route::post('/create', 'store')->name('outbound.store');
+        Route::get('/detail', 'detail')->name('outbound.detail');
 
         // JSON
         Route::get('/sales-doc', 'getItemBySalesDoc')->name('outbound.sales-doc');

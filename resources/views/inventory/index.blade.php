@@ -75,7 +75,7 @@
                                         <td class="text-center fw-bold">{{ number_format($item->stock) }}</td>
                                         <td>
                                             @if($item->raw == '-')
-                                                <span class="badge bg-danger-subtle text-danger">General Room</span>
+                                                <span class="badge bg-danger-subtle text-danger"> Cross Docking </span>
                                             @else
                                                 {{ $item->raw.' - '.$item->area.' - '.$item->rak.' - '.$item->bin }}
                                             @endif

@@ -29,6 +29,16 @@ class OutboundController extends Controller
     {
         $outbound = Outbound::with('user')->latest()->paginate(10);
 
+        foreach ($outbound as $item) {
+            $salesDocRaw = $item->sales_doc;
+            $decoded = json_decode($salesDocRaw, true);
+            if (is_string($decoded)) {
+                $decoded = json_decode($decoded, true);
+            }
+
+            $item->sales_doc = $decoded;
+        }
+
         $title = 'Outbound';
         return view('outbound.index', compact('title', 'outbound'));
     }
@@ -228,7 +238,7 @@ class OutboundController extends Controller
                     InventoryParentDetail::where('id', $product['inventory_parent_detail_id'])->decrement('qty', $product['qty_select']);
 
                     Inventory::where('purc_doc', $product['purc_doc'])->where('sales_doc', $product['sales_doc'])->decrement('stock', $product['qty_select']);
-                    InventoryDetail::where('id', $product['purchase_order_detail_id'])->where('storage_id', $product['storage_id'])->decrement('stock', $product['qty_select']);
+                    InventoryDetail::where('purchase_order_detail_id', $product['purchase_order_detail_id'])->where('storage_id', $product['storage_id'])->decrement('stock', $product['qty_select']);
                     InventoryHistory::create([
                         'purc_doc'                      => $product['purc_doc'],
                         'sales_doc'                     => $product['sales_doc'],
@@ -267,7 +277,7 @@ class OutboundController extends Controller
                     InventoryChildDetail::where('id', $product['child_detail_id'])->decrement('qty', $product['qty_select']);
 
                     Inventory::where('purc_doc', $product['purc_doc'])->where('sales_doc', $product['sales_doc'])->decrement('stock', $product['qty_select']);
-                    InventoryDetail::where('id', $product['purchase_order_detail_id'])->where('storage_id', $product['storage_id'])->decrement('stock', $product['qty_select']);
+                    InventoryDetail::where('purchase_order_detail_id', $product['purchase_order_detail_id'])->where('storage_id', $product['storage_id'])->decrement('stock', $product['qty_select']);
                     InventoryHistory::create([
                         'purc_doc'                      => $product['purc_doc'],
                         'sales_doc'                     => $product['sales_doc'],
@@ -294,6 +304,10 @@ class OutboundController extends Controller
 
                 $qty_item += $product['qty_select'];
             }
+
+            Outbound::where('id', $outbound->id)->update([
+                'qty_item'  => $qty_item,
+            ]);
 
             // Jika Outbound ke General Room
             if ($request->post('deliveryDest') == 'general room') {
@@ -332,5 +346,14 @@ class OutboundController extends Controller
                 'status' => false,
             ]);
         }
+    }
+
+    public function detail(Request $request): View
+    {
+        $outbound = Outbound::with('user')->where('id', $request->query('id'))->first();
+        $outboundDetail = OutboundDetail::with('product')->where('outbound_id', $request->query('id'))->get();
+
+        $title = 'Outbound';
+        return view('outbound.detail', compact('title', 'outboundDetail', 'outbound'));
     }
 }

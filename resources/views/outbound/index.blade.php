@@ -46,14 +46,18 @@
                                     <td>{{ $outbound->firstItem() + $index }}</td>
                                     <td>{{ $out->number }}</td>
                                     <td>{{ $out->purc_doc }}</td>
-                                    <td>{{ $out->sales_doc }}</td>
+                                    <td>
+                                        @foreach($out->sales_doc as $item)
+                                            <div>{{ $item }}</div>
+                                        @endforeach
+                                    </td>
                                     <td>{{ $out->client }}</td>
                                     <td>{{ $out->deliv_loc }}</td>
                                     <td class="text-center fw-bold">{{ number_format($out->qty_item) }}</td>
                                     <td>{{ \Carbon\Carbon::parse($out->created_at)->translatedFormat('d F Y H:i') }}</td>
                                     <td>{{ $out->user->name }}</td>
                                     <td>
-                                        <a class="btn btn-info btn-sm">Detail</a>
+                                        <a href="{{ route('outbound.detail', ['id' => $out->id]) }}" class="btn btn-info btn-sm">Detail</a>
                                     </td>
                                 </tr>
                             @endforeach
