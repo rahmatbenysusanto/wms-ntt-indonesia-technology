@@ -102,6 +102,7 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
 
     Route::prefix('/general-room')->controller(GeneralRoomController::class)->group(function () {
         Route::get('/', 'index')->name('general-room.index');
+        Route::get('/detail', 'detail')->name('general-room.detail');
     });
 
     Route::prefix('/outbound')->controller(OutboundController::class)->group(function () {

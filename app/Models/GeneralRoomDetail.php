@@ -17,4 +17,9 @@ class GeneralRoomDetail extends Model
         'qty',
         'serial_number'
     ];
+
+    public function product(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Product::class, 'product_id', 'id');
+    }
 }

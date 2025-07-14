@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\GeneralRoom;
+use App\Models\GeneralRoomDetail;
+use App\Models\Outbound;
 use App\Models\OutboundDetail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -19,6 +21,7 @@ class GeneralRoomController extends Controller
                 'general_room.number',
                 'general_room.qty_item',
                 'general_room.status',
+                'general_room.created_at',
                 'outbound.id As outbound_id',
                 'outbound.purc_doc',
                 'outbound.sales_doc'
@@ -38,9 +41,27 @@ class GeneralRoomController extends Controller
 
             $item->material = $outboundDetail->material;
             $item->po_item_desc = $outboundDetail->po_item_desc;
+
+            $salesDocRaw = $item->sales_doc;
+            $decoded = json_decode($salesDocRaw, true);
+            if (is_string($decoded)) {
+                $decoded = json_decode($decoded, true);
+            }
+
+            $item->sales_doc_array = $decoded;
         }
 
         $title = "General Room";
         return view('general-room.index', compact('title', 'generalRoom'));
+    }
+
+    public function detail(Request $request): View
+    {
+        $generalRoom = GeneralRoom::where('id', $request->query('id'))->first();
+        $outbound = Outbound::where('id', $generalRoom->outbound_id)->first();
+        $generalRoomDetail = GeneralRoomDetail::with('product')->where('general_room_id', $generalRoom->id)->get();
+
+        $title = "General Room";
+        return view('general-room.detail', compact('title', 'generalRoom', 'generalRoomDetail', 'outbound'));
     }
 }
