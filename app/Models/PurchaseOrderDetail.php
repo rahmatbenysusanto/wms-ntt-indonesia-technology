@@ -11,7 +11,7 @@ class PurchaseOrderDetail extends Model
         'purchase_order_id',
         'product_id',
         'status',
-        'qty_quality_control',
+        'qty_qc',
         'sales_doc',
         'item',
         'material',

@@ -13,9 +13,9 @@ class PurchaseOrder extends Model
         'purc_doc',
         'customer_id',
         'vendor_id',
-        'sales_docs_qty',
+        'sales_doc_qty',
         'material_qty',
-        'items_qty',
+        'item_qty',
         'status',
         'created_by',
     ];

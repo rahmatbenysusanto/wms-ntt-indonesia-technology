@@ -115,7 +115,7 @@
                     sloc_desc: row["SLoc Desc"],
                     valuation: row["Valuation"],
                     po_item_qty: row["PO Itm Qty"],
-                    net_order_price: row["Net Order Price"] ?? "",
+                    net_order_price: row["Net Order Price"] ?? 0,
                     currency: row["Currency"] ?? "",
                 }));
 

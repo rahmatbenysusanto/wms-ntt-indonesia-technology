@@ -71,7 +71,6 @@ class InboundController extends Controller
         try {
             DB::beginTransaction();
 
-            $masterPO = [];
             foreach ($request->post('purchaseOrder') as $item) {
                 // Check apakah nomor PO sudah ada
                 $checkPO = PurchaseOrder::where('purc_doc', $item['purc_doc'])->first();
@@ -108,31 +107,15 @@ class InboundController extends Controller
                         'purc_doc'          => $item['purc_doc'],
                         'vendor_id'         => $vendor->id,
                         'customer_id'       => $customer->id,
-                        'sales_docs_qty'    => 0,
+                        'sales_doc_qty'     => 0,
                         'material_qty'      => 0,
-                        'items_qty'         => 0,
+                        'item_qty'          => 0,
                         'status'            => 'new',
                         'created_by'        => Auth::id() ?? 1
                     ]);
 
-                    $masterPO[] = $purchaseOrder->id;
-
                     $this->storePurchaseOrderDetail($purchaseOrder, $item);
                 }
-            }
-
-            foreach ($masterPO as $po) {
-                $query = PurchaseOrderDetail::where('purchase_order_id', $po);
-
-                $salesDocsQty = (clone $query)->groupBy('sales_doc')->count();
-                $materialQty = (clone $query)->groupBy('material')->count();
-                $itemQty = (clone $query)->sum('po_item_qty');
-
-                PurchaseOrder::where('id', $po)->update([
-                    'sales_docs_qty' => $salesDocsQty,
-                    'material_qty'   => $materialQty,
-                    'items_qty'      => $itemQty,
-                ]);
             }
 
             DB::commit();
@@ -183,6 +166,17 @@ class InboundController extends Controller
             'po_item_qty'           => $item['po_item_qty'] ?? null,
             'net_order_price'       => $item['net_order_price'] ?? null,
             'currency'              => $item['currency'] ?? null,
+        ]);
+
+        $query = PurchaseOrderDetail::where('purchase_order_id', $checkPO->id);
+        $salesDocsQty = (clone $query)->distinct('sales_doc')->count();
+        $materialQty  = (clone $query)->distinct('material')->count();
+        $itemQty = (clone $query)->sum('po_item_qty');
+
+        PurchaseOrder::where('id', $checkPO->id)->update([
+            'sales_doc_qty'  => $salesDocsQty,
+            'material_qty'   => $materialQty,
+            'item_qty'       => $itemQty,
         ]);
     }
 

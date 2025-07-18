@@ -16,23 +16,17 @@ class DashboardController extends Controller
 {
     public function index(): View
     {
-        $totalPurcDoc = Inventory::groupBy('purc_doc')->count();
-        $totalSalesDoc = Inventory::groupBy('sales_doc')->count();
-        $totalStock = InventoryDetail::sum('stock');
-        $stockGR = GeneralRoom::where('status', 'open')->sum('qty_item');
+        $totalPurcDoc = 0;
+        $totalSalesDoc = 0;
+        $totalStock = 0;
+        $stockGR = 0;
 
-        $listPO = PurchaseOrder::with('customer', 'vendor')
-            ->whereMonth('created_at', date('m'))
-            ->whereYear('created_at', date('Y'))
-            ->limit(7)
-            ->get();
+        $listPO = [];
 
-        $totalPO = PurchaseOrder::where('status', '!=', 'cancel')->count();
-        $totalQtyPO = DB::table('purchase_order')->where('purchase_order.status', '!=', 'cancel')
-            ->leftJoin('purchase_order_detail', 'purchase_order_detail.purchase_order_id', '=', 'purchase_order.id')
-            ->sum('purchase_order_detail.po_item_qty');
-        $totalOutbound = Outbound::count();
-        $totalQtyOutbound = OutboundDetail::sum('qty');
+        $totalPO = 0;
+        $totalQtyPO = 0;
+        $totalOutbound = 0;
+        $totalQtyOutbound = 0;
 
         $title = 'Dashboard';
         return view('dashboard.index', compact('title', 'totalPurcDoc', 'totalSalesDoc', 'listPO', 'totalStock', 'stockGR', 'totalPO', 'totalQtyPO', 'totalOutbound', 'totalQtyOutbound'));

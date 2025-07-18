@@ -33,4 +33,13 @@ class AuthController extends Controller
 
         return back()->withErrors(['name' => 'Nama atau password salah'])->onlyInput('name');
     }
+
+    public function logout(): \Illuminate\Http\RedirectResponse
+    {
+        Auth::logout();
+        Session::invalidate();
+        Session::regenerateToken();
+
+        return redirect()->route('login');
+    }
 }

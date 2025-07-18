@@ -330,7 +330,7 @@
                 html += `
                     <tr class="${isEmptySalesDoc ? 'table-danger' : ''}">
                         <td>${number}</td>
-                        <td>${statusParent ? '<span class="badge bg-secondary-subtle text-secondary">Parent</span>' : ''}</td>
+                        <td>${statusParent ? '<span class="badge bg-danger-subtle text-danger">Parent</span>' : '<span class="badge bg-secondary-subtle text-secondary">Child</span>'}</td>
                         <td>${putAwayStep}</td>
                         <td>${item.lineNumber}</td>
                         <td>${item.itemName}</td>
