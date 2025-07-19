@@ -940,7 +940,7 @@ class InboundController extends Controller
 
     public function qualityControlProcessCcw(Request $request): View
     {
-        $purcDocDetail = PurchaseOrderDetail::where('purchase_order_id', $request->query('id'))->get();
+        $purcDocDetail = PurchaseOrderDetail::where('purchase_order_id', $request->query('id'))->where('status', 'new')->get();
 
         $title = 'Quality Control';
         return view('inbound.quality-control.ccw.index', compact('title', 'purcDocDetail'));
@@ -1003,7 +1003,7 @@ class InboundController extends Controller
                     foreach ($parent['serialNumber'] ?? [] as $serialNumber) {
                         ProductPackageItemSN::create([
                             'product_package_item_id'  => $productPackageItem->id,
-                            'serial_number'            => $serialNumber,
+                            'serial_number'            => $serialNumber == "" ? rand(111111,999999) : $serialNumber,
                         ]);
                     }
 
@@ -1031,9 +1031,15 @@ class InboundController extends Controller
                         foreach ($childDetail['serialNumber'] ?? [] as $serialNumber) {
                             ProductPackageItemSN::create([
                                 'product_package_item_id'  => $productPackageItem->id,
-                                'serial_number'            => $serialNumber,
+                                'serial_number'            => $serialNumber == "" ? rand(111111,999999) : $serialNumber,
                             ]);
                         }
+
+                        PurchaseOrderDetail::where('id', $childDetail['id'])
+                            ->update([
+                                'status' => 'qc',
+                                'qty_qc' => $childDetail['qty'],
+                            ]);
 
                         $qty_item++;
                         $qty += $childDetail['qty'];
@@ -1060,7 +1066,7 @@ class InboundController extends Controller
                 'status' => $status
             ]);
 
-//            DB::commit();
+            DB::commit();
             return response()->json([
                 'status' => true
             ]);
