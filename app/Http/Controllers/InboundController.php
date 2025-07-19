@@ -13,6 +13,9 @@ use App\Models\InventoryParentDetail;
 use App\Models\Product;
 use App\Models\ProductChild;
 use App\Models\ProductChildDetail;
+use App\Models\ProductPackage;
+use App\Models\ProductPackageItem;
+use App\Models\ProductPackageItemSN;
 use App\Models\ProductParent;
 use App\Models\ProductParentDetail;
 use App\Models\PurchaseOrder;
@@ -976,218 +979,86 @@ class InboundController extends Controller
 
             $grouped = array_values($parents);
 
-            foreach ($grouped as $dataQC) {
-                if (count($dataQC['parent']['salesDoc']) != 0) {
-                    // Insert Master Parent
-                    $product = Product::where('material', $dataQC['parent']['itemName'])->first();
-                    $productParent = ProductParent::create([
-                        'product_id'        => $product->id,
-                        'purchase_order_id' => $request->post('purchaseOrderId'),
-                        'qty'               => $dataQC['parent']['qty'],
-                        'storage_id'        => $dataQC['parent']['putAwayStep'] == 0 ? 1 : null
+            foreach ($grouped as $item) {
+                $qty_item = 0;
+                $qty = 0;
+                $productPackage = ProductPackage::create([
+                    'purchase_order_id' => $request->post('purchaseOrderId'),
+                    'qty_item'          => 0,
+                    'qty'               => 0,
+                    'status'            => 'open',
+                    'created_by'        => Auth::id()
+                ]);
+
+                foreach ($item['parent']['salesDoc'] as $parent) {
+                    $purchaseOrderDetail = PurchaseOrderDetail::find($parent['id']);
+                    $productPackageItem = ProductPackageItem::create([
+                        'product_package_id'        => $productPackage->id,
+                        'product_id'                => $purchaseOrderDetail->product_id,
+                        'purchase_order_detail_id'  => $parent['id'],
+                        'is_parent'                 => 1,
+                        'qty'                       => $parent['qty'],
                     ]);
 
-                    $serialIndex = 0;
-                    $allSN = $dataQC['parent']['serialNumber'];
-                    $totalSN = count($allSN);
-
-                    foreach ($dataQC['parent']['salesDoc'] as $parentItem) {
-                        $purcOrderDetail = PurchaseOrderDetail::find($parentItem['id']);
-
-                        ProductParentDetail::create([
-                            'product_parent_id'         => $productParent->id,
-                            'product_id'                => $purcOrderDetail->product_id,
-                            'purchase_order_detail_id'  => $purcOrderDetail->id,
-                            'sales_doc'                 => $purcOrderDetail->sales_doc,
-                            'qty'                       => $parentItem['qty']
+                    foreach ($parent['serialNumber'] ?? [] as $serialNumber) {
+                        ProductPackageItemSN::create([
+                            'product_package_item_id'  => $productPackageItem->id,
+                            'serial_number'            => $serialNumber,
                         ]);
-
-                        PurchaseOrderDetail::where('id', $purcOrderDetail->id)->increment('qty_quality_control', $parentItem['qty']);
-
-                        $allocatedSNs = array_slice($allSN, $serialIndex, $parentItem['qty']);
-
-                        foreach ($allocatedSNs as $serialNumber) {
-                            SerialNumber::create([
-                                'purchase_order_id'         => $request->post('purchaseOrderId'),
-                                'purchase_order_detail_id'  => $purcOrderDetail->id,
-                                'product_id'                => $purcOrderDetail->product_id,
-                                'serial_number'             => $serialNumber,
-                            ]);
-                        }
-
-                        $serialIndex += count($allocatedSNs); // bukan qty, agar tidak lompat kalau SN-nya kurang
                     }
 
-                    // Insert Child dari Parent
-                    foreach ($dataQC['children'] as $childItem) {
-                        $product = Product::where('material', $childItem['itemName'])->first();
-                        $productChild = ProductChild::create([
-                            'product_parent_id' => $productParent->id,
-                            'product_id'        => $product->id,
-                            'purchase_order_id' => $request->post('purchaseOrderId'),
-                            'qty'               => $childItem['qty']
+                    PurchaseOrderDetail::where('id', $parent['id'])
+                        ->update([
+                            'status' => 'qc',
+                            'qty_qc' => $parent['qty'],
                         ]);
 
-                        $serialIndex = 0;
-                        $allSN = $childItem['serialNumber'];
-                        $totalSN = count($allSN);
+                    $qty_item++;
+                    $qty += $parent['qty'];
+                }
 
-                        foreach ($childItem['salesDoc'] as $childItemDetail) {
-                            $purcOrderDetail = PurchaseOrderDetail::find($childItemDetail['id']);
-
-                            ProductChildDetail::create([
-                                'product_child_id'          => $productChild->id,
-                                'product_id'                => $purcOrderDetail->product_id,
-                                'purchase_order_detail_id'  => $purcOrderDetail->id,
-                                'sales_doc'                 => $purcOrderDetail->sales_doc,
-                                'qty'                       => $childItemDetail['qty']
-                            ]);
-
-                            PurchaseOrderDetail::where('id', $purcOrderDetail->id)->increment('qty_quality_control', $childItemDetail['qty']);
-
-                            $allocatedSNs = array_slice($allSN, $serialIndex, $childItemDetail['qty']);
-
-                            foreach ($allocatedSNs as $serialNumber) {
-                                SerialNumber::create([
-                                    'purchase_order_id'         => $request->post('purchaseOrderId'),
-                                    'purchase_order_detail_id'  => $purcOrderDetail->id,
-                                    'product_id'                => $purcOrderDetail->product_id,
-                                    'serial_number'             => $serialNumber,
-                                ]);
-                            }
-
-                            $serialIndex += count($allocatedSNs);
-                        }
-                    }
-
-                    // Skip PA Step
-                    if ($dataQC['parent']['putAwayStep'] == 0) {
-                        // Insert Parent
-                        $salesDocs = [];
-                        $product = Product::where('material', $dataQC['parent']['itemName'])->first();
-                        $inventoryParent = InventoryParent::create([
-                            'product_id'        => $product->id,
-                            'purchase_order_id' => $request->post('purchaseOrderId'),
-                            'storage_id'        => 1,
-                            'pa_number'         => 'PA-'.date('ymdHis').rand(111, 999),
-                            'stock'             => $dataQC['parent']['qty'],
-                            'sales_docs'        => json_encode([]),
+                foreach ($item['children'] as $child) {
+                    foreach ($child['salesDoc'] as $childDetail) {
+                        $purchaseOrderDetail = PurchaseOrderDetail::find($childDetail['id']);
+                        $productPackageItem = ProductPackageItem::create([
+                            'product_package_id'        => $productPackage->id,
+                            'product_id'                => $purchaseOrderDetail->product_id,
+                            'purchase_order_detail_id'  => $childDetail['id'],
+                            'is_parent'                 => 0,
+                            'qty'                       => $childDetail['qty'],
                         ]);
 
-                        $serialIndex = 0;
-                        $allSN = $dataQC['parent']['serialNumber'];
-                        $totalSN = count($allSN);
-
-                        foreach ($dataQC['parent']['salesDoc'] as $parent) {
-                            $product = Product::where('material', $dataQC['parent']['itemName'])->first();
-                            InventoryParentDetail::create([
-                                'product_id'                => $product->id,
-                                'inventory_parent_id'       => $inventoryParent->id,
-                                'purchase_order_detail_id'  => $parent['id'],
-                                'sales_doc'                 => $parent['salesDoc'],
-                                'qty'                       => $parent['qty']
+                        foreach ($childDetail['serialNumber'] ?? [] as $serialNumber) {
+                            ProductPackageItemSN::create([
+                                'product_package_item_id'  => $productPackageItem->id,
+                                'serial_number'            => $serialNumber,
                             ]);
-                            $salesDocs[] = $parent['salesDoc'];
-
-                            // Insert Inventory & Inventory Detail
-                            $purcOrderDetail = PurchaseOrderDetail::find($parent['id']);
-                            $purcOrder = PurchaseOrder::find($purcOrderDetail->purchase_order_id);
-                            $checkInventory = Inventory::where('sales_doc', $parent['salesDoc'])
-                                ->where('purc_doc', $purcOrder->purc_doc)
-                                ->first();
-                            if ($checkInventory == null) {
-                                Inventory::create([
-                                    'purc_doc'  => $purcOrder->purc_doc,
-                                    'sales_doc' => $parent['salesDoc'],
-                                    'stock'     => $parent['qty']
-                                ]);
-                            } else {
-                                Inventory::where('id', $checkInventory->id)->increment('stock', $parent['qty']);
-                            }
-
-                            InventoryDetail::create([
-                                'purchase_order_detail_id'  => $parent['id'],
-                                'storage_id'                => 1,
-                                'stock'                     => $parent['qty']
-                            ]);
-
-                            $allocatedSNs = array_slice($allSN, $serialIndex, $parent['qty']);
-
-                            foreach ($allocatedSNs as $serialNumber) {
-                                SerialNumber::create([
-                                    'purchase_order_id'         => $request->post('purchaseOrderId'),
-                                    'purchase_order_detail_id'  => $purcOrderDetail->id,
-                                    'product_id'                => $purcOrderDetail->product_id,
-                                    'serial_number'             => $serialNumber,
-                                ]);
-                            }
-
-                            $serialIndex += count($allocatedSNs);
                         }
 
-                        // Insert Child
-                        foreach ($dataQC['children'] as $child) {
-                            $product = Product::where('material', $child['itemName'])->first();
-                            $inventoryChild = InventoryChild::create([
-                                'product_id'            => $product->id,
-                                'purchase_order_id'     => $request->post('purchaseOrderId'),
-                                'inventory_parent_id'   => $inventoryParent->id,
-                                'stock'                 => $child['qty']
-                            ]);
-
-                            $serialIndex = 0;
-                            $allSN = $child['serialNumber'];
-                            $totalSN = count($allSN);
-
-                            foreach ($child['salesDoc'] as $salesDoc) {
-                                InventoryChildDetail::create([
-                                    'inventory_child_id'        => $inventoryChild->id,
-                                    'product_id'                => $product->id,
-                                    'purchase_order_detail_id'  => $salesDoc['id'],
-                                    'sales_doc'                 => $salesDoc['salesDoc'],
-                                    'qty'                       => $salesDoc['qty']
-                                ]);
-                                $salesDocs[] = $salesDoc['salesDoc'];
-
-                                $allocatedSNs = array_slice($allSN, $serialIndex, $salesDoc['qty']);
-
-                                foreach ($allocatedSNs as $serialNumber) {
-                                    SerialNumber::create([
-                                        'purchase_order_id'         => $request->post('purchaseOrderId'),
-                                        'purchase_order_detail_id'  => $salesDoc['id'],
-                                        'product_id'                => $product->id,
-                                        'serial_number'             => $serialNumber,
-                                    ]);
-                                }
-
-                                $serialIndex += count($allocatedSNs);
-                            }
-                        }
-
-                        InventoryParent::where('id', $inventoryParent->id)->update([
-                            'sales_docs'        => json_encode($salesDocs),
-                        ]);
+                        $qty_item++;
+                        $qty += $childDetail['qty'];
                     }
                 }
-            }
 
-            // Check Purchase Order Detail
-            $purchaseOrderDetail = PurchaseOrderDetail::where('purchase_order_id', $request->post('purchaseOrderId'))->get();
-            foreach ($purchaseOrderDetail as $detail) {
-                if ($detail->qty_quality_control == $detail->po_item_qty) {
-                    PurchaseOrderDetail::where('id', $detail->id)->update(['status' => 'done']);
-                } else {
-                    PurchaseOrderDetail::where('id', $detail->id)->update(['status' => 'qc']);
-                }
+                ProductPackage::where('id', $productPackage->id)->update([
+                    'qty_item'  => $qty_item,
+                    'qty'       => $qty,
+                ]);
             }
 
             // Check Purchase Order
-            $checkStatusQC = PurchaseOrderDetail::where('purchase_order_id', $request->post('purchaseOrderId'))
-                ->whereIn('status', ['qc', 'new'])
+            $checkPO = PurchaseOrderDetail::where('purchase_order_id', $request->post('purchaseOrderId'))
+                ->where('status', 'new')
                 ->count();
-            if ($checkStatusQC == 0) {
-                PurchaseOrder::where('id', $request->post('purchaseOrderId'))->update(['status' => 'close']);
+            if ($checkPO == 0) {
+                $status = 'done';
+            } else {
+                $status = 'process';
             }
+
+            PurchaseOrder::where('id', $request->post('purchaseOrderId'))->update([
+                'status' => $status
+            ]);
 
 //            DB::commit();
             return response()->json([

@@ -86,9 +86,9 @@
                                     <td><a href="{{ route('inbound.purchase-order-detail', ['id' => $po->id]) }}">{{ $po->purc_doc }}</a></td>
                                     <td>{{ $po->vendor->name }}</td>
                                     <td>{{ $po->customer->name }}</td>
-                                    <td class="text-center">{{ number_format($po->sales_docs_qty) }}</td>
+                                    <td class="text-center">{{ number_format($po->sales_doc_qty) }}</td>
                                     <td class="text-center">{{ number_format($po->material_qty) }}</td>
-                                    <td class="text-center">{{ number_format($po->items_qty) }}</td>
+                                    <td class="text-center">{{ number_format($po->item_qty) }}</td>
                                     <td class="text-center">
                                         @switch($po->status)
                                             @case('new')

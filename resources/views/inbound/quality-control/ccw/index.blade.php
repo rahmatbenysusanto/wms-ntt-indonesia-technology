@@ -52,7 +52,6 @@
                                     <th>Line Number</th>
                                     <th>Item Name</th>
                                     <th>Item Desc</th>
-                                    <th>Serial Number</th>
                                     <th class="text-center">QTY</th>
                                     <th>Sales Doc</th>
                                     <th>Action</th>
@@ -156,6 +155,11 @@
                             <td class="fw-bold ps-3">:</td>
                             <td class="ps-1" id="detailSN_qty"></td>
                         </tr>
+                        <tr>
+                            <td class="fw-bold">Sales Doc</td>
+                            <td class="fw-bold ps-3">:</td>
+                            <td class="ps-1" id="detailSN_sales_doc"></td>
+                        </tr>
                     </table>
 
                     <div class="row mb-3 mt-3">
@@ -184,6 +188,7 @@
                     </table>
 
                     <input type="hidden" id="detailSN_index">
+                    <input type="hidden" id="detailSN_index_sales_doc">
                 </div>
             </div>
         </div>
@@ -269,7 +274,8 @@
                     item.salesDoc.push({
                         id: findSAPQTY[0].id,
                         salesDoc: findSAPQTY[0].salesDoc,
-                        qty: findSAPQTY[0].qty
+                        qty: findSAPQTY[0].qty,
+                        serialNumber: item.serialNumber
                     });
                     item.qtyAdd = findSAPQTY[0].qty;
                     findSAPQTY[0].select = 1;
@@ -306,15 +312,19 @@
 
                 // View List Sales Doc
                 let htmlSalesDoc = '';
-                (item.salesDoc).forEach((sales) => {
-                    htmlSalesDoc += `<p class="mb-0">${sales.salesDoc}</p>`;
+                (item.salesDoc).forEach((sales, indexSalesDoc) => {
+                    htmlSalesDoc += `
+                        <div class="d-flex gap-2 align-items-center">
+                            <p class="mb-0" style="min-width: 140px;">${sales.salesDoc} <b>(QTY : ${sales.qty})</b></p>
+                            <a class="btn btn-secondary btn-sm" onclick="detailSerialNumber(${index}, ${indexSalesDoc})">Serial Number</a>
+                            <a class="btn btn-danger btn-sm" onclick="hapusSalesDoc(${index}, ${indexSalesDoc}, ${sales.id})">Hapus</a>
+                        </div>
+                    `;
                 });
 
                 // Check Parent
                 let statusParent = isParentFormat(item.lineNumber);
-                let putAwayStep = '';
-                if (statusParent) {
-                    putAwayStep = `
+                let putAwayStep = `
                         <div class="form-check form-switch form-switch-md">
                           <input
                             class="form-check-input"
@@ -325,7 +335,6 @@
                           >
                         </div>
                     `;
-                }
 
                 html += `
                     <tr class="${isEmptySalesDoc ? 'table-danger' : ''}">
@@ -335,10 +344,9 @@
                         <td>${item.lineNumber}</td>
                         <td>${item.itemName}</td>
                         <td>${item.itemDesc}</td>
-                        <td><a class="btn btn-secondary btn-sm" onclick="detailSerialNumber(${index})">Detail</a></td>
                         <td class="text-center fw-bold">${item.qty}</td>
-                        <td>${htmlSalesDoc}</td>
-                        <td>${parseInt(item.qty) !== parseInt(item.qtyAdd) ? `<a class="btn btn-info btn-sm" onclick="pilihSalesDoc('${index}')">Pilih Sales Doc</a> <a class="btn btn-danger btn-sm ms-2" onclick="hapusSalesDoc(${index})">Hapus Sales Doc</a>` : `<a class="btn btn-danger btn-sm" onclick="hapusSalesDoc(${index})">Hapus Sales Doc</a>`} </td>
+                        <td><div class="d-flex flex-column gap-2">${htmlSalesDoc}</div></td>
+                        <td>${parseInt(item.qty) !== parseInt(item.qtyAdd) ? `<a class="btn btn-info btn-sm" onclick="pilihSalesDoc('${index}')">Pilih Sales Doc</a>` : ``} </td>
                     </tr>
                 `;
 
@@ -361,17 +369,18 @@
             viewCompareSAPCCW();
         }
 
-        function hapusSalesDoc(index) {
+        function hapusSalesDoc(index, indexSalesDoc, idPoDetail) {
             const sap = JSON.parse(localStorage.getItem('sap')) ?? [];
             const compare = JSON.parse(localStorage.getItem('compare')) ?? [];
 
-            (compare[index].salesDoc).forEach((item) => {
-                const sapFind = sap.find(i => parseInt(i.id) === parseInt(item.id));
-                sapFind.select = 0;
-            });
+            // Hapus Sales Doc didata CCW
+            const findCcwData = compare[index].salesDoc[indexSalesDoc];
+            compare[index].salesDoc.splice(indexSalesDoc, 1);
+            compare[index].qtyAdd = parseInt(compare[index].qtyAdd) - parseInt(findCcwData.qty);
 
-            compare[index].qtyAdd = 0;
-            compare[index].salesDoc = [];
+            // Kembalikan QTY data SAP
+            const sapFind = sap.find(i => parseInt(i.id) === parseInt(idPoDetail));
+            sapFind.select = 0;
 
             localStorage.setItem('sap', JSON.stringify(sap));
             localStorage.setItem('compare', JSON.stringify(compare));
@@ -413,17 +422,20 @@
             table.page(currentPage).draw('page');
         }
 
-        function detailSerialNumber(index) {
+        function detailSerialNumber(index, indexSalesDoc) {
             const compare = JSON.parse(localStorage.getItem('compare')) ?? [];
+            const salesDoc = compare[index].salesDoc[indexSalesDoc];
 
             document.getElementById('detailSN_lineNumber').innerText = compare[index].lineNumber;
             document.getElementById('detailSN_itemName').innerText = compare[index].itemName;
             document.getElementById('detailSN_itemDesc').innerText = compare[index].itemDesc;
-            document.getElementById('detailSN_qty').innerText = compare[index].qty;
+            document.getElementById('detailSN_qty').innerText = compare[index].salesDoc[indexSalesDoc].qty;
+            document.getElementById('detailSN_sales_doc').innerText = compare[index].salesDoc[indexSalesDoc].salesDoc;
             document.getElementById('detailSN_index').value = index;
+            document.getElementById('detailSN_index_sales_doc').value = indexSalesDoc;
 
-            localStorage.setItem('serialNumber', JSON.stringify(compare[index].serialNumber));
-            viewSerialNumber(index);
+            localStorage.setItem('serialNumber', JSON.stringify(salesDoc.serialNumber));
+            viewSerialNumber(index, indexSalesDoc);
 
             $('#detailSerialNumberModal').modal('show');
         }
@@ -452,9 +464,10 @@
                 }));
 
                 const index = document.getElementById('detailSN_index').value;
+                const indexSalesDoc = document.getElementById('detailSN_index_sales_doc').value;
                 const compare = JSON.parse(localStorage.getItem('compare')) ?? [];
 
-                if (serialNumber.length === parseInt(compare[index].qty)) {
+                if (serialNumber.length === parseInt(compare[index].salesDoc[indexSalesDoc].qty)) {
                     Swal.fire({
                         title: 'Warning!',
                         text: 'Jumlah Serial Number tidak boleh lebih dari QTY',
@@ -463,19 +476,19 @@
                     return true;
                 }
 
-                compare[index].serialNumber = serialNumber;
+                compare[index].salesDoc[indexSalesDoc].serialNumber = serialNumber;
 
                 localStorage.setItem('compare', JSON.stringify(compare));
                 localStorage.setItem('serialNumber', JSON.stringify(serialNumber));
                 fileInput.value = "";
 
-                viewSerialNumber(index);
+                viewSerialNumber(index, indexSalesDoc);
             };
 
             reader.readAsArrayBuffer(file);
         }
 
-        function viewSerialNumber(index) {
+        function viewSerialNumber(index, indexSalesDoc) {
             const serialNumber = JSON.parse(localStorage.getItem('serialNumber')) ?? [];
             let html = '';
             let number = 1;
@@ -484,8 +497,8 @@
                 html += `
                     <tr>
                         <td>${number}</td>
-                        <td><input type="text" class="form-control" value="${item}" onchange="changeSerialNumber(${index}, ${indexDetail}, this.value)"></td>
-                        <td><a class="btn btn-danger btn-sm" onclick="deleteSerialNumber(${index}, ${indexDetail})">Delete</a></td>
+                        <td><input type="text" class="form-control" value="${item}" onchange="changeSerialNumber(${index}, ${indexSalesDoc}, ${indexDetail}, this.value)"></td>
+                        <td><a class="btn btn-danger btn-sm" onclick="deleteSerialNumber(${index}, ${indexSalesDoc}, ${indexDetail})">Delete</a></td>
                     </tr>
                 `;
 
@@ -497,10 +510,12 @@
 
         function addManualSN() {
             const index = document.getElementById('detailSN_index').value;
+            const indexSalesDoc = document.getElementById('detailSN_index_sales_doc').value;
+
             const compare = JSON.parse(localStorage.getItem('compare')) ?? [];
             let serialNumber = JSON.parse(localStorage.getItem('serialNumber')) ?? [];
 
-            if (serialNumber.length === parseInt(compare[index].qty)) {
+            if (serialNumber.length === parseInt(compare[index].salesDoc[indexSalesDoc].qty)) {
                 Swal.fire({
                     title: 'Warning!',
                     text: 'Jumlah Serial Number tidak boleh lebih dari QTY',
@@ -510,40 +525,40 @@
             }
 
             serialNumber.push("");
-            compare[index].serialNumber = serialNumber;
+            compare[index].salesDoc[indexSalesDoc].serialNumber = serialNumber;
 
             localStorage.setItem('compare', JSON.stringify(compare));
             localStorage.setItem('serialNumber', JSON.stringify(serialNumber));
 
-            viewSerialNumber(index);
+            viewSerialNumber(index, indexSalesDoc);
         }
 
-        function deleteSerialNumber(index, indexDetail) {
+        function deleteSerialNumber(index, indexSalesDoc, indexDetail) {
             const compare = JSON.parse(localStorage.getItem('compare')) ?? [];
             const serialNumber = JSON.parse(localStorage.getItem('serialNumber')) ?? [];
 
             serialNumber.splice(indexDetail, 1);
 
-            compare[index].serialNumber = serialNumber;
+            compare[index].salesDoc[indexSalesDoc].serialNumber = serialNumber;
 
             localStorage.setItem('compare', JSON.stringify(compare));
             localStorage.setItem('serialNumber', JSON.stringify(serialNumber));
 
-            viewSerialNumber(index);
+            viewSerialNumber(index, indexSalesDoc);
         }
 
-        function changeSerialNumber(index, indexDetail, value) {
+        function changeSerialNumber(index, indexSalesDoc, indexDetail, value) {
             const compare = JSON.parse(localStorage.getItem('compare')) ?? [];
             const serialNumber = JSON.parse(localStorage.getItem('serialNumber')) ?? [];
 
             serialNumber[indexDetail] = value;
 
-            compare[index].serialNumber = serialNumber;
+            compare[index].salesDoc[indexSalesDoc].serialNumber = serialNumber;
 
             localStorage.setItem('compare', JSON.stringify(compare));
             localStorage.setItem('serialNumber', JSON.stringify(serialNumber));
 
-            viewSerialNumber(index);
+            viewSerialNumber(index, indexSalesDoc);
         }
 
         function pilihSalesDoc(index) {
@@ -556,8 +571,6 @@
                     item.material === compareFind.itemName && item.select === 0
                 );
             });
-
-            console.log(sapFilter);
 
             let html = '';
             let number = 1;
@@ -611,7 +624,8 @@
             compare[index].salesDoc.push({
                 id: findSAP.id,
                 salesDoc: findSAP.salesDoc,
-                qty: findSAP.qty
+                qty: findSAP.qty,
+                serialNumber: []
             });
             compare[index].qtyAdd += findSAP.qty;
             findSAP.select = 1;
@@ -650,12 +664,13 @@
                         uploadUrl: '{{ route('inbound.quality-control.upload.ccw') }}',
                         onSuccess: (fileName) => {
                             // Baru jalankan AJAX setelah upload selesai
+
                             $.ajax({
                                 url: '{{ route('inbound.quality-control-process-ccw-store') }}',
                                 method: 'POST',
                                 data: {
                                     _token: '{{ csrf_token() }}',
-                                    fileName: fileName,
+                                    fileName: JSON.parse(localStorage.getItem('fileName')),
                                     purchaseOrderId: '{{ request()->get('id') }}'
                                 },
                                 success: (res) => {
@@ -715,7 +730,7 @@
                 .then(result => {
                     console.log('✅ Upload selesai:', result);
 
-                    localStorage.setItem('fileName', filename);
+                    localStorage.setItem('fileName', JSON.stringify(result.fileName));
 
                     if (typeof onSuccess === 'function') {
                         onSuccess(filename);
