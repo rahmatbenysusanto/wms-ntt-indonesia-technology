@@ -15,4 +15,14 @@ class ProductPackageItem extends Model
         'direct_outbound',
         'qty'
     ];
+
+    public function product(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Product::class, 'product_id');
+    }
+
+    public function purchaseOrderDetail(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(PurchaseOrderDetail::class, 'purchase_order_detail_id');
+    }
 }

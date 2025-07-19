@@ -47,11 +47,12 @@
                             <thead>
                                 <tr>
                                     <th>#</th>
-                                    <th>Purchasing Document</th>
+                                    <th>Purc Doc</th>
                                     <th>Sales Doc</th>
                                     <th>Parent Material</th>
                                     <th>Parent Item Desc</th>
-                                    <th class="text-center">QTY Parent</th>
+                                    <th class="text-center">QTY Item</th>
+                                    <th class="text-center">QTY</th>
                                     <th class="text-center">Status</th>
                                     <th>QC Date</th>
                                     <th>Action</th>
@@ -63,23 +64,17 @@
                                     <td>{{ $loop->iteration }}</td>
                                     <td>{{ $item->purchaseOrder->purc_doc }}</td>
                                     <td>
-                                        @php $salesDoc = [] @endphp
-                                        @foreach($item->productParentDetail as $detail)
-                                            @php $salesDoc[] = $detail->sales_doc @endphp
-                                        @endforeach
-                                        @php
-                                            $salesDoc = array_unique($salesDoc);
-                                        @endphp
-                                        @foreach($salesDoc as $sales)
-                                            <p class="mb-1">{{ $sales }}</p>
+                                        @foreach($item->sales_doc as $salesDoc)
+                                            <div class="mb-1">{{ $salesDoc }}</div>
                                         @endforeach
                                     </td>
-                                    <td>{{ $item->product->material }}</td>
-                                    <td>{{ $item->product->po_item_desc }}</td>
+                                    <td>{{ $item->product->product->material }}</td>
+                                    <td>{{ $item->product->product->po_item_desc }}</td>
+                                    <td class="text-center fw-bold">{{ number_format($item->qty_item) }}</td>
                                     <td class="text-center fw-bold">{{ number_format($item->qty) }}</td>
-                                    <td>
-                                        @if($item->storage_id == null)
-                                            <span class="badge bg-warning-subtle text-warning">Progress</span>
+                                    <td class="text-center">
+                                        @if($item->status == 'open')
+                                            <span class="badge bg-warning-subtle text-warning">Put Away</span>
                                         @else
                                             <span class="badge bg-success-subtle text-success">Done</span>
                                         @endif
@@ -87,8 +82,8 @@
                                     <td>{{ \Carbon\Carbon::parse($item->created_at)->translatedFormat('d F Y H:i') }}</td>
                                     <td>
                                         <div class="d-flex gap-2">
-                                            <a href="{{ route('inbound.put-away-detail', ['pa-number' => $item->pa_number]) }}" class="btn btn-primary btn-sm">Detail</a>
-                                            @if($item->storage_id == null)
+                                            <a href="{{ route('inbound.put-away-detail', ['id' => $item->id]) }}" class="btn btn-primary btn-sm">Detail</a>
+                                            @if($item->status == 'open')
                                                 <a href="{{ route('inbound.put-away-process', ['id' => $item->id]) }}" class="btn btn-info btn-sm">Put Away</a>
                                             @endif
                                         </div>
@@ -97,6 +92,40 @@
                             @endforeach
                             </tbody>
                         </table>
+                    </div>
+                    <div class="d-flex justify-content-end mt-2">
+                        @if ($putAway->hasPages())
+                            <ul class="pagination">
+                                @if ($putAway->onFirstPage())
+                                    <li class="disabled"><span>&laquo; Previous</span></li>
+                                @else
+                                    <li><a href="{{ $putAway->previousPageUrl() }}&per_page={{ request('per_page', 10) }}" rel="prev">&laquo; Previous</a></li>
+                                @endif
+
+                                @foreach ($putAway->links()->elements as $element)
+                                    @if (is_string($element))
+                                        <li class="disabled"><span>{{ $element }}</span></li>
+                                    @endif
+
+                                    @if (is_array($element))
+                                        @foreach ($element as $page => $url)
+                                            @if ($page == $putAway->currentPage())
+                                                <li class="active"><span>{{ $page }}</span></li>
+                                            @else
+                                                <li><a href="{{ $url }}&per_page={{ request('per_page', 10) }}">{{ $page }}</a></li>
+                                            @endif
+                                        @endforeach
+                                    @endif
+                                @endforeach
+
+                                @if ($putAway->hasMorePages())
+                                    <li><a href="{{ $putAway->nextPageUrl() }}&per_page={{ request('per_page', 10) }}" rel="next">Next &raquo;</a></li>
+                                @else
+                                    <li class="disabled"><span>Next &raquo;</span></li>
+                                @endif
+                            </ul>
+                        @endif
+
                     </div>
                 </div>
             </div>

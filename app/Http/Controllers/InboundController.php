@@ -380,25 +380,21 @@ class InboundController extends Controller
 
     public function putAway(Request $request): View
     {
-        $putAway = ProductParent::with([
-            'purchaseOrder' => function ($purchaseOrder) {
-                $purchaseOrder->select([
-                    'id', 'purc_doc'
-                ]);
-            },
-            'productParentDetail' => function ($productParentDetail) {
-                $productParentDetail->select([
-                    'id', 'product_parent_id', 'sales_doc'
-                ]);
-            },
-            'product' => function ($product) {
-                $product->select([
-                    'id', 'material', 'po_item_desc'
-                ]);
+        $putAway = ProductPackage::with('purchaseOrder')->paginate(10);
+
+        foreach ($putAway as $product) {
+            $productPackageItemParent = ProductPackageItem::with('product')->where('product_package_id', $product->id)->where('is_parent', 1)->first();
+            $productPackageItem = ProductPackageItem::with('purchaseOrderDetail')->where('product_package_id', $product->id)->get();
+
+            $sales_docs = [];
+            foreach ($productPackageItem as $item) {
+                $sales_docs[] = $item->purchaseOrderDetail->sales_doc;
             }
-            ])
-            ->latest()
-            ->paginate(10);
+
+            $product->purchase_order = '';
+            $product->sales_doc = array_unique($sales_docs);
+            $product->product = $productPackageItemParent;
+        }
 
         $title = 'Put Away';
         return view('inbound.put-away.index', compact('title', 'putAway'));
