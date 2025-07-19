@@ -113,6 +113,7 @@
                                 <th>Material</th>
                                 <th class="text-center">Parent</th>
                                 <th>PA Step</th>
+                                <th>Sales Doc</th>
                                 <th>Item</th>
                                 <th>Desc</th>
                                 <th>Hierarchy Desc</th>
@@ -132,90 +133,6 @@
     </div>
 
     <!-- Default Modals -->
-    <div id="uploadSerialNumberModal" class="modal fade" tabindex="-1" aria-labelledby="myModalLabel" aria-hidden="true" style="display: none;">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="myModalLabel">Upload Serial Number</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"> </button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <table>
-                            <tr>
-                                <td class="fw-bold">Item</td>
-                                <td class="fw-bold ps-3">:</td>
-                                <td class="ps-1" id="SN_item"></td>
-                            </tr>
-                            <tr>
-                                <td class="fw-bold">Material</td>
-                                <td class="fw-bold ps-3">:</td>
-                                <td class="ps-1" id="SN_material"></td>
-                            </tr>
-                            <tr>
-                                <td class="fw-bold">Desc</td>
-                                <td class="fw-bold ps-3">:</td>
-                                <td class="ps-1" id="SN_desc"></td>
-                            </tr>
-                            <tr>
-                                <td class="fw-bold">Hierarchy</td>
-                                <td class="fw-bold ps-3">:</td>
-                                <td class="ps-1" id="SN_hie"></td>
-                            </tr>
-                            <tr>
-                                <td class="fw-bold">QTY</td>
-                                <td class="fw-bold ps-3">:</td>
-                                <td class="ps-1" id="SN_qty"></td>
-                            </tr>
-                        </table>
-                    </div>
-                    <div class="mb-3">
-                        <div class="row">
-                            <div class="col-8">
-                                <label class="form-label">Upload Excel Serial Number</label>
-                                <input type="file" class="form-control" id="uploadFileSN">
-                            </div>
-                            <div class="col-2">
-                                <label class="form-label text-white">-</label>
-                                <div>
-                                    <a class="btn btn-info w-100" onclick="processDateUploadSN()">Proses Data</a>
-                                </div>
-                            </div>
-                            <div class="col-2">
-                                <label class="form-label text-white">-</label>
-                                <div>
-                                    <a class="btn btn-info w-100" onclick="addSerialNumberManual()">SN Manual</a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <table class="table table-striped align-middle">
-                        <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>Serial Number</th>
-                            <th>Action</th>
-                        </tr>
-                        </thead>
-                        <tbody id="listSerialNumberUpload">
-
-                        </tbody>
-                    </table>
-
-                    <input type="hidden" id="SN_type">
-                    <input type="hidden" id="SN_index">
-                    <input type="hidden" id="SN_index_detail">
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
-                    <button type="button" class="btn btn-primary" onclick="uploadSerialNumberProcess()">Upload</button>
-                </div>
-
-            </div>
-        </div>
-    </div>
-
     <div id="detailSerialNumberModal" class="modal fade" tabindex="-1" aria-labelledby="myModalLabel" aria-hidden="true" style="display: none;">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
@@ -251,17 +168,48 @@
                                 <td class="fw-bold ps-3">:</td>
                                 <td class="ps-1" id="detail_SN_qty"></td>
                             </tr>
+                            <tr>
+                                <td class="fw-bold">Sales Doc</td>
+                                <td class="fw-bold ps-3">:</td>
+                                <td class="ps-1" id="detail_SN_sales_doc"></td>
+                            </tr>
                         </table>
+                    </div>
+
+                    <!-- Inject Data -->
+                    <input type="hidden" id="detail_SN_index">
+                    <input type="hidden" id="detail_SN_productIndex">
+
+                    <div class="mb-3">
+                        <div class="row">
+                            <div class="col-8">
+                                <label class="form-label">Upload Excel Serial Number</label>
+                                <input type="file" class="form-control" id="uploadFileSN">
+                            </div>
+                            <div class="col-2">
+                                <label class="form-label text-white">-</label>
+                                <div>
+                                    <a class="btn btn-info w-100" onclick="processDateUploadSN()">Proses Data</a>
+                                </div>
+                            </div>
+                            <div class="col-2">
+                                <label class="form-label text-white">-</label>
+                                <div>
+                                    <a class="btn btn-secondary w-100" onclick="addSerialNumberManual()">SN Manual</a>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <table class="table table-striped align-middle">
                         <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>Serial Number</th>
-                        </tr>
+                            <tr>
+                                <th>#</th>
+                                <th>Serial Number</th>
+                                <th>Action</th>
+                            </tr>
                         </thead>
-                        <tbody id="listDetailSerialNumberUpload">
+                        <tbody id="listDetailSerialNumber">
 
                         </tbody>
                     </table>
@@ -360,6 +308,7 @@
                         qty: product.qty - product.qty_qc,
                         sku: product.sku,
                         type: product.type,
+                        salesDoc: product.sales_doc
                     });
                     products[index].qty_qc += product.qty - product.qty_qc;
                 }
@@ -398,6 +347,7 @@
                     qty: product.qty - product.qty_qc,
                     sku: product.sku,
                     type: product.type,
+                    salesDoc: product.sales_doc,
                     sn: null
                 });
                 products[index].qty_qc += product.qty - product.qty_qc;
@@ -423,7 +373,8 @@
                         <td>
                             <p class="mb-1">${item.sku}</p>
                             <p class="mb-1">${item.name}</p>
-                            <p>${item.type}</p>
+                            <p class="mb-1">${item.type}</p>
+                            <p class="mb-1"><b>Sales Doc:</b> ${item.salesDoc}</p>
                         </td>
                         <td><input type="number" class="form-control" value="${item.qty}" onchange="changeQtyMapping(${item.index}, ${index}, this.value)"></td>
                         <td>
@@ -516,18 +467,23 @@
                 return true;
             }
 
-            qualityControl.push({
-                id: checkParent.id,
-                item: checkParent.item,
-                sku: checkParent.sku,
-                name: checkParent.name,
-                type: checkParent.type,
-                qty: checkParent.qty,
-                sn: null,
-                putAwayStep: 1,
-                parent: mapping.filter(item => item.parent === 1),
-                child: mapping.filter(item => item.parent === 0)
+            const qc = [];
+            mapping.forEach((item) => {
+                qc.push({
+                    id: item.id,
+                    item: item.item,
+                    sku: item.sku,
+                    name: item.name,
+                    type: item.type,
+                    qty: item.qty,
+                    salesDoc: item.salesDoc,
+                    serialNumber: [],
+                    putAwayStep: 1,
+                    parent: item.parent
+                });
             });
+
+            qualityControl.push(qc);
 
             localStorage.setItem('qc', JSON.stringify(qualityControl));
             viewListQC();
@@ -541,84 +497,30 @@
             let number = 1;
 
             qualityControl.forEach((item, index) => {
-                let htmlSN = '';
-                if (item.sn === null) {
-                    htmlSN = `<a class="btn btn-info btn-sm" onclick="uploadSN('parent', ${index}, null)">Upload SN</a>`;
-                } else {
-                    htmlSN = `<a class="btn btn-success btn-sm" onclick="detailSN('parent', ${index}, null)">Detail SN</a>`;
-                }
-
-                html += `
-                    <tr>
-                        <td>${number}</td>
-                        <td>${item.sku}</td>
-                        <td class="text-center"><span class="badge bg-success-subtle text-success">Parent</span></td>
-                        <td>
-                            <div class="form-check form-switch form-switch-md">
-                              <input
-                                class="form-check-input"
-                                type="checkbox"
-                                role="switch"
-                                ${parseInt(item.putAwayStep) === 1 ? 'checked' : ''}
-                                onchange="handlePutAwayStepChange(this, ${index})"
-                              >
-                            </div>
-                        </td>
-                        <td>${item.item}</td>
-                        <td>${item.name}</td>
-                        <td>${item.type}</td>
-                        <td class="text-center fw-bold">${item.qty}</td>
-                        <td>${htmlSN}</td>
-                        <td><a class="btn btn-danger btn-sm" onclick="deleteQC(${index})">Delete</a></td>
-                    </tr>
-                `;
-
-                (item.parent).forEach((parent, indexParent) => {
-                    if (indexParent !== 0) {
-                        let htmlSN = '';
-                        if (parent.sn === null) {
-                            htmlSN = `<a class="btn btn-info btn-sm" onclick="uploadSN('parent multi', '${index}', '${indexParent}')">Upload SN</a>`;
-                        } else {
-                            htmlSN = `<a class="btn btn-success btn-sm" onclick="detailSN('parent multi', '${index}', '${indexParent}')">Detail SN</a>`;
-                        }
-
-                        html += `
-                            <tr>
-                                <td></td>
-                                <td>${parent.sku}</td>
-                                <td class="text-center"><span class="badge bg-success-subtle text-success">Parent</span></td>
-                                <td></td>
-                                <td>${parent.item}</td>
-                                <td>${parent.name}</td>
-                                <td>${parent.type}</td>
-                                <td class="text-center fw-bold">${parent.qty}</td>
-                                <td>${htmlSN}</td>
-                                <td></td>
-                            </tr>
-                        `;
-                    }
-                });
-
-                (item.child).forEach((child, indexDetail) => {
-                    let htmlSN = '';
-                    if (child.sn === null) {
-                        htmlSN = `<a class="btn btn-info btn-sm" onclick="uploadSN('child', ${index}, ${indexDetail})">Upload SN</a>`;
-                    } else {
-                        htmlSN = `<a class="btn btn-success btn-sm" onclick="detailSN('child', ${index}, ${indexDetail})">Detail SN</a>`;
-                    }
-
+                item.forEach((product, indexProduct) => {
                     html += `
                         <tr>
-                            <td></td>
-                            <td>${child.sku}</td>
-                            <td class="text-center"></td>
-                            <td></td>
-                            <td>${child.item}</td>
-                            <td>${child.name}</td>
-                            <td>${child.type}</td>
-                            <td class="text-center fw-bold">${child.qty}</td>
-                            <td>${htmlSN}</td>
-                            <td></td>
+                            <td>${indexProduct === 0 ? `${number}` : ''}</td>
+                            <td>${product.sku}</td>
+                            <td class="text-center">${product.parent === 1 ? '<span class="badge bg-danger-subtle text-danger">Parent</span>' : '<span class="badge bg-secondary-subtle text-secondary">Child</span>'}</td>
+                            <td>
+                                <div class="form-check form-switch form-switch-md">
+                                  <input
+                                    class="form-check-input"
+                                    type="checkbox"
+                                    role="switch"
+                                    ${parseInt(product.putAwayStep) === 1 ? 'checked' : ''}
+                                    onchange="handlePutAwayStepChange(this, ${index}, ${indexProduct})"
+                                  >
+                                </div>
+                            </td>
+                            <td>${product.salesDoc}</td>
+                            <td>${product.item}</td>
+                            <td>${product.name}</td>
+                            <td>${product.type}</td>
+                            <td class="text-center fw-bold">${product.qty}</td>
+                            <td><a class="btn btn-info btn-sm" onclick="serialNumber(${index}, ${indexProduct})">Serial Number</a></td>
+                            <td>${indexProduct === 0 ? `<a class="btn btn-danger btn-sm" onclick="deleteQC(${index})">Delete</a>` : ''}</td>
                         </tr>
                     `;
                 });
@@ -629,10 +531,31 @@
             document.getElementById('listQualityControl').innerHTML = html;
         }
 
-        function handlePutAwayStepChange(checkbox, index) {
+        function serialNumber(index, indexProduct) {
+            const qc = JSON.parse(localStorage.getItem('qc')) ?? [];
+            const serialNumber = qc[index][indexProduct].serialNumber;
+
+            document.getElementById('detail_SN_item').innerText = qc[index][indexProduct].item;
+            document.getElementById('detail_SN_material').innerText = qc[index][indexProduct].sku;
+            document.getElementById('detail_SN_desc').innerText = qc[index][indexProduct].name;
+            document.getElementById('detail_SN_hie').innerText = qc[index][indexProduct].type;
+            document.getElementById('detail_SN_qty').innerText = qc[index][indexProduct].qty;
+            document.getElementById('detail_SN_sales_doc').innerText = qc[index][indexProduct].salesDoc;
+            document.getElementById('detail_SN_index').value = index;
+            document.getElementById('detail_SN_productIndex').value = indexProduct;
+
+            let html = '';
+            let number = 1;
+            localStorage.setItem('serialNumber', JSON.stringify(serialNumber));
+            viewSerialNumber();
+
+            $('#detailSerialNumberModal').modal('show');
+        }
+
+        function handlePutAwayStepChange(checkbox, index, indexProduct) {
             const qualityControl = JSON.parse(localStorage.getItem('qc')) ?? [];
 
-            qualityControl[index].putAwayStep = checkbox.checked ? 1 : 0;
+            qualityControl[index][indexProduct].putAwayStep = checkbox.checked ? 1 : 0;
 
             localStorage.setItem('qc', JSON.stringify(qualityControl));
             viewListQC();
@@ -703,6 +626,13 @@
 
         function viewSerialNumber() {
             const serialNumber = JSON.parse(localStorage.getItem('serialNumber')) ?? [];
+            const qc = JSON.parse(localStorage.getItem('qc')) ?? [];
+            const index = document.getElementById('detail_SN_index').value;
+            const indexProduct = document.getElementById('detail_SN_productIndex').value;
+
+            qc[index][indexProduct].serialNumber = serialNumber;
+            localStorage.setItem('qc', JSON.stringify(qc));
+
             let html = '';
             let number = 1;
 
@@ -710,20 +640,20 @@
                 html += `
                     <tr>
                         <td>${number}</td>
-                        <td><input type="text" class="form-control" value="${sn.serialNumber}" onchange="changeSerialNumber(${index}, this.value)"></td>
+                        <td><input type="text" class="form-control" value="${sn}" onchange="changeSerialNumber(${index}, this.value)"></td>
                         <td><a class="btn btn-danger btn-sm" onclick="deleteSerialNumber(${index})">Delete</a></td>
                     </tr>
                 `;
                 number++;
             });
 
-            document.getElementById('listSerialNumberUpload').innerHTML = html;
+            document.getElementById('listDetailSerialNumber').innerHTML = html;
         }
 
         function changeSerialNumber(index, value) {
             const serialNumber = JSON.parse(localStorage.getItem('serialNumber')) ?? [];
 
-            serialNumber[index].serialNumber = value;
+            serialNumber[index] = value;
 
             localStorage.setItem('serialNumber', JSON.stringify(serialNumber));
             viewSerialNumber();
@@ -934,7 +864,7 @@
                                     },
                                     buttonsStyling: false
                                 }).then(() => {
-                                    {{--window.location.href = '{{ route('inbound.quality-control') }}';--}}
+                                    window.location.href = '{{ route('inbound.quality-control') }}';
                                 });
                             } else {
                                 Swal.fire({
@@ -957,10 +887,22 @@
 
         function addSerialNumberManual() {
             const serialNumber = JSON.parse(localStorage.getItem('serialNumber')) ?? [];
+            const qc = JSON.parse(localStorage.getItem('qc')) ?? [];
 
-            serialNumber.push({
-                serialNumber: ''
-            });
+            const index = document.getElementById('detail_SN_index').value;
+            const indexProduct = document.getElementById('detail_SN_productIndex').value;
+
+            serialNumber.push("");
+
+            if (serialNumber.length > parseInt(qc[index][indexProduct].qty)) {
+                Swal.fire({
+                    title: 'Warning!',
+                    text: 'Jumlah serial number melebihi qty product',
+                    icon: 'error'
+                });
+
+                return true;
+            }
 
             localStorage.setItem('serialNumber', JSON.stringify(serialNumber));
             viewSerialNumber();
