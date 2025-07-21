@@ -25,7 +25,7 @@
                         <table class="table table-striped align-middle">
                             <thead>
                                 <tr>
-                                    <th>PA Number</th>
+                                    <th>Box</th>
                                     <th class="text-center">Item</th>
                                     <th>Sales Doc</th>
                                     <th class="text-center">Type</th>
@@ -39,36 +39,34 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach($products as $product)
-                                    @foreach($product->inventoryParentDetail as $parent)
+                                @foreach($products as $index => $product)
+                                    @foreach($product->inventoryPackageItem as $item)
                                         <tr>
-                                            <td>{{ $product->pa_reff_number }}</td>
-                                            <td class="text-center">{{ $parent->purchaseOrderDetail->item }}</td>
-                                            <td>{{ $parent->sales_doc }}</td>
-                                            <td class="text-center"><span class="badge bg-info-subtle text-info">Parent</span></td>
-                                            <td>{{ $parent->product->material }}</td>
-                                            <td>{{ $parent->product->po_item_desc }}</td>
-                                            <td>{{ $parent->product->prod_hierarchy_desc }}</td>
-                                            <td class="text-center fw-bold">{{ number_format($parent->qty) }}</td>
-                                            <td class="text-center"><a class="btn btn-info btn-sm" onclick="detailSerialNumber('parent', '{{ $parent->id }}')">Detail</a></td>
-                                            <td class="text-center"><a class="btn btn-primary btn-sm" onclick="showBarcodeModal('{{ $product->pa_reff_number }}')">Download</a></td>
-                                            <td>{{ $product->storage->raw }} - {{ $product->storage->area }} - {{ $product->storage->rak }} - {{ $product->storage->bin }}</td>
-                                        </tr>
-                                    @endforeach
-
-                                    @foreach($product->inventoryChild as $child)
-                                        <tr>
-                                            <td></td>
-                                            <td class="text-center">{{ $child->inventoryChildDetail->purchaseOrderDetail->item }}</td>
-                                            <td>{{ $child->inventoryChildDetail->sales_doc }}</td>
-                                            <td class="text-center"></td>
-                                            <td>{{ $child->inventoryChildDetail->product->material }}</td>
-                                            <td>{{ $child->inventoryChildDetail->product->po_item_desc }}</td>
-                                            <td>{{ $child->inventoryChildDetail->product->prod_hierarchy_desc }}</td>
-                                            <td class="text-center fw-bold">{{ number_format($child->inventoryChildDetail->qty) }}</td>
-                                            <td class="text-center"><a class="btn btn-info btn-sm" onclick="detailSerialNumber('child', '{{ $child->id }}')">Detail</a></td>
-                                            <td></td>
-                                            <td>{{ $product->storage->raw }} - {{ $product->storage->area }} - {{ $product->storage->rak }} - {{ $product->storage->bin }}</td>
+                                            <td>{{ $loop->iteration == 1 ? $product->reff_number : '' }}</td>
+                                            <td>{{ $item->purchaseOrderDetail->item }}</td>
+                                            <td>{{ $item->purchaseOrderDetail->sales_doc }}</td>
+                                            <td class="text-center">
+                                                @if($item->is_parent == 1)
+                                                    <span class="badge bg-danger-subtle text-danger">Parent</span>
+                                                @else
+                                                    <span class="badge bg-secondary-subtle text-secondary">Child</span>
+                                                @endif
+                                            </td>
+                                            <td>{{ $item->purchaseOrderDetail->material }}</td>
+                                            <td>{{ $item->purchaseOrderDetail->po_item_desc }}</td>
+                                            <td>{{ $item->purchaseOrderDetail->prod_hierarchy_desc }}</td>
+                                            <td class="text-center fw-bold">{{ $item->qty }}</td>
+                                            <td class="text-center"><a class="btn btn-info btn-sm">Serial Number</a></td>
+                                            <td class="text-center">
+                                                @if($loop->iteration == 1)
+                                                    <a class="btn btn-secondary btn-sm" onclick="showBarcodeModal('{{ $index }}')">Download Barcode</a>
+                                                @endif
+                                            </td>
+                                            <td>
+                                                @if($loop->iteration == 1)
+                                                    {{ $product->storage->raw }} - {{ $product->storage->area }} - {{ $product->storage->rak }} - {{ $product->storage->bin }}
+                                                @endif
+                                            </td>
                                         </tr>
                                     @endforeach
                                 @endforeach
@@ -145,21 +143,44 @@
 
     <script>
         let currentBarcodeId = '';
-        const locationText = '{{ $products[0]->storage->raw.' - '.$products[0]->storage->area.' - '.$products[0]->storage->rak.' - '.$products[0]->storage->bin }}';
+        let locationText = '{{ $products[0]->storage->raw.' - '.$products[0]->storage->area.' - '.$products[0]->storage->rak.' - '.$products[0]->storage->bin }}';
+        let boxName = '';
+        let purcDoc = '';
+        let salesDoc = '';
+        let customer = '';
 
         function getSize(scale) {
             const cmToPx = cm => cm * 37.8;
             switch (scale) {
-                case 'small': return { width: cmToPx(5.8), height: cmToPx(4) };
-                case 'medium': return { width: cmToPx(7), height: cmToPx(5) };
+                case 'small': return { width: cmToPx(5.8), height: cmToPx(5.5) };
+                case 'medium': return { width: cmToPx(7), height: cmToPx(6) };
                 case 'large': return { width: cmToPx(8), height: cmToPx(6) };
-                case 'xlarge': return { width: cmToPx(10), height: cmToPx(7) };
-                default: return { width: cmToPx(5.8), height: cmToPx(4) };
+                case 'xlarge': return { width: cmToPx(10), height: cmToPx(6) };
+                default: return { width: cmToPx(7), height: cmToPx(6) };
             }
         }
 
-        function showBarcodeModal(paNumber) {
-            currentBarcodeId = paNumber;
+        function showBarcodeModal(index) {
+            currentBarcodeId = '';
+            locationText = '{{ $products[0]->storage->raw.' - '.$products[0]->storage->area.' - '.$products[0]->storage->rak.' - '.$products[0]->storage->bin }}';
+            boxName = '';
+            purcDoc = '';
+            salesDoc = '';
+            customer = '';
+
+            const dataPackage = @json($products);
+            const find = dataPackage[index];
+
+            currentBarcodeId = 'hahahahaha';
+            purcDoc = find.purchase_order.purc_doc;
+            boxName = find.reff_number;
+            customer = find.purchase_order.customer.name;
+
+            const salesDocs = JSON.parse(find.sales_docs);
+            salesDocs.forEach((item) => {
+                salesDoc += item+', ';
+            });
+
             updateBarcodePreview();
             new bootstrap.Modal(document.getElementById('barcodeModal')).show();
         }
@@ -174,7 +195,7 @@
             const container = document.createElement('div');
             container.style.width = `${width}px`;
             container.style.height = `${height}px`;
-            container.style.padding = '10px';
+            container.style.padding = '8px';
             container.style.background = '#fff';
             container.style.textAlign = 'center';
             container.style.fontSize = '12px';
@@ -191,21 +212,35 @@
             qrWrapper.appendChild(qrDiv);
 
             const text1 = document.createElement('div');
-            text1.innerText = currentBarcodeId;
-            text1.style.marginTop = '4px';
+            text1.innerHTML = '<b>Box:</b> '+boxName;
+            text1.style.marginTop = '2px';
 
+            const textPO = document.createElement('div');
+            textPO.innerHTML = '<b>PO: </b>'+purcDoc;
+            textPO.style.marginTop = '2px';
+
+            const textSO = document.createElement('div');
+            textSO.innerHTML = '<b>Sales Doc: </b>'+salesDoc;
+            textSO.style.marginTop = '2px';
+
+            const textCustomer = document.createElement('div');
+            textCustomer.innerHTML = '<b>Customer: </b>'+customer;
+            textCustomer.style.marginTop = '2px';
 
             const text2 = document.createElement('div');
-            text2.innerText = locationText;
+            text2.innerHTML = '<b>Loc: </b>'+locationText;
             text2.style.marginTop = '2px';
 
             const text3 = document.createElement('div');
-            text3.innerText = '{{ \Carbon\Carbon::parse($products[0]->created_at)->translatedFormat('d F Y H:i') }}';
+            text3.innerHTML = '<b>Tgl Inb: </b>'+'{{ \Carbon\Carbon::parse($products[0]->created_at)->translatedFormat('d F Y') }}';
             text3.style.marginTop = '2px';
             text3.style.marginBottom = '2px';
 
             container.appendChild(qrWrapper);
             container.appendChild(text1);
+            container.appendChild(textPO);
+            container.appendChild(textSO);
+            container.appendChild(textCustomer);
             container.appendChild(text2);
             container.appendChild(text3);
             area.appendChild(container);

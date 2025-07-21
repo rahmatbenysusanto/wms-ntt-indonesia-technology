@@ -9,9 +9,12 @@ class InventoryDetail extends Model
 {
     protected $table = 'inventory_detail';
     protected $fillable = [
+        'inventory_id',
         'purchase_order_detail_id',
         'storage_id',
-        'stock'
+        'inventory_package_item_id',
+        'sales_doc',
+        'qty'
     ];
 
     public function purchaseOrderDetail(): BelongsTo

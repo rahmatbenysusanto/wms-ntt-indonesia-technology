@@ -8,6 +8,9 @@ use App\Models\InventoryChild;
 use App\Models\InventoryChildDetail;
 use App\Models\InventoryDetail;
 use App\Models\InventoryHistory;
+use App\Models\InventoryPackage;
+use App\Models\InventoryPackageItem;
+use App\Models\InventoryPackageItemSN;
 use App\Models\InventoryParent;
 use App\Models\InventoryParentDetail;
 use App\Models\Product;
@@ -402,16 +405,7 @@ class InboundController extends Controller
 
     public function putAwayDetail(Request $request): View
     {
-        $products = InventoryParent::with([
-            'inventoryParentDetail',
-            'inventoryParentDetail.product',
-            'inventoryParentDetail.purchaseOrderDetail',
-            'storage',
-            'inventoryChild',
-            'inventoryChild.inventoryChildDetail',
-            'inventoryChild.inventoryChildDetail.product',
-            'inventoryChild.inventoryChildDetail.purchaseOrderDetail',
-        ])->where('pa_number', $request->query('pa-number'))->get();
+        $products = InventoryPackage::with('inventoryPackageItem', 'inventoryPackageItem.purchaseOrderDetail', 'storage', 'purchaseOrder', 'purchaseOrder.customer')->where('product_package_id', $request->query('id'))->get();
 
         $title = 'Put Away';
         return view('inbound.put-away.detail', compact('title', 'products'));
@@ -419,33 +413,15 @@ class InboundController extends Controller
 
     public function putAwayProcess(Request $request): View
     {
-        $products = ProductParent::with([
-            'product' => function ($product) {
-                $product->select([
-                    'id', 'material', 'po_item_desc', 'prod_hierarchy_desc'
-                ]);
-            },
-            'productParentDetail',
-            'productParentDetail.purchaseOrderDetail' => function ($purchaseOrderDetail) {
-                $purchaseOrderDetail->select([
-                    'id', 'item'
-                ]);
-            },
-            'productChild',
-            'productChild.product' => function ($productChildProduct) {
-                $productChildProduct->select([
-                    'id', 'material', 'po_item_desc', 'prod_hierarchy_desc'
-                ]);
-            },
-            'productChild.productChildDetail',
-            'productChild.productChildDetail.purchaseOrderDetail' => function ($purchaseOrderDetail) {
-                $purchaseOrderDetail->select([
-                    'id', 'item'
-                ]);
-            },
-            ])
-            ->where('id', $request->query('id'))
-            ->first();
+        $products = ProductPackageItem::with([
+                'purchaseOrderDetail' => function ($purchaseOrderDetail) {
+                    $purchaseOrderDetail->select([
+                        'id', 'item', 'material', 'po_item_desc', 'prod_hierarchy_desc', 'sales_doc'
+                    ]);
+                },
+                'productPackageItemSn'
+            ])->where('product_package_id', $request->query('id'))
+            ->get();
 
         $storageRaw = Storage::where('raw', '!=', '-')->where('area', null)->where('rak', null)->where('bin', null)->get();
 
@@ -494,189 +470,137 @@ class InboundController extends Controller
 
             $listBox = $request->post('box');
             $putAwayNumber = 'PA-'.date('ymdHis').rand(111, 999);
+            $numberBox = 1;
+            $totalBox = count($listBox);
+            $stock = 0;
 
-            $productParent = ProductParent::find($request->post('productParentId'));
-            $purchaseOrder = PurchaseOrder::where('id', $productParent->purchase_order_id)->first();
+            $productPackage = ProductPackage::find($request->post('productPackageId'));
+            $checkInventory = Inventory::where('purchase_order_id', $productPackage->purchase_order_id)->first();
+            if ($checkInventory == null) {
+                $inventory = Inventory::create([
+                    'purchase_order_id'     => $productPackage->purchase_order_id,
+                    'stock'                 => 0
+                ]);
 
-            ProductParent::where('id', $productParent->id)->update([
-                'storage_id'    => $request->post('bin'),
-                'pa_number'     => $putAwayNumber,
-            ]);
+                $inventoryId = $inventory->id;
+            } else {
+                $inventoryId = $checkInventory->id;
+            }
 
             foreach ($listBox as $box) {
-                $invParentStock = 0;
-                $invParentSalesDocs = [];
+                $salesDocs = [];
+                $qtyItem = 0;
+                $qty = 0;
 
-                // Parent
-                $inventoryParent = InventoryParent::create([
-                    'product_id'        => $box['parent'][0]['productId'],
-                    'purchase_order_id' => $productParent->purchase_order_id,
-                    'storage_id'        => $request->post('bin'),
-                    'pa_number'         => $putAwayNumber,
-                    'pa_reff_number'    => $putAwayNumber.'-'.$box['boxNumber'],
-                    'stock'             => 0,
-                    'sales_docs'        => json_encode([]),
+                $inventoryPackage = InventoryPackage::create([
+                    'purchase_order_id'     => $productPackage->purchase_order_id,
+                    'storage_id'            => $request->post('bin'),
+                    'number'                => $putAwayNumber,
+                    'reff_number'           => $numberBox.' of '.$totalBox,
+                    'qty_item'              => 0,
+                    'qty'                   => 0,
+                    'sales_docs'            => json_encode([]),
+                    'product_package_id'    => $productPackage->id,
+                    'created_by'            => Auth::id()
                 ]);
+
                 foreach ($box['parent'] as $parent) {
-                    $inventoryParentDetail = InventoryParentDetail::create([
+                    $inventoryPackageItem = InventoryPackageItem::create([
+                        'inventory_package_id'      => $inventoryPackage->id,
                         'product_id'                => $parent['productId'],
-                        'inventory_parent_id'       => $inventoryParent->id,
                         'purchase_order_detail_id'  => $parent['purchaseOrderDetailId'],
+                        'is_parent'                 => 1,
+                        'qty'                       => $parent['qtySelect']
+                    ]);
+
+                    foreach ($parent['serialNumber'] ?? [] as $serialNumber) {
+                        InventoryPackageItemSN::create([
+                            'inventory_package_item_id' => $inventoryPackageItem->id,
+                            'serial_number'             => $serialNumber,
+                            'qty'                       => 1
+                        ]);
+                    }
+
+                    InventoryDetail::create([
+                        'inventory_id'              => $inventoryId,
+                        'purchase_order_detail_id'  => $parent['purchaseOrderDetailId'],
+                        'storage_id'                => $request->post('bin'),
+                        'inventory_package_item_id' => $inventoryPackageItem->id,
                         'sales_doc'                 => $parent['salesDoc'],
                         'qty'                       => $parent['qtySelect']
                     ]);
 
-                    // Serial Number
-                    foreach ($parent['serialNumber'] as $serialNumber) {
-                        $findSerialNumber = SerialNumber::where('purchase_order_id', $productParent->purchase_order_id)
-                            ->where('purchase_order_detail_id', $parent['purchaseOrderDetailId'])
-                            ->where('product_id', $parent['productId'])
-                            ->where('serial_number', $serialNumber)
-                            ->first();
-
-                        if ($findSerialNumber) {
-                            SerialNumber::where('id', $findSerialNumber->id)->update([
-                                'inventory_parent_id'        => $inventoryParent->id,
-                                'inventory_parent_detail_id' => $inventoryParentDetail->id,
-                            ]);
-                        } else {
-                            SerialNumber::create([
-                                'purchase_order_id'          => $productParent->purchase_order_id,
-                                'purchase_order_detail_id'   => $parent['purchaseOrderDetailId'],
-                                'product_id'                 => $parent['productId'],
-                                'inventory_parent_id'        => $inventoryParent->id,
-                                'inventory_parent_detail_id' => $inventoryParentDetail->id,
-                                'serial_number'              => $serialNumber,
-                                'qty'                        => 1
-                            ]);
-                        }
-                    }
-
-                    // Inventory & Inventory Detail
-                    $checkInventory = Inventory::where('purc_doc', $purchaseOrder->purc_doc)
-                        ->where('sales_doc', $parent['salesDoc'])
-                        ->first();
-                    if ($checkInventory) {
-                        Inventory::where('id', $checkInventory->id)->increment('stock', $parent['qtySelect']);
-                    } else {
-                        Inventory::create([
-                            'purc_doc'  => $purchaseOrder->id,
-                            'sales_doc' => $parent['salesDoc'],
-                            'stock'     => $parent['qtySelect']
-                        ]);
-                    }
-
-                    $checkInventoryDetail = InventoryDetail::where('purchase_order_detail_id', $parent['purchaseOrderDetailId'])
-                        ->where('storage_id', $request->post('bin'))
-                        ->first();
-                    if ($checkInventoryDetail) {
-                        InventoryDetail::where('id', $checkInventoryDetail->id)->increment('stock', $parent['qtySelect']);
-                    } else {
-                        InventoryDetail::create([
-                            'purchase_order_detail_id'  => $parent['purchaseOrderDetailId'],
-                            'storage_id'                => $request->post('bin'),
-                            'stock'                     => $parent['qtySelect']
-                        ]);
-                    }
-
                     InventoryHistory::create([
-                        'purc_doc'                      => $purchaseOrder->purc_doc,
-                        'sales_doc'                     => $parent['salesDoc'],
-                        'inventory_parent_id'           => $inventoryParent->id,
-                        'inventory_parent_detail_id'    => $inventoryParentDetail->id,
-                        'type'                          => 'inbound',
+                        'purchase_order_id'             => $productPackage->purchase_order_id,
+                        'purchase_order_detail_id'      => $parent['purchaseOrderDetailId'],
+                        'inventory_package_item_id'     => $inventoryPackageItem->id,
                         'qty'                           => $parent['qtySelect'],
+                        'type'                          => 'inbound',
+                        'created_by'                    => Auth::id()
                     ]);
 
-                    $invParentStock += $parent['qtySelect'];
-                    $invParentSalesDocs[] = $parent['salesDoc'];
+                    $salesDocs[] = $parent['salesDoc'];
+                    $stock += $parent['qtySelect'];
+                    $qtyItem++;
+                    $qty += $parent['qtySelect'];
                 }
 
-                // Child
                 foreach ($box['child'] as $child) {
-                    $inventoryChild = InventoryChild::create([
-                        'product_id'            => $child['productId'],
-                        'purchase_order_id'     => $productParent->purchase_order_id,
-                        'inventory_parent_id'   => $inventoryParent->id,
-                        'stock'                 => $child['qtySelect'],
-                    ]);
-
-                    $inventoryChildDetail = InventoryChildDetail::create([
+                    $inventoryPackageItem = InventoryPackageItem::create([
+                        'inventory_package_id'      => $inventoryPackage->id,
                         'product_id'                => $child['productId'],
                         'purchase_order_detail_id'  => $child['purchaseOrderDetailId'],
-                        'inventory_child_id'        => $inventoryChild->id,
+                        'is_parent'                 => 0,
+                        'qty'                       => $child['qtySelect'],
+                    ]);
+
+                    foreach ($child['serialNumber'] ?? [] as $serialNumber) {
+                        InventoryPackageItemSN::create([
+                            'inventory_package_item_id' => $inventoryPackageItem->id,
+                            'serial_number'             => $serialNumber,
+                            'qty'                       => 1
+                        ]);
+                    }
+
+                    InventoryDetail::create([
+                        'inventory_id'              => $inventoryId,
+                        'purchase_order_detail_id'  => $child['purchaseOrderDetailId'],
+                        'storage_id'                => $request->post('bin'),
+                        'inventory_package_item_id' => $inventoryPackageItem->id,
                         'sales_doc'                 => $child['salesDoc'],
                         'qty'                       => $child['qtySelect']
                     ]);
 
-                    // Serial Number
-                    foreach ($child['serialNumber'] as $serialNumber) {
-                        $findSerialNumber = SerialNumber::where('purchase_order_id', $productParent->purchase_order_id)
-                            ->where('purchase_order_detail_id', $child['purchaseOrderDetailId'])
-                            ->where('product_id', $child['productId'])
-                            ->where('serial_number', $serialNumber)
-                            ->first();
-
-                        if ($findSerialNumber) {
-                            SerialNumber::where('id', $findSerialNumber->id)->update([
-                                'inventory_child_id'        => $inventoryChild->id,
-                                'inventory_child_detail_id' => $inventoryChildDetail->id,
-                            ]);
-                        } else {
-                            SerialNumber::create([
-                                'purchase_order_id'          => $productParent->purchase_order_id,
-                                'purchase_order_detail_id'   => $child['purchaseOrderDetailId'],
-                                'product_id'                 => $child['productId'],
-                                'inventory_child_id'         => $inventoryParent->id,
-                                'inventory_child_detail_id'  => $inventoryChildDetail->id,
-                                'serial_number'              => $serialNumber,
-                                'qty'                        => 1
-                            ]);
-                        }
-                    }
-
-                    // Inventory & Inventory Detail
-                    $checkInventory = Inventory::where('purc_doc', '')
-                        ->where('sales_doc', $child['salesDoc'])
-                        ->first();
-                    if ($checkInventory) {
-                        Inventory::where('id', $checkInventory->id)->increment('stock', $child['qtySelect']);
-                    } else {
-                        Inventory::create([
-                            'purc_doc'  => $purchaseOrder->id,
-                            'sales_doc' => $child['salesDoc'],
-                            'stock'     => $child['qtySelect']
-                        ]);
-                    }
-
-                    $checkInventoryDetail = InventoryDetail::where('purchase_order_detail_id', $child['purchaseOrderDetailId'])
-                        ->where('storage_id', $request->post('bin'))
-                        ->first();
-                    if ($checkInventoryDetail) {
-                        InventoryDetail::where('id', $checkInventoryDetail->id)->increment('stock', $child['qtySelect']);
-                    } else {
-                        InventoryDetail::create([
-                            'purchase_order_detail_id'  => $child['purchaseOrderDetailId'],
-                            'storage_id'                => $request->post('bin'),
-                            'stock'                     => $child['qtySelect']
-                        ]);
-                    }
-
                     InventoryHistory::create([
-                        'purc_doc'                      => $purchaseOrder->purc_doc,
-                        'sales_doc'                     => $child['salesDoc'],
-                        'inventory_child_id'            => $inventoryChild->id,
-                        'inventory_child_detail_id'     => $inventoryChildDetail->id,
-                        'type'                          => 'inbound',
+                        'purchase_order_id'             => $productPackage->purchase_order_id,
+                        'purchase_order_detail_id'      => $child['purchaseOrderDetailId'],
+                        'inventory_package_item_id'     => $inventoryPackageItem->id,
                         'qty'                           => $child['qtySelect'],
+                        'type'                          => 'inbound',
+                        'created_by'                    => Auth::id()
                     ]);
+
+                    $salesDocs[] = $child['salesDoc'];
+                    $stock += $child['qtySelect'];
+                    $qtyItem++;
+                    $qty += $child['qtySelect'];
                 }
 
-                InventoryParent::where('id', $inventoryParent->id)->update([
-                    'stock'         => $invParentStock,
-                    'sales_docs'    => $invParentSalesDocs
+                InventoryPackage::where('id', $inventoryPackage->id)->update([
+                    'sales_docs'            => json_encode(array_unique($salesDocs)),
+                    'qty_item'              => $qtyItem,
+                    'qty'                   => $qty
                 ]);
+
+                $numberBox++;
             }
+
+            // Inventory
+            Inventory::where('id', $inventoryId)->increment('stock', $stock);
+
+            ProductPackage::where('id', $productPackage->id)->update([
+                'status'    => 'done'
+            ]);
 
             DB::commit();
             return response()->json([
@@ -690,104 +614,6 @@ class InboundController extends Controller
             return response()->json([
                 'status' => false,
             ]);
-        }
-    }
-
-    public function putAwayStore1(Request $request): \Illuminate\Http\RedirectResponse
-    {
-        try {
-            DB::beginTransaction();
-
-            $qualityControl = QualityControl::where('number', $request->post('number'))->first();
-
-            // Check apakah data sudah ada di inventory
-            $inventory = Inventory::where('purchase_order_id', $qualityControl->purchase_order_id)
-                ->where('sales_doc', $qualityControl->sales_doc)
-                ->where('storage_id', $request->post('bin'))
-                ->first();
-
-            $purchaseOrder = PurchaseOrder::where('id', $qualityControl->purchase_order_id)->first();
-            if ($inventory == null) {
-                $inventory = Inventory::create([
-                    'purchase_order_id' => $qualityControl->purchase_order_id,
-                    'purc_doc'          => $purchaseOrder->purc_doc,
-                    'sales_doc'         => $qualityControl->sales_doc,
-                    'qty_item'          => 0,
-                    'storage_id'        => $request->post('bin'),
-                ]);
-            }
-
-            // Insert Parent Item
-            $qualityControlDetail = QualityControlDetail::where('id', $request->post('id'))->first();
-            $parent = InventoryDetail::create([
-                'inventory_id'              => $inventory->id,
-                'purchase_order_detail_id'  => $qualityControlDetail->purchase_order_detail_id,
-                'quality_control_detail_id' => $qualityControlDetail->id,
-                'type'                      => 'parent',
-                'purc_doc'                  => $purchaseOrder->purc_doc,
-                'sales_doc'                 => $qualityControl->sales_doc,
-                'qty'                       => $qualityControlDetail->qty
-            ]);
-
-            InventoryHistory::create([
-                'inventory_id'              => $inventory->id,
-                'inventory_detail_id'       => $parent->id,
-                'quality_control_id'        => $qualityControl->id,
-                'quality_control_detail_id' => $qualityControlDetail->id,
-                'type'                      => 'inbound',
-                'qty'                       => $qualityControlDetail->qty
-            ]);
-
-            Inventory::where('id', $inventory->id)->increment('qty_item', $qualityControlDetail->qty);
-
-            // Insert Child Item
-            $qualityControlItem = QualityControlItem::where('quality_control_detail_id', $qualityControlDetail->id)->get();
-            foreach ($qualityControlItem as $item) {
-                $inventoryDetail = InventoryDetail::create([
-                    'inventory_id'              => $inventory->id,
-                    'purchase_order_detail_id'  => $item->purchase_order_detail_id,
-                    'quality_control_detail_id' => $item->quality_control_detail_id,
-                    'type'                      => 'child',
-                    'purc_doc'                  => $purchaseOrder->purc_doc,
-                    'sales_doc'                 => $qualityControl->sales_doc,
-                    'qty'                       => $item->qty,
-                    'parent_id'                 => $parent->id
-                ]);
-
-                InventoryHistory::create([
-                    'inventory_id'              => $inventory->id,
-                    'inventory_detail_id'       => $inventoryDetail->id,
-                    'quality_control_id'        => $qualityControl->id,
-                    'quality_control_detail_id' => $item->quality_control_detail_id,
-                    'type'                      => 'inbound',
-                    'qty'                       => $item->qty
-                ]);
-
-                Inventory::where('id', $inventory->id)->increment('qty_item', $item->qty);
-            }
-
-            QualityControlDetail::where('id', $request->post('id'))->update(['status' => 'put away', 'storage_id' => $request->post('bin')]);
-            QualityControl::where('number', $request->post('number'))->update([
-                'status' => 'put away'
-            ]);
-
-            // Cek apakah semua sudah di Put Away
-            $check = QualityControlDetail::where('quality_control_id', $qualityControl->id)
-                ->where('status', 'qc')
-                ->count();
-            if ($check == 0) {
-                QualityControl::where('number', $request->post('number'))->update([
-                    'status' => 'done'
-                ]);
-            }
-
-            DB::commit();
-            return back()->with('success', 'Set lokasi item berhasil');
-        } catch (\Exception $err) {
-            DB::rollBack();
-            Log::error($err->getMessage());
-            Log::error($err->getLine());
-            return back()->with('error', 'Set Lokasi Gagal');
         }
     }
 

@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->integer('inventory_package_item_id');
             $table->string('serial_number');
+            $table->integer('qty')->default(1);
             $table->timestamps();
         });
     }

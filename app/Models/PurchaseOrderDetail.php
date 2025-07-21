@@ -27,5 +27,4 @@ class PurchaseOrderDetail extends Model
         'net_order_price',
         'currency',
     ];
-
 }

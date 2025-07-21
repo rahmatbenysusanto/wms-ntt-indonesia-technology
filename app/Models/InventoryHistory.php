@@ -8,15 +8,12 @@ class InventoryHistory extends Model
 {
     protected $table = 'inventory_history';
     protected $fillable = [
-        'purc_doc',
-        'sales_doc',
-        'inventory_parent_id',
-        'inventory_parent_detail_id',
-        'inventory_child_id',
-        'inventory_child_detail_id',
+        'purchase_order_id',
+        'purchase_order_detail_id',
         'outbound_id',
-        'outbound_detail_id',
+        'inventory_package_item_id',
+        'qty',
         'type',
-        'qty'
+        'created_by'
     ];
 }

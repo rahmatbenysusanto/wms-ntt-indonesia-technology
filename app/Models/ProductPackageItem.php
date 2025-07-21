@@ -25,4 +25,9 @@ class ProductPackageItem extends Model
     {
         return $this->belongsTo(PurchaseOrderDetail::class, 'purchase_order_detail_id');
     }
+
+    public function productPackageItemSn(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(ProductPackageItemSn::class, 'product_package_item_id');
+    }
 }

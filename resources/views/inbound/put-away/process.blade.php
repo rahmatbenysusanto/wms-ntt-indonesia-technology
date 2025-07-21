@@ -208,6 +208,7 @@
                     <input type="hidden" id="boxSerialNumber_type">
                     <input type="hidden" id="boxSerialNumber_index">
                     <input type="hidden" id="boxSerialNumber_indexDetail">
+                    <input type="hidden" id="boxSerialNumber_indexMaster">
 
                     <table>
                         <tr>
@@ -252,16 +253,13 @@
                         <thead>
                             <tr>
                                 <th>Serial Number</th>
+                                <th>Action</th>
                             </tr>
                         </thead>
                         <tbody id="listSnBox">
 
                         </tbody>
                     </table>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
-                    <a class="btn btn-primary" onclick="simpanSerialNumber()">Simpan Serial Number</a>
                 </div>
             </div>
         </div>
@@ -322,61 +320,37 @@
         localStorage.clear();
 
         loadDataProducts();
-        async function loadDataProducts() {
+        function loadDataProducts() {
             const products = @json($products);
+            console.log(products);
             const listProduct = [];
 
-            for (const parent of (products.product_parent_detail)) {
-                const dataSN = await getSerialNumber('parent', parent.product_parent_id, parent.id);
+            products.forEach((product, index) => {
                 const serialNumber = [];
-                (dataSN.data).forEach((sn) => {
-                    sn.select = 0;
-                    serialNumber.push(sn);
-                })
+                (product.product_package_item_sn).forEach((sn) => {
+                    serialNumber.push({
+                        serialNumber: sn.serial_number,
+                        select: 0
+                    });
+                });
 
                 listProduct.push({
-                    productParentDetailId: parent.id,
-                    productParentId: parent.product_parent_id,
-                    purchaseOrderDetailId: parent.purchase_order_detail_id,
-                    salesDoc: parent.sales_doc,
-                    qty: parent.qty,
+                    productPackageId: product.product_poackage_id,
+                    productPackageItemId: product.id,
+                    purchaseOrderDetailId: product.purchase_order_detail_id,
+                    salesDoc: product.purchase_order_detail.sales_doc,
+                    isParent: product.is_parent,
+                    qty: product.qty,
                     qtyPa: 0,
-                    item: parent.purchase_order_detail.item,
-                    material: products.product.material,
-                    poItemDesc: products.product.po_item_desc,
-                    prodHierarchyDesc: products.product.prod_hierarchy_desc,
-                    productId: parent.product_id,
-                    type: 'parent',
-                    serialNumber: serialNumber
+                    productId: product.product_id,
+                    item: product.purchase_order_detail.item,
+                    material: product.purchase_order_detail.material,
+                    poItemDesc: product.purchase_order_detail.po_item_desc,
+                    prodHierarchyDesc: product.purchase_order_detail.prod_hierarchy_desc,
+                    serialNumber: serialNumber,
+                    indexMaster: index
                 });
-            }
-
-            for (const child of (products.product_child)) {
-                for (const childDetail of (child.product_child_detail)) {
-                    const dataSN = await getSerialNumber('child', childDetail.product_child_id, childDetail.id);
-                    const serialNumber = [];
-                    (dataSN.data).forEach((sn) => {
-                        sn.select = 0;
-                        serialNumber.push(sn);
-                    })
-
-                    listProduct.push({
-                        productChildDetailId: childDetail.id,
-                        productChildId: childDetail.product_child_id,
-                        purchaseOrderDetailId: childDetail.purchase_order_detail_id,
-                        salesDoc: childDetail.sales_doc,
-                        qty: childDetail.qty,
-                        qtyPa: 0,
-                        item: childDetail.purchase_order_detail.item,
-                        material: child.product.material,
-                        poItemDesc: child.product.po_item_desc,
-                        prodHierarchyDesc: child.product.prod_hierarchy_desc,
-                        productId: childDetail.product_id,
-                        type: 'child',
-                        serialNumber: serialNumber
-                    });
-                }
-            }
+            });
 
             localStorage.setItem('master', JSON.stringify(listProduct));
             viewProductMaster();
@@ -403,7 +377,7 @@
                     <tr>
                         <td class="text-center">${product.item}</td>
                         <td>${product.salesDoc}</td>
-                        <td>${product.type === 'parent' ? '<span class="badge bg-info-subtle text-info">Parent</span>' : ''}</td>
+                        <td class="text-center">${product.isParent === 1 ? '<span class="badge bg-danger-subtle text-danger">Parent</span>' : '<span class="badge bg-secondary-subtle text-secondary">Child</span>'}</td>
                         <td>${product.material}</td>
                         <td>${product.poItemDesc}</td>
                         <td>${product.prodHierarchyDesc}</td>
@@ -423,7 +397,7 @@
             (products[index].serialNumber).forEach((sn) => {
                 html += `
                     <tr>
-                        <td>${sn.serial_number}</td>
+                        <td>${sn.serialNumber}</td>
                     </tr>
                 `;
             });
@@ -463,7 +437,7 @@
                 html += `
                         <tr>
                             <td>${number}</td>
-                            <td>${item.type === 'parent' ? '<span class="badge bg-info-subtle text-info">Parent</span>' : ''}</td>
+                            <td>${item.isParent === 1 ? '<span class="badge bg-danger-subtle text-danger">Parent</span>' : '<span class="badge bg-secondary-subtle text-secondary">Child</span>'}</td>
                             <td>${item.item}</td>
                             <td>${item.salesDoc}</td>
                             <td>${item.material}</td>
@@ -494,7 +468,7 @@
             const child = [];
 
             addBox.forEach((item) => {
-                if (item.type === 'parent') {
+                if (parseInt(item.isParent) === 1) {
                     if (parseInt(item.qtySelect) !== 0) {
                         // Update QTY Master
                         master[item.index].qtyPa = parseInt(master[item.index].qtyPa) + parseInt(item.qtySelect);
@@ -535,12 +509,12 @@
                     html += `
                         <tr>
                             <td class="text-center fw-bold">${item.boxNumber}</td>
-                            <td><span class="badge bg-info-subtle text-info">Parent</span></td>
+                            <td><span class="badge bg-danger-subtle text-danger">Parent</span></td>
                             <td>${parent.item}</td>
                             <td>${parent.salesDoc}</td>
                             <td>${parent.material}</td>
                             <td class="text-center fw-bold">${parent.qtySelect}</td>
-                            <td><a class="btn btn-info btn-sm" onclick="boxSerialNumber('parent', '${index}', '${indexParent}')">Detail Serial Number</a></td>
+                            <td><a class="btn btn-info btn-sm" onclick="serialNumber('parent', '${index}', '${indexParent}', '${parent.indexMaster}')">Serial Number</a></td>
                             <td><a class="btn btn-danger btn-sm" onclick="deleteBox(${index})">Delete</a></td>
                         </tr>
                     `;
@@ -550,12 +524,12 @@
                     html += `
                         <tr>
                             <td class="text-center fw-bold"></td>
-                            <td></td>
+                            <td><span class="badge bg-secondary-subtle text-secondary">Child</span></td>
                             <td>${child.item}</td>
                             <td>${child.salesDoc}</td>
                             <td>${child.material}</td>
                             <td class="text-center fw-bold">${child.qtySelect}</td>
-                            <td><a class="btn btn-info btn-sm" onclick="boxSerialNumber('child', '${index}', '${indexChild}')">Detail Serial Number</a></td>
+                            <td><a class="btn btn-info btn-sm" onclick="serialNumber('child', '${index}', '${indexChild}', '${child.indexMaster}')">Serial Number</a></td>
                             <td></td>
                         </tr>
                     `;
@@ -563,6 +537,194 @@
             });
 
             document.getElementById('listBox').innerHTML = html;
+        }
+
+        function serialNumber(type, index, indexDetail, indexMaster) {
+            const box = JSON.parse(localStorage.getItem('box')) ?? [];
+            const master = JSON.parse(localStorage.getItem('master')) ?? [];
+
+            // Form Select Serial Number
+            viewSelectSnAvailable(indexMaster);
+
+            // Load Jika sudah punya SN
+            if (type === 'parent') {
+                document.getElementById('boxSerialNumber_item').innerText = box[index].parent[indexDetail].item;
+                document.getElementById('boxSerialNumber_salesDoc').innerText = box[index].parent[indexDetail].salesDoc;
+                document.getElementById('boxSerialNumber_material').innerText = box[index].parent[indexDetail].material;
+                document.getElementById('boxSerialNumber_qty').innerText = box[index].parent[indexDetail].qtySelect;
+
+                const serialNumber = box[index].parent[indexDetail].serialNumber;
+                localStorage.setItem('serialNumber', JSON.stringify(serialNumber));
+            } else {
+                document.getElementById('boxSerialNumber_item').innerText = box[index].child[indexDetail].item;
+                document.getElementById('boxSerialNumber_salesDoc').innerText = box[index].child[indexDetail].salesDoc;
+                document.getElementById('boxSerialNumber_material').innerText = box[index].child[indexDetail].material;
+                document.getElementById('boxSerialNumber_qty').innerText = box[index].child[indexDetail].qtySelect;
+
+                const serialNumber = box[index].child[indexDetail].serialNumber;
+                localStorage.setItem('serialNumber', JSON.stringify(serialNumber));
+            }
+
+            document.getElementById('boxSerialNumber_type').value = type;
+            document.getElementById('boxSerialNumber_index').value = index;
+            document.getElementById('boxSerialNumber_indexDetail').value = indexDetail;
+            document.getElementById('boxSerialNumber_indexMaster').value = indexMaster;
+
+            viewListSerialNumber();
+            $('#boxSerialNumberModal').modal('show');
+        }
+
+        function viewListSerialNumber() {
+            const serialNumber = JSON.parse(localStorage.getItem('serialNumber')) ?? [];
+            let html = '';
+
+            serialNumber.forEach((sn, index) => {
+                html += `
+                    <tr>
+                        <td><input type="text" class="form-control" value="${sn}" onchange="changeSN(${index}, this.value)"></td>
+                        <td><a class="btn btn-danger btn-sm" onclick="deleteSN(${index})">Delete</a></td>
+                    </tr>
+                `;
+            });
+
+            document.getElementById('listSnBox').innerHTML = html;
+        }
+
+        function changeSN(indexSN, value) {
+            const box = JSON.parse(localStorage.getItem('box')) ?? [];
+            const serialNumber = JSON.parse(localStorage.getItem('serialNumber')) ?? [];
+
+            const type = document.getElementById('boxSerialNumber_type').value;
+            const index = document.getElementById('boxSerialNumber_index').value;
+            const indexDetail = document.getElementById('boxSerialNumber_indexDetail').value;
+
+            serialNumber[indexSN] = value;
+
+            if (type === 'parent') {
+                box[index].parent[indexDetail].serialNumber = serialNumber;
+            } else {
+                box[index].child[indexDetail].serialNumber = serialNumber;
+            }
+
+            localStorage.setItem('serialNumber', JSON.stringify(serialNumber));
+            viewListSerialNumber();
+        }
+
+        function deleteSN(indexDelete) {
+            const box = JSON.parse(localStorage.getItem('box')) ?? [];
+            const master = JSON.parse(localStorage.getItem('master')) ?? [];
+            const serialNumber = JSON.parse(localStorage.getItem('serialNumber')) ?? [];
+
+            const type = document.getElementById('boxSerialNumber_type').value;
+            const index = document.getElementById('boxSerialNumber_index').value;
+            const indexDetail = document.getElementById('boxSerialNumber_indexDetail').value;
+            const indexMaster = document.getElementById('boxSerialNumber_indexMaster').value;
+
+            const masterSN = master[indexMaster].serialNumber;
+            const masterSNFind = masterSN.find(i => i.serialNumber === serialNumber[indexDelete]);
+            masterSNFind.select = 0;
+
+            serialNumber.splice(indexDelete, 1);
+
+            if (type === 'parent') {
+                box[index].parent[indexDetail].serialNumber = serialNumber;
+            } else {
+                box[index].child[indexDetail].serialNumber = serialNumber;
+            }
+
+            localStorage.setItem('box', JSON.stringify(box));
+            localStorage.setItem('master', JSON.stringify(master));
+            localStorage.setItem('serialNumber', JSON.stringify(serialNumber));
+
+            viewSelectSnAvailable(indexMaster);
+            viewListSerialNumber();
+        }
+
+        function viewSelectSnAvailable(indexMaster) {
+            const master = JSON.parse(localStorage.getItem('master')) ?? [];
+
+            const serialNumberMaster = master[indexMaster].serialNumber;
+            const serialNumberAvailable = serialNumberMaster.filter(i => parseInt(i.select) === 0);
+            let htmlSelect = '<option value="">-- Pilih Serial Number --</option>';
+            serialNumberAvailable.forEach((sn) => {
+                htmlSelect += `<option>${sn.serialNumber}</option>`;
+            });
+            document.getElementById('selectSerialNumber').innerHTML = htmlSelect;
+        }
+
+        function pilihSerialNumber() {
+            const box = JSON.parse(localStorage.getItem('box')) ?? [];
+            const master = JSON.parse(localStorage.getItem('master')) ?? [];
+            const serialNumber = JSON.parse(localStorage.getItem('serialNumber')) ?? [];
+
+            const type = document.getElementById('boxSerialNumber_type').value;
+            const index = document.getElementById('boxSerialNumber_index').value;
+            const indexDetail = document.getElementById('boxSerialNumber_indexDetail').value;
+            const indexMaster = document.getElementById('boxSerialNumber_indexMaster').value;
+
+            if (type === 'parent') {
+                if (parseInt(box[index].parent[indexDetail].qtySelect + 1) > serialNumber.count) {
+                    Swal.fire({
+                        title: 'Error!',
+                        text: 'Jumlah serial number melebihi qty',
+                        icon: 'warning'
+                    });
+
+                    return true;
+                }
+            } else {
+                if (parseInt(box[index].child[indexDetail].qtySelect + 1) > serialNumber.count) {
+                    Swal.fire({
+                        title: 'Error!',
+                        text: 'Jumlah serial number melebihi qty',
+                        icon: 'warning'
+                    });
+
+                    return true;
+                }
+            }
+
+            const valueSN = document.getElementById('selectSerialNumber').value;
+            serialNumber.push(valueSN);
+            localStorage.setItem('serialNumber', JSON.stringify(serialNumber));
+
+            const masterSN = master[indexMaster].serialNumber;
+            const masterSNFilter = masterSN.find(i => i.serialNumber === valueSN);
+            masterSNFilter.select = 1;
+            localStorage.setItem('master', JSON.stringify(master));
+
+            // Save SN to BOX
+            if (type === 'parent') {
+                box[index].parent[indexDetail].serialNumber = serialNumber;
+            } else {
+                box[index].child[indexDetail].serialNumber = serialNumber;
+            }
+            localStorage.setItem('box', JSON.stringify(box));
+
+            document.getElementById('selectSerialNumber').value = "";
+            viewListSerialNumber();
+            viewSelectSnAvailable(indexMaster);
+        }
+
+        function tambahManualSerialNumber() {
+            const serialNumber = JSON.parse(localStorage.getItem('serialNumber')) ?? [];
+            const box = JSON.parse(localStorage.getItem('box')) ?? [];
+
+            const type = document.getElementById('boxSerialNumber_type').value;
+            const index = document.getElementById('boxSerialNumber_index').value;
+            const indexDetail = document.getElementById('boxSerialNumber_indexDetail').value;
+            const indexMaster = document.getElementById('boxSerialNumber_indexMaster').value;
+
+            serialNumber.push("");
+
+            if (type === 'parent') {
+                box[index].parent[indexDetail].serialNumber = serialNumber;
+            } else {
+                box[index].child[indexDetail].serialNumber = serialNumber;
+            }
+
+            localStorage.setItem('serialNumber', JSON.stringify(serialNumber));
+            viewListSerialNumber();
         }
 
         function deleteBox(index) {
@@ -609,188 +771,6 @@
             viewListBox();
         }
 
-        function boxSerialNumber(type, index, indexDetail) {
-            const box = JSON.parse(localStorage.getItem('box')) ?? [];
-            const master = JSON.parse(localStorage.getItem('master')) ?? [];
-            let SNAvailable = [];
-
-            if (type === 'parent') {
-                document.getElementById('boxSerialNumber_item').innerText = box[index].parent[indexDetail].item;
-                document.getElementById('boxSerialNumber_salesDoc').innerText = box[index].parent[indexDetail].salesDoc;
-                document.getElementById('boxSerialNumber_material').innerText = box[index].parent[indexDetail].material;
-                document.getElementById('boxSerialNumber_qty').innerText = box[index].parent[indexDetail].qtySelect;
-                document.getElementById('boxSerialNumber_type').value = box[index].parent[indexDetail].type;
-                document.getElementById('boxSerialNumber_index').value = index;
-                document.getElementById('boxSerialNumber_indexDetail').value = indexDetail;
-
-                localStorage.setItem('serialNumber', JSON.stringify(box[index].parent[indexDetail].serialNumber));
-
-                const listSN = master[box[index].parent[indexDetail].index].serialNumber;
-                SNAvailable = listSN.filter(i => parseInt(i.select) === 0);
-            } else {
-                document.getElementById('boxSerialNumber_item').innerText = box[index].child[indexDetail].item;
-                document.getElementById('boxSerialNumber_salesDoc').innerText = box[index].child[indexDetail].salesDoc;
-                document.getElementById('boxSerialNumber_material').innerText = box[index].child[indexDetail].material;
-                document.getElementById('boxSerialNumber_qty').innerText = box[index].child[indexDetail].qtySelect;
-                document.getElementById('boxSerialNumber_type').value = box[index].child[indexDetail].type;
-                document.getElementById('boxSerialNumber_index').value = index;
-                document.getElementById('boxSerialNumber_indexDetail').value = indexDetail;
-
-                localStorage.setItem('serialNumber', JSON.stringify(box[index].child[indexDetail].serialNumber));
-
-                const listSN = master[box[index].child[indexDetail].index].serialNumber;
-                SNAvailable = listSN.filter(i => parseInt(i.select) === 0);
-            }
-
-            // Load Serial Number Master
-            console.log(SNAvailable);
-            let html = '<option value="">Pilih Serial Number</option>';
-            SNAvailable.forEach((sn) => {
-                html+= `<option>${sn.serial_number}</option>`;
-            });
-
-            document.getElementById('selectSerialNumber').innerHTML = html;
-
-            viewBoxSerialNumber();
-            $('#boxSerialNumberModal').modal('show');
-        }
-
-        function viewBoxSerialNumber() {
-            const serialNumber = JSON.parse(localStorage.getItem('serialNumber')) ?? [];
-            let html = '';
-
-            serialNumber.forEach((sn, index) => {
-                html +=
-                `    <tr>
-                        <td><input type="text" class="form-control" value="${sn}" onchange="changeSerialNumber(${index}, this.value)"></td>
-                        <td><a class="btn btn-danger btn-sm" onclick="deleteSerialNumber(${index})">Delete</a></td>
-                    </tr>
-                `;
-            });
-
-            document.getElementById('listSnBox').innerHTML = html;
-        }
-
-        function changeSerialNumber(index, value) {
-            const serialNumber = JSON.parse(localStorage.getItem('serialNumber')) ?? [];
-
-            serialNumber[index] = value;
-
-            localStorage.setItem('serialNumber', JSON.stringify(serialNumber));
-            viewBoxSerialNumber();
-        }
-
-        function deleteSerialNumber(index) {
-            const serialNumber = JSON.parse(localStorage.getItem('serialNumber')) ?? [];
-
-            serialNumber.splice(index, 1);
-
-            localStorage.setItem('serialNumber', JSON.stringify(serialNumber));
-            viewBoxSerialNumber();
-        }
-
-        function tambahManualSerialNumber() {
-            const box = JSON.parse(localStorage.getItem('box')) ?? [];
-            const serialNumber = JSON.parse(localStorage.getItem('serialNumber')) ?? [];
-
-            serialNumber.push("");
-
-            localStorage.setItem('serialNumber', JSON.stringify(serialNumber));
-            viewBoxSerialNumber();
-        }
-
-        function pilihSerialNumber() {
-            const serialNumber = JSON.parse(localStorage.getItem('serialNumber')) ?? [];
-            const valueSN = document.getElementById('selectSerialNumber').value;
-
-            if (serialNumber.includes(valueSN)) {
-                Swal.fire({
-                    title: 'Warning!',
-                    text: 'Serial Number Sudah ada didalam list',
-                    icon: 'warning'
-                });
-
-                return true;
-            }
-
-            serialNumber.push(valueSN);
-
-            document.getElementById('selectSerialNumber').value = "";
-            localStorage.setItem('serialNumber', JSON.stringify(serialNumber));
-            viewBoxSerialNumber();
-        }
-
-        function simpanSerialNumber() {
-            const serialNumber = JSON.parse(localStorage.getItem('serialNumber')) ?? [];
-            const box = JSON.parse(localStorage.getItem('box')) ?? [];
-            const master = JSON.parse(localStorage.getItem('master')) ?? [];
-            const qtyProduct = document.getElementById('boxSerialNumber_qty').value;
-
-            if (serialNumber.length > parseInt(qtyProduct)) {
-                Swal.fire({
-                    title: 'Warning!',
-                    text: 'Serial Number melebihi qty product',
-                    icon: 'error'
-                });
-
-                return true;
-            }
-
-            const type = document.getElementById('boxSerialNumber_type').value;
-            const index = document.getElementById('boxSerialNumber_index').value;
-            const indexDetail = document.getElementById('boxSerialNumber_indexDetail').value;
-
-            if (type === 'parent') {
-                const masterIndex = box[index].parent[indexDetail].index;
-                const masterSN = master[masterIndex].serialNumber;
-
-                // Reset Master yang ada didalam box
-                (box[index].parent[indexDetail].serialNumber).forEach((sn) => {
-                    const findMasterSN = masterSN.find(i => i.serial_number === sn);
-                    if (findMasterSN) {
-                        findMasterSN.select = 0;
-                    }
-                });
-
-                box[index].parent[indexDetail].serialNumber = serialNumber;
-
-                // Hide Serial Number Master yang dipilih
-                serialNumber.forEach((sn) => {
-                    const findMasterSN = masterSN.find(i => i.serial_number === sn);
-                    if (findMasterSN) {
-                        findMasterSN.select = 1;
-                    }
-                });
-
-            } else {
-                const masterIndex = box[index].child[indexDetail].index;
-                const masterSN = master[masterIndex].serialNumber;
-
-                // Reset Master yang ada didalam box
-                (box[index].child[indexDetail].serialNumber).forEach((sn) => {
-                    const findMasterSN = masterSN.find(i => i.serial_number === sn);
-                    if (findMasterSN) {
-                        findMasterSN.select = 0;
-                    }
-                });
-
-                box[index].child[indexDetail].serialNumber = serialNumber;
-
-                // Hide Serial Number Master yang dipilih
-                serialNumber.forEach((sn) => {
-                    const findMasterSN = masterSN.find(i => i.serial_number === sn);
-                    if (findMasterSN) {
-                        findMasterSN.select = 1;
-                    }
-                });
-            }
-
-            localStorage.setItem('serialNumber', JSON.stringify([]));
-            localStorage.setItem('master', JSON.stringify(master));
-            localStorage.setItem('box', JSON.stringify(box));
-            $('#boxSerialNumberModal').modal('hide');
-        }
-
         function processPutAway() {
             Swal.fire({
                 title: "Are you sure?",
@@ -830,11 +810,8 @@
                         data: {
                             _token: '{{ csrf_token() }}',
                             box: JSON.parse(localStorage.getItem('box')) ?? [],
-                            raw: document.getElementById('raw').value,
-                            area: document.getElementById('area').value,
-                            rak: document.getElementById('rak').value,
                             bin: document.getElementById('bin').value,
-                            productParentId: '{{ request()->get('id') }}'
+                            productPackageId: '{{ request()->get('id') }}'
                         },
                         success: (res) => {
                             if (res.status) {

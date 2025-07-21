@@ -8,8 +8,7 @@ class Inventory extends Model
 {
     protected $table = 'inventory';
     protected $fillable = [
-        'purc_doc',
-        'sales_doc',
+        'purchase_order_id',
         'stock'
     ];
 }
