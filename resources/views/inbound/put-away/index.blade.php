@@ -82,9 +82,11 @@
                                     <td>{{ \Carbon\Carbon::parse($item->created_at)->translatedFormat('d F Y H:i') }}</td>
                                     <td>
                                         <div class="d-flex gap-2">
-                                            <a href="{{ route('inbound.put-away-detail', ['id' => $item->id]) }}" class="btn btn-primary btn-sm">Detail</a>
                                             @if($item->status == 'open')
+                                                <a href="{{ route('inbound.put-away-detail.open', ['id' => $item->id]) }}" class="btn btn-primary btn-sm">Detail</a>
                                                 <a href="{{ route('inbound.put-away-process', ['id' => $item->id]) }}" class="btn btn-info btn-sm">Put Away</a>
+                                            @else
+                                                <a href="{{ route('inbound.put-away-detail', ['id' => $item->id]) }}" class="btn btn-primary btn-sm">Detail</a>
                                             @endif
                                         </div>
                                     </td>

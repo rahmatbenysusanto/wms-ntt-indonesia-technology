@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Inventory;
 use App\Models\InventoryDetail;
 use App\Models\InventoryHistory;
+use App\Models\InventoryPackageItem;
 use App\Models\InventoryParent;
 use App\Models\InventoryParentDetail;
 use App\Models\Product;
@@ -24,46 +25,7 @@ class InventoryController extends Controller
 {
     public function index(Request $request): View
     {
-        $inventory = DB::table('inventory_detail')
-            ->leftJoin('purchase_order_detail', 'inventory_detail.purchase_order_detail_id', '=', 'purchase_order_detail.id')
-            ->leftJoin('purchase_order', 'purchase_order.id', '=', 'purchase_order_detail.purchase_order_id')
-            ->leftJoin('storage', 'inventory_detail.storage_id', '=', 'storage.id')
-            ->where('inventory_detail.stock', '!=', 0);
-
-        if ($request->query('purcDoc') != null) {
-            $inventory = $inventory->where('purchase_order.purc_doc', $request->query('purcDoc'));
-        }
-
-        if ($request->query('salesDoc') != null) {
-            $inventory = $inventory->where('purchase_order_detail.sales_doc', $request->query('salesDoc'));
-        }
-
-        if ($request->query('material') != null) {
-            $inventory = $inventory->where('purchase_order_detail.material', 'LIKE', '%'.$request->query('material').'%');
-        }
-
-        $inventory = $inventory->select([
-                'inventory_detail.id',
-                'inventory_detail.stock',
-                'inventory_detail.created_at',
-                'purchase_order_detail.sales_doc',
-                'purchase_order_detail.material',
-                'purchase_order_detail.item',
-                'purchase_order_detail.po_item_desc',
-                'purchase_order_detail.prod_hierarchy_desc',
-                'purchase_order.purc_doc',
-                'storage.raw',
-                'storage.area',
-                'storage.rak',
-                'storage.bin',
-            ])
-            ->latest('inventory_detail.created_at')
-            ->paginate(10)
-            ->appends([
-                'purcDoc' => $request->query('purcDoc'),
-                'salesDoc' => $request->query('salesDoc'),
-                'material' => $request->query('material'),
-            ]);
+        $inventory = [];
 
         $title = 'Inventory';
         return view('inventory.index', compact('title', 'inventory'));

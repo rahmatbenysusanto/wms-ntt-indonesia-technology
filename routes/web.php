@@ -77,6 +77,7 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
         Route::prefix('/put-away')->group(function () {
             Route::get('/', 'putAway')->name('inbound.put-away');
             Route::get('/detail', 'putAwayDetail')->name('inbound.put-away-detail');
+            Route::get('/detail/open', 'putAwayDetailOpen')->name('inbound.put-away-detail.open');
             Route::get('/process', 'putAwayProcess')->name('inbound.put-away-process');
             Route::post('/store', 'putAwayStore')->name('inbound.put-away.store');
 

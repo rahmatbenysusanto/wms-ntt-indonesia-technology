@@ -56,7 +56,7 @@
                                             <td>{{ $item->purchaseOrderDetail->po_item_desc }}</td>
                                             <td>{{ $item->purchaseOrderDetail->prod_hierarchy_desc }}</td>
                                             <td class="text-center fw-bold">{{ $item->qty }}</td>
-                                            <td class="text-center"><a class="btn btn-info btn-sm">Serial Number</a></td>
+                                            <td class="text-center"><a class="btn btn-info btn-sm" onclick="detailSerialNumber('{{ $item->id }}')">Serial Number</a></td>
                                             <td class="text-center">
                                                 @if($loop->iteration == 1)
                                                     <a class="btn btn-secondary btn-sm" onclick="showBarcodeModal('{{ $index }}')">Download Barcode</a>
@@ -284,12 +284,11 @@
             });
         }
 
-        function detailSerialNumber(type, id) {
+        function detailSerialNumber(id) {
             $.ajax({
                 url: '{{ route('inbound.put-away.find-serial-number-inventory') }}',
                 method: 'GET',
                 data: {
-                    type: type,
                     id: id
                 },
                 success: (res) => {

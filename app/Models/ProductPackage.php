@@ -15,6 +15,11 @@ class ProductPackage extends Model
         'created_by'
     ];
 
+    public function productPackageItem(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(ProductPackageItem::class);
+    }
+
     public function purchaseOrder(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(PurchaseOrder::class, 'purchase_order_id');

@@ -8,6 +8,7 @@ use App\Models\InventoryChild;
 use App\Models\InventoryChildDetail;
 use App\Models\InventoryDetail;
 use App\Models\InventoryHistory;
+use App\Models\InventoryItem;
 use App\Models\InventoryPackage;
 use App\Models\InventoryPackageItem;
 use App\Models\InventoryPackageItemSN;
@@ -411,6 +412,14 @@ class InboundController extends Controller
         return view('inbound.put-away.detail', compact('title', 'products'));
     }
 
+    public function putAwayDetailOpen(Request $request): View
+    {
+        $products = ProductPackage::with('productPackageItem', 'productPackageItem.purchaseOrderDetail', 'productPackageItem.productPackageItemSn', 'purchaseOrder')->where('id', $request->query('id'))->get();
+
+        $title = 'Put Away';
+        return view('inbound.put-away.detail-open', compact('title', 'products'));
+    }
+
     public function putAwayProcess(Request $request): View
     {
         $products = ProductPackageItem::with([
@@ -444,11 +453,7 @@ class InboundController extends Controller
 
     public function findSNInventory(Request $request): \Illuminate\Http\JsonResponse
     {
-        if ($request->get('type') == 'parent') {
-            $serialNumber = SerialNumber::where('inventory_parent_detail_id', $request->get('id'))->get();
-        } else {
-            $serialNumber = SerialNumber::where('inventory_child_detail_id', $request->get('id'))->get();
-        }
+        $serialNumber = InventoryPackageItemSN::where('inventory_package_item_id', $request->get('id'))->get();
 
         return response()->json([
             'data' => $serialNumber
@@ -495,7 +500,7 @@ class InboundController extends Controller
                 $inventoryPackage = InventoryPackage::create([
                     'purchase_order_id'     => $productPackage->purchase_order_id,
                     'storage_id'            => $request->post('bin'),
-                    'number'                => $putAwayNumber,
+                    'number'                => $putAwayNumber.'-'.$numberBox,
                     'reff_number'           => $numberBox.' of '.$totalBox,
                     'qty_item'              => 0,
                     'qty'                   => 0,
@@ -539,6 +544,25 @@ class InboundController extends Controller
                         'created_by'                    => Auth::id()
                     ]);
 
+                    $purchaseOrder = PurchaseOrder::find($productPackage->purchase_order_id);
+                    $checkInventoryItem = InventoryItem::where('purc_doc', $purchaseOrder->purc_doc)
+                        ->where('sales_doc', $parent['salesDoc'])
+                        ->where('product_id', $parent['productId'])
+                        ->where('storage_id', $request->post('bin'))
+                        ->whereDate('created_at', now()->toDateString())
+                        ->first();
+                    if ($checkInventoryItem == null) {
+                        InventoryItem::create([
+                            'purc_doc'          => $purchaseOrder->purc_doc,
+                            'sales_doc'         => $parent['salesDoc'],
+                            'product_id'        => $parent['productId'],
+                            'stock'             => $parent['qtySelect'],
+                            'storage_id'        => $request->post('bin'),
+                        ]);
+                    } else {
+                        InventoryItem::where('id', $checkInventoryItem->id)->increment('stock', $parent['qtySelect']);
+                    }
+
                     $salesDocs[] = $parent['salesDoc'];
                     $stock += $parent['qtySelect'];
                     $qtyItem++;
@@ -579,6 +603,25 @@ class InboundController extends Controller
                         'type'                          => 'inbound',
                         'created_by'                    => Auth::id()
                     ]);
+
+                    $purchaseOrder = PurchaseOrder::find($productPackage->purchase_order_id);
+                    $checkInventoryItem = InventoryItem::where('purc_doc', $purchaseOrder->purc_doc)
+                        ->where('sales_doc', $child['salesDoc'])
+                        ->where('product_id', $child['productId'])
+                        ->where('storage_id', $request->post('bin'))
+                        ->whereDate('created_at', now()->toDateString())
+                        ->first();
+                    if ($checkInventoryItem == null) {
+                        InventoryItem::create([
+                            'purc_doc'          => $purchaseOrder->purc_doc,
+                            'sales_doc'         => $child['salesDoc'],
+                            'product_id'        => $child['productId'],
+                            'stock'             => $child['qtySelect'],
+                            'storage_id'        => $request->post('bin'),
+                        ]);
+                    } else {
+                        InventoryItem::where('id', $checkInventoryItem->id)->increment('stock', $child['qtySelect']);
+                    }
 
                     $salesDocs[] = $child['salesDoc'];
                     $stock += $child['qtySelect'];
