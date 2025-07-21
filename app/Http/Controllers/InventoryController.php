@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Inventory;
 use App\Models\InventoryDetail;
 use App\Models\InventoryHistory;
+use App\Models\InventoryItem;
 use App\Models\InventoryPackageItem;
 use App\Models\InventoryParent;
 use App\Models\InventoryParentDetail;
@@ -25,7 +26,27 @@ class InventoryController extends Controller
 {
     public function index(Request $request): View
     {
-        $inventory = [];
+        $inventory = InventoryItem::with(['storage', 'product'])
+        ->when(request('purc_doc'), function($query) {
+            $query->where('purc_doc', 'like', '%'.request('purc_doc').'%');
+        })
+            ->when(request('sales_doc'), function($query) {
+                $query->where('sales_doc', 'like', '%'.request('sales_doc').'%');
+            })
+            ->when(request('material'), function($query) {
+                $query->whereHas('product', function($q) {
+                    $q->where('name', 'like', '%'.request('material').'%')
+                        ->orWhere('code', 'like', '%'.request('material').'%');
+                });
+            })
+            ->where('stock', '!=', 0)
+            ->latest()
+            ->paginate(10)
+            ->appends([
+                'purc_doc'  => $request->query('purc_doc'),
+                'sales_doc' => $request->query('sales_doc'),
+                'material'  => $request->query('material'),
+            ]);
 
         $title = 'Inventory';
         return view('inventory.index', compact('title', 'inventory'));
@@ -33,66 +54,20 @@ class InventoryController extends Controller
 
     public function detail(Request $request): View
     {
-        $inventory = InventoryDetail::with('storage', 'purchaseOrderDetail')->where('id', $request->query('id'))->first();
-        $detail = [];
-        $inventoryParent = DB::table('inventory_parent')
-            ->leftJoin('inventory_parent_detail', 'inventory_parent.id', '=', 'inventory_parent_detail.inventory_parent_id')
-            ->where('inventory_parent_detail.purchase_order_detail_id', $inventory->purchase_order_detail_id)
-            ->where('inventory_parent_detail.sales_doc', $request->query('sales-doc'))
+        $inventory = InventoryItem::with('storage', 'product', 'purchaseOrder', 'purchaseOrder.vendor', 'purchaseOrder.customer')->where('id', $request->query('id'))->first();
+        $detail = DB::table('inventory_package')
+            ->leftJoin('inventory_package_item', 'inventory_package_item.inventory_package_id', '=', 'inventory_package.id')
+            ->leftJoin('purchase_order_detail', 'purchase_order_detail.id', '=', 'inventory_package_item.purchase_order_detail_id')
+            ->where('inventory_package_item.product_id', $inventory->product_id)
+            ->where('inventory_package.purchase_order_id', $inventory->purchaseOrder->id)
+            ->where('purchase_order_detail.sales_doc', $inventory->sales_doc)
             ->select([
-                'inventory_parent.id',
-                'inventory_parent.pa_number',
-                'inventory_parent.pa_reff_number',
-                'inventory_parent_detail.id AS detail_id',
-                'inventory_parent_detail.qty'
-            ])->get();
-        foreach ($inventoryParent as $parent) {
-            $serialNumber = SerialNumber::where('inventory_parent_id', $parent->id)
-                ->where('inventory_parent_detail_id', $parent->detail_id)
-                ->select([
-                    'serial_number',
-                    'qty'
-                ])
-                ->get();
-
-            $detail[] = [
-                'pa_number'         => $parent->pa_number,
-                'pa_reff_number'    => $parent->pa_reff_number,
-                'type'              => 'parent',
-                'qty'               => $parent->qty,
-                'serial_number'     => $serialNumber
-            ];
-        }
-
-        $inventoryChild = DB::table('inventory_child')
-            ->leftJoin('inventory_child_detail', 'inventory_child.id', '=', 'inventory_child_detail.inventory_child_id')
-            ->leftJoin('inventory_parent', 'inventory_parent.id', '=', 'inventory_child.inventory_parent_id')
-            ->where('inventory_child_detail.purchase_order_detail_id', $inventory->purchase_order_detail_id)
-            ->where('inventory_child_detail.sales_doc', $request->query('sales-doc'))
-            ->select([
-                'inventory_child.id',
-                'inventory_parent.pa_number',
-                'inventory_parent.pa_reff_number',
-                'inventory_child_detail.id AS detail_id',
-                'inventory_child_detail.qty'
-            ])->get();
-        foreach ($inventoryChild as $child) {
-            $serialNumber = SerialNumber::where('inventory_child_id', $child->id)
-                ->where('inventory_child_detail_id', $child->detail_id)
-                ->select([
-                    'serial_number',
-                    'qty'
-                ])
-                ->get();
-
-            $detail[] = [
-                'pa_number'         => $child->pa_number,
-                'pa_reff_number'    => $child->pa_reff_number,
-                'type'              => 'child',
-                'qty'               => $child->qty,
-                'serial_number'     => $serialNumber
-            ];
-        }
+                'inventory_package.number',
+                'inventory_package.reff_number',
+                'inventory_package_item.qty',
+                'inventory_package_item.is_parent'
+            ])
+            ->get();
 
         $title = 'Inventory';
         return view('inventory.detail', compact('title', 'inventory', 'detail'));
@@ -100,32 +75,7 @@ class InventoryController extends Controller
 
     public function cycleCount(): View
     {
-        $cycleCount = DB::table('inventory_history')
-            ->leftJoin('inventory_parent', 'inventory_parent.id', '=', 'inventory_history.inventory_parent_id')
-            ->leftJoin('inventory_child', 'inventory_child.id', '=', 'inventory_history.inventory_child_id')
-            ->whereBetween('inventory_history.created_at', [date('Y-m-d 00:00:00'), date('Y-m-d 23:59:59')])
-            ->select([
-                'inventory_history.purc_doc',
-                'inventory_history.sales_doc',
-                'inventory_history.type',
-                'inventory_history.qty',
-                'inventory_history.created_at',
-                'inventory_parent.product_id AS parent_product_id',
-                'inventory_child.product_id AS child_product_id',
-            ])
-            ->paginate(10);
-
-        foreach ($cycleCount as $count) {
-            if ($count->parent_product_id != null) {
-                $product = Product::find($count->parent_product_id);
-            } else {
-                $product = Product::find($count->child_product_id);
-            }
-
-            $count->material = $product->material;
-            $count->po_item_desc = $product->po_item_desc;
-            $count->prod_hierarchy_desc = $product->prod_hierarchy_desc;
-        }
+        $cycleCount = InventoryHistory::with('purchaseOrder', 'purchaseOrderDetail')->latest()->paginate(10);
 
         $title = 'Cycle Count';
         return view('inventory.cycle-count', compact('title', 'cycleCount'));

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class InventoryHistory extends Model
 {
@@ -16,4 +17,14 @@ class InventoryHistory extends Model
         'type',
         'created_by'
     ];
+
+    public function purchaseOrder(): BelongsTo
+    {
+        return $this->belongsTo(PurchaseOrder::class, 'purchase_order_id');
+    }
+
+    public function purchaseOrderDetail(): BelongsTo
+    {
+        return $this->belongsTo(PurchaseOrderDetail::class, 'purchase_order_detail_id');
+    }
 }

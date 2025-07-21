@@ -28,12 +28,12 @@
                                 <tr>
                                     <td class="fw-bold">Purc Doc</td>
                                     <td class="fw-bold ps-3">:</td>
-                                    <td class="ps-1">{{ request()->get('purc-doc', null) }}</td>
+                                    <td class="ps-1">{{ $inventory->purc_doc }}</td>
                                 </tr>
                                 <tr>
                                     <td class="fw-bold">Sales Doc</td>
                                     <td class="fw-bold ps-3">:</td>
-                                    <td class="ps-1">{{ request()->get('sales-doc', null) }}</td>
+                                    <td class="ps-1">{{ $inventory->sales_doc }}</td>
                                 </tr>
                                 <tr>
                                     <td class="fw-bold">Storage Location</td>
@@ -45,19 +45,19 @@
                         <div class="col-4">
                             <table>
                                 <tr>
-                                    <td class="fw-bold">Item</td>
-                                    <td class="fw-bold ps-3">:</td>
-                                    <td class="ps-1">{{ $inventory->purchaseOrderDetail->item }}</td>
-                                </tr>
-                                <tr>
                                     <td class="fw-bold">Material</td>
                                     <td class="fw-bold ps-3">:</td>
-                                    <td class="ps-1">{{ $inventory->purchaseOrderDetail->material }}</td>
+                                    <td class="ps-1">{{ $inventory->product->material }}</td>
                                 </tr>
                                 <tr>
                                     <td class="fw-bold">PO Item Desc</td>
                                     <td class="fw-bold ps-3">:</td>
-                                    <td class="ps-1">{{ $inventory->purchaseOrderDetail->po_item_desc }}</td>
+                                    <td class="ps-1">{{ $inventory->product->po_item_desc }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">Prod Hierarchy Desc</td>
+                                    <td class="fw-bold ps-3">:</td>
+                                    <td class="ps-1">{{ $inventory->product->prod_hierarchy_desc }}</td>
                                 </tr>
                             </table>
                         </div>
@@ -66,12 +66,17 @@
                                 <tr>
                                     <td class="fw-bold">Vendor</td>
                                     <td class="fw-bold ps-3">:</td>
-                                    <td class="ps-1">{{ $inventory->purchaseOrderDetail->vendor_name }}</td>
+                                    <td class="ps-1">{{ $inventory->purchaseOrder->vendor->name }}</td>
                                 </tr>
                                 <tr>
                                     <td class="fw-bold">Customer Name</td>
                                     <td class="fw-bold ps-3">:</td>
-                                    <td class="ps-1">{{ $inventory->purchaseOrderDetail->customer_name }}</td>
+                                    <td class="ps-1">{{ $inventory->purchaseOrder->customer->name }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">Stock</td>
+                                    <td class="fw-bold ps-3">:</td>
+                                    <td class="ps-1">{{ number_format($inventory->stock) }}</td>
                                 </tr>
                             </table>
                         </div>
@@ -92,33 +97,25 @@
                                 <tr>
                                     <th>#</th>
                                     <th>PA Number</th>
-                                    <th>Type</th>
-                                    <th>Serial Number</th>
-                                    <th>QTY</th>
+                                    <th>Box</th>
+                                    <th class="text-center">Type</th>
+                                    <th class="text-center">QTY</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @foreach($detail as $item)
                                     <tr>
                                         <td>{{ $loop->iteration }}</td>
-                                        <td>{{ $item['pa_reff_number'] ?? $item['pa_number'] }}</td>
-                                        <td>
-                                            @if($item['type'] == 'parent')
-                                                <span class="badge bg-info-subtle text-info">Parent</span>
+                                        <td>{{ $item->number }}</td>
+                                        <td>{{ $item->reff_number }}</td>
+                                        <td class="text-center">
+                                            @if($item->is_parent == 1)
+                                                <span class="badge bg-danger-subtle text-danger"> Parent </span>
                                             @else
-                                                <span class="badge bg-secondary-subtle text-secondary">Child</span>
+                                                <span class="badge bg-secondary-subtle text-secondary"> Child </span>
                                             @endif
                                         </td>
-                                        <td>
-                                            @foreach($item['serial_number'] as $sn)
-                                                <div>{{ $sn->serial_number }}</div>
-                                            @endforeach
-                                        </td>
-                                        <td>
-                                            @foreach($item['serial_number'] as $sn)
-                                                <div>{{ $sn->qty }}</div>
-                                            @endforeach
-                                        </td>
+                                        <td class="text-center fw-bold">{{ number_format($item->qty) }}</td>
                                     </tr>
                                 @endforeach
                             </tbody>

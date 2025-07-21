@@ -53,7 +53,6 @@
                                     <th>#</th>
                                     <th>Purc Doc</th>
                                     <th>Sales Doc</th>
-                                    <th class="text-center">Item</th>
                                     <th>Material</th>
                                     <th>PO Item Desc</th>
                                     <th class="text-center">Stock</th>
@@ -64,86 +63,85 @@
                                 </tr>
                             </thead>
                             <tbody>
-{{--                                @foreach($inventory as $index => $item)--}}
-{{--                                    <tr>--}}
-{{--                                        <td>{{ $inventory->firstItem() + $index }}</td>--}}
-{{--                                        <td>{{ $item->purc_doc }}</td>--}}
-{{--                                        <td>{{ $item->sales_doc }}</td>--}}
-{{--                                        <td class="text-center">{{ $item->item }}</td>--}}
-{{--                                        <td>{{ $item->material }}</td>--}}
-{{--                                        <td>{{ $item->po_item_desc }}</td>--}}
-{{--                                        <td class="text-center fw-bold">{{ number_format($item->stock) }}</td>--}}
-{{--                                        <td>--}}
-{{--                                            @if($item->raw == '-')--}}
-{{--                                                <span class="badge bg-danger-subtle text-danger"> Cross Docking </span>--}}
-{{--                                            @else--}}
-{{--                                                {{ $item->raw.' - '.$item->area.' - '.$item->rak.' - '.$item->bin }}--}}
-{{--                                            @endif--}}
-{{--                                        </td>--}}
-{{--                                        <td>{{ \Carbon\Carbon::parse($item->created_at)->translatedFormat('d F Y H:i') }}</td>--}}
-{{--                                        <td>--}}
-{{--                                            @php--}}
-{{--                                                $tanggalMasuk = \Carbon\Carbon::parse($item->created_at);--}}
-{{--                                                $today = \Carbon\Carbon::now();--}}
-{{--                                                $totalHari = $tanggalMasuk->diffInDays($today);--}}
+                                @foreach($inventory as $index => $item)
+                                    <tr>
+                                        <td>{{ $inventory->firstItem() + $index }}</td>
+                                        <td>{{ $item->purc_doc }}</td>
+                                        <td>{{ $item->sales_doc }}</td>
+                                        <td>{{ $item->product->material }}</td>
+                                        <td>{{ $item->product->po_item_desc }}</td>
+                                        <td class="text-center fw-bold">{{ number_format($item->stock) }}</td>
+                                        <td>
+                                            @if($item->storage->raw == '-')
+                                                <span class="badge bg-danger-subtle text-danger"> Cross Docking </span>
+                                            @else
+                                                {{ $item->storage->raw.' - '.$item->storage->area.' - '.$item->storage->rak.' - '.$item->storage->bin }}
+                                            @endif
+                                        </td>
+                                        <td>{{ \Carbon\Carbon::parse($item->created_at)->translatedFormat('d F Y H:i') }}</td>
+                                        <td>
+                                            @php
+                                                $tanggalMasuk = \Carbon\Carbon::parse($item->created_at);
+                                                $today = \Carbon\Carbon::now();
+                                                $totalHari = $tanggalMasuk->diffInDays($today);
 
-{{--                                                if ($totalHari <= 90) {--}}
-{{--                                                    $label = '0 - 90 Hari';--}}
-{{--                                                    $class = 'bg-success-subtle text-success';--}}
-{{--                                                } elseif ($totalHari <= 180) {--}}
-{{--                                                    $label = '91 - 180 Hari';--}}
-{{--                                                    $class = 'bg-warning-subtle text-warning';--}}
-{{--                                                } elseif ($totalHari <= 365) {--}}
-{{--                                                    $label = '181 - 365 Hari';--}}
-{{--                                                    $class = 'bg-orange-subtle text-orange';--}}
-{{--                                                } else {--}}
-{{--                                                    $label = '> 365 Hari';--}}
-{{--                                                    $class = 'bg-danger-subtle text-danger';--}}
-{{--                                                }--}}
-{{--                                            @endphp--}}
-{{--                                            <span class="badge {{ $class }}">--}}
-{{--                                                {{ $label }} ({{ number_format($totalHari) }} hari)--}}
-{{--                                            </span>--}}
-{{--                                        </td>--}}
-{{--                                        <td><a href="{{ route('inventory.detail', ['id' => $item->id, 'purc-doc' => $item->purc_doc, 'sales-doc' => $item->sales_doc]) }}" class="btn btn-info btn-sm">Detail</a></td>--}}
-{{--                                    </tr>--}}
-{{--                                @endforeach--}}
+                                                if ($totalHari <= 90) {
+                                                    $label = '0 - 90 Hari';
+                                                    $class = 'bg-success-subtle text-success';
+                                                } elseif ($totalHari <= 180) {
+                                                    $label = '91 - 180 Hari';
+                                                    $class = 'bg-warning-subtle text-warning';
+                                                } elseif ($totalHari <= 365) {
+                                                    $label = '181 - 365 Hari';
+                                                    $class = 'bg-orange-subtle text-orange';
+                                                } else {
+                                                    $label = '> 365 Hari';
+                                                    $class = 'bg-danger-subtle text-danger';
+                                                }
+                                            @endphp
+                                            <span class="badge {{ $class }}">
+                                                {{ $label }} ({{ number_format($totalHari) }} hari)
+                                            </span>
+                                        </td>
+                                        <td><a href="{{ route('inventory.detail', ['id' => $item->id]) }}" class="btn btn-info btn-sm">Detail</a></td>
+                                    </tr>
+                                @endforeach
                             </tbody>
                         </table>
-{{--                        <div class="d-flex justify-content-end mt-2">--}}
-{{--                            @if ($inventory->hasPages())--}}
-{{--                                <ul class="pagination">--}}
-{{--                                    @if ($inventory->onFirstPage())--}}
-{{--                                        <li class="disabled"><span>&laquo; Previous</span></li>--}}
-{{--                                    @else--}}
-{{--                                        <li><a href="{{ $inventory->previousPageUrl() }}&per_page={{ request('per_page', 10) }}" rel="prev">&laquo; Previous</a></li>--}}
-{{--                                    @endif--}}
+                        <div class="d-flex justify-content-end mt-2">
+                            @if ($inventory->hasPages())
+                                <ul class="pagination">
+                                    @if ($inventory->onFirstPage())
+                                        <li class="disabled"><span>&laquo; Previous</span></li>
+                                    @else
+                                        <li><a href="{{ $inventory->previousPageUrl() }}&per_page={{ request('per_page', 10) }}" rel="prev">&laquo; Previous</a></li>
+                                    @endif
 
-{{--                                    @foreach ($inventory->links()->elements as $element)--}}
-{{--                                        @if (is_string($element))--}}
-{{--                                            <li class="disabled"><span>{{ $element }}</span></li>--}}
-{{--                                        @endif--}}
+                                    @foreach ($inventory->links()->elements as $element)
+                                        @if (is_string($element))
+                                            <li class="disabled"><span>{{ $element }}</span></li>
+                                        @endif
 
-{{--                                        @if (is_array($element))--}}
-{{--                                            @foreach ($element as $page => $url)--}}
-{{--                                                @if ($page == $inventory->currentPage())--}}
-{{--                                                    <li class="active"><span>{{ $page }}</span></li>--}}
-{{--                                                @else--}}
-{{--                                                    <li><a href="{{ $url }}&per_page={{ request('per_page', 10) }}">{{ $page }}</a></li>--}}
-{{--                                                @endif--}}
-{{--                                            @endforeach--}}
-{{--                                        @endif--}}
-{{--                                    @endforeach--}}
+                                        @if (is_array($element))
+                                            @foreach ($element as $page => $url)
+                                                @if ($page == $inventory->currentPage())
+                                                    <li class="active"><span>{{ $page }}</span></li>
+                                                @else
+                                                    <li><a href="{{ $url }}&per_page={{ request('per_page', 10) }}">{{ $page }}</a></li>
+                                                @endif
+                                            @endforeach
+                                        @endif
+                                    @endforeach
 
-{{--                                    @if ($inventory->hasMorePages())--}}
-{{--                                        <li><a href="{{ $inventory->nextPageUrl() }}&per_page={{ request('per_page', 10) }}" rel="next">Next &raquo;</a></li>--}}
-{{--                                    @else--}}
-{{--                                        <li class="disabled"><span>Next &raquo;</span></li>--}}
-{{--                                    @endif--}}
-{{--                                </ul>--}}
-{{--                            @endif--}}
+                                    @if ($inventory->hasMorePages())
+                                        <li><a href="{{ $inventory->nextPageUrl() }}&per_page={{ request('per_page', 10) }}" rel="next">Next &raquo;</a></li>
+                                    @else
+                                        <li class="disabled"><span>Next &raquo;</span></li>
+                                    @endif
+                                </ul>
+                            @endif
 
-{{--                        </div>--}}
+                        </div>
                     </div>
                 </div>
             </div>

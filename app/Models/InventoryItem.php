@@ -14,4 +14,19 @@ class InventoryItem extends Model
         'stock',
         'storage_id',
     ];
+
+    public function storage(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Storage::class, 'storage_id');
+    }
+
+    public function product(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Product::class, 'product_id');
+    }
+
+    public function purchaseOrder(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(PurchaseOrder::class, 'purc_doc', 'purc_doc');
+    }
 }
