@@ -34,6 +34,7 @@
                                     <th>Sales Doc</th>
                                     <th>Client</th>
                                     <th>Deliv Loc</th>
+                                    <th class="text-center">Deliv Dest</th>
                                     <th class="text-center">QTY Item</th>
                                     <th>Order Date</th>
                                     <th>Created By</th>
@@ -53,6 +54,17 @@
                                     </td>
                                     <td>{{ $out->customer->name }}</td>
                                     <td>{{ $out->deliv_loc }}</td>
+                                    <td class="text-center">
+                                        @if($out->deliv_dest == 'client')
+                                            Client
+                                        @elseif($out->deliv_dest == 'pm room')
+                                            PM Room
+                                        @elseif($out->deliv_dest == 'general room')
+                                            GR Room
+                                        @elseif($out->deliv_dest == 'spare room')
+                                            Spare Room
+                                        @endif
+                                    </td>
                                     <td class="text-center fw-bold">{{ number_format($out->qty_item) }}</td>
                                     <td>{{ \Carbon\Carbon::parse($out->created_at)->translatedFormat('d F Y H:i') }}</td>
                                     <td>{{ $out->user->name }}</td>

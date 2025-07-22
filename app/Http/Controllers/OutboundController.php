@@ -32,7 +32,7 @@ class OutboundController extends Controller
 {
     public function index(Request $request): View
     {
-        $outbound = Outbound::with('user', 'customer')->latest()->paginate(10);
+        $outbound = Outbound::with('user', 'customer')->where('type', 'outbound')->latest()->paginate(10);
 
         $title = 'Outbound';
         return view('outbound.index', compact('title', 'outbound'));
@@ -189,8 +189,6 @@ class OutboundController extends Controller
         try {
             DB::beginTransaction();
 
-            Log::info(json_encode($request->all()));
-
             $products = $request->post('products');
             $customer = Customer::find($request->post('customerId'));
             $qty_item = 0;
@@ -202,7 +200,7 @@ class OutboundController extends Controller
                 'purc_doc'      => $products[0]['purcDoc'],
                 'sales_docs'    => json_encode([]),
                 'outbound_date' => $request->post('outboundDate'),
-                'number'        => 'INV-' . date('ymd') . str_pad(rand(0, 999), 3, '0', STR_PAD_LEFT),
+                'number'        => 'INV-' . date('ymdHis') . str_pad(rand(0, 999), 3, '0', STR_PAD_LEFT),
                 'qty_item'      => 0,
                 'qty'           => 0,
                 'type'          => 'outbound',
