@@ -10,6 +10,7 @@ use App\Models\InventoryChild;
 use App\Models\InventoryChildDetail;
 use App\Models\InventoryDetail;
 use App\Models\InventoryHistory;
+use App\Models\InventoryPackage;
 use App\Models\InventoryParent;
 use App\Models\InventoryParentDetail;
 use App\Models\Outbound;
@@ -45,15 +46,9 @@ class OutboundController extends Controller
 
     public function create(): View
     {
-        $inventory = InventoryParent::with('product', 'storage', 'purchaseOrder')->where('storage_id', '!=', 1)->where('stock', '!=', 0)->latest()->get();
+        $inventory = [];
 
-        $salesDoc = Inventory::where('stock', '!=', 0)
-            ->groupBy('sales_doc')
-            ->select([
-                'sales_doc',
-                DB::raw('SUM(stock) as stock')
-            ])
-            ->get();
+        $salesDoc = InventoryPackage::with('purchaseOrder', 'storage')->where('qty', '!=', 0)->get();
 
         $customer = Customer::all();
 
@@ -63,11 +58,7 @@ class OutboundController extends Controller
 
     public function getItemBySalesDoc(Request $request): \Illuminate\Http\JsonResponse
     {
-        $products = InventoryParent::with('product', 'storage', 'purchaseOrder')
-            ->where('stock', '!=', 0)
-            ->where('sales_docs', 'LIKE', '%'.$request->get('salesDoc').'%')
-            ->latest()
-            ->get();
+        $products = InventoryPackage::with('storage', 'inventoryPackageItem', 'inventoryPackageItem.inventoryPackageItemSn', 'inventoryPackageItem.purchaseOrderDetail', 'purchaseOrder')->where('id', $request->get('id'))->first();
 
         return response()->json([
             'data' => $products

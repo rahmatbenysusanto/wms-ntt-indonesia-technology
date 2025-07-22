@@ -20,4 +20,9 @@ class InventoryPackageItem extends Model
     {
         return $this->belongsTo(PurchaseOrderDetail::class);
     }
+
+    public function inventoryPackageItemSn(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(InventoryPackageItemSn::class);
+    }
 }

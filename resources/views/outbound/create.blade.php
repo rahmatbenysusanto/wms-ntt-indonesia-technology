@@ -1,15 +1,17 @@
 @extends('layout.index')
 @section('title', 'Create Order')
+@section('sizeBarSize', 'sm')
 
 @section('content')
     <div class="row">
         <div class="col-12">
             <div class="page-title-box d-sm-flex align-items-center justify-content-between">
-                <h4 class="mb-sm-0">Order List</h4>
+                <h4 class="mb-sm-0">Create Order</h4>
                 <div class="page-title-right">
                     <ol class="breadcrumb m-0">
                         <li class="breadcrumb-item"><a href="javascript: void(0);">Outbound</a></li>
-                        <li class="breadcrumb-item active">Order List</li>
+                        <li class="breadcrumb-item">Order List</li>
+                        <li class="breadcrumb-item active">Create</li>
                     </ol>
                 </div>
             </div>
@@ -18,10 +20,7 @@
         <div class="col-12">
             <div class="card">
                 <div class="card-header">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <h4 class="card-title mn-0">Order Detail</h4>
-                        <a class="btn btn-primary" onclick="processCreateOrder()">Create Order</a>
-                    </div>
+                    <h4 class="card-title mb-0">Data Order</h4>
                 </div>
                 <div class="card-body">
                     <div class="row">
@@ -43,6 +42,8 @@
                             <select class="form-control" id="deliveryDest">
                                 <option value="client">Client</option>
                                 <option value="general room">General Room</option>
+                                <option value="pm room">PM Room</option>
+                                <option value="spare room">Spare Room</option>
                             </select>
                         </div>
                     </div>
@@ -50,33 +51,49 @@
             </div>
         </div>
 
-        <div class="col-12">
+        <div class="col-4">
             <div class="card">
                 <div class="card-header">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <h4 class="card-title mb-0">List Item</h4>
-                        <a class="btn btn-info" onclick="openModalProduct()">Add Product</a>
-                    </div>
+                    <h4 class="card-title mb-0">List Sales Doc</h4>
+                </div>
+                <div class="card-body">
+                    <table id="tabelSalesDoc" class="table table-striped align-middle">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Sales Doc</th>
+                                <th>Data Box</th>
+                                <th>QTY</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="listSalesDoc">
+
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="col-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title mb-0">List Product Order</h4>
                 </div>
                 <div class="card-body">
                     <table class="table table-striped align-middle">
                         <thead>
                             <tr>
-                                <th>#</th>
-                                <th>PA Number</th>
-                                <th>Type</th>
-                                <th>Purc Doc</th>
-                                <th>Sales Doc</th>
-                                <th>Item</th>
                                 <th>Material</th>
-                                <th>Desc</th>
-                                <th>QTY</th>
-                                <th>QTY Out</th>
-                                <th>Loc</th>
+                                <th class="text-center">Type</th>
+                                <th>Box</th>
+                                <th>Sales Doc</th>
+                                <th class="text-center">QTY</th>
+                                <th>QTY Outbound</th>
                                 <th>Serial Number</th>
+                                <th>Action</th>
                             </tr>
                         </thead>
-                        <tbody id="listItem">
+                        <tbody id="listProductOutbound">
 
                         </tbody>
                     </table>
@@ -85,176 +102,46 @@
         </div>
     </div>
 
-    <!-- Default Modals -->
-    <div id="listProductModal" class="modal fade" tabindex="-1" aria-labelledby="myModalLabel" aria-hidden="true" style="display: none;">
-        <div class="modal-dialog modal-fullscreen">
+    <!-- Serial Number Modals -->
+    <div id="serialNumberModal" class="modal fade" tabindex="-1" aria-labelledby="myModalLabel" aria-hidden="true" style="display: none;">
+        <div class="modal-dialog modal-xl">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="myModalLabel">List Products</h5>
+                    <h5 class="modal-title" id="myModalLabel">Serial Number Product</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"> </button>
                 </div>
                 <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">Sales Doc</label>
-                        <select class="form-control" id="listSalesDoc" onchange="changeSalesDoc(this.value)">
+                    <div class="row">
+                        <div class="col-6">
+                            <h4 class="card-title mb-2">Data Serial Number</h4>
+                            <table class="table table-striped align-middle">
+                                <thead>
+                                    <tr>
+                                        <th>Serial Number</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="listDataSN">
 
-                        </select>
-                    </div>
-
-                    <div class="table-responsive">
-                        <table class="table table-striped align-middle">
-                            <thead>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="col-6">
+                            <h4 class="card-title mb-2">Data Outbound Serial Number</h4>
+                            <table class="table table-striped align-middle">
+                                <thead>
                                 <tr>
-                                    <th>#</th>
-                                    <th>PA Number</th>
-                                    <th>Purc Doc</th>
-                                    <th>Sales Doc</th>
-                                    <th>Material</th>
-                                    <th>Desc</th>
-                                    <th class="text-center">QTY</th>
-                                    <th>Loc</th>
+                                    <th>Serial Number</th>
                                     <th>Action</th>
                                 </tr>
-                            </thead>
-                            <tbody id="listItemSalesDoc">
+                                </thead>
+                                <tbody id="listDataOutboundSN">
 
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div id="uploadSerialNumberModal" class="modal fade" tabindex="-1" aria-labelledby="myModalLabel" aria-hidden="true" style="display: none;">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="myModalLabel">Upload Serial Number</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"> </button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <table>
-                            <tr>
-                                <td class="fw-bold">Item</td>
-                                <td class="fw-bold ps-3">:</td>
-                                <td class="ps-1" id="SN_item"></td>
-                            </tr>
-                            <tr>
-                                <td class="fw-bold">Material</td>
-                                <td class="fw-bold ps-3">:</td>
-                                <td class="ps-1" id="SN_material"></td>
-                            </tr>
-                            <tr>
-                                <td class="fw-bold">Desc</td>
-                                <td class="fw-bold ps-3">:</td>
-                                <td class="ps-1" id="SN_desc"></td>
-                            </tr>
-                            <tr>
-                                <td class="fw-bold">Hierarchy</td>
-                                <td class="fw-bold ps-3">:</td>
-                                <td class="ps-1" id="SN_hie"></td>
-                            </tr>
-                        </table>
-                    </div>
-                    <div class="mb-3">
-                        <div class="row">
-                            <div class="col-8">
-                                <label class="form-label">Upload Excel Serial Number</label>
-                                <input type="file" class="form-control" id="uploadFileSN">
-                            </div>
-                            <div class="col-2">
-                                <label class="form-label text-white">-</label>
-                                <div>
-                                    <a class="btn btn-info w-100" onclick="processDateUploadSN()">Proses Data</a>
-                                </div>
-                            </div>
-                            <div class="col-2">
-                                <label class="form-label text-white">-</label>
-                                <div>
-                                    <a class="btn btn-secondary w-100" onclick="tambahSerialNumberManual()">Add Manual</a>
-                                </div>
-                            </div>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
-
-                    <table class="table table-striped align-middle">
-                        <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>Serial Number</th>
-                            <th>Action</th>
-                        </tr>
-                        </thead>
-                        <tbody id="listSerialNumberUpload">
-
-                        </tbody>
-                    </table>
-
-                    <input type="hidden" id="SN_index">
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
-                    <button type="button" class="btn btn-primary" onclick="uploadSerialNumberProcess()">Upload</button>
-                </div>
-
-            </div>
-        </div>
-    </div>
-
-    <div id="detailSerialNumberModal" class="modal fade" tabindex="-1" aria-labelledby="myModalLabel" aria-hidden="true" style="display: none;">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="myModalLabel">Detail Serial Number</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"> </button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <table>
-                            <tr>
-                                <td class="fw-bold">Item</td>
-                                <td class="fw-bold ps-3">:</td>
-                                <td class="ps-1" id="detail_SN_item"></td>
-                            </tr>
-                            <tr>
-                                <td class="fw-bold">Material</td>
-                                <td class="fw-bold ps-3">:</td>
-                                <td class="ps-1" id="detail_SN_material"></td>
-                            </tr>
-                            <tr>
-                                <td class="fw-bold">Desc</td>
-                                <td class="fw-bold ps-3">:</td>
-                                <td class="ps-1" id="detail_SN_desc"></td>
-                            </tr>
-                            <tr>
-                                <td class="fw-bold">Hierarchy</td>
-                                <td class="fw-bold ps-3">:</td>
-                                <td class="ps-1" id="detail_SN_hie"></td>
-                            </tr>
-                        </table>
-                    </div>
-
-                    <table class="table table-striped align-middle">
-                        <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>Serial Number</th>
-                        </tr>
-                        </thead>
-                        <tbody id="listDetailSerialNumberUpload">
-
-                        </tbody>
-                    </table>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
-                </div>
-
             </div>
         </div>
     </div>
@@ -264,183 +151,241 @@
     <script>
         localStorage.clear();
 
-        function viewSalesDoc() {
+        $(document).ready(function () {
+            $('#tabelSalesDoc').DataTable();
+        });
+
+        loadSalesDoc();
+        function loadSalesDoc() {
             const salesDoc = @json($salesDoc);
-            let html = '<option value="">-- Pilih Sales Doc --</option>';
+
+            localStorage.setItem('salesDoc', JSON.stringify(salesDoc));
+            viewSalesDoc();
+        }
+
+        function viewSalesDoc() {
+            const salesDoc = JSON.parse(localStorage.getItem('salesDoc')) ?? [];
+            let html = '';
+            let number = 1;
 
             salesDoc.forEach((item) => {
-                html += `<option>${item.sales_doc}</option>`
+                let salesDoc = '';
+                (JSON.parse(item.sales_docs)).forEach((detail) => {
+                    salesDoc += `<div>${detail}</div>`;
+                });
+
+                html += `
+                    <tr>
+                        <td>${number}</td>
+                        <td>${salesDoc}</td>
+                        <td>
+                            <div><b>Purc Doc: </b>${item.purchase_order.purc_doc}</div>
+                            <div>${item.number}</div>
+                            <div><b>Box: </b>${item.reff_number}</div>
+                            <div><b>Loc: </b>${item.storage.raw} - ${item.storage.area} - ${item.storage.rak} - ${item.storage.bin}</div>
+                        </td>
+                        <td>${item.qty}</td>
+                        <td><a class="btn btn-info btn-sm" onclick="pilihSalesDoc(${item.id})">Pilih</a></td>
+                    </tr>
+                `;
+
+                number++;
             });
 
             document.getElementById('listSalesDoc').innerHTML = html;
         }
 
-        function changeSalesDoc(value) {
+        function pilihSalesDoc(id) {
             $.ajax({
                 url: '{{ route('outbound.sales-doc') }}',
                 method: 'GET',
                 data: {
-                    salesDoc: value
+                    id: id
                 },
-                success: (res) => {
-                    console.log(res.data);
-                    localStorage.setItem('master', JSON.stringify(res.data));
-                    viewListMaster();
-                }
-            });
-        }
+                success: (res => {
+                    const products = [];
 
-        function viewListMaster() {
-            const products = JSON.parse(localStorage.getItem('master')) ?? [];
-            let html = '';
-            let number = 1;
-
-            products.forEach((product, index) => {
-                let salesDoc = '';
-                (JSON.parse(product.sales_docs)).forEach((item) => {
-                    salesDoc += `<div>${item}</div>`;
-                });
-
-                let storage = '-';
-                if (product.storage.id !== 1) {
-                    storage = `${product.storage.raw} - ${product.storage.area} - ${product.storage.rak} - ${product.storage.bin}`;
-                }
-
-                html += `
-                    <tr>
-                        <td>${number}</td>
-                        <td>${product.pa_reff_number ?? product.pa_number}</td>
-                        <td>${product.purchase_order.purc_doc}</td>
-                        <td>${salesDoc}</td>
-                        <td>${product.product.material}</td>
-                        <td>${product.product.po_item_desc}</td>
-                        <td class="text-center fw-bold">${product.stock}</td>
-                        <td>${storage}</td>
-                        <td><a class="btn btn-info btn-sm" onclick="pilihProduct(${index})">Pilih</a></td>
-                    </tr>
-                `;
-
-                number++;
-            });
-
-            document.getElementById('listItemSalesDoc').innerHTML = html;
-        }
-
-        function openModalProduct() {
-            viewSalesDoc();
-            $('#listProductModal').modal('show');
-        }
-
-        function pilihProduct(index) {
-            const products = JSON.parse(localStorage.getItem('master')) ?? [];
-
-            const product = products[index];
-
-            $.ajax({
-                url: '{{ route('outbound.inventory-product') }}',
-                method: 'GET',
-                data: {
-                    id: product.id,
-                },
-                success: (res) => {
-                    localStorage.setItem('products', JSON.stringify(res.data));
-                    $('#listProductModal').modal('hide');
-                    viewListProduct();
-                }
-            });
-        }
-
-        function viewListProduct() {
-            const products = JSON.parse(localStorage.getItem('products')) ?? [];
-            let html = '';
-            let number = 1;
-
-            products.forEach((product, index) => {
-                let serialNumber = '';
-                (product.serial_number).forEach((sn) => {
-                    serialNumber += `<div>${sn.serial_number}</div>`;
-                });
-
-                html += `
-                    <tr>
-                        <td>${number}</td>
-                        <td>${product.pa_number}
-                        <td>${product.type === 'parent' ? '<span class="badge bg-info-subtle text-info">Parent</span>' : ''}</td>
-                        <td>${product.purc_doc}</td>
-                        <td>${product.sales_doc}</td>
-                        <td>${product.item}</td>
-                        <td>${product.material}</td>
-                        <td>${product.po_item_desc}</td>
-                        <td>${product.qty}</td>
-                        <td><input type="number" class="form-control" value="${product.qty_select}" onclick="changeQty(${index}, this.value)"></td>
-                        <td>${product.storage}</td>
-                        <td>${serialNumber}</td>
-                        <td></td>
-                    </tr>
-                `;
-
-                number++;
-            });
-
-            document.getElementById('listItem').innerHTML = html;
-        }
-
-        function changeQty(index, value) {
-            const products = JSON.parse(localStorage.getItem('products')) ?? [];
-
-            products[index].qty_select = parseInt(value);
-
-            localStorage.setItem('products', JSON.stringify(products));
-            viewListProduct();
-        }
-
-        function processCreateOrder() {
-            Swal.fire({
-                title: "Are you sure?",
-                text: "Create Order",
-                icon: "warning",
-                showCancelButton: true,
-                customClass: {
-                    confirmButton: "btn btn-primary w-xs me-2 mt-2",
-                    cancelButton: "btn btn-danger w-xs mt-2"
-                },
-                confirmButtonText: "Yes, Create it!",
-                buttonsStyling: false,
-                showCloseButton: true
-            }).then(function(t) {
-                if (t.value) {
-
-                    $.ajax({
-                        url: '{{ route('outbound.store') }}',
-                        method: 'POST',
-                        data: {
-                            _token: '{{ csrf_token() }}',
-                            products: JSON.parse(localStorage.getItem('products')),
-                            delivLocation: document.getElementById('delivLocation').value,
-                            customerId: document.getElementById('customerId').value,
-                            deliveryDest: document.getElementById('deliveryDest').value
-                        },
-                        success: (res) => {
-                            if (res.status) {
-                                Swal.fire({
-                                    title: 'Success',
-                                    text: 'Create Order Successfully',
-                                    icon: 'success'
-                                }).then((e) => {
-                                    window.location.href = '{{ route('outbound.index') }}';
-                                });
-                            } else {
-                                Swal.fire({
-                                    title: 'Error',
-                                    text: 'Create Order Failed',
-                                    icon: 'error'
+                    (res.data.inventory_package_item).forEach((product) => {
+                        const dataSN = [];
+                        (product.inventory_package_item_sn).forEach((item) => {
+                            if (item.qty !== 0) {
+                                dataSN.push({
+                                    id: item.id,
+                                    serialNumber: item.serial_number,
+                                    select: 0
                                 });
                             }
-                        }
+                        });
+
+                        products.push({
+                            inventoryPackageItemId: product.id,
+                            isParent: product.is_parent,
+                            qty: product.qty,
+                            qtySelect: 0,
+                            material: product.purchase_order_detail.material,
+                            poItemDesc: product.purchase_order_detail.po_item_desc,
+                            prodHierarchyDesc: product.purchase_order_detail.prod_hierarchy_desc,
+                            salesDoc: product.purchase_order_detail.sales_doc,
+                            dataSN: dataSN,
+                            serialNumber: [],
+                            number: res.data.number,
+                            reffNumber: res.data.reff_number,
+                            loc: res.data.storage.raw+'-'+res.data.storage.area+'-'+res.data.storage.rak+'-'+res.data.storage.bin,
+                            disable: 0
+                        });
                     });
 
-                }
+                    localStorage.setItem('salesDocProduct', JSON.stringify(products));
+                    viewProductOutbound();
+                })
             });
         }
-     </script>
+
+        function viewProductOutbound() {
+            const products = JSON.parse(localStorage.getItem('salesDocProduct')) ?? [];
+            let html = '';
+
+            products.forEach((item, index) => {
+                if (item.disable === 0) {
+                    let box = '';
+                    if (index === 0) {
+                        box = `
+                        <div><b>PA: </b>${item.number}</div>
+                        <div><b>Box: </b>${item.reffNumber}</div>
+                        <div><b>Loc: </b>${item.loc}</div>
+                    `;
+                    }
+
+                    html += `
+                        <tr>
+                            <td>
+                                <div>${item.material}</div>
+                                <div>${item.poItemDesc}</div>
+                                <div>${item.prodHierarchyDesc}</div>
+                            </td>
+                            <td class="text-center">${item.isParent === 1 ? '<span class="badge bg-danger-subtle text-danger">Parent</span>' : '<span class="badge bg-secondary-subtle text-secondary">Child</span>'}</td>
+                            <td>${box}</td>
+                            <td>${item.salesDoc}</td>
+                            <td class="text-center fw-bold">${item.qty}</td>
+                            <td><input type="number" class="form-control" onchange="changeQtySelect(${index}, this.value)"></td>
+                            <td><a class="btn btn-info btn-sm" onclick="openSerialNumberModal(${index})">Serial Number</a></td>
+                            <td><a class="btn btn-danger btn-sm" onclick="deleteProduct(${index})">Delete</a></td>
+                        </tr>
+                    `;
+                }
+            });
+
+            document.getElementById('listProductOutbound').innerHTML = html;
+        }
+
+        function deleteProduct(index) {
+            const products = JSON.parse(localStorage.getItem('salesDocProduct')) ?? [];
+
+            products[index].disable = 1;
+
+            localStorage.setItem('salesDocProduct', JSON.stringify(products));
+            viewProductOutbound();
+        }
+
+        function changeQtySelect(index, value) {
+            const products = JSON.parse(localStorage.getItem('salesDocProduct')) ?? [];
+
+            products[index] = value;
+
+            localStorage.setItem('salesDocProduct', JSON.stringify(products));
+            viewProductOutbound();
+        }
+
+        function openSerialNumberModal(index) {
+            const products = JSON.parse(localStorage.getItem('salesDocProduct')) ?? [];
+            const product = products[index];
+
+            let dataSN = '';
+            (product.dataSN).forEach((item, indexSN) => {
+                let button = '';
+                if (item.select === 0) {
+                    button = `<a class="btn btn-info btn-sm" onclick="pilihSN(${index}, ${indexSN})">Pilih SN</a>`;
+                }
+
+                dataSN += `
+                    <tr>
+                        <td>${item.serialNumber}</td>
+                        <td>${button}</td>
+                    </tr>
+                `;
+            });
+
+            let serialNumber = '';
+            (product.serialNumber).forEach((item, indexSN) => {
+                serialNumber += `
+                    <tr>
+                        <td>${item.serialNumber}</td>
+                        <td><a class="btn btn-info btn-sm" onclick="deleteSN(${index}, ${indexSN})">Delete</a></td>
+                    </tr>
+                `;
+            });
+
+            document.getElementById('listDataOutboundSN').innerHTML = serialNumber;
+            document.getElementById('listDataSN').innerHTML = dataSN;
+            $('#serialNumberModal').modal('show');
+        }
+
+        function pilihSN(index, indexSN) {
+            const products = JSON.parse(localStorage.getItem('salesDocProduct')) ?? [];
+            const product = products[index];
+
+            product.dataSN[indexSN].select = 1;
+            product.serialNumber.push(product.dataSN[indexSN]);
+
+            localStorage.setItem('salesDocProduct', JSON.stringify(products));
+            viewSerialNumberReload(index);
+        }
+
+        function deleteSN(index, indexSN) {
+            const products = JSON.parse(localStorage.getItem('salesDocProduct')) ?? [];
+            const product = products[index];
+
+            const findSN = product.serialNumber[indexSN];
+            const findDataSN = product.dataSN.find(item => parseInt(item.id) === parseInt(findSN.id));
+
+            findDataSN.select = 0;
+            product.serialNumber.splice(indexSN, 1);
+
+            localStorage.setItem('salesDocProduct', JSON.stringify(products));
+            viewSerialNumberReload(index);
+        }
+
+        function viewSerialNumberReload(index) {
+            const products = JSON.parse(localStorage.getItem('salesDocProduct')) ?? [];
+            const product = products[index];
+
+            let dataSN = '';
+            (product.dataSN).forEach((item, indexSN) => {
+                let button = '';
+                if (item.select === 0) {
+                    button = `<a class="btn btn-info btn-sm" onclick="pilihSN(${index}, ${indexSN})">Pilih SN</a>`;
+                }
+
+                dataSN += `
+                    <tr>
+                        <td>${item.serialNumber}</td>
+                        <td>${button}</td>
+                    </tr>
+                `;
+            });
+
+            let serialNumber = '';
+            (product.serialNumber).forEach((item, indexSN) => {
+                serialNumber += `
+                    <tr>
+                        <td>${item.serialNumber}</td>
+                        <td><a class="btn btn-info btn-sm" onclick="deleteSN(${index}, ${indexSN})">Delete</a></td>
+                    </tr>
+                `;
+            });
+
+            document.getElementById('listDataOutboundSN').innerHTML = serialNumber;
+            document.getElementById('listDataSN').innerHTML = dataSN;
+        }
+    </script>
 @endsection
