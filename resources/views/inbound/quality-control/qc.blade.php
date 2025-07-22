@@ -222,6 +222,85 @@
         </div>
     </div>
 
+    <div id="serialNumberDirectOutboundModal" class="modal fade" tabindex="-1" aria-labelledby="myModalLabel" aria-hidden="true" style="display: none;">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="myModalLabel">Detail Serial Number</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"> </button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <table>
+                            <tr>
+                                <td class="fw-bold">Item</td>
+                                <td class="fw-bold ps-3">:</td>
+                                <td class="ps-1" id="detail_Direct_item"></td>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold">Material</td>
+                                <td class="fw-bold ps-3">:</td>
+                                <td class="ps-1" id="detail_Direct_material"></td>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold">Desc</td>
+                                <td class="fw-bold ps-3">:</td>
+                                <td class="ps-1" id="detail_Direct_desc"></td>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold">Hierarchy</td>
+                                <td class="fw-bold ps-3">:</td>
+                                <td class="ps-1" id="detail_Direct_hie"></td>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold">QTY</td>
+                                <td class="fw-bold ps-3">:</td>
+                                <td class="ps-1" id="detail_Direct_qty"></td>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold">Sales Doc</td>
+                                <td class="fw-bold ps-3">:</td>
+                                <td class="ps-1" id="detail_Direct_sales_doc"></td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <!-- Inject Data -->
+                    <input type="hidden" id="detail_Direct_index">
+                    <input type="hidden" id="detail_Direct_productIndex">
+
+                    <div class="mb-3">
+                        <div class="row">
+                            <div class="col-2">
+                                <label class="form-label text-white">-</label>
+                                <div>
+                                    <a class="btn btn-secondary w-100" onclick="addSerialNumberManualDirect()">SN Manual</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <table class="table table-striped align-middle">
+                        <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Serial Number</th>
+                            <th>Action</th>
+                        </tr>
+                        </thead>
+                        <tbody id="listDetailSerialNumberDirect">
+
+                        </tbody>
+                    </table>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
 @endsection
 
 @section('js')
@@ -479,7 +558,9 @@
                     salesDoc: item.salesDoc,
                     serialNumber: [],
                     putAwayStep: 1,
-                    parent: item.parent
+                    parent: item.parent,
+                    qtyDirect: 0,
+                    SnDirect: []
                 });
             });
 
@@ -504,14 +585,17 @@
                             <td>${product.sku}</td>
                             <td class="text-center">${product.parent === 1 ? '<span class="badge bg-danger-subtle text-danger">Parent</span>' : '<span class="badge bg-secondary-subtle text-secondary">Child</span>'}</td>
                             <td>
-                                <div class="form-check form-switch form-switch-md">
-                                  <input
-                                    class="form-check-input"
-                                    type="checkbox"
-                                    role="switch"
-                                    ${parseInt(product.putAwayStep) === 1 ? 'checked' : ''}
-                                    onchange="handlePutAwayStepChange(this, ${index}, ${indexProduct})"
-                                  >
+                                <div class="d-flex gap-2">
+                                    <div class="form-check form-switch form-switch-md">
+                                      <input
+                                        class="form-check-input"
+                                        type="checkbox"
+                                        role="switch"
+                                        ${parseInt(product.putAwayStep) === 1 ? 'checked' : ''}
+                                        onchange="handlePutAwayStepChange(this, ${index}, ${indexProduct})"
+                                      >
+                                    </div>
+                                    ${product.putAwayStep === 0 ? `<a class="btn btn-secondary btn-sm" onclick="directOutboundSerialNumber(${index}, ${indexProduct})">Pilih SN</a>` : ''}
                                 </div>
                             </td>
                             <td>${product.salesDoc}</td>
@@ -529,6 +613,99 @@
             });
 
             document.getElementById('listQualityControl').innerHTML = html;
+        }
+
+        function directOutboundSerialNumber(index, indexProduct) {
+            const qc = JSON.parse(localStorage.getItem('qc')) ?? [];
+            const product = qc[index][indexProduct];
+
+            document.getElementById('detail_Direct_item').innerText = product.item;
+            document.getElementById('detail_Direct_material').innerText = product.sku;
+            document.getElementById('detail_Direct_desc').innerText = product.name;
+            document.getElementById('detail_Direct_hie').innerText = product.type;
+            document.getElementById('detail_Direct_qty').innerText = product.qty - product.qtyDirect;
+            document.getElementById('detail_Direct_sales_doc').innerText = product.salesDoc;
+            document.getElementById('detail_Direct_index').value = index;
+            document.getElementById('detail_Direct_productIndex').value = indexProduct;
+
+            // List SN
+            const serialNumber = product.SnDirect;
+            let html = '';
+            let number = 1;
+            serialNumber.forEach((item) => {
+                html += `
+                    <tr>
+                        <td>${number}</td>
+                        <td><input type="text" class="form-control" value="${item}" onchange="changeSNDirect(${index}, ${indexProduct}, ${indexSN}, this.value)"></td>
+                        <td><a class="btn btn-danger btn-sm" onclick="deleteSNDirect(${index}, ${indexProduct}, ${indexSN})">Delete</a></td>
+                    </tr>
+                `;
+
+                number++;
+            });
+
+            document.getElementById('listDetailSerialNumberDirect').innerHTML = html;
+            $('#serialNumberDirectOutboundModal').modal('show');
+        }
+
+        function deleteSNDirect(index, indexProduct, indexSN) {
+            const qc = JSON.parse(localStorage.getItem('qc')) ?? [];
+            const product = qc[index][indexProduct];
+            const serialNumber = product.SnDirect;
+
+            serialNumber.splice(indexSN, 1);
+            product.qtyDirect = serialNumber.length;
+
+            localStorage.setItem('qc', JSON.stringify(qc));
+            viewSerialNumberDirect();
+        }
+
+        function changeSNDirect(index, indexProduct, indexSN, value) {
+            const qc = JSON.parse(localStorage.getItem('qc')) ?? [];
+            const product = qc[index][indexProduct];
+            const serialNumber = product.SnDirect;
+
+            serialNumber[indexSN] = value;
+            product.qtyDirect = serialNumber.length;
+
+            localStorage.setItem('qc', JSON.stringify(qc));
+            viewSerialNumberDirect();
+        }
+
+        function viewSerialNumberDirect() {
+            const index = document.getElementById('detail_Direct_index').value;
+            const indexProduct = document.getElementById('detail_Direct_productIndex').value;
+
+            const qc = JSON.parse(localStorage.getItem('qc')) ?? [];
+            const product = qc[index][indexProduct];
+            const serialNumber = product.SnDirect;
+            let html = '';
+            let number = 1;
+            serialNumber.forEach((item, indexSN) => {
+                html += `
+                    <tr>
+                        <td>${number}</td>
+                        <td><input type="text" class="form-control" value="${item}" onchange="changeSNDirect(${index}, ${indexProduct}, ${indexSN}, this.value)"></td>
+                        <td><a class="btn btn-danger btn-sm" onclick="deleteSNDirect(${index}, ${indexProduct}, ${indexSN})">Delete</a></td>
+                    </tr>
+                `;
+
+                number++;
+            });
+
+            document.getElementById('listDetailSerialNumberDirect').innerHTML = html;
+        }
+
+        function addSerialNumberManualDirect() {
+            const index = document.getElementById('detail_Direct_index').value;
+            const indexProduct = document.getElementById('detail_Direct_productIndex').value;
+            const qc = JSON.parse(localStorage.getItem('qc')) ?? [];
+            const product = qc[index][indexProduct].SnDirect;
+
+            product.push("");
+
+            localStorage.setItem('qc', JSON.stringify(qc));
+            viewSerialNumberDirect();
         }
 
         function serialNumber(index, indexProduct) {
@@ -864,7 +1041,7 @@
                                     },
                                     buttonsStyling: false
                                 }).then(() => {
-                                    window.location.href = '{{ route('inbound.quality-control') }}';
+                                    {{--window.location.href = '{{ route('inbound.quality-control') }}';--}}
                                 });
                             } else {
                                 Swal.fire({

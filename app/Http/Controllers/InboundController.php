@@ -303,6 +303,23 @@ class InboundController extends Controller
         return view('inbound.quality-control.qc', compact('title', 'request', 'products', 'purchaseOrder'));
     }
 
+    private function storeDirectOutbound($request, $productPackageId): void
+    {
+        $inventoryPackage = InventoryPackage::create([
+            'purchase_order_id' => $request->post('purchaseOrderId'),
+            'storage_id'        => 1,
+            'number'            => 'PA-'.date('YmdHis').rand(100, 999),
+            'reff_number'       => 'Cross Docking',
+            'qty_item'          => 0,
+            'qty'               => 0,
+            'sales_docs'        => json_encode([]),
+            'product_package_id'=> $productPackageId,
+            'created_by'        => Auth::id(),
+        ]);
+
+
+    }
+
     public function qualityControlStoreProcess(Request $request): \Illuminate\Http\JsonResponse
     {
         try {
@@ -311,6 +328,8 @@ class InboundController extends Controller
             $purchaseOrder = PurchaseOrder::find($request->post('purchaseOrderId'));
 
             foreach ($request->post('qualityControl') as $products) {
+                $directOutbound = false;
+
                 $productPackage = ProductPackage::create([
                     'purchase_order_id' => $request->post('purchaseOrderId'),
                     'qty_item'          => count($products),
@@ -327,7 +346,7 @@ class InboundController extends Controller
                         'product_id'                => $purchaseOrderDetail->product_id,
                         'purchase_order_detail_id'  => $product['id'],
                         'is_parent'                 => $product['parent'],
-                        'qty'                       => $product['qty']
+                        'qty'                       => $product['qty'] - $product['qtyDirect']
                     ]);
 
                     foreach ($product['serialNumber'] ?? [] as $serialNumber) {
@@ -347,11 +366,133 @@ class InboundController extends Controller
                     PurchaseOrderDetail::where('id', $product['id'])->update(['status' => $status]);
 
                     $qty += $product['qty'];
+
+                    if ($product['putAwayStep'] == 0) {
+                        $directOutbound = true;
+                    }
                 }
 
                 ProductPackage::where('id', $productPackage->id)->update([
                     'qty' => $qty,
                 ]);
+
+
+                // Create Direct Outbound langsung di inventory
+                if ($directOutbound) {
+                    $inventoryPackage = InventoryPackage::create([
+                        'purchase_order_id' => $request->post('purchaseOrderId'),
+                        'storage_id'        => 1,
+                        'number'            => 'PA-'.date('YmdHis').rand(100, 999),
+                        'reff_number'       => 'Cross Docking',
+                        'qty_item'          => 0,
+                        'qty'               => 0,
+                        'sales_docs'        => json_encode([]),
+                        'product_package_id'=> $productPackage->id,
+                        'created_by'        => Auth::id(),
+                    ]);
+
+                    $qtyItemDirect = 0;
+                    $qtyDirect = 0;
+                    $salesDocsDirect = [];
+
+                    // Insert Inventory Package Item
+                    foreach ($products as $product) {
+                        if ($product['putAwayStep'] == 0) {
+                            $purchaseOrderDetail = PurchaseOrderDetail::where('id', $product['id'])->first();
+
+                            $productPackageItem = ProductPackageItem::create([
+                                'product_package_id'        => $productPackage->id,
+                                'product_id'                => $purchaseOrderDetail->product_id,
+                                'purchase_order_detail_id'  => $product['id'],
+                                'is_parent'                 => $product['parent'],
+                                'direct_outbound'           => 1,
+                                'qty'                       => $product['qtyDirect']
+                            ]);
+
+                            $inventoryPackageItem = InventoryPackageItem::create([
+                                'inventory_package_id'      => $inventoryPackage->id,
+                                'product_id'                => $purchaseOrderDetail->product_id,
+                                'purchase_order_detail_id'  => $purchaseOrderDetail->id,
+                                'is_parent'                 => $product['parent'],
+                                'direct_outbound'           => 1,
+                                'qty'                       => $product['qtyDirect'],
+                            ]);
+
+                            // Insert Inventory Package Item SN
+                            foreach ($product['SnDirect'] ?? [] as $snDirect) {
+                                InventoryPackageItemSN::create([
+                                    'inventory_package_item_id' => $inventoryPackageItem->id,
+                                    'serial_number'             => $snDirect,
+                                    'qty'                       => 1
+                                ]);
+
+                                ProductPackageItemSN::create([
+                                    'product_package_item_id'   => $productPackageItem->id,
+                                    'serial_number'             => $snDirect,
+                                ]);
+                            }
+
+                            // Tambah Stock Inventory
+                            $checkInventory = Inventory::where('purchase_order_id', $request->post('purchaseOrderId'))->first();
+                            if ($checkInventory != null) {
+                                Inventory::where('id', $checkInventory->id)->increment('stock', $product['qtyDirect']);
+                                $inventoryId = $checkInventory->id;
+                            } else {
+                                $inventory = Inventory::create([
+                                    'purchase_order_id' => $request->post('purchaseOrderId'),
+                                    'stock'             => $product['qtyDirect'],
+                                ]);
+                                $inventoryId = $inventory->id;
+                            }
+
+                            InventoryDetail::create([
+                                'inventory_id'              => $inventoryId,
+                                'purchase_order_detail_id'  => $purchaseOrderDetail->id,
+                                'storage_id'                => 1,
+                                'inventory_package_item_id' => $inventoryPackageItem->id,
+                                'sales_doc'                 => $purchaseOrderDetail->sales_doc,
+                                'qty'                       => $product['qtyDirect'],
+                            ]);
+
+                            $checkInventoryItem = InventoryItem::where('purc_doc', $purchaseOrder->purc_doc)
+                                ->where('sales_doc', $purchaseOrderDetail->sales_doc)
+                                ->where('product_id', $purchaseOrderDetail->product_id)
+                                ->where('storage_id', 1)
+                                ->first();
+                            if ($checkInventoryItem != null) {
+                                InventoryItem::where('id', $checkInventoryItem->id)->increment('stock', $product['qtyDirect']);
+                            } else {
+                                InventoryItem::create([
+                                    'purc_doc'      => $purchaseOrder->purc_doc,
+                                    'sales_doc'     => $purchaseOrderDetail->sales_doc,
+                                    'product_id'    => $purchaseOrderDetail->product_id,
+                                    'storage_id'    => 1,
+                                    'stock'         => $product['qtyDirect'],
+                                ]);
+                            }
+
+                            // Inventory History
+                            InventoryHistory::create([
+                                'purchase_order_id'             => $purchaseOrder->id,
+                                'purchase_order_detail_id'      => $purchaseOrderDetail->id,
+                                'inventory_package_item_id'     => $inventoryPackageItem->id,
+                                'qty'                           => $product['qtyDirect'],
+                                'type'                          => 'inbound',
+                                'created_by'                    => Auth::id()
+                            ]);
+
+                            $qtyItemDirect++;
+                            $qtyDirect += $product['qtyDirect'];
+                            $salesDocsDirect[] = $purchaseOrderDetail->sales_doc;
+                        }
+                    }
+
+                    InventoryPackage::where('id', $inventoryPackage->id)->update([
+                        'qty_item'          => $qtyItemDirect,
+                        'qty'               => $qtyDirect,
+                        'sales_docs'        => json_encode(array_unique($salesDocsDirect)),
+                    ]);
+                }
             }
 
             // Check Purchase Order
@@ -368,7 +509,7 @@ class InboundController extends Controller
                 'status' => $status
             ]);
 
-            DB::commit();
+//            DB::commit();
             return response()->json([
                 'status' => true,
             ]);
