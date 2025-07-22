@@ -10,11 +10,15 @@ use App\Models\InventoryChild;
 use App\Models\InventoryChildDetail;
 use App\Models\InventoryDetail;
 use App\Models\InventoryHistory;
+use App\Models\InventoryItem;
 use App\Models\InventoryPackage;
+use App\Models\InventoryPackageItem;
+use App\Models\InventoryPackageItemSN;
 use App\Models\InventoryParent;
 use App\Models\InventoryParentDetail;
 use App\Models\Outbound;
 use App\Models\OutboundDetail;
+use App\Models\OutboundDetailSN;
 use App\Models\OutboundSerialNumber;
 use App\Models\SerialNumber;
 use App\Models\Storage;
@@ -28,17 +32,7 @@ class OutboundController extends Controller
 {
     public function index(Request $request): View
     {
-        $outbound = Outbound::with('user')->latest()->paginate(10);
-
-        foreach ($outbound as $item) {
-            $salesDocRaw = $item->sales_doc;
-            $decoded = json_decode($salesDocRaw, true);
-            if (is_string($decoded)) {
-                $decoded = json_decode($decoded, true);
-            }
-
-            $item->sales_doc = $decoded;
-        }
+        $outbound = Outbound::with('user', 'customer')->latest()->paginate(10);
 
         $title = 'Outbound';
         return view('outbound.index', compact('title', 'outbound'));
@@ -195,134 +189,87 @@ class OutboundController extends Controller
         try {
             DB::beginTransaction();
 
+            Log::info(json_encode($request->all()));
+
             $products = $request->post('products');
-            $inventoryParent = InventoryParent::where('id', $products[0]['inventory_parent_id'])->first();
             $customer = Customer::find($request->post('customerId'));
             $qty_item = 0;
+            $qty = 0;
+            $salesDocs = [];
 
             $outbound = Outbound::create([
-                'number'        => 'INV-' . date('ymd') . str_pad(rand(0, 999), 3, '0', STR_PAD_LEFT),
-                'purc_doc'      => $products[0]['purc_doc'],
-                'sales_doc'     => json_encode($inventoryParent->sales_docs),
-                'client'        => $customer->name,
                 'customer_id'   => $customer->id,
+                'purc_doc'      => $products[0]['purcDoc'],
+                'sales_docs'    => json_encode([]),
+                'outbound_date' => $request->post('outboundDate'),
+                'number'        => 'INV-' . date('ymd') . str_pad(rand(0, 999), 3, '0', STR_PAD_LEFT),
+                'qty_item'      => 0,
+                'qty'           => 0,
+                'type'          => 'outbound',
+                'status'        => 'close',
                 'deliv_loc'     => $request->post('delivLocation'),
                 'deliv_dest'    => $request->post('deliveryDest'),
-                'qty_item'      => 0,
                 'created_by'    => Auth::id()
             ]);
 
             foreach ($products as $product) {
-                if ($product['type'] == 'parent') {
+                if ($product['disable'] == 0) {
+                    // Insert Outbound Detail
                     $outboundDetail = OutboundDetail::create([
-                        'outbound_id'                   => $outbound->id,
-                        'product_id'                    => $product['product_id'],
-                        'inventory_parent_id'           => $product['inventory_parent_id'],
-                        'inventory_parent_detail_id'    => $product['inventory_parent_detail_id'],
-                        'inventory_child_id'            => null,
-                        'inventory_child_detail_id'     => null,
-                        'qty'                           => $product['qty_select'],
-                        'serial_number'                 => json_encode($product['sn_select'] ?? []),
+                        'outbound_id'               => $outbound->id,
+                        'inventory_package_item_id' => $product['inventoryPackageItemId'],
+                        'qty'                       => $product['qtySelect'],
                     ]);
 
-                    InventoryParent::where('id', $product['inventory_parent_id'])->decrement('stock', $product['qty_select']);
-                    InventoryParentDetail::where('id', $product['inventory_parent_detail_id'])->decrement('qty', $product['qty_select']);
-
-                    Inventory::where('purc_doc', $product['purc_doc'])->where('sales_doc', $product['sales_doc'])->decrement('stock', $product['qty_select']);
-                    InventoryDetail::where('purchase_order_detail_id', $product['purchase_order_detail_id'])->where('storage_id', $product['storage_id'])->decrement('stock', $product['qty_select']);
-                    InventoryHistory::create([
-                        'purc_doc'                      => $product['purc_doc'],
-                        'sales_doc'                     => $product['sales_doc'],
-                        'inventory_parent_id'           => $product['inventory_parent_id'],
-                        'inventory_parent_detail_id'    => $product['inventory_parent_detail_id'],
-                        'outbound_id'                   => $outbound->id,
-                        'outbound_detail_id'            => $outboundDetail->id,
-                        'type'                          => 'outbound',
-                        'qty'                           => $product['qty_select'],
-                    ]);
-
-                    foreach ($product['sn_select'] ?? [] as $sn) {
-                        SerialNumber::where('inventory_parent_id', $product['inventory_parent_id'])
-                            ->where('inventory_parent_detail_id', $product['inventory_parent_detail_id'])
-                            ->where('serial_number', $sn)
-                            ->decrement('qty', 1);
-
-                        OutboundSerialNumber::create([
-                            'outbound_id'       => $outbound->id,
-                            'serial_number'     => $sn,
+                    foreach ($product['serialNumber'] ?? [] as $serialNumber) {
+                        OutboundDetailSN::create([
+                            'outbound_detail_id'        => $outboundDetail->id,
+                            'inventory_package_item_id' => $product['inventoryPackageItemId'],
+                            'serial_number'             => $serialNumber['serialNumber'],
                         ]);
+
+                        InventoryPackageItemSN::where('inventory_package_item_id', $product['inventoryPackageItemId'])
+                            ->where('serial_number', $serialNumber['serialNumber'])
+                            ->update([
+                                'qty' => 0
+                            ]);
                     }
-                } else {
-                    $outboundDetail = OutboundDetail::create([
-                        'outbound_id'                   => $outbound->id,
-                        'product_id'                    => $product['product_id'],
-                        'inventory_parent_id'           => null,
-                        'inventory_parent_detail_id'    => null,
-                        'inventory_child_id'            => $product['child_id'],
-                        'inventory_child_detail_id'     => $product['child_detail_id'],
-                        'qty'                           => $product['qty_select'],
-                        'serial_number'                 => json_encode($product['sn_select'] ?? []),
-                    ]);
 
-                    InventoryChild::where('id', $product['child_id'])->decrement('stock', $product['qty_select']);
-                    InventoryChildDetail::where('id', $product['child_detail_id'])->decrement('qty', $product['qty_select']);
+                    // Decrement Stock
+                    InventoryPackage::where('id', $product['inventoryPackageId'])->decrement('qty', $product['qtySelect']);
+                    InventoryPackageItem::where('id', $product['inventoryPackageItemId'])->decrement('qty', $product['qtySelect']);
 
-                    Inventory::where('purc_doc', $product['purc_doc'])->where('sales_doc', $product['sales_doc'])->decrement('stock', $product['qty_select']);
-                    InventoryDetail::where('purchase_order_detail_id', $product['purchase_order_detail_id'])->where('storage_id', $product['storage_id'])->decrement('stock', $product['qty_select']);
+                    // Decrement Inventory
+                    Inventory::where('purchase_order_id', $product['purchaseOrderId'])->decrement('stock', $product['qtySelect']);
+                    InventoryDetail::where('inventory_package_item_id', $product['inventoryPackageItemId'])->decrement('qty', $product['qtySelect']);
+                    InventoryItem::where('purc_doc', $product['purcDoc'])
+                        ->where('sales_doc', $product['salesDoc'])
+                        ->where('storage_id', $product['storageId'])
+                        ->where('product_id', $product['productId'])
+                        ->decrement('stock', $product['qtySelect']);
+
+                    // Inventory History
                     InventoryHistory::create([
-                        'purc_doc'                      => $product['purc_doc'],
-                        'sales_doc'                     => $product['sales_doc'],
-                        'inventory_child_id'            => $product['child_id'],
-                        'inventory_child_detail_id'     => $product['child_detail_id'],
-                        'outbound_id'                   => $outbound->id,
-                        'outbound_detail_id'            => $outboundDetail->id,
-                        'type'                          => 'outbound',
-                        'qty'                           => $product['qty_select'],
+                        'purchase_order_id'         => $product['purchaseOrderId'],
+                        'purchase_order_detail_id'  => $product['purchaseOrderDetailId'],
+                        'outbound_id'               => $outbound->id,
+                        'inventory_package_item_id' => $product['inventoryPackageItemId'],
+                        'qty'                       => $product['qtySelect'],
+                        'type'                      => 'outbound',
+                        'created_by'                => Auth::id()
                     ]);
 
-                    foreach ($product['sn_select'] ?? [] as $sn) {
-                        SerialNumber::where('inventory_child_id', $product['child_id'])
-                            ->where('inventory_child_detail_id', $product['child_detail_id'])
-                            ->where('serial_number', $sn)
-                            ->decrement('qty', 1);
-
-                        OutboundSerialNumber::create([
-                            'outbound_id'       => $outbound->id,
-                            'serial_number'     => $sn,
-                        ]);
-                    }
+                    $qty_item++;
+                    $qty += $product['qtySelect'];
+                    $salesDocs[] = $product['salesDoc'];
                 }
-
-                $qty_item += $product['qty_select'];
             }
 
             Outbound::where('id', $outbound->id)->update([
-                'qty_item'  => $qty_item,
+                'qty_item'      => $qty_item,
+                'qty'           => $qty,
+                'sales_docs'    => json_encode(array_unique($salesDocs)),
             ]);
-
-            // Jika Outbound ke General Room
-            if ($request->post('deliveryDest') == 'general room') {
-                $generalRoom = GeneralRoom::create([
-                    'outbound_id'   => $outbound->id,
-                    'number'        => 'GR-'.date('ymdHis').rand(111, 999),
-                    'qty'           => 0,
-                    'qty_item'      => $qty_item,
-                    'status'        => 'open',
-                ]);
-
-                foreach ($products as $product) {
-                    GeneralRoomDetail::create([
-                        'general_room_id'               => $generalRoom->id,
-                        'product_id'                    => $product['product_id'],
-                        'inventory_parent_id'           => $product['type'] == 'parent' ? $product['inventory_parent_id'] : null,
-                        'inventory_parent_detail_id'    => $product['type'] == 'parent' ? $product['inventory_parent_detail_id'] : null,
-                        'inventory_child_id'            => $product['type'] == 'child' ? $product['child_id'] : null,
-                        'inventory_child_detail_id'     => $product['type'] == 'child' ? $product['child_detail_id'] : null,
-                        'qty'                           => $product['qty_select'],
-                        'serial_number'                 => json_encode($product['sn_select'] ?? []),
-                    ]);
-                }
-            }
 
             DB::commit();
 
@@ -341,8 +288,8 @@ class OutboundController extends Controller
 
     public function detail(Request $request): View
     {
-        $outbound = Outbound::with('user')->where('id', $request->query('id'))->first();
-        $outboundDetail = OutboundDetail::with('product')->where('outbound_id', $request->query('id'))->get();
+        $outbound = Outbound::with('user', 'customer')->where('id', $request->query('id'))->first();
+        $outboundDetail = OutboundDetail::with('inventoryPackageItem', 'inventoryPackageItem.purchaseOrderDetail', 'outboundDetailSn')->where('outbound_id', $outbound->id)->get();
 
         $title = 'Outbound';
         return view('outbound.detail', compact('title', 'outboundDetail', 'outbound'));

@@ -31,6 +31,7 @@
                                 <th>Hierarchy Desc</th>
                                 <th class="text-center">QTY</th>
                                 <th>Type</th>
+                                <th>Created By</th>
                                 <td>Date</td>
                             </tr>
                         </thead>
@@ -51,6 +52,7 @@
                                         <span class="badge bg-success-subtle text-success">Inbound</span>
                                     @endif
                                 </td>
+                                <td>{{ $item->user->name }}</td>
                                 <td>{{ \Carbon\Carbon::parse($item->created_at)->translatedFormat('d F Y H:i') }}</td>
                             </tr>
                         @endforeach

@@ -9,17 +9,22 @@ class OutboundDetail extends Model
     protected $table = 'outbound_detail';
     protected $fillable = [
         'outbound_id',
-        'product_id',
-        'inventory_parent_id',
-        'inventory_parent_detail_id',
-        'inventory_child_id',
-        'inventory_child_detail_id',
-        'qty',
-        'serial_number'
+        'inventory_package_item_id',
+        'qty'
     ];
 
     public function product(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(Product::class, 'product_id');
+    }
+
+    public function inventoryPackageItem(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(InventoryPackageItem::class, 'inventory_package_item_id');
+    }
+
+    public function outboundDetailSn(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(OutboundDetailSn::class, 'outbound_detail_id');
     }
 }

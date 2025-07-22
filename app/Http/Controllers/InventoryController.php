@@ -75,7 +75,7 @@ class InventoryController extends Controller
 
     public function cycleCount(): View
     {
-        $cycleCount = InventoryHistory::with('purchaseOrder', 'purchaseOrderDetail')->latest()->paginate(10);
+        $cycleCount = InventoryHistory::with('purchaseOrder', 'purchaseOrderDetail', 'user')->latest()->paginate(10);
 
         $title = 'Cycle Count';
         return view('inventory.cycle-count', compact('title', 'cycleCount'));

@@ -31,7 +31,7 @@
                         <tr>
                             <td class="fw-bold">Client</td>
                             <td class="fw-bold ps-3">:</td>
-                            <td class="ps-1">{{ $outbound->client }}</td>
+                            <td class="ps-1">{{ $outbound->customer->name }}</td>
                         </tr>
                         <tr>
                             <td class="fw-bold">Created Date</td>
@@ -58,9 +58,11 @@
                         <thead>
                             <tr>
                                 <th>#</th>
+                                <th>Item</th>
+                                <th>Sales Doc</th>
                                 <th>Material</th>
                                 <th>PO Item Desc</th>
-                                <th>QTY</th>
+                                <th class="text-center">QTY</th>
                                 <th>Serial Number</th>
                             </tr>
                         </thead>
@@ -68,12 +70,14 @@
                             @foreach($outboundDetail as $detail)
                                 <tr>
                                     <td>{{ $loop->iteration }}</td>
-                                    <td>{{ $detail->product->material }}</td>
-                                    <td>{{ $detail->product->po_item_desc }}</td>
-                                    <td>{{ number_format($detail->qty) }}</td>
+                                    <td>{{ $detail->inventoryPackageItem->purchaseOrderDetail->item }}</td>
+                                    <td>{{ $detail->inventoryPackageItem->purchaseOrderDetail->sales_doc }}</td>
+                                    <td>{{ $detail->inventoryPackageItem->purchaseOrderDetail->material }}</td>
+                                    <td>{{ $detail->inventoryPackageItem->purchaseOrderDetail->po_item_desc }}</td>
+                                    <td class="text-center fw-bold">{{ number_format($detail->qty) }}</td>
                                     <td>
-                                        @foreach(json_decode($detail->serial_number, true) ?? [] as $sn)
-                                            <div>{{ $sn }}</div>
+                                        @foreach($detail->outboundDetailSn as $serialNumber)
+                                            <div>{{ $serialNumber->serial_number }}</div>
                                         @endforeach
                                     </td>
                                 </tr>

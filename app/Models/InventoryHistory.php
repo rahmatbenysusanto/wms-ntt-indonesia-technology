@@ -27,4 +27,9 @@ class InventoryHistory extends Model
     {
         return $this->belongsTo(PurchaseOrderDetail::class, 'purchase_order_detail_id');
     }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
 }

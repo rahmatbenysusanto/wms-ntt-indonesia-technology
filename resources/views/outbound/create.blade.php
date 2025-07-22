@@ -46,6 +46,10 @@
                                 <option value="spare room">Spare Room</option>
                             </select>
                         </div>
+                        <div class="col-6 mb-3">
+                            <label class="form-label">Outbound Date</label>
+                            <input type="datetime-local" class="form-control" id="outboundDate">
+                        </div>
                     </div>
                 </div>
             </div>
@@ -77,7 +81,10 @@
         <div class="col-8">
             <div class="card">
                 <div class="card-header">
-                    <h4 class="card-title mb-0">List Product Order</h4>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="card-title mb-0">List Product Order</h4>
+                        <a class="btn btn-primary" onclick="createOrder()">Create Order</a>
+                    </div>
                 </div>
                 <div class="card-body">
                     <table class="table table-striped align-middle">
@@ -179,6 +186,7 @@
                         <td>${number}</td>
                         <td>${salesDoc}</td>
                         <td>
+                            ${item.storage.id === 1 ? '<div><span class="badge bg-danger"> Cross Docking </span></div>' : ''}
                             <div><b>Purc Doc: </b>${item.purchase_order.purc_doc}</div>
                             <div>${item.number}</div>
                             <div><b>Box: </b>${item.reff_number}</div>
@@ -218,19 +226,26 @@
                         });
 
                         products.push({
+                            inventoryPackageId: product.inventory_package_id,
                             inventoryPackageItemId: product.id,
+                            purchaseOrderId: product.purchase_order_detail.purchase_order_id,
+                            purchaseOrderDetailId: product.purchase_order_detail_id,
                             isParent: product.is_parent,
+                            directOutbound: product.direct_outbound,
                             qty: product.qty,
                             qtySelect: 0,
+                            productId: product.product_id,
                             material: product.purchase_order_detail.material,
                             poItemDesc: product.purchase_order_detail.po_item_desc,
                             prodHierarchyDesc: product.purchase_order_detail.prod_hierarchy_desc,
                             salesDoc: product.purchase_order_detail.sales_doc,
+                            purcDoc: res.data.purchase_order.purc_doc,
                             dataSN: dataSN,
                             serialNumber: [],
                             number: res.data.number,
                             reffNumber: res.data.reff_number,
                             loc: res.data.storage.raw+'-'+res.data.storage.area+'-'+res.data.storage.rak+'-'+res.data.storage.bin,
+                            storageId: res.data.storage.id,
                             disable: 0
                         });
                     });
@@ -247,27 +262,23 @@
 
             products.forEach((item, index) => {
                 if (item.disable === 0) {
-                    let box = '';
-                    if (index === 0) {
-                        box = `
-                        <div><b>PA: </b>${item.number}</div>
-                        <div><b>Box: </b>${item.reffNumber}</div>
-                        <div><b>Loc: </b>${item.loc}</div>
-                    `;
-                    }
-
                     html += `
                         <tr>
                             <td>
+                                ${ item.directOutbound === 1 ? '<div><span class="badge bg-danger"> Cross Docking </span></div>' : '' }
                                 <div>${item.material}</div>
                                 <div>${item.poItemDesc}</div>
                                 <div>${item.prodHierarchyDesc}</div>
                             </td>
                             <td class="text-center">${item.isParent === 1 ? '<span class="badge bg-danger-subtle text-danger">Parent</span>' : '<span class="badge bg-secondary-subtle text-secondary">Child</span>'}</td>
-                            <td>${box}</td>
+                            <td>
+                                <div><b>PA: </b>${item.number}</div>
+                                <div><b>Box: </b>${item.reffNumber}</div>
+                                <div><b>Loc: </b>${item.loc}</div>
+                            </td>
                             <td>${item.salesDoc}</td>
                             <td class="text-center fw-bold">${item.qty}</td>
-                            <td><input type="number" class="form-control" onchange="changeQtySelect(${index}, this.value)"></td>
+                            <td><input type="number" class="form-control" onchange="changeQtySelect(${index}, this.value)" value="${item.qtySelect}"></td>
                             <td><a class="btn btn-info btn-sm" onclick="openSerialNumberModal(${index})">Serial Number</a></td>
                             <td><a class="btn btn-danger btn-sm" onclick="deleteProduct(${index})">Delete</a></td>
                         </tr>
@@ -290,7 +301,17 @@
         function changeQtySelect(index, value) {
             const products = JSON.parse(localStorage.getItem('salesDocProduct')) ?? [];
 
-            products[index] = value;
+            if (parseInt(value) > products[index].qty) {
+                Swal.fire({
+                    title: 'Warning!',
+                    text: 'QTY outbound melebihi qty diinventory',
+                    icon: 'warning',
+                });
+                viewProductOutbound();
+                return true;
+            }
+
+            products[index].qtySelect = parseInt(value);
 
             localStorage.setItem('salesDocProduct', JSON.stringify(products));
             viewProductOutbound();
@@ -386,6 +407,59 @@
 
             document.getElementById('listDataOutboundSN').innerHTML = serialNumber;
             document.getElementById('listDataSN').innerHTML = dataSN;
+        }
+
+        function createOrder() {
+            Swal.fire({
+                title: "Are you sure?",
+                text: "Create Order",
+                icon: "warning",
+                showCancelButton: true,
+                customClass: {
+                    confirmButton: "btn btn-primary w-xs me-2 mt-2",
+                    cancelButton: "btn btn-danger w-xs mt-2"
+                },
+                confirmButtonText: "Yes, Create it!",
+                buttonsStyling: false,
+                showCloseButton: true
+            }).then(function(t) {
+                if (t.value) {
+
+                    // Validation
+                    const products = JSON.parse(localStorage.getItem('salesDocProduct')) ?? [];
+
+                    // Create Order Process
+                    $.ajax({
+                        url: '{{ route('outbound.store') }}',
+                        method: 'POST',
+                        data: {
+                            _token: '{{ csrf_token() }}',
+                            products: products,
+                            delivLocation: document.getElementById('delivLocation').value,
+                            customerId: document.getElementById('customerId').value,
+                            deliveryDest: document.getElementById('deliveryDest').value,
+                            outboundDate: document.getElementById('outboundDate').value
+                        },
+                        success: (res) => {
+                            if (res.status) {
+                                Swal.fire({
+                                    title: 'Success',
+                                    text: 'Create Order Successfully',
+                                    icon: 'success'
+                                }).then((e) => {
+                                    {{--window.location.href = '{{ route('outbound.index') }}';--}}
+                                });
+                            } else {
+                                Swal.fire({
+                                    title: 'Error',
+                                    text: 'Create Order Failed',
+                                    icon: 'error'
+                                });
+                            }
+                        }
+                    });
+                }
+            });
         }
     </script>
 @endsection

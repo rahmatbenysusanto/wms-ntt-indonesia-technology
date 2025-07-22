@@ -47,11 +47,11 @@
                                     <td>{{ $out->number }}</td>
                                     <td>{{ $out->purc_doc }}</td>
                                     <td>
-                                        @foreach($out->sales_doc as $item)
+                                        @foreach(json_decode($out->sales_docs) as $item)
                                             <div>{{ $item }}</div>
                                         @endforeach
                                     </td>
-                                    <td>{{ $out->client }}</td>
+                                    <td>{{ $out->customer->name }}</td>
                                     <td>{{ $out->deliv_loc }}</td>
                                     <td class="text-center fw-bold">{{ number_format($out->qty_item) }}</td>
                                     <td>{{ \Carbon\Carbon::parse($out->created_at)->translatedFormat('d F Y H:i') }}</td>

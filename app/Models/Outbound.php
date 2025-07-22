@@ -8,19 +8,27 @@ class Outbound extends Model
 {
     protected $table = 'outbound';
     protected $fillable = [
-        'number',
-        'purc_doc',
-        'sales_doc',
-        'client',
         'customer_id',
+        'purc_doc',
+        'sales_docs',
+        'outbound_date',
+        'number',
+        'qty_item',
+        'qty',
+        'type',
+        'status',
         'deliv_loc',
         'deliv_dest',
-        'qty_item',
         'created_by'
     ];
 
     public function user(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by', 'id');
+    }
+
+    public function customer(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Customer::class, 'customer_id', 'id');
     }
 }
