@@ -61,6 +61,7 @@ class InventoryController extends Controller
             ->where('inventory_package_item.product_id', $inventory->product_id)
             ->where('inventory_package.purchase_order_id', $inventory->purchaseOrder->id)
             ->where('purchase_order_detail.sales_doc', $inventory->sales_doc)
+            ->whereDate('inventory_package.created_at', '=', $inventory->created_at->format('Y-m-d'))
             ->select([
                 'inventory_package.number',
                 'inventory_package.reff_number',

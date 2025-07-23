@@ -193,6 +193,70 @@
             </div>
         </div>
     </div>
+
+    <div id="serialNumberDirectOutboundModal" class="modal fade" tabindex="-1" aria-labelledby="myModalLabel" aria-hidden="true" style="display: none;">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="myModalLabel">Detail Serial Number</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"> </button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-2">
+                        <table>
+                            <tr>
+                                <td class="fw-bold">Material</td>
+                                <td class="fw-bold ps-3">:</td>
+                                <td class="ps-1" id="detail_Direct_material"></td>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold">Desc</td>
+                                <td class="fw-bold ps-3">:</td>
+                                <td class="ps-1" id="detail_Direct_desc"></td>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold">QTY</td>
+                                <td class="fw-bold ps-3">:</td>
+                                <td class="ps-1" id="detail_Direct_qty"></td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <!-- Inject Data -->
+                    <input type="hidden" id="detail_Direct_index">
+                    <input type="hidden" id="detail_Direct_indexSalesDoc">
+
+                    <div class="mb-3">
+                        <div class="row">
+                            <div class="col-2">
+                                <label class="form-label text-white">-</label>
+                                <div>
+                                    <a class="btn btn-secondary w-100" onclick="addSerialNumberManualDirect()">SN Manual</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <table class="table table-striped align-middle">
+                        <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Serial Number</th>
+                            <th>Action</th>
+                        </tr>
+                        </thead>
+                        <tbody id="listDetailSerialNumberDirect">
+
+                        </tbody>
+                    </table>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
+                </div>
+
+            </div>
+        </div>
+    </div>
 @endsection
 
 @section('js')
@@ -275,7 +339,9 @@
                         id: findSAPQTY[0].id,
                         salesDoc: findSAPQTY[0].salesDoc,
                         qty: findSAPQTY[0].qty,
-                        serialNumber: item.serialNumber
+                        serialNumber: item.serialNumber,
+                        qtyDirect: 0,
+                        snDirect: []
                     });
                     item.qtyAdd = findSAPQTY[0].qty;
                     findSAPQTY[0].select = 1;
@@ -316,6 +382,7 @@
                     htmlSalesDoc += `
                         <div class="d-flex gap-2 align-items-center">
                             <p class="mb-0" style="min-width: 140px;">${sales.salesDoc} <b>(QTY : ${sales.qty})</b></p>
+                            ${item.putAwayStep === 0 ? `<a class="btn btn-dark btn-sm" onclick="directOutboundSerialNumber(${index}, ${indexSalesDoc})">SN Direct Outbound</a>` : ''}
                             <a class="btn btn-secondary btn-sm" onclick="detailSerialNumber(${index}, ${indexSalesDoc})">Serial Number</a>
                             <a class="btn btn-danger btn-sm" onclick="hapusSalesDoc(${index}, ${indexSalesDoc}, ${sales.id})">Hapus</a>
                         </div>
@@ -358,6 +425,65 @@
             table.page(currentPage).draw('page');
 
             viewPoSAP();
+        }
+
+        function directOutboundSerialNumber(index, indexSalesDoc) {
+            const compare = JSON.parse(localStorage.getItem('compare')) ?? [];
+            const product = compare[index];
+
+            document.getElementById('detail_Direct_material').innerText = product.itemName;
+            document.getElementById('detail_Direct_desc').innerText = product.itemDesc;
+            document.getElementById('detail_Direct_qty').innerText = product.qty;
+            document.getElementById('detail_Direct_index').value = index;
+            document.getElementById('detail_Direct_indexSalesDoc').value = indexSalesDoc;
+
+            viewSerialNumberDirectOutbound(index, indexSalesDoc);
+
+            $('#serialNumberDirectOutboundModal').modal('show');
+        }
+
+        function viewSerialNumberDirectOutbound(index, indexSalesDoc) {
+            const compare = JSON.parse(localStorage.getItem('compare')) ?? [];
+            const serialNumber = compare[index].salesDoc[indexSalesDoc].snDirect;
+            let html = '';
+
+            serialNumber.forEach((item, indexSN) => {
+                html += `
+                    <tr>
+                        <td>${indexSN + 1}</td>
+                        <td><input type="text" class="form-control" value="${item}" onchange="changeSNDirect(${indexSN}, this.value)"></td>
+                        <td><a class="btn btn-danger btn-sm">Delete</a></td>
+                    </tr>
+                `;
+            });
+
+            document.getElementById('listDetailSerialNumberDirect').innerHTML = html;
+        }
+
+        function addSerialNumberManualDirect() {
+            const index = document.getElementById('detail_Direct_index').value;
+            const indexSalesDoc = document.getElementById('detail_Direct_indexSalesDoc').value;
+            const compare = JSON.parse(localStorage.getItem('compare')) ?? [];
+            const serialNumber = compare[index].salesDoc[indexSalesDoc].snDirect;
+
+            serialNumber.push("");
+            compare[index].salesDoc[indexSalesDoc].qtyDirect = serialNumber.length;
+
+            localStorage.setItem('compare', JSON.stringify(compare));
+            viewSerialNumberDirectOutbound(index, indexSalesDoc);
+        }
+
+        function changeSNDirect(indexSN, value) {
+            const index = document.getElementById('detail_Direct_index').value;
+            const indexSalesDoc = document.getElementById('detail_Direct_indexSalesDoc').value;
+            const compare = JSON.parse(localStorage.getItem('compare')) ?? [];
+            const serialNumber = compare[index].salesDoc[indexSalesDoc].snDirect;
+
+            serialNumber[indexSN] = value;
+            compare[index].salesDoc[indexSalesDoc].qtyDirect = serialNumber.length;
+
+            localStorage.setItem('compare', JSON.stringify(compare));
+            viewSerialNumberDirectOutbound(index, indexSalesDoc);
         }
 
         function handlePutAwayStepChange(checkbox, index) {
@@ -625,7 +751,9 @@
                 id: findSAP.id,
                 salesDoc: findSAP.salesDoc,
                 qty: findSAP.qty,
-                serialNumber: []
+                serialNumber: [],
+                qtyDirect: 0,
+                snDirect: []
             });
             compare[index].qtyAdd += findSAP.qty;
             findSAP.select = 1;

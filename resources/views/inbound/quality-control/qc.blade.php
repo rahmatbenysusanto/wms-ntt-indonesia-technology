@@ -632,7 +632,7 @@
             const serialNumber = product.SnDirect;
             let html = '';
             let number = 1;
-            serialNumber.forEach((item) => {
+            serialNumber.forEach((item, indexSN) => {
                 html += `
                     <tr>
                         <td>${number}</td>
@@ -1041,7 +1041,7 @@
                                     },
                                     buttonsStyling: false
                                 }).then(() => {
-                                    {{--window.location.href = '{{ route('inbound.quality-control') }}';--}}
+                                    window.location.href = '{{ route('inbound.quality-control') }}';
                                 });
                             } else {
                                 Swal.fire({

@@ -38,7 +38,13 @@
                                 <tr>
                                     <td class="fw-bold">Storage Location</td>
                                     <td class="fw-bold ps-3">:</td>
-                                    <td class="ps-1">{{ $inventory->storage->raw }} - {{ $inventory->storage->area }} - {{ $inventory->storage->rak }} - {{ $inventory->storage->bin }}</td>
+                                    <td class="ps-1">
+                                        @if($inventory->storage->id == 1)
+                                            Cross Docking
+                                        @else
+                                            {{ $inventory->storage->raw }} - {{ $inventory->storage->area }} - {{ $inventory->storage->rak }} - {{ $inventory->storage->bin }}
+                                        @endif
+                                    </td>
                                 </tr>
                             </table>
                         </div>

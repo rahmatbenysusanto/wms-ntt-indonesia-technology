@@ -181,6 +181,11 @@
                     salesDoc += `<div>${detail}</div>`;
                 });
 
+                let storage = `${item.storage.raw} - ${item.storage.area} - ${item.storage.rak} - ${item.storage.bin}`;
+                if (item.storage.id === 1) {
+                    storage = 'Cross Docking';
+                }
+
                 html += `
                     <tr>
                         <td>${number}</td>
@@ -190,7 +195,7 @@
                             <div><b>Purc Doc: </b>${item.purchase_order.purc_doc}</div>
                             <div>${item.number}</div>
                             <div><b>Box: </b>${item.reff_number}</div>
-                            <div><b>Loc: </b>${item.storage.raw} - ${item.storage.area} - ${item.storage.rak} - ${item.storage.bin}</div>
+                            <div><b>Loc: </b>${storage}</div>
                         </td>
                         <td>${item.qty}</td>
                         <td><a class="btn btn-info btn-sm" onclick="pilihSalesDoc(${item.id})">Pilih</a></td>
