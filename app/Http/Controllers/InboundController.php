@@ -24,6 +24,7 @@ use App\Models\ProductParent;
 use App\Models\ProductParentDetail;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderDetail;
+use App\Models\PurchaseOrderEditReq;
 use App\Models\QualityControl;
 use App\Models\QualityControlDetail;
 use App\Models\QualityControlItem;
@@ -1143,6 +1144,85 @@ class InboundController extends Controller
             'fileName'  => $fileName,
             'total'     => $total,
             'data'      => $data,
+        ]);
+    }
+
+    public function editPurchaseOrder(Request $request): View
+    {
+        $purchaseOrder = PurchaseOrderEditReq::with('requestBy', 'approvedBy')->latest()->paginate(10);
+
+        $title = 'Purchase Order';
+        return view('inbound.purchase-order.edit.index', compact('title', 'purchaseOrder'));
+    }
+
+    public function editPurchaseOrderProduct(): View
+    {
+        $purchaseOrder = PurchaseOrder::whereIn('status', ['new', 'open', 'process'])->get();
+
+        $title = 'Purchase Order';
+        return view('inbound.purchase-order.edit.product', compact('title', 'purchaseOrder'));
+    }
+
+    public function listMaterialEditPO(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $purchaseOrderDetail = PurchaseOrderDetail::where('purchase_order_id', $request->get('id'))->where('status', 'new')->get();
+
+        return response()->json([
+            'data' => $purchaseOrderDetail
+        ]);
+    }
+
+    public function editPurchaseOrderRequestEdit(Request $request): \Illuminate\Http\JsonResponse
+    {
+        try {
+            DB::beginTransaction();
+
+            foreach ($request->post('editProducts') as $requestEdit) {
+                PurchaseOrderEditReq::create([
+                    'purchase_order_id' => $requestEdit['data']['purchase_order_id'],
+                    'request_by'        => Auth::id(),
+                    'type'              => $requestEdit['ket'],
+                    'note'              => $requestEdit['data']['note'],
+                    'status'            => 'pending',
+                    'details'           => json_encode($requestEdit['data'])
+                ]);
+            }
+
+            DB::commit();
+            return response()->json([
+                'status' => true
+            ]);
+        } catch (\Exception $err) {
+            DB::rollBack();
+            Log::error($err->getMessage());
+            Log::error($err->getLine());
+            return response()->json([
+                'status' => false
+            ]);
+        }
+    }
+
+    public function editPurchaseOrderDetail(Request $request): View
+    {
+        $purchaseOrder = PurchaseOrderEditReq::with('requestBy', 'approvedBy')->find($request->query('id'));
+
+        $title = 'Purchase Order';
+        return view('inbound.purchase-order.edit.detail', compact('title', 'purchaseOrder'));
+    }
+
+    public function editPurchaseOrderApproved(Request $request)
+    {
+
+    }
+
+    public function editPurchaseOrderCancel(Request $request): \Illuminate\Http\JsonResponse
+    {
+        PurchaseOrderEditReq::where('id', $request->get('id'))->update([
+            'status' => 'cancel'
+        ]);
+
+        return response()->json([
+            'status' => true
         ]);
     }
 }

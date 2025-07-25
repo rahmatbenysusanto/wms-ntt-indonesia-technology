@@ -60,6 +60,18 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
 
             // Upload Serial Number
             Route::get('/upload/serial-number', 'purchaseOrderSerialNumber')->name('inbound.upload.serial-number');
+
+            Route::prefix('/edit')->group(function () {
+                Route::get('/', 'editPurchaseOrder')->name('inbound.edit-purchase-order');
+                Route::get('/product', 'editPurchaseOrderProduct')->name('inbound.edit-purchase-order-product');
+                Route::post('/request-edit', 'editPurchaseOrderRequestEdit')->name('inbound.edit-purchase-order-request-edit');
+                Route::get('/detail', 'editPurchaseOrderDetail')->name('inbound.edit.detail');
+                Route::get('/approved', 'editPurchaseOrderApproved')->name('inbound.edit.approved');
+                Route::get('/cancel', 'editPurchaseOrderCancel')->name('inbound.edit.cancel');
+
+                // JSON
+                Route::get('/list-material', 'listMaterialEditPO')->name('listMaterialEditPO');
+            });
         });
 
         Route::prefix('/quality-control')->group(function () {
