@@ -1210,9 +1210,55 @@ class InboundController extends Controller
         return view('inbound.purchase-order.edit.detail', compact('title', 'purchaseOrder'));
     }
 
-    public function editPurchaseOrderApproved(Request $request)
+    public function editPurchaseOrderApproved(Request $request): \Illuminate\Http\JsonResponse
     {
+        try {
+            DB::beginTransaction();
 
+            PurchaseOrderEditReq::where('id', $request->get('id'))->update([
+                'status'        => 'approved',
+                'approved_by'   => Auth::id(),
+                'approved_at'   => date('Y-m-d H:i:s'),
+            ]);
+
+            // Simpan hasil perubahan
+            $detail = PurchaseOrderEditReq::find($request->get('id'));
+
+            if ($detail->type == 'delete') {
+                // Delete Purchase Order Detail
+                PurchaseOrderDetail::where('id', $detail->id)->delete();
+            } else {
+                // Edit Purchase Order Detail
+                $data = json_decode($detail->details, true);
+                unset($data['note']);
+
+                PurchaseOrderDetail::where('id', $detail->id)
+                    ->update($data);
+            }
+
+            $query = PurchaseOrderDetail::where('purchase_order_id', $detail->purchase_order_id);
+            $salesDocsQty = (clone $query)->distinct('sales_doc')->count();
+            $materialQty  = (clone $query)->distinct('material')->count();
+            $itemQty = (clone $query)->sum('po_item_qty');
+
+            PurchaseOrder::where('id', $detail->purchase_order_id)->update([
+                'sales_doc_qty'  => $salesDocsQty,
+                'material_qty'   => $materialQty,
+                'item_qty'       => $itemQty,
+            ]);
+
+            DB::commit();
+            return response()->json([
+                'status' => true
+            ]);
+        } catch (\Exception $err) {
+            DB::rollBack();
+            Log::error($err->getMessage());
+            Log::error($err->getLine());
+            return response()->json([
+                'status' => false
+            ]);
+        }
     }
 
     public function editPurchaseOrderCancel(Request $request): \Illuminate\Http\JsonResponse

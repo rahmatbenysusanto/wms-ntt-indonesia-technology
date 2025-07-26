@@ -122,7 +122,15 @@
                             id: id
                         },
                         success: (res) => {
-
+                            if (res.status) {
+                                Swal.fire({
+                                    title: 'Success!',
+                                    text: 'Approved Request Edit Po Success',
+                                    icon: 'success',
+                                }).then((i) => {
+                                    window.location.reload();
+                                });
+                            }
                         }
                     });
 
