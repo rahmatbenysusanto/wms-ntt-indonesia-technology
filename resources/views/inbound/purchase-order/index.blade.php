@@ -19,6 +19,7 @@
             <div class="card">
                 <div class="card-header">
                     <div class="d-flex justify-content-end gap-2">
+                        <a href="{{ route('inbound.edit-purchase-order') }}" class="btn btn-warning">Edit Purchase Order</a>
                         <a href="{{ route('inbound.purchase-order-upload') }}" class="btn btn-info">Upload PO Excel</a>
                     </div>
                 </div>
@@ -112,9 +113,6 @@
                                     <td>{{ $po->user->name }}</td>
                                     <td>
                                         <div class="d-flex gap-2">
-                                            @if(in_array($po->status, ['new', 'open', 'process']))
-                                                <a href="{{ route('inbound.edit-purchase-order', ['id' => $po->id]) }}" class="btn btn-warning btn-sm">Edit PO</a>
-                                            @endif
                                             @if($po->status == 'new')
                                                 <a class="btn btn-info btn-sm" onclick="approvedPurchaseOrder('{{ $po->id }}')">Approved PO</a>
                                                 <a class="btn btn-danger btn-sm" onclick="cancelPurchaseOrder('{{ $po->id }}')">Cancel PO</a>

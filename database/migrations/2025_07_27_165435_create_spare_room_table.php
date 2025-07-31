@@ -11,19 +11,16 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('general_room', function (Blueprint $table) {
+        Schema::create('spare_room', function (Blueprint $table) {
             $table->id();
-            $table->integer('customer_id');
-            $table->string('purc_doc');
-            $table->json('sales_docs');
+            $table->integer('outbound_id');
             $table->timestamp('outbound_date');
             $table->string('number');
-            $table->integer('qty_item')->default('0');
-            $table->integer('qty')->default('0');
-            $table->string('type');
+            $table->integer('qty_item')->default(0);
+            $table->integer('qty')->default(0);
             $table->string('status');
-            $table->string('deliv_loc');
-            $table->string('deliv_dest');
+            $table->string('deliv_dest')->nullable();
+            $table->string('type');
             $table->integer('created_by');
             $table->timestamps();
         });
@@ -34,6 +31,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('general_room');
+        Schema::dropIfExists('spare_room');
     }
 };

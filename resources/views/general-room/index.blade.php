@@ -31,11 +31,10 @@
                                     <th>Purc Doc</th>
                                     <th>Sales Doc</th>
                                     <th>Client</th>
-                                    <th>PA Number</th>
-                                    <th>Material Parent</th>
-                                    <th>Material Parent Desc</th>
-                                    <th class="text-center">QTY</th>
-                                    <th class="text-center">Status</th>
+                                    <th>Material</th>
+                                    <th>PO Item Desc</th>
+                                    <th>Prod Hierarchy Desc</th>
+                                    <th class="text-center">Stock</th>
                                     <th>Created At</th>
                                     <th>Action</th>
                                 </tr>
@@ -45,35 +44,15 @@
                                     <tr>
                                         <td>{{ $generalRoom->firstItem() + $index }}</td>
                                         <td>{{ $gr->purc_doc }}</td>
-                                        <td>
-                                            @foreach($gr->sales_doc_array as $item)
-                                                <div>{{ $item }}</div>
-                                            @endforeach
-                                        </td>
-                                        <td>{{ $gr->client }}</td>
-                                        <td>{{ $gr->pa_number }}</td>
+                                        <td>{{ $gr->sales_doc }}</td>
+                                        <td>{{ $gr->customer_name }}</td>
                                         <td>{{ $gr->material }}</td>
                                         <td>{{ $gr->po_item_desc }}</td>
-                                        <td class="text-center fw-bold">{{ $gr->qty_item }}</td>
-                                        <td class="text-center">
-                                            @if($gr->status == 'open')
-                                                <span class="badge bg-info-subtle text-info">New</span>
-                                            @elseif($gr->status == 'return')
-                                                <span class="badge bg-warning-subtle text-warning">Return WH</span>
-                                            @else
-                                                <span class="badge bg-success-subtle text-success">Outbound</span>
-                                            @endif
-                                        </td>
+                                        <td>{{ $gr->prod_hierarchy_desc }}</td>
+                                        <td class="text-center fw-bold">{{ $gr->stock }}</td>
                                         <td>{{ \Carbon\Carbon::parse($gr->created_at)->translatedFormat('d F Y H:i') }}</td>
                                         <td>
-                                            <div class="d-flex gap-2">
-                                                <a href="{{ route('general-room.detail', ['id' => $gr->id]) }}" class="btn btn-secondary btn-sm">Detail</a>
-                                                @if($gr->status == 'open')
-                                                    <a class="btn btn-info btn-sm" onclick="outboundAll('{{ $gr->id }}')">Outbound All</a>
-                                                    <a class="btn btn-primary btn-sm">Outbound Partial</a>
-                                                    <a class="btn btn-warning btn-sm">Return to WH</a>
-                                                @endif
-                                            </div>
+                                            <a class="btn btn-info btn-sm">Detail</a>
                                         </td>
                                     </tr>
                                 @endforeach

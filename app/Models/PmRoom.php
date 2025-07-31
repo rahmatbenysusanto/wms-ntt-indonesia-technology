@@ -5,9 +5,9 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class GeneralRoom extends Model
+class PmRoom extends Model
 {
-    protected $table = 'general_room';
+    protected $table = 'pm_room';
     protected $fillable = [
         'outbound_id',
         'outbound_date',
@@ -20,13 +20,13 @@ class GeneralRoom extends Model
         'created_by',
     ];
 
-    public function outbound(): BelongsTo
-    {
-        return $this->belongsTo(Outbound::class);
-    }
-
-    public function user(): BelongsTo
+    public function createdBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function outbound(): BelongsTo
+    {
+        return $this->belongsTo(Outbound::class, 'outbound_id');
     }
 }

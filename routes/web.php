@@ -7,6 +7,8 @@ use App\Http\Controllers\GeneralRoomController;
 use App\Http\Controllers\InboundController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\OutboundController;
+use App\Http\Controllers\PmRoomController;
+use App\Http\Controllers\SpareRoomController;
 use App\Http\Controllers\StorageController;
 use App\Http\Controllers\VendorController;
 use App\Http\Controllers\WarehouseController;
@@ -22,6 +24,10 @@ Route::controller(AuthController::class)->group(function () {
 Route::middleware(AuthLoginMiddleware::class)->group(function () {
     Route::controller(DashboardController::class)->group(function () {
         Route::get('/dashboard', 'index')->name('dashboard');
+
+        Route::get('/dashboard-po', 'dashboardPo')->name('dashboard.po');
+        Route::get('/dashboard-aging', 'dashboardAging')->name('dashboard.aging');
+        Route::get('/dashboard-outbound', 'dashboardOutbound')->name('dashboard.outbound');
     });
 
     Route::prefix('/customer')->controller(CustomerController::class)->group(function () {
@@ -93,6 +99,8 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
             Route::get('/process', 'putAwayProcess')->name('inbound.put-away-process');
             Route::post('/store', 'putAwayStore')->name('inbound.put-away.store');
 
+            Route::get('/edit', 'putAwayEdit')->name('inbound.put-away-edit');
+
             // JSON
             Route::get('/find-serial-number', 'findSerialNumber')->name('inbound.put-away.find-serial-number');
             Route::get('/fins-serial-number-inventory', 'findSNInventory')->name('inbound.put-away.find-serial-number-inventory');
@@ -118,6 +126,18 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
         Route::get('/', 'index')->name('general-room.index');
         Route::get('/detail', 'detail')->name('general-room.detail');
         Route::post('/outbound-all', 'outboundAll')->name('general-room.outbound.all');
+
+        Route::get('/outbound', 'outbound')->name('general-room.outbound');
+        Route::get('/create', 'create')->name('general-room.create');
+        Route::get('/return', 'return')->name('general-room.return');
+    });
+
+    Route::prefix('/pm-room')->controller(PMRoomController::class)->group(function () {
+        Route::get('/', 'index')->name('pm-room.index');
+    });
+
+    Route::prefix('/spare-room')->controller(SpareRoomController::class)->group(function () {
+        Route::get('/', 'index')->name('spare-room.index');
     });
 
     Route::prefix('/outbound')->controller(OutboundController::class)->group(function () {

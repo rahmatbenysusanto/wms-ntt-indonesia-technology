@@ -563,6 +563,17 @@ class InboundController extends Controller
         return view('inbound.put-away.process', compact('title', 'products', 'storageRaw'));
     }
 
+    public function putAwayEdit(Request $request): View
+    {
+        $products = ProductPackageItem::with('productPackageItemSn', 'purchaseOrderDetail')
+            ->where('product_package_id', $request->query('id'))
+            ->orderBy('is_parent', 'desc')
+            ->get();
+
+        $title = 'Put Away';
+        return view('inbound.put-away.edit', compact('title', 'products'));
+    }
+
     public function findSerialNumber(Request $request): \Illuminate\Http\JsonResponse
     {
         if ($request->get('type') == 'parent') {

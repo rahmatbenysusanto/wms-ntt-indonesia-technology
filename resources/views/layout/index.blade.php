@@ -437,13 +437,29 @@
                 <div id="two-column-menu">
                 </div>
                 <ul class="navbar-nav" id="navbar-nav">
-                    <li class="menu-title"><span data-key="t-menu">Menu</span></li>
+                    <li class="menu-title"><span data-key="t-menu">Dashboard</span></li>
                     <li class="nav-item">
                         <a class="nav-link menu-link {{ $title == 'Dashboard'? 'active' : '' }}" href="{{ route('dashboard') }}">
                             <i class="mdi mdi-speedometer"></i> <span data-key="t-widgets">Dashboard</span>
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link menu-link {{ $title == 'Dashboard PO'? 'active' : '' }}" href="{{ route('dashboard.po') }}">
+                            <i class="mdi mdi-view-week"></i> <span data-key="t-widgets">Dashboard PO</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link menu-link {{ $title == 'Dashboard Aging'? 'active' : '' }}" href="{{ route('dashboard.aging') }}">
+                            <i class="mdi mdi-view-week"></i> <span data-key="t-widgets">Dashboard Aging</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link menu-link {{ $title == 'Dashboard Outbound'? 'active' : '' }}" href="{{ route('dashboard.outbound') }}">
+                            <i class="mdi mdi-view-week"></i> <span data-key="t-widgets">Dashboard Outbound</span>
+                        </a>
+                    </li>
 
+                    <li class="menu-title"><span data-key="t-menu">WAREHOUSE MODULE</span></li>
                     <li class="nav-item">
                         <a class="nav-link menu-link {{ in_array($title, ['Purchase Order', 'Quality Control', 'Put Away']) ? 'active' : '' }}" href="#sidebarInbound" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="sidebarInbound">
                             <i class="mdi mdi-package-down"></i> <span data-key="t-dashboards">Inbound</span>
@@ -495,14 +511,44 @@
                         </div>
                     </li>
 
+                    <li class="menu-title"><span data-key="t-menu">Warehouse Room</span></li>
                     <li class="nav-item">
-                        <a class="nav-link menu-link {{ $title == 'General Room' ? 'active' : '' }}" href="#sidebarGeneralRoom" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="sidebarGeneralRoom">
+                        <a class="nav-link menu-link {{ in_array($title, ['General Room', 'General Room Outbound']) ? 'active' : '' }}" href="#sidebarGeneralRoom" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="sidebarGeneralRoom">
                             <i class="mdi mdi-book-clock"></i> <span data-key="t-dashboards">General Room</span>
                         </a>
-                        <div class="collapse menu-dropdown {{ $title == 'General Room' ? 'show' : '' }}" id="sidebarGeneralRoom">
+                        <div class="collapse menu-dropdown {{ in_array($title, ['General Room', 'General Room Outbound']) ? 'show' : '' }}" id="sidebarGeneralRoom">
                             <ul class="nav nav-sm flex-column">
                                 <li class="nav-item">
-                                    <a href="{{ route('general-room.index') }}" class="nav-link {{ $title == 'General Room' ? 'active' : '' }}" data-key="t-analytics"> List </a>
+                                    <a href="{{ route('general-room.index') }}" class="nav-link {{ $title == 'General Room' ? 'active' : '' }}" data-key="t-analytics"> Inventory </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="{{ route('general-room.outbound') }}" class="nav-link {{ $title == 'General Room Outbound' ? 'active' : '' }}" data-key="t-analytics"> Outbound </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link menu-link {{ $title == 'PM Room' ? 'active' : '' }}" href="#sidebarPMRoom" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="sidebarPMRoom">
+                            <i class="mdi mdi-notebook-outline"></i> <span data-key="t-dashboards">PM Room</span>
+                        </a>
+                        <div class="collapse menu-dropdown {{ $title == 'PM Room' ? 'show' : '' }}" id="sidebarPMRoom">
+                            <ul class="nav nav-sm flex-column">
+                                <li class="nav-item">
+                                    <a href="{{ route('pm-room.index') }}" class="nav-link {{ $title == 'PM Room' ? 'active' : '' }}" data-key="t-analytics"> Inventory </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link menu-link {{ $title == 'Spare Room' ? 'active' : '' }}" href="#sidebarSpareRoom" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="sidebarSpareRoom">
+                            <i class="mdi mdi-notebook-check-outline"></i> <span data-key="t-dashboards">Spare Room</span>
+                        </a>
+                        <div class="collapse menu-dropdown {{ $title == 'Spare Room' ? 'show' : '' }}" id="sidebarSpareRoom">
+                            <ul class="nav nav-sm flex-column">
+                                <li class="nav-item">
+                                    <a href="{{ route('spare-room.index') }}" class="nav-link {{ $title == 'Spare Room' ? 'active' : '' }}" data-key="t-analytics"> Inventory </a>
                                 </li>
                             </ul>
                         </div>

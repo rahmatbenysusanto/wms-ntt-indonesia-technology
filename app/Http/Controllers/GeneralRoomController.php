@@ -2,8 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Customer;
 use App\Models\GeneralRoom;
 use App\Models\GeneralRoomDetail;
+use App\Models\InventoryDetail;
+use App\Models\InventoryItem;
+use App\Models\InventoryPackage;
 use App\Models\InventoryParent;
 use App\Models\Outbound;
 use App\Models\OutboundDetail;
@@ -15,47 +19,21 @@ class GeneralRoomController extends Controller
 {
     public function index(): View
     {
-        $generalRoom = DB::table('general_room')
-            ->leftJoin('outbound', 'outbound.id', '=', 'general_room.outbound_id')
+        $generalRoom = DB::table('inventory_item')
+            ->leftJoin('product', 'product.id', '=', 'inventory_item.product_id')
+            ->leftJoin('purchase_order', 'purchase_order.purc_doc', '=', 'inventory_item.purc_doc')
+            ->leftJoin('customer', 'customer.id', '=', 'purchase_order.customer_id')
+            ->where('inventory_item.stock', '!=', 0)
+            ->where('inventory_item.type', 'gr')
             ->select([
-                'general_room.id',
-                'general_room.number',
-                'general_room.qty_item',
-                'general_room.status',
-                'general_room.created_at',
-                'outbound.id As outbound_id',
-                'outbound.purc_doc',
-                'outbound.sales_doc',
-                'outbound.client'
+                'inventory_item.*',
+                'product.material',
+                'product.po_item_desc',
+                'product.prod_hierarchy_desc',
+                'customer.name AS customer_name',
             ])
-            ->latest('general_room.created_at')
+            ->latest('inventory_item.created_at')
             ->paginate(10);
-
-        foreach ($generalRoom as $item) {
-            $outboundDetail = OutboundDetail::where('outbound_id', $item->outbound_id)
-                ->leftJoin('product', 'product.id', '=', 'outbound_detail.product_id')
-                ->where('inventory_parent_id', '!=', null)
-                ->select([
-                    'product.material',
-                    'product.po_item_desc',
-                    'inventory_parent_id',
-                ])
-                ->first();
-
-            $idParent = InventoryParent::find($outboundDetail->inventory_parent_id);
-
-            $item->material = $outboundDetail->material;
-            $item->po_item_desc = $outboundDetail->po_item_desc;
-            $item->pa_number = $idParent->pa_reff_number ?? $idParent->pa_number;
-
-            $salesDocRaw = $item->sales_doc;
-            $decoded = json_decode($salesDocRaw, true);
-            if (is_string($decoded)) {
-                $decoded = json_decode($decoded, true);
-            }
-
-            $item->sales_doc_array = $decoded;
-        }
 
         $title = "General Room";
         return view('general-room.index', compact('title', 'generalRoom'));
@@ -78,6 +56,28 @@ class GeneralRoomController extends Controller
         return response()->json([
             'status' => true
         ]);
+    }
+
+    public function outbound(): View
+    {
+        $generalRoom = Outbound::with('customer')->where('type', 'general room')->latest()->paginate(10);
+
+        $title = "General Room Outbound";
+        return view('general-room.outbound.index', compact('title', 'generalRoom'));
+    }
+
+    public function create(): View
+    {
+        $products = InventoryItem::with('product')
+            ->where('type', 'gr')
+            ->where('stock', '!=', 0)
+            ->latest()
+            ->get();
+
+        $customer = Customer::all();
+
+        $title = "General Room Outbound";
+        return view('general-room.outbound.create', compact('title', 'customer', 'products'));
     }
 }
 

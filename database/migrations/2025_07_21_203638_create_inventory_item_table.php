@@ -18,6 +18,7 @@ return new class extends Migration
             $table->integer('product_id');
             $table->integer('stock')->default(0);
             $table->integer('storage_id');
+            $table->enum('type', ['inv', 'gr', 'pm', 'spare'])->default('inv');
             $table->timestamps();
         });
     }

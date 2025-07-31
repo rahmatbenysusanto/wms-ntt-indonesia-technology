@@ -11,6 +11,7 @@ use App\Models\InventoryChildDetail;
 use App\Models\InventoryDetail;
 use App\Models\InventoryHistory;
 use App\Models\InventoryItem;
+use App\Models\InventoryItemSN;
 use App\Models\InventoryPackage;
 use App\Models\InventoryPackageItem;
 use App\Models\InventoryPackageItemSN;
@@ -20,8 +21,13 @@ use App\Models\Outbound;
 use App\Models\OutboundDetail;
 use App\Models\OutboundDetailSN;
 use App\Models\OutboundSerialNumber;
+use App\Models\PurchaseOrder;
+use App\Models\PurchaseOrderDetail;
 use App\Models\SerialNumber;
 use App\Models\Storage;
+use App\Services\GrRoomService;
+use App\Services\PmRoomService;
+use App\Services\SpareRoomService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -30,6 +36,12 @@ use Illuminate\View\View;
 
 class OutboundController extends Controller
 {
+    public function __construct(
+        protected GrRoomService $grRoomService,
+        protected PmRoomService $pmRoomService,
+        protected SpareRoomService $spareRoomService,
+    ) {}
+
     public function index(Request $request): View
     {
         $outbound = Outbound::with('user', 'customer')->where('type', 'outbound')->latest()->paginate(10);
@@ -268,6 +280,80 @@ class OutboundController extends Controller
                 'qty'           => $qty,
                 'sales_docs'    => json_encode(array_unique($salesDocs)),
             ]);
+
+            if ($request->post('deliveryDest') != 'client') {
+                $type = '';
+                switch ($request->post('deliveryDest')) {
+                    case 'general room':
+                        $type = 'gr';
+                        break;
+                    case 'pm room':
+                        $type = 'pm';
+                        break;
+                    case 'spare room':
+                        $type = 'spare';
+                        break;
+                }
+
+                $checkInventory = Inventory::where('purchase_order_id', $products[0]['purchaseOrderId'])->where('type', $type)->first();
+                if ($checkInventory == null) {
+                    $inventory = Inventory::create([
+                        'purchase_order_id' => $products[0]['purchaseOrderId'],
+                        'stock'             => $qty,
+                        'type'              => $type,
+                    ]);
+                    $inventoryId = $inventory->id;
+                } else {
+                    Inventory::where('id', $checkInventory->id)->increment('stock', $qty);
+                    $inventoryId = $checkInventory->id;
+                }
+
+                $purchaseOrder = PurchaseOrder::find($products[0]['purchaseOrderId']);
+                foreach ($products as $product) {
+                    if ($product['disable'] == 0) {
+
+                        $inventoryPackageItem = InventoryPackageItem::find($product['inventoryPackageItemId']);
+                        $purchaseOrderDetail = PurchaseOrderDetail::find($inventoryPackageItem->purchase_order_detail_id);
+
+                        InventoryDetail::create([
+                            'inventory_id'              => $inventoryId,
+                            'purchase_order_detail_id'  => $purchaseOrderDetail->id,
+                            'storage_id'                => 2,
+                            'inventory_package_item_id' => $product['inventoryPackageItemId'],
+                            'sales_doc'                 => $purchaseOrderDetail->sales_doc,
+                            'qty'                       => $product['qtySelect']
+                        ]);
+
+                        $checkInventoryItem = InventoryItem::where('purc_doc', $purchaseOrder->purc_doc)
+                            ->where('sales_doc', $purchaseOrderDetail->sales_doc)
+                            ->where('product_id', $inventoryPackageItem->product_id)
+                            ->where('storage_id', 2)
+                            ->first();
+                        if ($checkInventoryItem == null) {
+                            $inventoryItem = InventoryItem::create([
+                                'purc_doc'      => $purchaseOrder->purc_doc,
+                                'sales_doc'     => $purchaseOrderDetail->sales_doc,
+                                'product_id'    => $inventoryPackageItem->product_id,
+                                'storage_id'    => 2,
+                                'stock'         => $product['qtySelect'],
+                                'type'          => $type
+                            ]);
+                            $inventoryItemId = $inventoryItem->id;
+                        } else {
+                            InventoryItem::where('id', $checkInventoryItem->id)->increment('stock', $product['qtySelect']);
+                            $inventoryItemId = $checkInventoryItem->id;
+                        }
+
+                        foreach ($product['serialNumber'] ?? [] as $serialNumber) {
+                            InventoryItemSN::create([
+                                'inventory_item_id'         => $inventoryItemId,
+                                'serial_number'             => $serialNumber['serialNumber'],
+                                'qty'                       => 1
+                            ]);
+                        }
+                    }
+                }
+            }
 
             DB::commit();
 

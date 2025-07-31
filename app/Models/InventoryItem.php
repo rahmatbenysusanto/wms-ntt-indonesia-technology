@@ -13,6 +13,7 @@ class InventoryItem extends Model
         'product_id',
         'stock',
         'storage_id',
+        'type'
     ];
 
     public function storage(): \Illuminate\Database\Eloquent\Relations\BelongsTo

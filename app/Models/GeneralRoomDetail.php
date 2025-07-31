@@ -10,12 +10,8 @@ class GeneralRoomDetail extends Model
     protected $fillable = [
         'general_room_id',
         'product_id',
-        'inventory_parent_id',
-        'inventory_parent_detail_id',
-        'inventory_child_id',
-        'inventory_child_detail_id',
-        'qty',
-        'serial_number'
+        'outbound_detail_id',
+        'qty'
     ];
 
     public function product(): \Illuminate\Database\Eloquent\Relations\BelongsTo

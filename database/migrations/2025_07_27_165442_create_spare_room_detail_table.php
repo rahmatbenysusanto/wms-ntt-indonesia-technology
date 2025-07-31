@@ -11,12 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('inventory', function (Blueprint $table) {
+        Schema::create('spare_room_detail', function (Blueprint $table) {
             $table->id();
-            $table->string('purc_doc');
-            $table->string('sales_doc');
-            $table->integer('stock')->default(0);
-            $table->enum('type', ['inv', 'gr', 'pm', 'spare'])->default('inv');
+            $table->integer('spare_room_id');
+            $table->integer('product_id');
+            $table->integer('outbound_detail_id');
+            $table->integer('qty');
             $table->timestamps();
         });
     }
@@ -26,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('inventory');
+        Schema::dropIfExists('spare_room_detail');
     }
 };
