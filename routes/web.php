@@ -126,6 +126,8 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
         Route::get('/', 'index')->name('general-room.index');
         Route::get('/detail', 'detail')->name('general-room.detail');
         Route::post('/outbound-all', 'outboundAll')->name('general-room.outbound.all');
+        Route::get('/create-box', 'createBox')->name('general-room.create-box');
+        Route::post('/create-box-store', 'createBoxStore')->name('general-room.create-box-store');
 
         Route::get('/outbound', 'outbound')->name('general-room.outbound');
         Route::get('/create', 'create')->name('general-room.create');

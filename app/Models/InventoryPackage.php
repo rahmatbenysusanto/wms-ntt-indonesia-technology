@@ -33,4 +33,9 @@ class InventoryPackage extends Model
     {
         return $this->belongsTo(Storage::class, 'storage_id', 'id');
     }
+
+    public function user(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by', 'id');
+    }
 }

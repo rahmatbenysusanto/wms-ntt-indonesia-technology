@@ -250,12 +250,14 @@ class OutboundController extends Controller
                     InventoryPackageItem::where('id', $product['inventoryPackageItemId'])->decrement('qty', $product['qtySelect']);
 
                     // Decrement Inventory
-                    Inventory::where('purchase_order_id', $product['purchaseOrderId'])->decrement('stock', $product['qtySelect']);
-                    InventoryDetail::where('inventory_package_item_id', $product['inventoryPackageItemId'])->decrement('qty', $product['qtySelect']);
+                    $inventory = Inventory::where('purchase_order_id', $product['purchaseOrderId'])->where('type', 'inv')->first();
+                    Inventory::where('id', $inventory->id)->decrement('stock', $product['qtySelect']);
+                    InventoryDetail::where('inventory_package_item_id', $product['inventoryPackageItemId'])->where('inventory_id', $inventory->id)->decrement('qty', $product['qtySelect']);
                     InventoryItem::where('purc_doc', $product['purcDoc'])
                         ->where('sales_doc', $product['salesDoc'])
                         ->where('storage_id', $product['storageId'])
                         ->where('product_id', $product['productId'])
+                        ->where('type', 'inv')
                         ->decrement('stock', $product['qtySelect']);
 
                     // Inventory History
@@ -283,15 +285,19 @@ class OutboundController extends Controller
 
             if ($request->post('deliveryDest') != 'client') {
                 $type = '';
+                $storage = null;
                 switch ($request->post('deliveryDest')) {
                     case 'general room':
                         $type = 'gr';
+                        $storage = 2;
                         break;
                     case 'pm room':
                         $type = 'pm';
+                        $storage = 3;
                         break;
                     case 'spare room':
                         $type = 'spare';
+                        $storage = 4;
                         break;
                 }
 
@@ -347,6 +353,38 @@ class OutboundController extends Controller
                         foreach ($product['serialNumber'] ?? [] as $serialNumber) {
                             InventoryItemSN::create([
                                 'inventory_item_id'         => $inventoryItemId,
+                                'serial_number'             => $serialNumber['serialNumber'],
+                                'qty'                       => 1
+                            ]);
+                        }
+
+                        // Store Inventory Package
+                        $findInventoryPackage = InventoryPackage::find($product['inventoryPackageId']);
+                        $inventoryPackage = InventoryPackage::create([
+                            'purchase_order_id'         => $purchaseOrder->id,
+                            'storage_id'                => $storage,
+                            'number'                    => strtoupper($type).'-'.date('ymdHis').rand(100, 999),
+                            'reff_number'               => '',
+                            'qty_item'                  => 1,
+                            'qty'                       => $product['qtySelect'],
+                            'sales_doc'                 => $purchaseOrderDetail->sales_doc,
+                            'product_package_id'        => $findInventoryPackage->product_package_id,
+                            'created_by'                => Auth::id()
+                        ]);
+
+                        $findInventoryPackageItem = InventoryPackageItem::find($product['inventoryPackageItemId']);
+                        $inventoryPackageItem = InventoryPackageItem::create([
+                            'inventory_package_id'      => $inventoryPackage->id,
+                            'product_id'                => $inventoryPackageItem->product_id,
+                            'purchase_order_detail_id'  => $purchaseOrderDetail->id,
+                            'is_parent'                 => $findInventoryPackageItem->is_parent,
+                            'direct_outbound'           => 0,
+                            'qty'                       => $product['qtySelect']
+                        ]);
+
+                        foreach ($product['serialNumber'] ?? [] as $serialNumber) {
+                            InventoryPackageItemSN::create([
+                                'inventory_package_item_id' => $inventoryPackageItem->id,
                                 'serial_number'             => $serialNumber['serialNumber'],
                                 'qty'                       => 1
                             ]);

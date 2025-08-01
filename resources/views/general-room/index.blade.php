@@ -20,6 +20,7 @@
                 <div class="card-header">
                     <div class="d-flex justify-content-between align-items-center">
                         <h4 class="card-title mb-0">List General Room</h4>
+                        <a href="{{ route('general-room.create-box') }}" class="btn btn-primary">Create Box</a>
                     </div>
                 </div>
                 <div class="card-body">
@@ -28,14 +29,14 @@
                             <thead>
                                 <tr>
                                     <th>#</th>
+                                    <th>Number</th>
                                     <th>Purc Doc</th>
                                     <th>Sales Doc</th>
                                     <th>Client</th>
-                                    <th>Material</th>
-                                    <th>PO Item Desc</th>
-                                    <th>Prod Hierarchy Desc</th>
-                                    <th class="text-center">Stock</th>
+                                    <th class="text-center">QTY Item</th>
+                                    <th class="text-center">QTY</th>
                                     <th>Created At</th>
+                                    <th>Created By</th>
                                     <th>Action</th>
                                 </tr>
                             </thead>
@@ -43,16 +44,23 @@
                                 @foreach($generalRoom as $index => $gr)
                                     <tr>
                                         <td>{{ $generalRoom->firstItem() + $index }}</td>
-                                        <td>{{ $gr->purc_doc }}</td>
-                                        <td>{{ $gr->sales_doc }}</td>
-                                        <td>{{ $gr->customer_name }}</td>
-                                        <td>{{ $gr->material }}</td>
-                                        <td>{{ $gr->po_item_desc }}</td>
-                                        <td>{{ $gr->prod_hierarchy_desc }}</td>
-                                        <td class="text-center fw-bold">{{ $gr->stock }}</td>
-                                        <td>{{ \Carbon\Carbon::parse($gr->created_at)->translatedFormat('d F Y H:i') }}</td>
                                         <td>
-                                            <a class="btn btn-info btn-sm">Detail</a>
+                                            <div>{{ $gr->number }}</div>
+                                            <div><b>Box :</b> {{ $gr->reff_number ?? '-' }}</div>
+                                        </td>
+                                        <td>{{ $gr->purchaseOrder->purc_doc }}</td>
+                                        <td>
+                                            @foreach(json_decode($gr->sales_docs) ?? [] as $salesDoc)
+                                                <div>{{ $salesDoc }}</div>
+                                            @endforeach
+                                        </td>
+                                        <td>{{ $gr->purchaseOrder->customer->name }}</td>
+                                        <td class="text-center fw-bold">{{ $gr->qty_item }}</td>
+                                        <td class="text-center fw-bold">{{ $gr->qty }}</td>
+                                        <td>{{ \Carbon\Carbon::parse($gr->created_at)->translatedFormat('d F Y H:i') }}</td>
+                                        <td>{{ $gr->user->name }}</td>
+                                        <td>
+                                            <a href="{{ route('general-room.detail', ['id' => $gr->id]) }}" class="btn btn-info btn-sm">Detail</a>
                                         </td>
                                     </tr>
                                 @endforeach

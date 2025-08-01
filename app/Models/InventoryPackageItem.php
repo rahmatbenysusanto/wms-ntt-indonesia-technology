@@ -23,6 +23,6 @@ class InventoryPackageItem extends Model
 
     public function inventoryPackageItemSn(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
-        return $this->hasMany(InventoryPackageItemSn::class);
+        return $this->hasMany(InventoryPackageItemSn::class, 'inventory_package_item_id', 'id');
     }
 }
