@@ -125,7 +125,6 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
     Route::prefix('/general-room')->controller(GeneralRoomController::class)->group(function () {
         Route::get('/', 'index')->name('general-room.index');
         Route::get('/detail', 'detail')->name('general-room.detail');
-        Route::post('/outbound-all', 'outboundAll')->name('general-room.outbound.all');
         Route::get('/create-box', 'createBox')->name('general-room.create-box');
         Route::post('/create-box-store', 'createBoxStore')->name('general-room.create-box-store');
 
@@ -139,10 +138,30 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
 
     Route::prefix('/pm-room')->controller(PMRoomController::class)->group(function () {
         Route::get('/', 'index')->name('pm-room.index');
+        Route::get('/detail', 'detail')->name('pm-room.detail');
+        Route::get('/create-box', 'createBox')->name('pm-room.create-box');
+        Route::post('/create-box-store', 'createBoxStore')->name('pm-room.create-box-store');
+
+        Route::get('/outbound', 'outbound')->name('pm-room.outbound');
+        Route::get('/create', 'create')->name('pm-room.create');
+        Route::post('/create-outbound', 'createOutbound')->name('pm-room.create.outbound');
+
+        Route::get('/return', 'return')->name('pm-room.return');
+        Route::post('/return-store', 'returnStore')->name('pm-room.return.store');
     });
 
     Route::prefix('/spare-room')->controller(SpareRoomController::class)->group(function () {
         Route::get('/', 'index')->name('spare-room.index');
+        Route::get('/detail', 'detail')->name('spare-room.detail');
+        Route::get('/create-box', 'createBox')->name('spare-room.create-box');
+        Route::post('/create-box-store', 'createBoxStore')->name('spare-room.create-box-store');
+
+        Route::get('/outbound', 'outbound')->name('spare-room.outbound');
+        Route::get('/create', 'create')->name('spare-room.create');
+        Route::post('/create-outbound', 'createOutbound')->name('spare-room.create.outbound');
+
+        Route::get('/return', 'return')->name('spare-room.return');
+        Route::post('/return-store', 'returnStore')->name('spare-room.return.store');
     });
 
     Route::prefix('/outbound')->controller(OutboundController::class)->group(function () {

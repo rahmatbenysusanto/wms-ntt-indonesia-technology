@@ -2,32 +2,444 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Customer;
+use App\Models\GeneralRoom;
+use App\Models\Inventory;
+use App\Models\InventoryDetail;
+use App\Models\InventoryHistory;
+use App\Models\InventoryItem;
+use App\Models\InventoryPackage;
+use App\Models\InventoryPackageItem;
+use App\Models\InventoryPackageItemSN;
+use App\Models\Outbound;
+use App\Models\OutboundDetail;
+use App\Models\OutboundDetailSN;
 use App\Models\PmRoom;
+use App\Models\Storage;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 
 class PmRoomController extends Controller
 {
     public function index(): View
     {
-        $pmRoom = DB::table('inventory_item')
-            ->leftJoin('product', 'product.id', '=', 'inventory_item.product_id')
-            ->leftJoin('purchase_order', 'purchase_order.purc_doc', '=', 'inventory_item.purc_doc')
-            ->leftJoin('customer', 'customer.id', '=', 'purchase_order.customer_id')
-            ->where('inventory_item.stock', '!=', 0)
-            ->where('inventory_item.type', 'pm')
-            ->select([
-                'inventory_item.*',
-                'product.material',
-                'product.po_item_desc',
-                'product.prod_hierarchy_desc',
-                'customer.name AS customer_name',
-            ])
-            ->latest('inventory_item.created_at')
+        $pmRoom = InventoryPackage::with('purchaseOrder', 'purchaseOrder.customer', 'user')->where('storage_id', 3)
+            ->where('qty', '!=', 0)
             ->paginate(10);
 
-        $title = 'PM Room';
+        $title = "Pm Room";
         return view('pm-room.index', compact('title', 'pmRoom'));
+    }
+
+    public function detail(Request $request): View
+    {
+        $product = InventoryPackage::with('inventoryPackageItem', 'inventoryPackageItem.purchaseOrderDetail', 'storage', 'purchaseOrder', 'purchaseOrder.customer')
+            ->where('id', $request->query('id'))
+            ->first();
+
+        $title = "Pm Room";
+        return view('pm-room.detail', compact('title', 'product'));
+    }
+
+    public function createBox(): View
+    {
+        $listItem = InventoryPackage::with('purchaseOrder', 'inventoryPackageItem', 'inventoryPackageItem.inventoryPackageItemSn', 'inventoryPackageItem.purchaseOrderDetail')->where('storage_id', 3)->where('qty', '!=', 0)->get();
+
+        $title = "Pm Room";
+        return view('pm-room.create-box', compact('title', 'listItem'));
+    }
+
+    public function outbound(): View
+    {
+        $pmRoom = Outbound::with('customer')->where('type', 'pm room')->latest()->paginate(10);
+
+        $title = "Pm Room Outbound";
+        return view('pm-room.outbound.index', compact('title', 'pmRoom'));
+    }
+
+    public function create(): View
+    {
+        $salesDoc = InventoryPackage::with('purchaseOrder', 'storage')
+            ->where('qty', '!=', 0)
+            ->where('storage_id', 3)
+            ->get();
+
+        $customer = Customer::all();
+
+        $title = "Pm Room Outbound";
+        return view('pm-room.outbound.create', compact('title', 'customer', 'salesDoc'));
+    }
+
+    public function return(): View
+    {
+        $storageRaw = Storage::whereNotIn('id', [1,2,3,4])
+            ->where('raw', '!=', '-')
+            ->whereNull('area')
+            ->whereNull('rak')
+            ->whereNull('bin')
+            ->get();
+
+        $salesDoc = InventoryPackage::with('purchaseOrder', 'storage')
+            ->where('qty', '!=', 0)
+            ->where('storage_id', 3)
+            ->get();
+
+        $customer = Customer::all();
+
+        $dataMasterBox = InventoryPackage::whereNotIn('storage_id', [1,2,3,4])
+            ->where('qty', '!=', 0)
+            ->get();
+
+        $masterBox = [];
+        foreach ($dataMasterBox as $box) {
+            $explode = explode("-", $box->number);
+            $masterBox[] = $explode[0].'-'.$explode[1];
+        }
+        $masterBox = array_unique($masterBox);
+
+        $title = "Pm Room Outbound";
+        return view('pm-room.outbound.return', compact('title', 'customer', 'salesDoc', 'storageRaw', 'masterBox'));
+    }
+
+    public function createBoxStore(Request $request): \Illuminate\Http\JsonResponse
+    {
+        try {
+            DB::beginTransaction();
+
+            $purchaseOrder = $request->post('purchaseOrder');
+            $check = array_unique($purchaseOrder);
+
+            if (count($check) != 1) {
+                abort(400, 'Purc Doc Harus Sama!');
+            }
+
+            $inventoryPackage = InventoryPackage::create([
+                'purchase_order_id'     => $purchaseOrder[0],
+                'storage_id'            => 3,
+                'number'                => 'PM-'.date('YmdHis').rand(111, 999),
+                'reff_number'           => $request->post('boxName'),
+                'qty_item'              => 0,
+                'qty'                   => $request->post('qty'),
+                'sales_docs'            => json_encode($request->post('salesDocs')),
+                'created_by'            => Auth::id()
+            ]);
+
+            foreach ($request->post('products') as $product) {
+                InventoryPackage::where('id', $product['inventoryPackageId'])->decrement('qty', $product['qtySelect']);
+                InventoryPackageItem::where('id', $product['inventoryPackageItemId'])->decrement('qty', $product['qtySelect']);
+
+                // Create Inventory Package Item
+                $checkInventoryPackageItem = InventoryPackageItem::where('inventory_package_id', $inventoryPackage->id)
+                    ->where('purchase_order_detail_id', $product['purchaseOrderDetailId'])
+                    ->first();
+                if ($checkInventoryPackageItem != null) {
+                    InventoryPackageItem::where('id', $checkInventoryPackageItem->id)->increment('qty', $product['qtySelect']);
+                    $inventoryPackageItemId = $checkInventoryPackageItem->id;
+                } else {
+                    $inventoryPackageItem = InventoryPackageItem::create([
+                        'inventory_package_id'      => $inventoryPackage->id,
+                        'product_id'                => $product['productId'],
+                        'purchase_order_detail_id'  => $product['purchaseOrderDetailId'],
+                        'is_parent'                 => $product['is_parent'],
+                        'qty'                       => $product['qtySelect']
+                    ]);
+                    $inventoryPackageItemId = $inventoryPackageItem->id;
+                }
+
+                foreach ($product['serialNumber'] ?? [] as $serialNumber) {
+                    InventoryPackageItemSN::where('serial_number', $serialNumber['serial_number'])
+                        ->where('inventory_package_item_id', $product['inventoryPackageItemId'])
+                        ->update([
+                            'qty' => 0
+                        ]);
+
+                    InventoryPackageItemSN::create([
+                        'inventory_package_item_id' => $inventoryPackageItemId,
+                        'serial_number'             => $serialNumber['serial_number'],
+                        'qty'                       => 1
+                    ]);
+                }
+            }
+
+            $qty_item = InventoryPackageItem::where('inventory_package_id', $inventoryPackage->id)->count();
+            InventoryPackage::where('id', $inventoryPackage->id)->update([
+                'qty_item' => $qty_item
+            ]);
+
+            DB::commit();
+
+            return response()->json([
+                'status' => true,
+            ]);
+        } catch (\Exception $err) {
+            DB::rollBack();
+            Log::error($err->getMessage());
+            Log::error($err->getTraceAsString());
+            Log::error($err->getLine());
+            return response()->json([
+                'status' => false,
+            ]);
+        }
+    }
+
+    public function createOutbound(Request $request): \Illuminate\Http\JsonResponse
+    {
+        try {
+            DB::beginTransaction();
+
+            $products = $request->post('products');
+            $customer = Customer::find($request->post('customerId'));
+            $qty_item = 0;
+            $qty = 0;
+            $salesDocs = [];
+
+            $outbound = Outbound::create([
+                'customer_id'   => $customer->id,
+                'purc_doc'      => $products[0]['purcDoc'],
+                'sales_docs'    => json_encode([]),
+                'outbound_date' => $request->post('outboundDate'),
+                'number'        => 'INV-' . date('ymdHis') . str_pad(rand(0, 999), 3, '0', STR_PAD_LEFT),
+                'qty_item'      => 0,
+                'qty'           => 0,
+                'type'          => 'pm room',
+                'status'        => 'outbound',
+                'deliv_loc'     => $request->post('delivLocation'),
+                'deliv_dest'    => $request->post('deliveryDest'),
+                'created_by'    => Auth::id()
+            ]);
+
+            foreach ($products as $product) {
+                if ($product['disable'] == 0) {
+                    // Insert Outbound Detail
+                    $outboundDetail = OutboundDetail::create([
+                        'outbound_id'               => $outbound->id,
+                        'inventory_package_item_id' => $product['inventoryPackageItemId'],
+                        'qty'                       => $product['qtySelect'],
+                    ]);
+
+                    foreach ($product['serialNumber'] ?? [] as $serialNumber) {
+                        OutboundDetailSN::create([
+                            'outbound_detail_id'        => $outboundDetail->id,
+                            'inventory_package_item_id' => $product['inventoryPackageItemId'],
+                            'serial_number'             => $serialNumber['serialNumber'],
+                        ]);
+
+                        InventoryPackageItemSN::where('inventory_package_item_id', $product['inventoryPackageItemId'])
+                            ->where('serial_number', $serialNumber['serialNumber'])
+                            ->update([
+                                'qty' => 0
+                            ]);
+                    }
+
+                    // Decrement Stock
+                    InventoryPackage::where('id', $product['inventoryPackageId'])->decrement('qty', $product['qtySelect']);
+                    InventoryPackageItem::where('id', $product['inventoryPackageItemId'])->decrement('qty', $product['qtySelect']);
+
+                    // Decrement Inventory
+                    $inventory = Inventory::where('purchase_order_id', $product['purchaseOrderId'])->where('type', 'pm')->first();
+                    Inventory::where('id', $inventory->id)->decrement('stock', $product['qtySelect']);
+                    InventoryDetail::where('inventory_package_item_id', $product['inventoryPackageItemId'])->where('inventory_id', $inventory->id)->decrement('qty', $product['qtySelect']);
+                    InventoryItem::where('purc_doc', $product['purcDoc'])
+                        ->where('sales_doc', $product['salesDoc'])
+                        ->where('storage_id', $product['storageId'])
+                        ->where('product_id', $product['productId'])
+                        ->where('type', 'pm')
+                        ->decrement('stock', $product['qtySelect']);
+
+                    // Inventory History
+                    InventoryHistory::create([
+                        'purchase_order_id'         => $product['purchaseOrderId'],
+                        'purchase_order_detail_id'  => $product['purchaseOrderDetailId'],
+                        'outbound_id'               => $outbound->id,
+                        'inventory_package_item_id' => $product['inventoryPackageItemId'],
+                        'qty'                       => $product['qtySelect'],
+                        'type'                      => 'outbound',
+                        'created_by'                => Auth::id(),
+                        'note'                      => 'Outbound PM Room',
+                    ]);
+
+                    $qty_item++;
+                    $qty += $product['qtySelect'];
+                    $salesDocs[] = $product['salesDoc'];
+                }
+            }
+
+            Outbound::where('id', $outbound->id)->update([
+                'qty_item'      => $qty_item,
+                'qty'           => $qty,
+                'sales_docs'    => json_encode(array_unique($salesDocs)),
+            ]);
+
+            DB::commit();
+            return response()->json([
+                'status' => true,
+            ]);
+        } catch (\Exception $err) {
+            DB::rollBack();
+            Log::error($err->getMessage());
+            Log::error($err->getTraceAsString());
+            return response()->json([
+                'status' => false,
+            ]);
+        }
+    }
+
+    public function returnStore(Request $request): \Illuminate\Http\JsonResponse
+    {
+        try {
+            DB::beginTransaction();
+
+            $products = $request->post('products');
+            $customer = Customer::find($request->post('customerId'));
+            $qty_item = 0;
+            $qty = 0;
+            $salesDocs = [];
+
+            $outbound = Outbound::create([
+                'customer_id'   => $customer->id,
+                'purc_doc'      => $products[0]['purcDoc'],
+                'sales_docs'    => json_encode([]),
+                'outbound_date' => $request->post('outboundDate'),
+                'number'        => 'INV-' . date('ymdHis') . str_pad(rand(0, 999), 3, '0', STR_PAD_LEFT),
+                'qty_item'      => 0,
+                'qty'           => 0,
+                'type'          => 'pm room',
+                'status'        => 'return',
+                'deliv_loc'     => '-',
+                'deliv_dest'    => '-',
+                'note'          => $request->post('note'),
+                'created_by'    => Auth::id()
+            ]);
+
+            foreach ($products as $product) {
+                if ($product['disable'] == 0) {
+                    // Insert Outbound Detail
+                    $outboundDetail = OutboundDetail::create([
+                        'outbound_id'               => $outbound->id,
+                        'inventory_package_item_id' => $product['inventoryPackageItemId'],
+                        'qty'                       => $product['qtySelect'],
+                    ]);
+
+                    foreach ($product['serialNumber'] ?? [] as $serialNumber) {
+                        OutboundDetailSN::create([
+                            'outbound_detail_id'        => $outboundDetail->id,
+                            'inventory_package_item_id' => $product['inventoryPackageItemId'],
+                            'serial_number'             => $serialNumber['serialNumber'],
+                        ]);
+
+                        InventoryPackageItemSN::where('inventory_package_item_id', $product['inventoryPackageItemId'])
+                            ->where('serial_number', $serialNumber['serialNumber'])
+                            ->update([
+                                'qty' => 0
+                            ]);
+                    }
+
+                    // Decrement Stock
+                    InventoryPackage::where('id', $product['inventoryPackageId'])->decrement('qty', $product['qtySelect']);
+                    InventoryPackageItem::where('id', $product['inventoryPackageItemId'])->decrement('qty', $product['qtySelect']);
+
+                    // Decrement Inventory
+                    $inventory = Inventory::where('purchase_order_id', $product['purchaseOrderId'])->where('type', 'pm')->first();
+                    Inventory::where('id', $inventory->id)->decrement('stock', $product['qtySelect']);
+                    InventoryDetail::where('inventory_package_item_id', $product['inventoryPackageItemId'])->where('inventory_id', $inventory->id)->decrement('qty', $product['qtySelect']);
+                    InventoryItem::where('purc_doc', $product['purcDoc'])
+                        ->where('sales_doc', $product['salesDoc'])
+                        ->where('storage_id', $product['storageId'])
+                        ->where('product_id', $product['productId'])
+                        ->where('type', 'pm')
+                        ->decrement('stock', $product['qtySelect']);
+
+                    // Inventory History
+                    InventoryHistory::create([
+                        'purchase_order_id'         => $product['purchaseOrderId'],
+                        'purchase_order_detail_id'  => $product['purchaseOrderDetailId'],
+                        'outbound_id'               => $outbound->id,
+                        'inventory_package_item_id' => $product['inventoryPackageItemId'],
+                        'qty'                       => $product['qtySelect'],
+                        'type'                      => 'outbound',
+                        'created_by'                => Auth::id(),
+                        'note'                      => 'Return PM Room',
+                    ]);
+
+                    $qty_item++;
+                    $qty += $product['qtySelect'];
+                    $salesDocs[] = $product['salesDoc'];
+                }
+            }
+
+            Outbound::where('id', $outbound->id)->update([
+                'qty_item'      => $qty_item,
+                'qty'           => $qty,
+                'sales_docs'    => json_encode(array_unique($salesDocs)),
+            ]);
+
+            // Insert QTY To Inventory
+            $inventoryPackage = InventoryPackage::create([
+                'purchase_order_id'     => $products[0]['purchaseOrderId'],
+                'storage_id'            => $request->post('bin'),
+                'number'                => $request->post('masterBox') ?? 'PA-'.date('ymdHis').rand(100, 999),
+                'reff_number'           => $request->post('boxName'),
+                'qty'                   => $qty,
+                'qty_item'              => $qty_item,
+                'sales_docs'            => json_encode(array_unique($salesDocs)),
+                'note'                  => $request->post('note'),
+                'created_by'            => Auth::id(),
+            ]);
+
+            foreach ($products as $product) {
+                $inventoryPackageItem = InventoryPackageItem::create([
+                    'inventory_package_id'      => $inventoryPackage->id,
+                    'product_id'                => $product['productId'],
+                    'purchase_order_detail_id'  => $product['purchaseOrderDetailId'],
+                    'is_parent'                 => $product['isParent'],
+                    'qty'                       => $product['qtySelect'],
+                ]);
+
+                foreach ($product['serialNumber'] ?? [] as $serialNumber) {
+                    InventoryPackageItemSN::create([
+                        'inventory_package_item_id' => $inventoryPackageItem->id,
+                        'serial_number'             => $serialNumber['serialNumber'],
+                        'qty'                       => 1,
+                    ]);
+                }
+
+                // Increment Inventory
+                $inventory = Inventory::where('purchase_order_id', $product['purchaseOrderId'])->where('type', 'inv')->first();
+                Inventory::where('id', $inventory->id)->increment('stock', $product['qtySelect']);
+                InventoryDetail::where('inventory_package_item_id', $product['inventoryPackageItemId'])->where('inventory_id', $inventory->id)->increment('qty', $product['qtySelect']);
+                InventoryItem::where('purc_doc', $product['purcDoc'])
+                    ->where('sales_doc', $product['salesDoc'])
+                    ->where('storage_id', $product['storageId'])
+                    ->where('product_id', $product['productId'])
+                    ->where('type', 'inv')
+                    ->increment('stock', $product['qtySelect']);
+
+                InventoryHistory::create([
+                    'purchase_order_id'         => $product['purchaseOrderId'],
+                    'purchase_order_detail_id'  => $product['purchaseOrderDetailId'],
+                    'outbound_id'               => $outbound->id,
+                    'inventory_package_item_id' => $product['inventoryPackageItemId'],
+                    'qty'                       => $product['qtySelect'],
+                    'type'                      => 'inbound',
+                    'created_by'                => Auth::id(),
+                    'note'                      => 'Return From PM Room',
+                ]);
+            }
+
+            DB::commit();
+            return response()->json([
+                'status' => true,
+            ]);
+        } catch (\Exception $err) {
+            DB::rollBack();
+            Log::error($err->getMessage());
+            Log::error($err->getTraceAsString());
+            return response()->json([
+                'status' => false,
+            ]);
+        }
     }
 }

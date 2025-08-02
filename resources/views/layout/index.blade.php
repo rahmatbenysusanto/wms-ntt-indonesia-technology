@@ -529,26 +529,32 @@
                     </li>
 
                     <li class="nav-item">
-                        <a class="nav-link menu-link {{ $title == 'PM Room' ? 'active' : '' }}" href="#sidebarPMRoom" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="sidebarPMRoom">
+                        <a class="nav-link menu-link {{ in_array($title, ['Pm Room', 'Pm Room Outbound']) ? 'active' : '' }}" href="#sidebarPmRoom" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="sidebarPmRoom">
                             <i class="mdi mdi-notebook-outline"></i> <span data-key="t-dashboards">PM Room</span>
                         </a>
-                        <div class="collapse menu-dropdown {{ $title == 'PM Room' ? 'show' : '' }}" id="sidebarPMRoom">
+                        <div class="collapse menu-dropdown {{ in_array($title, ['Pm Room', 'Pm Room Outbound']) ? 'show' : '' }}" id="sidebarPmRoom">
                             <ul class="nav nav-sm flex-column">
                                 <li class="nav-item">
-                                    <a href="{{ route('pm-room.index') }}" class="nav-link {{ $title == 'PM Room' ? 'active' : '' }}" data-key="t-analytics"> Inventory </a>
+                                    <a href="{{ route('pm-room.index') }}" class="nav-link {{ $title == 'Pm Room' ? 'active' : '' }}" data-key="t-analytics"> Inventory </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="{{ route('pm-room.outbound') }}" class="nav-link {{ $title == 'Pm Room Outbound' ? 'active' : '' }}" data-key="t-analytics"> Outbound </a>
                                 </li>
                             </ul>
                         </div>
                     </li>
 
                     <li class="nav-item">
-                        <a class="nav-link menu-link {{ $title == 'Spare Room' ? 'active' : '' }}" href="#sidebarSpareRoom" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="sidebarSpareRoom">
+                        <a class="nav-link menu-link {{ in_array($title, ['Spare Room', 'Spare Room Outbound']) ? 'active' : '' }}" href="#sidebarSpareRoom" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="sidebarSpareRoom">
                             <i class="mdi mdi-notebook-check-outline"></i> <span data-key="t-dashboards">Spare Room</span>
                         </a>
-                        <div class="collapse menu-dropdown {{ $title == 'Spare Room' ? 'show' : '' }}" id="sidebarSpareRoom">
+                        <div class="collapse menu-dropdown {{ in_array($title, ['Spare Room', 'Spare Room Outbound']) ? 'show' : '' }}" id="sidebarSpareRoom">
                             <ul class="nav nav-sm flex-column">
                                 <li class="nav-item">
                                     <a href="{{ route('spare-room.index') }}" class="nav-link {{ $title == 'Spare Room' ? 'active' : '' }}" data-key="t-analytics"> Inventory </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="{{ route('spare-room.outbound') }}" class="nav-link {{ $title == 'Spare Room Outbound' ? 'active' : '' }}" data-key="t-analytics"> Outbound </a>
                                 </li>
                             </ul>
                         </div>
