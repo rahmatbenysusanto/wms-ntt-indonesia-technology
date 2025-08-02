@@ -336,6 +336,7 @@ class OutboundController extends Controller
                             ->where('sales_doc', $purchaseOrderDetail->sales_doc)
                             ->where('product_id', $inventoryPackageItem->product_id)
                             ->where('storage_id', 2)
+                            ->where('type', $type)
                             ->first();
                         if ($checkInventoryItem == null) {
                             $inventoryItem = InventoryItem::create([
