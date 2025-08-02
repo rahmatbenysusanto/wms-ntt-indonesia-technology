@@ -35,8 +35,22 @@ class DashboardController extends Controller
 
     public function dashboardPo(): View
     {
+        $listPO = PurchaseOrder::with('customer')->whereIn('status', ['process', 'done', 'close'])->latest()->paginate(10);
+
+        foreach ($listPO as $po) {
+            $po->value = DB::table('purchase_order_detail')->where('purchase_order_id', $po->id)->select(DB::raw('SUM(po_item_qty * net_order_price) as total'))->value('total');
+            $po->listSO = DB::table('purchase_order_detail')
+                ->where('purchase_order_id', $po->id)
+                ->select([
+                    'sales_doc',
+                    DB::raw('SUM(po_item_qty * net_order_price) as total'),
+                ])
+                ->groupBy('sales_doc')
+                ->get();
+        }
+
         $title = 'Dashboard PO';
-        return view('dashboard.po.index', compact('title'));
+        return view('dashboard.po.index', compact('title', 'listPO'));
     }
 
     public function dashboardAging(): View

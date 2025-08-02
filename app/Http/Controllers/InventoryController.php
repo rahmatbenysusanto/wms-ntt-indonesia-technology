@@ -6,6 +6,7 @@ use App\Models\Inventory;
 use App\Models\InventoryDetail;
 use App\Models\InventoryHistory;
 use App\Models\InventoryItem;
+use App\Models\InventoryPackage;
 use App\Models\InventoryPackageItem;
 use App\Models\InventoryParent;
 use App\Models\InventoryParentDetail;
@@ -27,9 +28,9 @@ class InventoryController extends Controller
     public function index(Request $request): View
     {
         $inventory = InventoryItem::with(['storage', 'product'])
-        ->when(request('purc_doc'), function($query) {
-            $query->where('purc_doc', 'like', '%'.request('purc_doc').'%');
-        })
+            ->when(request('purc_doc'), function($query) {
+                $query->where('purc_doc', 'like', '%'.request('purc_doc').'%');
+            })
             ->when(request('sales_doc'), function($query) {
                 $query->where('sales_doc', 'like', '%'.request('sales_doc').'%');
             })
@@ -40,6 +41,7 @@ class InventoryController extends Controller
                 });
             })
             ->where('stock', '!=', 0)
+            ->whereNotIn('storage_id', [2,3,4])
             ->latest()
             ->paginate(10)
             ->appends([
@@ -50,6 +52,22 @@ class InventoryController extends Controller
 
         $title = 'Inventory';
         return view('inventory.index', compact('title', 'inventory'));
+    }
+
+    public function box(): View
+    {
+        $box = InventoryPackage::with('purchaseOrder', 'user', 'storage')->whereNotIn('storage_id', [1,2,3,4])->where('qty', '!=', 0)->latest()->paginate(10);
+
+        $title = "Inventory Box";
+        return view('inventory.box.index', compact('title', 'box'));
+    }
+
+    public function boxDetail(Request $request): View
+    {
+        $products = InventoryPackage::with('inventoryPackageItem', 'inventoryPackageItem.purchaseOrderDetail', 'storage', 'purchaseOrder', 'purchaseOrder.customer')->where('id', $request->query('id'))->get();
+
+        $title = "Inventory Box";
+        return view('inventory.box.detail', compact('title', 'products'));
     }
 
     public function detail(Request $request): View

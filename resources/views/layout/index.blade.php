@@ -439,24 +439,25 @@
                 <ul class="navbar-nav" id="navbar-nav">
                     <li class="menu-title"><span data-key="t-menu">Dashboard</span></li>
                     <li class="nav-item">
-                        <a class="nav-link menu-link {{ $title == 'Dashboard'? 'active' : '' }}" href="{{ route('dashboard') }}">
+                        <a class="nav-link menu-link {{ in_array($title, ['Dashboard', 'Dashboard PO', 'Dashboard Aging', 'Dashboard Outbound']) ? 'active' : '' }}" href="#sidebarDashboard" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="sidebarDashboard">
                             <i class="mdi mdi-speedometer"></i> <span data-key="t-widgets">Dashboard</span>
                         </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link menu-link {{ $title == 'Dashboard PO'? 'active' : '' }}" href="{{ route('dashboard.po') }}">
-                            <i class="mdi mdi-view-week"></i> <span data-key="t-widgets">Dashboard PO</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link menu-link {{ $title == 'Dashboard Aging'? 'active' : '' }}" href="{{ route('dashboard.aging') }}">
-                            <i class="mdi mdi-view-week"></i> <span data-key="t-widgets">Dashboard Aging</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link menu-link {{ $title == 'Dashboard Outbound'? 'active' : '' }}" href="{{ route('dashboard.outbound') }}">
-                            <i class="mdi mdi-view-week"></i> <span data-key="t-widgets">Dashboard Outbound</span>
-                        </a>
+                        <div class="collapse menu-dropdown {{ in_array($title, ['Dashboard', 'Dashboard PO', 'Dashboard Aging', 'Dashboard Outbound']) ? 'show' : '' }}" id="sidebarDashboard">
+                            <ul class="nav nav-sm flex-column">
+                                <li class="nav-item">
+                                    <a href="{{ route('dashboard') }}" class="nav-link {{ $title == 'Dashboard' ? 'active' : '' }}" data-key="t-analytics"> Main </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="{{ route('dashboard.po') }}" class="nav-link {{ $title == 'Dashboard PO' ? 'active' : '' }}" data-key="t-analytics"> PO </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="{{ route('dashboard.aging') }}" class="nav-link {{ $title == 'Dashboard Aging' ? 'active' : '' }}" data-key="t-analytics"> Aging </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="{{ route('dashboard.outbound') }}" class="nav-link {{ $title == 'Dashboard Outbound' ? 'active' : '' }}" data-key="t-analytics"> Outbound </a>
+                                </li>
+                            </ul>
+                        </div>
                     </li>
 
                     <li class="menu-title"><span data-key="t-menu">WAREHOUSE MODULE</span></li>
@@ -480,13 +481,16 @@
                     </li>
 
                     <li class="nav-item">
-                        <a class="nav-link menu-link {{ in_array($title, ['Inventory', 'Cycle Count', 'Transfer Location']) ? 'active' : '' }}" href="#sidebarInventory" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="sidebarInventory">
+                        <a class="nav-link menu-link {{ in_array($title, ['Inventory', 'Cycle Count', 'Transfer Location', 'Inventory Box']) ? 'active' : '' }}" href="#sidebarInventory" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="sidebarInventory">
                             <i class="mdi mdi-package-variant"></i> <span data-key="t-dashboards">Inventory</span>
                         </a>
-                        <div class="collapse menu-dropdown {{ in_array($title, ['Inventory', 'Cycle Count', 'Transfer Location']) ? 'show' : '' }}" id="sidebarInventory">
+                        <div class="collapse menu-dropdown {{ in_array($title, ['Inventory', 'Cycle Count', 'Transfer Location', 'Inventory Box']) ? 'show' : '' }}" id="sidebarInventory">
                             <ul class="nav nav-sm flex-column">
                                 <li class="nav-item">
                                     <a href="{{ route('inventory.index') }}" class="nav-link {{ $title == 'Inventory' ? 'active' : '' }}" data-key="t-analytics"> Produk List </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="{{ route('inventory.box') }}" class="nav-link {{ $title == 'Inventory Box' ? 'active' : '' }}" data-key="t-analytics"> Box List </a>
                                 </li>
                                 <li class="nav-item">
                                     <a href="{{ route('inventory.transfer-location') }}" class="nav-link {{ $title == 'Transfer Location' ? 'active' : '' }}" data-key="t-analytics"> Transfer Location </a>
