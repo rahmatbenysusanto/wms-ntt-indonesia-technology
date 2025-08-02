@@ -52,14 +52,15 @@ class OutboundController extends Controller
 
     public function create(): View
     {
-        $inventory = [];
-
-        $salesDoc = InventoryPackage::with('purchaseOrder', 'storage')->where('qty', '!=', 0)->get();
+        $salesDoc = InventoryPackage::with('purchaseOrder', 'storage')
+            ->where('qty', '!=', 0)
+            ->whereNotIn('storage_id', [2,3,4])
+            ->get();
 
         $customer = Customer::all();
 
         $title = 'Outbound';
-        return view('outbound.create', compact('title', 'inventory', 'customer', 'salesDoc'));
+        return view('outbound.create', compact('title', 'customer', 'salesDoc'));
     }
 
     public function getItemBySalesDoc(Request $request): \Illuminate\Http\JsonResponse
@@ -268,7 +269,8 @@ class OutboundController extends Controller
                         'inventory_package_item_id' => $product['inventoryPackageItemId'],
                         'qty'                       => $product['qtySelect'],
                         'type'                      => 'outbound',
-                        'created_by'                => Auth::id()
+                        'created_by'                => Auth::id(),
+                        'note'                      => 'Outbound From Inventory',
                     ]);
 
                     $qty_item++;

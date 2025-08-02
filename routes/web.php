@@ -131,7 +131,10 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
 
         Route::get('/outbound', 'outbound')->name('general-room.outbound');
         Route::get('/create', 'create')->name('general-room.create');
+        Route::post('/create-outbound', 'createOutbound')->name('general-room.create.outbound');
+
         Route::get('/return', 'return')->name('general-room.return');
+        Route::post('/return-store', 'returnStore')->name('general-room.return.store');
     });
 
     Route::prefix('/pm-room')->controller(PMRoomController::class)->group(function () {

@@ -19,6 +19,7 @@ return new class extends Migration
             $table->integer('inventory_package_item_id');
             $table->integer('qty')->default('0');
             $table->string('type');
+            $table->text('note')->nullable();
             $table->integer('created_by');
             $table->timestamps();
         });

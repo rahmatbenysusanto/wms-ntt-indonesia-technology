@@ -19,7 +19,8 @@ class Outbound extends Model
         'status',
         'deliv_loc',
         'deliv_dest',
-        'created_by'
+        'created_by',
+        'note'
     ];
 
     public function user(): \Illuminate\Database\Eloquent\Relations\BelongsTo

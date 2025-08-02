@@ -24,6 +24,7 @@ return new class extends Migration
             $table->string('status');
             $table->string('deliv_loc');
             $table->string('deliv_dest');
+            $table->text('note')->nullable();
             $table->integer('created_by');
             $table->timestamps();
         });

@@ -1,17 +1,17 @@
 @extends('layout.index')
-@section('title', 'Outbound General Room')
+@section('title', 'Return General Room')
 @section('sizeBarSize', 'sm')
 
 @section('content')
     <div class="row">
         <div class="col-12">
             <div class="page-title-box d-sm-flex align-items-center justify-content-between">
-                <h4 class="mb-sm-0">Create General Room Outbound</h4>
+                <h4 class="mb-sm-0">Create General Room Return</h4>
                 <div class="page-title-right">
                     <ol class="breadcrumb m-0">
                         <li class="breadcrumb-item"><a href="javascript: void(0);">General Room</a></li>
                         <li class="breadcrumb-item">Outbound</li>
-                        <li class="breadcrumb-item active">Create</li>
+                        <li class="breadcrumb-item active">Return</li>
                     </ol>
                 </div>
             </div>
@@ -34,19 +34,64 @@
                             </select>
                         </div>
                         <div class="col-6 mb-3">
-                            <label class="form-label">Delivery Location</label>
-                            <input type="text" class="form-control" id="delivLocation">
+                            <label class="form-label">Return Date</label>
+                            <input type="datetime-local" class="form-control" id="outboundDate">
                         </div>
                         <div class="col-6 mb-3">
-                            <label class="form-label">Delivery Destination</label>
-                            <select class="form-control" id="deliveryDest">
-                                <option value="client">Client</option>
-                                <option value="client warehouse">Client Warehouse</option>
+                            <label class="form-label">Master Box</label>
+                            <select class="form-control" id="masterBox">
+                                <option value="">-- Pilih Master Box --</option>
+                                @foreach($masterBox as $box)
+                                    <option>{{ $box }}</option>
+                                @endforeach
                             </select>
                         </div>
                         <div class="col-6 mb-3">
-                            <label class="form-label">Outbound Date</label>
-                            <input type="datetime-local" class="form-control" id="outboundDate">
+                            <label class="form-label">Box Name</label>
+                            <input type="text" class="form-control" id="boxName" placeholder="Box name">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Note</label>
+                            <textarea class="form-control" id="note"></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title mb-0">Storage Location</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-3">
+                            <label class="form-label">Raw</label>
+                            <select class="form-control" onchange="changeRaw(this.value)" id="raw">
+                                <option value="">-- Select Raw --</option>
+                                @foreach($storageRaw as $raw)
+                                    <option value="{{ $raw->raw }}">{{ $raw->raw }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-3">
+                            <label class="form-label">Area</label>
+                            <select class="form-control" id="area" onchange="changeArea(this.value)">
+
+                            </select>
+                        </div>
+                        <div class="col-3">
+                            <label class="form-label">Rak</label>
+                            <select class="form-control" id="rak" onchange="changeRak(this.value)">
+
+                            </select>
+                        </div>
+                        <div class="col-3">
+                            <label class="form-label">Bin</label>
+                            <select class="form-control" id="bin" name="bin">
+
+                            </select>
                         </div>
                     </div>
                 </div>
@@ -81,8 +126,8 @@
             <div class="card">
                 <div class="card-header">
                     <div class="d-flex justify-content-between align-items-center">
-                        <h4 class="card-title mb-0">List Product Order</h4>
-                        <a class="btn btn-primary" onclick="createOrder()">Create Order General Room</a>
+                        <h4 class="card-title mb-0">List Product Return</h4>
+                        <a class="btn btn-primary" onclick="createOrder()">Create Return General Room</a>
                     </div>
                 </div>
                 <div class="card-body">
@@ -94,7 +139,7 @@
                             <th>Box</th>
                             <th>Sales Doc</th>
                             <th class="text-center">QTY</th>
-                            <th>QTY Outbound</th>
+                            <th>QTY Return</th>
                             <th>Serial Number</th>
                             <th>Action</th>
                         </tr>
@@ -411,14 +456,14 @@
         function createOrder() {
             Swal.fire({
                 title: "Are you sure?",
-                text: "Create Order",
+                text: "Return Product",
                 icon: "warning",
                 showCancelButton: true,
                 customClass: {
                     confirmButton: "btn btn-primary w-xs me-2 mt-2",
                     cancelButton: "btn btn-danger w-xs mt-2"
                 },
-                confirmButtonText: "Yes, Create it!",
+                confirmButtonText: "Yes, Return it!",
                 buttonsStyling: false,
                 showCloseButton: true
             }).then(function(t) {
@@ -429,21 +474,23 @@
 
                     // Create Order Process
                     $.ajax({
-                        url: '{{ route('general-room.create.outbound') }}',
+                        url: '{{ route('general-room.return.store') }}',
                         method: 'POST',
                         data: {
                             _token: '{{ csrf_token() }}',
                             products: products,
-                            delivLocation: document.getElementById('delivLocation').value,
+                            boxName: document.getElementById('boxName').value,
                             customerId: document.getElementById('customerId').value,
-                            deliveryDest: document.getElementById('deliveryDest').value,
-                            outboundDate: document.getElementById('outboundDate').value
+                            masterBox: document.getElementById('masterBox').value,
+                            outboundDate: document.getElementById('outboundDate').value,
+                            note: document.getElementById('note').value,
+                            bin: document.getElementById('bin').value
                         },
                         success: (res) => {
                             if (res.status) {
                                 Swal.fire({
                                     title: 'Success',
-                                    text: 'Create Order General Room Successfully',
+                                    text: 'Create Return General Room Successfully',
                                     icon: 'success'
                                 }).then((e) => {
                                     window.location.href = '{{ route('general-room.outbound') }}';
@@ -451,12 +498,81 @@
                             } else {
                                 Swal.fire({
                                     title: 'Error',
-                                    text: 'Create Order Failed',
+                                    text: 'Create Return Failed',
                                     icon: 'error'
                                 });
                             }
                         }
                     });
+                }
+            });
+        }
+    </script>
+
+    <script>
+        function changeRaw(raw) {
+            $.ajax({
+                url: '{{ route('storage.find.area') }}',
+                method: 'GET',
+                data: {
+                    raw: raw
+                },
+                success: (res) => {
+                    const data = res.data;
+                    let html = '<option value="">-- Select Area --</option>';
+
+                    data.forEach((item) => {
+                        html += `<option value="${item.area}">${item.area}</option>`;
+                    });
+
+                    document.getElementById('area').innerHTML = html;
+                }
+            });
+        }
+
+        function changeArea(area) {
+            $.ajax({
+                url: '{{ route('storage.find.rak') }}',
+                method: 'GET',
+                data: {
+                    raw: document.getElementById('raw').value,
+                    area: area
+                },
+                success: (res) => {
+                    const data = res.data;
+                    let html = '<option value="">-- Select Rak --</option>';
+
+                    data.forEach((item) => {
+                        html += `<option value="${item.rak}">${item.rak}</option>`;
+                    });
+
+                    document.getElementById('rak').innerHTML = html;
+                }
+            });
+        }
+
+        function changeRak(rak) {
+            $.ajax({
+                url: '{{ route('storage.find.bin') }}',
+                method: 'GET',
+                data: {
+                    raw: document.getElementById('raw').value,
+                    area: document.getElementById('area').value,
+                    rak: rak
+                },
+                success: (res) => {
+                    console.log(document.getElementById('raw').value)
+                    console.log(document.getElementById('area').value)
+                    console.log(document.getElementById('rak').value)
+                    const data = res.data;
+                    console.log(data);
+                    let html = '<option value="">-- Select Bin --</option>';
+
+                    data.forEach((item) => {
+                        html += `<option value="${item.id}">${item.bin}</option>`;
+                    });
+
+                    document.getElementById('bin').innerHTML = html;
                 }
             });
         }

@@ -16,7 +16,8 @@ class InventoryPackage extends Model
         'qty',
         'sales_docs',
         'product_package_id',
-        'created_by'
+        'created_by',
+        'note'
     ];
 
     public function inventoryPackageItem(): \Illuminate\Database\Eloquent\Relations\HasMany

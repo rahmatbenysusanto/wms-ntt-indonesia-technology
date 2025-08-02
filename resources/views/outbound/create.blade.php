@@ -78,6 +78,7 @@
                 </div>
             </div>
         </div>
+
         <div class="col-8">
             <div class="card">
                 <div class="card-header">
@@ -177,7 +178,7 @@
 
             salesDoc.forEach((item) => {
                 let salesDoc = '';
-                (JSON.parse(item.sales_docs)).forEach((detail) => {
+                (JSON.parse(item.sales_docs) ?? []).forEach((detail) => {
                     salesDoc += `<div>${detail}</div>`;
                 });
 

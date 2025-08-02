@@ -20,6 +20,8 @@ return new class extends Migration
             $table->integer('qty_item')->default(0);
             $table->integer('qty')->default(0);
             $table->json('sales_docs')->nullable();
+            $table->integer('product_package_id')->nullable();
+            $table->text('note')->nullable();
             $table->integer('created_by');
             $table->timestamps();
         });

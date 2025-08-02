@@ -58,17 +58,7 @@
                                     </td>
                                     <td>{{ $item->customer->name }}</td>
                                     <td>{{ $item->deliv_loc }}</td>
-                                    <td class="text-center">
-                                        @if($item->deliv_dest == 'client')
-                                            Client
-                                        @elseif($item->deliv_dest == 'pm room')
-                                            PM Room
-                                        @elseif($item->deliv_dest == 'general room')
-                                            GR Room
-                                        @elseif($item->deliv_dest == 'spare room')
-                                            Spare Room
-                                        @endif
-                                    </td>
+                                    <td class="text-center">{{ $item->deliv_dest }}</td>
                                     <td class="text-center fw-bold">{{ number_format($item->qty_item) }}</td>
                                     <td class="text-center">
                                         @if($item->status == 'outbound')

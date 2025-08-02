@@ -15,7 +15,8 @@ class InventoryHistory extends Model
         'inventory_package_item_id',
         'qty',
         'type',
-        'created_by'
+        'created_by',
+        'note'
     ];
 
     public function purchaseOrder(): BelongsTo
