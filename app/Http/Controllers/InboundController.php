@@ -417,7 +417,7 @@ class InboundController extends Controller
                             }
 
                             // Tambah Stock Inventory
-                            $checkInventory = Inventory::where('purchase_order_id', $request->post('purchaseOrderId'))->first();
+                            $checkInventory = Inventory::where('purchase_order_id', $request->post('purchaseOrderId'))->where('type', 'inv')->first();
                             if ($checkInventory != null) {
                                 Inventory::where('id', $checkInventory->id)->increment('stock', $product['qtyDirect']);
                                 $inventoryId = $checkInventory->id;
@@ -425,6 +425,7 @@ class InboundController extends Controller
                                 $inventory = Inventory::create([
                                     'purchase_order_id' => $request->post('purchaseOrderId'),
                                     'stock'             => $product['qtyDirect'],
+                                    'type'              => 'inv'
                                 ]);
                                 $inventoryId = $inventory->id;
                             }
@@ -442,6 +443,7 @@ class InboundController extends Controller
                                 ->where('sales_doc', $purchaseOrderDetail->sales_doc)
                                 ->where('product_id', $purchaseOrderDetail->product_id)
                                 ->where('storage_id', 1)
+                                ->where('type', 'inv')
                                 ->first();
                             if ($checkInventoryItem != null) {
                                 InventoryItem::where('id', $checkInventoryItem->id)->increment('stock', $product['qtyDirect']);
@@ -452,6 +454,7 @@ class InboundController extends Controller
                                     'product_id'    => $purchaseOrderDetail->product_id,
                                     'storage_id'    => 1,
                                     'stock'         => $product['qtyDirect'],
+                                    'type'          => 'inv'
                                 ]);
                             }
 
@@ -616,11 +619,12 @@ class InboundController extends Controller
             $stock = 0;
 
             $productPackage = ProductPackage::find($request->post('productPackageId'));
-            $checkInventory = Inventory::where('purchase_order_id', $productPackage->purchase_order_id)->first();
+            $checkInventory = Inventory::where('purchase_order_id', $productPackage->purchase_order_id)->where('type', 'inv')->first();
             if ($checkInventory == null) {
                 $inventory = Inventory::create([
                     'purchase_order_id'     => $productPackage->purchase_order_id,
-                    'stock'                 => 0
+                    'stock'                 => 0,
+                    'type'                  => 'inv',
                 ]);
 
                 $inventoryId = $inventory->id;
@@ -685,6 +689,7 @@ class InboundController extends Controller
                         ->where('sales_doc', $parent['salesDoc'])
                         ->where('product_id', $parent['productId'])
                         ->where('storage_id', $request->post('bin'))
+                        ->where('type', 'inv')
                         ->whereDate('created_at', now()->toDateString())
                         ->first();
                     if ($checkInventoryItem == null) {
@@ -694,6 +699,7 @@ class InboundController extends Controller
                             'product_id'        => $parent['productId'],
                             'stock'             => $parent['qtySelect'],
                             'storage_id'        => $request->post('bin'),
+                            'type'              => 'inv'
                         ]);
                     } else {
                         InventoryItem::where('id', $checkInventoryItem->id)->increment('stock', $parent['qtySelect']);
@@ -745,6 +751,7 @@ class InboundController extends Controller
                         ->where('sales_doc', $child['salesDoc'])
                         ->where('product_id', $child['productId'])
                         ->where('storage_id', $request->post('bin'))
+                        ->where('type', 'inv')
                         ->whereDate('created_at', now()->toDateString())
                         ->first();
                     if ($checkInventoryItem == null) {
@@ -754,6 +761,7 @@ class InboundController extends Controller
                             'product_id'        => $child['productId'],
                             'stock'             => $child['qtySelect'],
                             'storage_id'        => $request->post('bin'),
+                            'type'              => 'inv'
                         ]);
                     } else {
                         InventoryItem::where('id', $checkInventoryItem->id)->increment('stock', $child['qtySelect']);
@@ -962,7 +970,7 @@ class InboundController extends Controller
                                 }
 
                                 // Inventory
-                                $checkInventory = Inventory::where('purchase_order_id', $purchaseOrderDetail->purchase_order_id)->first();
+                                $checkInventory = Inventory::where('purchase_order_id', $purchaseOrderDetail->purchase_order_id)->where('type', 'inv')->first();
                                 if ($checkInventory != null) {
                                     Inventory::where('id', $checkInventory->id)->increment('stock', $salesDoc['qtyDirect']);
                                     $inventoryId = $checkInventory->id;
@@ -970,6 +978,7 @@ class InboundController extends Controller
                                     $inventory = Inventory::create([
                                         'purchase_order_id' => $purchaseOrderDetail->purchase_order_id,
                                         'stock'             => $salesDoc['qtyDirect'],
+                                        'type'              => 'inv'
                                     ]);
                                     $inventoryId = $inventory->id;
                                 }
@@ -987,6 +996,7 @@ class InboundController extends Controller
                                     ->where('sales_doc', $purchaseOrderDetail->sales_doc)
                                     ->where('product_id', $purchaseOrderDetail->product_id)
                                     ->where('storage_id', 1)
+                                    ->where('type', 'inv')
                                     ->first();
                                 if ($checkInventoryItem != null) {
                                     InventoryItem::where('id', $checkInventoryItem->id)->increment('stock', $salesDoc['qtyDirect']);
@@ -997,6 +1007,7 @@ class InboundController extends Controller
                                         'product_id'    => $purchaseOrderDetail->product_id,
                                         'storage_id'    => 1,
                                         'stock'         => $salesDoc['qtyDirect'],
+                                        'type'          => 'inv'
                                     ]);
                                 }
 
@@ -1043,7 +1054,7 @@ class InboundController extends Controller
                                     }
 
                                     // Inventory
-                                    $checkInventory = Inventory::where('purchase_order_id', $purchaseOrderDetail->purchase_order_id)->first();
+                                    $checkInventory = Inventory::where('purchase_order_id', $purchaseOrderDetail->purchase_order_id)->where('type', 'inv')->first();
                                     if ($checkInventory != null) {
                                         Inventory::where('id', $checkInventory->id)->increment('stock', $salesDoc['qtyDirect']);
                                         $inventoryId = $checkInventory->id;
@@ -1051,6 +1062,7 @@ class InboundController extends Controller
                                         $inventory = Inventory::create([
                                             'purchase_order_id' => $purchaseOrderDetail->purchase_order_id,
                                             'stock'             => $salesDoc['qtyDirect'],
+                                            'type'              => 'inv'
                                         ]);
                                         $inventoryId = $inventory->id;
                                     }
@@ -1068,6 +1080,7 @@ class InboundController extends Controller
                                         ->where('sales_doc', $purchaseOrderDetail->sales_doc)
                                         ->where('product_id', $purchaseOrderDetail->product_id)
                                         ->where('storage_id', 1)
+                                        ->where('type', 'inv')
                                         ->first();
                                     if ($checkInventoryItem != null) {
                                         InventoryItem::where('id', $checkInventoryItem->id)->increment('stock', $salesDoc['qtyDirect']);
@@ -1078,6 +1091,7 @@ class InboundController extends Controller
                                             'product_id'    => $purchaseOrderDetail->product_id,
                                             'storage_id'    => 1,
                                             'stock'         => $salesDoc['qtyDirect'],
+                                            'type'          => 'inv'
                                         ]);
                                     }
 

@@ -578,8 +578,8 @@
 
                     <li class="menu-title"><span data-key="t-menu">Manajemen Gudang</span></li>
                     <li class="nav-item">
-                        <a class="nav-link menu-link" href="#">
-                            <i class="mdi mdi-account-circle"></i> <span data-key="t-user">User</span>
+                        <a class="nav-link menu-link {{ $title == 'User' ? 'active' : '' }}" href="{{ route('user.index') }}">
+                            <i class="mdi mdi-account-circle"></i> <span data-key="t-user"> User </span>
                         </a>
                     </li>
                     <li class="nav-item">

@@ -10,6 +10,7 @@ use App\Http\Controllers\OutboundController;
 use App\Http\Controllers\PmRoomController;
 use App\Http\Controllers\SpareRoomController;
 use App\Http\Controllers\StorageController;
+use App\Http\Controllers\UserController;
 use App\Http\Controllers\VendorController;
 use App\Http\Controllers\WarehouseController;
 use App\Http\Middleware\AuthLoginMiddleware;
@@ -176,6 +177,10 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
         Route::get('/sales-doc', 'getItemBySalesDoc')->name('outbound.sales-doc');
         Route::get('/find-inventory-detail', 'getItemByInventoryDetail')->name('outbound.inventory-detail');
         Route::get('/find-product', 'getItemByProduct')->name('outbound.inventory-product');
+    });
+
+    Route::prefix('/user')->controller(UserController::class)->group(function () {
+        Route::get('/', 'index')->name('user.index');
     });
 });
 
