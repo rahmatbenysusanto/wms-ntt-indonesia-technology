@@ -20,7 +20,7 @@
                 <div class="card-header">
                     <div class="d-flex justify-content-between align-items-center">
                         <h4 class="card-title mb-0">List User</h4>
-                        <a class="btn btn-primary">Create User</a>
+                        <a class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createUserModal">Create User</a>
                     </div>
                 </div>
                 <div class="card-body">
@@ -55,7 +55,10 @@
                                     </td>
                                     <td>{{ \Carbon\Carbon::parse($user->created_at)->translatedFormat('d F Y H:i') }}</td>
                                     <td>
-
+                                        <div class="d-flex gap-2">
+                                            <a class="btn btn-info btn-sm" onclick="editUser('{{ $user->id }}')">Edit</a>
+                                            <a class="btn btn-danger btn-sm" onclick="deleteUser('{{ $user->id }}')">Delete</a>
+                                        </div>
                                     </td>
                                 </tr>
                             @endforeach
@@ -66,4 +69,95 @@
             </div>
         </div>
     </div>
+
+    <!-- Create User Modals -->
+    <div id="createUserModal" class="modal fade" tabindex="-1" aria-labelledby="myModalLabel" aria-hidden="true" style="display: none;">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="myModalLabel">Create User</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"> </button>
+                </div>
+                <div class="modal-body">
+                    <form action="{{ route('user.store') }}" method="POST">
+                        @csrf
+                        <div class="mb-3">
+                            <label class="form-label required">Username</label>
+                            <input type="text" class="form-control" name="username" required placeholder="Username">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label required">Name</label>
+                            <input type="text" class="form-control" name="name" required placeholder="Name">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label required">Email</label>
+                            <input type="email" class="form-control" name="email" required placeholder="admin@mail.com">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label required">Role</label>
+                            <select class="form-control" name="role" required>
+                                <option value="">-- Select Role --</option>
+                                <option value="inbound">Inbound</option>
+                                <option value="outbound">Outbound</option>
+                                <option value="mobile">Mobile</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label required">Password</label>
+                            <input type="text" class="form-control" name="password" required placeholder="********">
+                        </div>
+                        <div class="d-flex justify-content-end gap-2">
+                            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
+                            <button type="submit" class="btn btn-primary ">Create</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+@endsection
+
+@section('js')
+    <script>
+        function editUser(id) {
+
+        }
+
+        function deleteUser(id) {
+            Swal.fire({
+                title: "Are you sure?",
+                text: "Delete User",
+                icon: "warning",
+                showCancelButton: true,
+                customClass: {
+                    confirmButton: "btn btn-primary w-xs me-2 mt-2",
+                    cancelButton: "btn btn-danger w-xs mt-2"
+                },
+                confirmButtonText: "Yes, Delete it!",
+                buttonsStyling: false,
+                showCloseButton: true
+            }).then(function(t) {
+                if (t.value) {
+
+                    $.ajax({
+                        url: '{{ route('user.delete') }}',
+                        method: 'GET',
+                        data: {
+                            id: id
+                        },
+                        success: (res => {
+                            Swal.fire({
+                                title: 'Success',
+                                text: 'Delete User Success',
+                                icon: 'success'
+                            }).then((i) => {
+                                window.location.reload();
+                            });
+                        })
+                    });
+
+                }
+            });
+        }
+    </script>
 @endsection

@@ -512,7 +512,7 @@ class InboundController extends Controller
 
     public function putAway(Request $request): View
     {
-        $putAway = ProductPackage::with('purchaseOrder')->paginate(10);
+        $putAway = ProductPackage::with('purchaseOrder')->latest()->paginate(10);
 
         foreach ($putAway as $product) {
             $productPackageItemParent = ProductPackageItem::with('product')->where('product_package_id', $product->id)->where('is_parent', 1)->first();
@@ -560,7 +560,12 @@ class InboundController extends Controller
             ])->where('product_package_id', $request->query('id'))
             ->get();
 
-        $storageRaw = Storage::where('raw', '!=', '-')->where('area', null)->where('rak', null)->where('bin', null)->get();
+        $storageRaw = Storage::where('raw', '!=', '-')
+            ->where('area', null)
+            ->where('rak', null)
+            ->where('bin', null)
+            ->whereNotIn('id', [1,2,3,4])
+            ->get();
 
         $title = 'Put Away';
         return view('inbound.put-away.process', compact('title', 'products', 'storageRaw'));

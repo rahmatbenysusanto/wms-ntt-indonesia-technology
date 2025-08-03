@@ -181,6 +181,8 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
 
     Route::prefix('/user')->controller(UserController::class)->group(function () {
         Route::get('/', 'index')->name('user.index');
+        Route::post('/post', 'store')->name('user.store');
+        Route::get('/delete', 'delete')->name('user.delete');
     });
 });
 

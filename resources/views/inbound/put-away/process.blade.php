@@ -235,31 +235,52 @@
 
                     <div class="row mt-3">
                         <div class="col-10">
-                            <div class="row">
-                                <div class="col-8">
-                                    <select class="form-control" id="selectSerialNumber"></select>
-                                </div>
-                                <div class="col-4">
-                                    <a class="btn btn-info w-100" onclick="pilihSerialNumber()">Pilih SN</a>
-                                </div>
-                            </div>
+{{--                            <div class="row">--}}
+{{--                                <div class="col-8">--}}
+{{--                                    <select class="form-control" id="selectSerialNumber"></select>--}}
+{{--                                </div>--}}
+{{--                                <div class="col-4">--}}
+{{--                                    <a class="btn btn-info w-100" onclick="pilihSerialNumber()">Pilih SN</a>--}}
+{{--                                </div>--}}
+{{--                            </div>--}}
                         </div>
                         <div class="col-2">
                             <a class="btn btn-secondary w-100" onclick="tambahManualSerialNumber()">Tambah Manual</a>
                         </div>
                     </div>
 
-                    <table class="table table-striped align-middle mt-3">
-                        <thead>
-                            <tr>
-                                <th>Serial Number</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody id="listSnBox">
+                    <div class="row mt-3">
+                        <div class="col-6">
+                            <h5 class="mb-1">Data Serial Number Product</h5>
+                            <table class="table table-striped align-middle mt-3">
+                                <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Serial Number</th>
+                                    <th>Action</th>
+                                </tr>
+                                </thead>
+                                <tbody id="listSerialNumberAvailable">
 
-                        </tbody>
-                    </table>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="col-6">
+                            <h5 class="mb-1">Serial Number Product</h5>
+                            <table class="table table-striped align-middle mt-3">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Serial Number</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="listSnBox">
+
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -506,6 +527,11 @@
 
             box.forEach((item, index) => {
                 (item.parent).forEach((parent, indexParent) => {
+                    let colorBtn = 'info';
+                    if (parseInt(parent.qtySelect) === parent.serialNumber.length) {
+                        colorBtn = 'success';
+                    }
+
                     html += `
                         <tr>
                             <td class="text-center fw-bold">${item.boxNumber}</td>
@@ -514,13 +540,18 @@
                             <td>${parent.salesDoc}</td>
                             <td>${parent.material}</td>
                             <td class="text-center fw-bold">${parent.qtySelect}</td>
-                            <td><a class="btn btn-info btn-sm" onclick="serialNumber('parent', '${index}', '${indexParent}', '${parent.indexMaster}')">Serial Number</a></td>
+                            <td><a class="btn btn-${colorBtn} btn-sm" onclick="serialNumber('parent', '${index}', '${indexParent}', '${parent.indexMaster}')">Serial Number</a></td>
                             <td><a class="btn btn-danger btn-sm" onclick="deleteBox(${index})">Delete</a></td>
                         </tr>
                     `;
                 });
 
                 (item.child).forEach((child, indexChild) => {
+                    let colorBtn = 'info';
+                    if (parseInt(child.qtySelect) === child.serialNumber.length) {
+                        colorBtn = 'success';
+                    }
+
                     html += `
                         <tr>
                             <td class="text-center fw-bold"></td>
@@ -529,7 +560,7 @@
                             <td>${child.salesDoc}</td>
                             <td>${child.material}</td>
                             <td class="text-center fw-bold">${child.qtySelect}</td>
-                            <td><a class="btn btn-info btn-sm" onclick="serialNumber('child', '${index}', '${indexChild}', '${child.indexMaster}')">Serial Number</a></td>
+                            <td><a class="btn btn-${colorBtn} btn-sm" onclick="serialNumber('child', '${index}', '${indexChild}', '${child.indexMaster}')">Serial Number</a></td>
                             <td></td>
                         </tr>
                     `;
@@ -577,16 +608,21 @@
         function viewListSerialNumber() {
             const serialNumber = JSON.parse(localStorage.getItem('serialNumber')) ?? [];
             let html = '';
+            let number = 1;
 
             serialNumber.forEach((sn, index) => {
                 html += `
                     <tr>
+                        <td>${number}</td>
                         <td><input type="text" class="form-control" value="${sn}" onchange="changeSN(${index}, this.value)"></td>
                         <td><a class="btn btn-danger btn-sm" onclick="deleteSN(${index})">Delete</a></td>
                     </tr>
                 `;
+
+                number++;
             });
 
+            viewListBox();
             document.getElementById('listSnBox').innerHTML = html;
         }
 
@@ -620,10 +656,6 @@
             const indexDetail = document.getElementById('boxSerialNumber_indexDetail').value;
             const indexMaster = document.getElementById('boxSerialNumber_indexMaster').value;
 
-            const masterSN = master[indexMaster].serialNumber;
-            const masterSNFind = masterSN.find(i => i.serialNumber === serialNumber[indexDelete]);
-            masterSNFind.select = 0;
-
             serialNumber.splice(indexDelete, 1);
 
             if (type === 'parent') {
@@ -645,14 +677,25 @@
 
             const serialNumberMaster = master[indexMaster].serialNumber;
             const serialNumberAvailable = serialNumberMaster.filter(i => parseInt(i.select) === 0);
-            let htmlSelect = '<option value="">-- Pilih Serial Number --</option>';
+
+            let html = '';
+            let number = 1;
+
             serialNumberAvailable.forEach((sn) => {
-                htmlSelect += `<option>${sn.serialNumber}</option>`;
+                html += `
+                    <tr>
+                        <td>${number}</td>
+                        <td>${sn.serialNumber}</td>
+                        <td><a class="btn btn-info btn-sm" onclick="pilihSerialNumber('${sn.serialNumber}')">Pilih</a></td>
+                    </tr>
+                `;
+                number++;
             });
-            document.getElementById('selectSerialNumber').innerHTML = htmlSelect;
+
+            document.getElementById('listSerialNumberAvailable').innerHTML = html;
         }
 
-        function pilihSerialNumber() {
+        function pilihSerialNumber(valueSN) {
             const box = JSON.parse(localStorage.getItem('box')) ?? [];
             const master = JSON.parse(localStorage.getItem('master')) ?? [];
             const serialNumber = JSON.parse(localStorage.getItem('serialNumber')) ?? [];
@@ -661,6 +704,27 @@
             const index = document.getElementById('boxSerialNumber_index').value;
             const indexDetail = document.getElementById('boxSerialNumber_indexDetail').value;
             const indexMaster = document.getElementById('boxSerialNumber_indexMaster').value;
+
+            // Validation QTY
+            if (type === 'parent') {
+                if (serialNumber.length === parseInt(box[index].parent[indexDetail].qtySelect)) {
+                    Swal.fire({
+                        title: 'Warning!',
+                        text: 'Jumlah serial number sudah sama dengan QTY product',
+                        icon: 'warning'
+                    });
+                    return true;
+                }
+            } else {
+                if (serialNumber.length === parseInt(box[index].child[indexDetail].qtySelect)) {
+                    Swal.fire({
+                        title: 'Warning!',
+                        text: 'Jumlah serial number sudah sama dengan QTY product',
+                        icon: 'warning'
+                    });
+                    return true;
+                }
+            }
 
             if (type === 'parent') {
                 if (parseInt(box[index].parent[indexDetail].qtySelect + 1) > serialNumber.count) {
@@ -684,7 +748,6 @@
                 }
             }
 
-            const valueSN = document.getElementById('selectSerialNumber').value;
             serialNumber.push(valueSN);
             localStorage.setItem('serialNumber', JSON.stringify(serialNumber));
 
@@ -701,7 +764,6 @@
             }
             localStorage.setItem('box', JSON.stringify(box));
 
-            document.getElementById('selectSerialNumber').value = "";
             viewListSerialNumber();
             viewSelectSnAvailable(indexMaster);
         }
@@ -714,6 +776,27 @@
             const index = document.getElementById('boxSerialNumber_index').value;
             const indexDetail = document.getElementById('boxSerialNumber_indexDetail').value;
             const indexMaster = document.getElementById('boxSerialNumber_indexMaster').value;
+
+            // Validation QTY
+            if (type === 'parent') {
+                if (serialNumber.length === parseInt(box[index].parent[indexDetail].qtySelect)) {
+                    Swal.fire({
+                        title: 'Warning!',
+                        text: 'Jumlah serial number sudah sama dengan QTY product',
+                        icon: 'warning'
+                    });
+                    return true;
+                }
+            } else {
+                if (serialNumber.length === parseInt(box[index].child[indexDetail].qtySelect)) {
+                    Swal.fire({
+                        title: 'Warning!',
+                        text: 'Jumlah serial number sudah sama dengan QTY product',
+                        icon: 'warning'
+                    });
+                    return true;
+                }
+            }
 
             serialNumber.push("");
 
