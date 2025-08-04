@@ -314,12 +314,17 @@ class InventoryController extends Controller
                         'qty'                       => 1
                     ]);
                     $inventoryPackageItemId = $inventoryPackageItem->id;
+
+                    InventoryPackage::where('id', $inventoryPackage->id)->increment('qty_item', 1);
                 } else {
                     InventoryPackageItem::where('id', $checkPackageItem->id)->increment('qty', 1);
                     $inventoryPackageItemId = $checkPackageItem->id;
                 }
 
                 InventoryPackageItemSN::where('id', $product['sn_id'])->update(['inventory_package_item_id' => $inventoryPackageItemId]);
+
+                // Increment
+                InventoryPackage::where('id', $inventoryPackage->id)->increment('qty', 1);
 
                 // Decrement
                 InventoryPackage::where('id', $product['inventory_package_id'])->decrement('qty', 1);
