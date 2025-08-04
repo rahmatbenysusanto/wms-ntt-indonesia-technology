@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\Route;
 Route::controller(AuthController::class)->group(function () {
     Route::get('/', 'login')->name('login');
     Route::post('/login', 'loginPost')->name('auth.login');
+    Route::post('/mobile/login', 'loginPostMobile')->name('auth.mobile.login');
     Route::get('/logout', 'logout')->name('logout');
 });
 
@@ -115,6 +116,10 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
         Route::get('/detail', 'detail')->name('inventory.detail');
         Route::get('/cycle-count', 'cycleCount')->name('inventory.cycle-count');
 
+        Route::post('/change-type', 'changeTypeProduct')->name('inventory.change.type.product');
+        Route::get('/change-box', 'changeBox')->name('inventory.change.box');
+        Route::post('/change-box-store', 'changeBoxStore')->name('inventory.change.box.post');
+
         Route::prefix('/transfer-location')->group(function () {
             Route::get('/', 'transferLocation')->name('inventory.transfer-location');
             Route::get('/create', 'transferLocationCreate')->name('inventory.transfer-location-create');
@@ -183,6 +188,28 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
         Route::get('/', 'index')->name('user.index');
         Route::post('/post', 'store')->name('user.store');
         Route::get('/delete', 'delete')->name('user.delete');
+    });
+
+    // Mobile APP
+    Route::prefix('/mobile')->group(function () {
+        Route::controller(DashboardController::class)->group(function () {
+            Route::get('/', 'dashboardMobile')->name('dashboardMobile');
+        });
+
+        Route::prefix('/inbound')->controller(InboundController::class)->group(function () {
+            Route::get('/', 'indexMobile')->name('inbound.index.mobile');
+            Route::get('/detail', 'indexDetailMobile')->name('inbound.indexDetail.mobile');
+        });
+
+        Route::prefix('/outbound')->controller(OutboundController::class)->group(function () {
+            Route::get('/', 'indexMobile')->name('outbound.index.mobile');
+        });
+
+        Route::prefix('/inventory')->controller(InventoryController::class)->group(function () {
+            Route::get('/', 'indexMobile')->name('inventory.index.mobile');
+            Route::get('/box', 'boxMobile')->name('inventory.box.mobile');
+            Route::get('/box-detail', 'boxDetailMobile')->name('inventory.box.detail.mobile');
+        });
     });
 });
 

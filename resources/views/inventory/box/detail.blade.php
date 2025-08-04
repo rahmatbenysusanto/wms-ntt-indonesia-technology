@@ -36,6 +36,7 @@
                                 <th class="text-center">Serial Number</th>
                                 <th class="text-center">Barcode</th>
                                 <th>Storage</th>
+                                <th>Action</th>
                             </tr>
                             </thead>
                             <tbody>
@@ -68,6 +69,12 @@
                                                     @if($loop->iteration == 1)
                                                         {{ $product->storage->raw }} - {{ $product->storage->area }} - {{ $product->storage->rak }} - {{ $product->storage->bin }}
                                                     @endif
+                                                </td>
+                                                <td>
+                                                    <div class="d-flex gap-2">
+                                                        <a class="btn btn-secondary btn-sm" onclick="changeType('{{ $item->id }}', '{{ $item->is_parent }}')">Change Type</a>
+                                                        <a href="{{ route('inventory.change.box', ['packageId' => $product->id,'id' => $item->id]) }}" class="btn btn-warning btn-sm">Change Box</a>
+                                                    </div>
                                                 </td>
                                             </tr>
                                         @endif
@@ -307,6 +314,52 @@
 
                     document.getElementById('listSerialNumber').innerHTML = html;
                     $('#detailSNModal').modal('show');
+                }
+            });
+        }
+
+        function changeType(id, isParent) {
+            let text = '';
+            if (parseInt(isParent) === 1) {
+                text = 'Change Type to Child';
+            } else {
+                text = 'Change Type to Parent';
+            }
+
+            Swal.fire({
+                title: "Are you sure?",
+                text: text,
+                icon: "warning",
+                showCancelButton: true,
+                customClass: {
+                    confirmButton: "btn btn-primary w-xs me-2 mt-2",
+                    cancelButton: "btn btn-danger w-xs mt-2"
+                },
+                confirmButtonText: "Yes, Change it!",
+                buttonsStyling: false,
+                showCloseButton: true
+            }).then(function(t) {
+                if (t.value) {
+
+                $.ajax({
+                    url: '{{ route('inventory.change.type.product') }}',
+                    method: 'POST',
+                    data: {
+                        _token: '{{ csrf_token() }}',
+                        id: id,
+                        isParent: isParent
+                    },
+                    success: (res) => {
+                        Swal.fire({
+                            title: 'Success!',
+                            text: 'Change Type Product Success',
+                            icon: 'success'
+                        }).then((i) => {
+                            window.location.reload();
+                        });
+                    }
+                });
+
                 }
             });
         }

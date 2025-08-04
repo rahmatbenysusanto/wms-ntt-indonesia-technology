@@ -75,44 +75,6 @@
 
 @section('js')
     <script>
-        function outboundAll(id) {
-            Swal.fire({
-                title: "Are you sure?",
-                text: "Outbound All Product",
-                icon: "warning",
-                showCancelButton: true,
-                customClass: {
-                    confirmButton: "btn btn-primary w-xs me-2 mt-2",
-                    cancelButton: "btn btn-danger w-xs mt-2"
-                },
-                confirmButtonText: "Yes, Process it!",
-                buttonsStyling: false,
-                showCloseButton: true
-            }).then(function(t) {
-                if (t.value) {
 
-                    $.ajax({
-                        url: '{{ route('general-room.outbound.all') }}',
-                        method: 'POST',
-                        data: {
-                            _token: '{{ csrf_token() }}',
-                            id: id
-                        },
-                        success: (res) => {
-                            if (res.status) {
-                                Swal.fire({
-                                    title: 'Success',
-                                    text: 'Outbound Success',
-                                    icon: 'success'
-                                }).then((i) => {
-                                    window.location.reload();
-                                });
-                            }
-                        }
-                    });
-
-                }
-            });
-        }
     </script>
 @endsection

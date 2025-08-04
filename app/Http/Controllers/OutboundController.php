@@ -419,4 +419,11 @@ class OutboundController extends Controller
         $title = 'Outbound';
         return view('outbound.detail', compact('title', 'outboundDetail', 'outbound'));
     }
+
+
+    // Mobile APP
+    public function indexMobile(): View
+    {
+        return view('mobile.outbound.index');
+    }
 }

@@ -1301,6 +1301,21 @@ class InboundController extends Controller
             'status' => true
         ]);
     }
+
+    public function indexMobile(): View
+    {
+        $purchaseOrder = PurchaseOrder::with('customer', 'user')->latest()->paginate(10);
+
+        return view('mobile.inbound.index', compact('purchaseOrder'));
+    }
+
+    public function indexDetailMobile(Request $request): View
+    {
+        $purchaseOrder = PurchaseOrder::with('customer', 'user')->where('id', $request->query('id'))->first();
+        $purchaseOrderDetail = PurchaseOrderDetail::where('purchase_order_id', $request->query('id'))->get();
+
+        return view('mobile.inbound.detail', compact('purchaseOrderDetail', 'purchaseOrder'));
+    }
 }
 
 

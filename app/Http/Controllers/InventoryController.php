@@ -8,6 +8,7 @@ use App\Models\InventoryHistory;
 use App\Models\InventoryItem;
 use App\Models\InventoryPackage;
 use App\Models\InventoryPackageItem;
+use App\Models\InventoryPackageItemSN;
 use App\Models\InventoryParent;
 use App\Models\InventoryParentDetail;
 use App\Models\Product;
@@ -251,5 +252,132 @@ class InventoryController extends Controller
                 'status'    => false,
             ]);
         }
+    }
+
+    public function changeTypeProduct(Request $request): \Illuminate\Http\JsonResponse
+    {
+        InventoryPackageItem::where('id', $request->post('id'))->update([
+            'is_parent' => $request->post('isParent') == 1 ? 0 : 1,
+        ]);
+
+        return response()->json([
+            'status'    => true,
+        ]);
+    }
+
+    public function changeBox(Request $request): View
+    {
+        $inventoryPackage = InventoryPackage::with('storage', 'purchaseOrder')->find($request->query('packageId'));
+        $listBox = InventoryPackage::whereNotIn('storage_id', [1,2,3,4])->whereNot('id', $request->query('packageId'))->get();
+        $products = DB::table('inventory_package_item')
+            ->leftJoin('inventory_package_item_sn', 'inventory_package_item_sn.inventory_package_item_id', '=', 'inventory_package_item.id')
+            ->leftJoin('purchase_order_detail', 'inventory_package_item.purchase_order_detail_id', '=', 'purchase_order_detail.id')
+            ->where('inventory_package_item.inventory_package_id', $inventoryPackage->id)
+            ->where('inventory_package_item.qty', '!=', 0)
+            ->select([
+                'inventory_package_item.id',
+                'inventory_package_item.inventory_package_id',
+                'inventory_package_item.product_id',
+                'inventory_package_item.is_parent',
+                'purchase_order_detail.id AS purchase_order_detail_id',
+                'purchase_order_detail.item',
+                'purchase_order_detail.sales_doc',
+                'purchase_order_detail.material',
+                'purchase_order_detail.po_item_desc',
+                'purchase_order_detail.prod_hierarchy_desc',
+                'inventory_package_item_sn.id AS sn_id',
+                'inventory_package_item_sn.serial_number',
+            ])
+            ->get();
+
+        $title = 'Inventory Box';
+        return view('inventory.box.change', compact('title', 'inventoryPackage', 'listBox', 'products'));
+    }
+
+    public function changeBoxStore(Request $request): \Illuminate\Http\JsonResponse
+    {
+        try {
+            DB::beginTransaction();
+
+            $inventoryPackage = InventoryPackage::find($request->post('newBox'));
+
+            foreach ($request->post('changeProducts') as $product) {
+                $checkPackageItem = InventoryPackageItem::where('inventory_package_id', $inventoryPackage->id)
+                    ->where('purchase_order_detail_id', $product['purchase_order_detail_id'])
+                    ->first();
+                if ($checkPackageItem == null) {
+                    $inventoryPackageItem = InventoryPackageItem::create([
+                        'inventory_package_id'      => $inventoryPackage->id,
+                        'product_id'                => $product['product_id'],
+                        'purchase_order_detail_id'  => $product['purchase_order_detail_id'],
+                        'is_parent'                 => $product['is_parent'],
+                        'qty'                       => 1
+                    ]);
+                    $inventoryPackageItemId = $inventoryPackageItem->id;
+                } else {
+                    InventoryPackageItem::where('id', $checkPackageItem->id)->increment('qty', 1);
+                    $inventoryPackageItemId = $checkPackageItem->id;
+                }
+
+                InventoryPackageItemSN::where('id', $product['sn_id'])->update(['inventory_package_item_id' => $inventoryPackageItemId]);
+
+                // Decrement
+                InventoryPackage::where('id', $product['inventory_package_id'])->decrement('qty', 1);
+                InventoryPackageItem::where('id', $product['id'])->decrement('qty', 1);
+            }
+
+            DB::commit();
+            return response()->json([
+                'status'    => true,
+            ]);
+        } catch (\Exception $err) {
+            DB::rollBack();
+            Log::error($err->getMessage());
+            Log::error($err->getLine());
+            return response()->json([
+                'status'    => false,
+            ]);
+        }
+    }
+
+    // Mobile App
+    public function indexMobile(): View
+    {
+        $inventory = DB::table('inventory')
+            ->leftJoin('inventory_detail', 'inventory_detail.inventory_id', '=', 'inventory.id')
+            ->leftJoin('purchase_order_detail', 'inventory_detail.purchase_order_detail_id', '=', 'purchase_order_detail.id')
+            ->leftJoin('storage', 'inventory_detail.storage_id', '=', 'storage.id')
+            ->leftJoin('purchase_order', 'purchase_order.id', '=', 'inventory.purchase_order_id')
+            ->where('inventory.type', 'inv')
+            ->where('inventory_detail.qty', '!=', 0)
+            ->select([
+                'purchase_order.purc_doc',
+                'purchase_order_detail.sales_doc',
+                'purchase_order_detail.material',
+                'purchase_order_detail.item',
+                'storage.raw',
+                'storage.area',
+                'storage.rak',
+                'storage.bin',
+                'inventory_detail.qty'
+            ])
+            ->paginate(5);
+
+        return view('mobile.inventory.index', compact('inventory'));
+    }
+
+    public function boxMobile(): View
+    {
+        $box = InventoryPackage::with('purchaseOrder', 'storage')->whereNotIn('storage_id', [1,2,3,4])->latest()->paginate(5);
+
+        return view('mobile.inventory.box', compact('box'));
+    }
+
+    public function boxDetailMobile(Request $request): View
+    {
+        $box = InventoryPackage::with('purchaseOrder', 'storage')->where('id', $request->query('id'))->first();
+        $detail = InventoryPackageItem::with('purchaseOrderDetail')->where('inventory_package_id', $request->query('id'))->get();
+
+        return view('mobile.inventory.box-detail', compact('box', 'detail'));
     }
 }

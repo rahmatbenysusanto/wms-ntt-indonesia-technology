@@ -84,4 +84,11 @@ class DashboardController extends Controller
         $title = 'Dashboard Outbound';
         return view('dashboard.outbound.index', compact('title'));
     }
+
+    // Mobile APP
+    public function dashboardMobile(): View
+    {
+        $title = 'Dashboard';
+        return view('mobile.dashboard.index', compact('title'));
+    }
 }
