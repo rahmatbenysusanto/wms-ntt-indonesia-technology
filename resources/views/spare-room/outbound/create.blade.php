@@ -35,18 +35,27 @@
                         </div>
                         <div class="col-6 mb-3">
                             <label class="form-label">Delivery Location</label>
-                            <input type="text" class="form-control" id="delivLocation">
+                            <input type="text" class="form-control" id="delivLocation" placeholder="Delivery Location">
                         </div>
                         <div class="col-6 mb-3">
                             <label class="form-label">Delivery Destination</label>
                             <select class="form-control" id="deliveryDest">
                                 <option value="client">Client</option>
-                                <option value="client warehouse">Client Warehouse</option>
+                                <option value="pm">PM Room</option>
+                                <option value="spare">Spare Room</option>
                             </select>
                         </div>
                         <div class="col-6 mb-3">
                             <label class="form-label">Outbound Date</label>
-                            <input type="datetime-local" class="form-control" id="outboundDate">
+                            <input type="datetime-local" class="form-control" id="deliveryDate">
+                        </div>
+                        <div class="col-6 mb-3">
+                            <label class="form-label">Delivery Note Number</label>
+                            <input type="text" class="form-control" id="deliveryNoteNumber" placeholder="Delivery Note Number">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Note</label>
+                            <textarea class="form-control" rows="2" id="note"></textarea>
                         </div>
                     </div>
                 </div>
@@ -437,7 +446,9 @@
                             delivLocation: document.getElementById('delivLocation').value,
                             customerId: document.getElementById('customerId').value,
                             deliveryDest: document.getElementById('deliveryDest').value,
-                            outboundDate: document.getElementById('outboundDate').value
+                            deliveryDate: document.getElementById('deliveryDate').value,
+                            deliveryNoteNumber: document.getElementById('deliveryNoteNumber').value,
+                            note: document.getElementById('note').value
                         },
                         success: (res) => {
                             if (res.status) {
@@ -446,7 +457,7 @@
                                     text: 'Create Order Spare Room Successfully',
                                     icon: 'success'
                                 }).then((e) => {
-                                    window.location.href = '{{ route('spare-room.outbound') }}';
+                                    window.location.href = '{{ route('general-room.outbound') }}';
                                 });
                             } else {
                                 Swal.fire({

@@ -269,7 +269,7 @@
                                     text: 'Change Box Location Successfully',
                                     icon: 'success'
                                 }).then((i) => {
-                                    {{--window.location.href = '{{ route('inventory.box') }}';--}}
+                                    window.location.href = '{{ route('inventory.box') }}';
                                 });
                             } else {
                                 Swal.fire({
