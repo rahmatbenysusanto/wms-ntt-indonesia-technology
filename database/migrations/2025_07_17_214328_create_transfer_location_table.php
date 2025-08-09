@@ -13,9 +13,7 @@ return new class extends Migration
     {
         Schema::create('transfer_location', function (Blueprint $table) {
             $table->id();
-            $table->string('number');
-            $table->string('purc_doc');
-            $table->integer('inventory_package_id');
+            $table->string('inventory_package_id');
             $table->integer('old_storage');
             $table->integer('new_storage');
             $table->integer('created_by');

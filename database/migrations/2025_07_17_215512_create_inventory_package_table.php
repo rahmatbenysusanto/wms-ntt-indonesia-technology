@@ -22,6 +22,8 @@ return new class extends Migration
             $table->json('sales_docs')->nullable();
             $table->integer('product_package_id')->nullable();
             $table->text('note')->nullable();
+            $table->boolean('return')->default(0);
+            $table->string('return_from')->nullable();
             $table->integer('created_by');
             $table->timestamps();
         });

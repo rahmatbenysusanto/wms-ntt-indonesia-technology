@@ -210,7 +210,7 @@ class GeneralRoomController extends Controller
                 'customer_id'   => $customer->id,
                 'purc_doc'      => $products[0]['purcDoc'],
                 'sales_docs'    => json_encode([]),
-                'outbound_date' => $request->post('outboundDate'),
+                'outbound_date' => $request->post('deliveryDate'),
                 'number'        => 'INV-' . date('ymdHis') . str_pad(rand(0, 999), 3, '0', STR_PAD_LEFT),
                 'qty_item'      => 0,
                 'qty'           => 0,
@@ -218,6 +218,8 @@ class GeneralRoomController extends Controller
                 'status'        => 'outbound',
                 'deliv_loc'     => $request->post('delivLocation'),
                 'deliv_dest'    => $request->post('deliveryDest'),
+                'delivery_date' => $request->post('deliveryDate'),
+                'delivery_note_number' => $request->post('deliveryNoteNumber'),
                 'created_by'    => Auth::id()
             ]);
 
@@ -283,7 +285,115 @@ class GeneralRoomController extends Controller
                 'sales_docs'    => json_encode(array_unique($salesDocs)),
             ]);
 
-            DB::commit();
+            // Outbound To PM Room or Spare Room
+            if ($request->post('deliveryDest') != 'client') {
+                if ($request->post('deliveryDest') == 'pm') {
+                    $storageId = 3;
+                    $number = 'PM-'.date('ymdHis').rand(100, 999);
+                } else {
+                    $storageId = 4;
+                    $number = 'SPARE-'.date('ymdHis').rand(100, 999);
+                }
+
+                $inventoryPackage = InventoryPackage::create([
+                    'purchase_order_id' => $products[0]['purchaseOrderId'],
+                    'storage_id'        => $storageId,
+                    'number'            => $number,
+                    'reff_number'       => 'Outbound From General Room',
+                    'qty_item'          => $qty_item,
+                    'qty'               => $qty,
+                    'sales_docs'        => json_encode($salesDocs),
+                    'note'              => $request->post('note') ?? '',
+                    'created_by'        => Auth::id()
+                ]);
+
+                foreach ($products as $product) {
+                    if ($product['disable'] == 0) {
+                        $checkInventoryPackageItem = InventoryPackageItem::where('inventory_package_id', $inventoryPackage->id)
+                            ->where('purchase_order_detail_id', $product['purchaseOrderDetailId'])
+                            ->first();
+                        if ($checkInventoryPackageItem == null) {
+                            $inventoryPackageItem = InventoryPackageItem::create([
+                                'inventory_package_id'      => $inventoryPackage->id,
+                                'product_id'                => $product['productId'],
+                                'purchase_order_detail_id'  => $product['purchaseOrderDetailId'],
+                                'is_parent'                 => $product['isParent'],
+                                'qty'                       => $product['qtySelect'],
+                            ]);
+
+                            foreach ($product['serialNumber'] ?? [] as $serialNumber) {
+                                InventoryPackageItemSN::create([
+                                    'inventory_package_item_id' => $inventoryPackageItem->id,
+                                    'serial_number'             => $serialNumber['serialNumber'],
+                                    'qty'                       => 1
+                                ]);
+                            }
+
+                            $inventoryPackageItemId = $inventoryPackageItem->id;
+                        } else {
+                            InventoryPackageItem::where('id', $checkInventoryPackageItem->id)->increment('qty', $product['qtySelect']);
+                            foreach ($product['serialNumber'] ?? [] as $serialNumber) {
+                                InventoryPackageItemSN::create([
+                                    'inventory_package_item_id' => $checkInventoryPackageItem->id,
+                                    'serial_number'             => $serialNumber['serialNumber'],
+                                    'qty'                       => 1
+                                ]);
+                            }
+
+                            $inventoryPackageItemId = $checkInventoryPackageItem->id;
+                        }
+
+                        // Inventory
+                        $checkInventory = Inventory::where('purchase_order_id', $product['purchaseOrderId'])->where('type', $request->post('deliveryDest'))->first();
+                        if ($checkInventory == null) {
+                            $inventory = Inventory::create([
+                                'purchase_order_id' => $product['purchaseOrderId'],
+                                'stock'             => $product['qtySelect'],
+                                'type'              => $request->post('deliveryDest'),
+                            ]);
+                            $inventoryId = $inventory->id;
+                        } else {
+                            Inventory::where('id', $checkInventory->id)->increment('stock', $product['qtySelect']);
+                            $inventoryId = $checkInventory->id;
+                        }
+
+                        // Inventory Detail
+                        $checkInventoryDetail = InventoryDetail::where('inventory_id', $inventoryId)
+                            ->where('purchase_order_detail_id', $product['purchaseOrderDetailId'])
+                            ->where('storage_id', $storageId)
+                            ->where('inventory_package_item_id', $inventoryPackageItemId)
+                            ->where('sales_doc', $product['salesDoc'])
+                            ->whereDate('created_at', date('Y-m-d'))
+                            ->first();
+                        if ($checkInventoryDetail == null) {
+                            InventoryDetail::create([
+                                'inventory_id'              => $inventoryId,
+                                'purchase_order_detail_id'  => $product['purchaseOrderDetailId'],
+                                'storage_id'                => $storageId,
+                                'inventory_package_item_id' => $inventoryPackageItemId,
+                                'sales_doc'                 => $product['salesDoc'],
+                                'qty'                       => $product['qtySelect'],
+                            ]);
+                        } else {
+                            InventoryDetail::where('id', $checkInventoryDetail->id)->increment('qty', $product['qtySelect']);
+                        }
+
+                        // Inventory History
+                        InventoryHistory::create([
+                            'purchase_order_id'         => $product['purchaseOrderId'],
+                            'purchase_order_detail_id'  => $product['purchaseOrderDetailId'],
+                            'outbound_id'               => $outbound->id,
+                            'inventory_package_item_id' => $product['inventoryPackageItemId'],
+                            'qty'                       => $product['qtySelect'],
+                            'type'                      => 'outbound',
+                            'created_by'                => Auth::id(),
+                            'note'                      => 'Outbound From General Room to '.$request->post('deliveryDest') == 'pm' ? 'PM Room' : 'Spare Room',
+                        ]);
+                    }
+                }
+            }
+
+//            DB::commit();
             return response()->json([
                 'status' => true,
             ]);

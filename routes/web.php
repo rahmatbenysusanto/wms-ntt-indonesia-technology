@@ -120,6 +120,9 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
         Route::get('/change-box', 'changeBox')->name('inventory.change.box');
         Route::post('/change-box-store', 'changeBoxStore')->name('inventory.change.box.post');
 
+        Route::get('/change-new-box', 'changeNewBox')->name('inventory.change.new-box');
+        Route::post('/change-new-box-store', 'changeNewBoxStore')->name('inventory.change.new-box.post');
+
         Route::prefix('/transfer-location')->group(function () {
             Route::get('/', 'transferLocation')->name('inventory.transfer-location');
             Route::get('/create', 'transferLocationCreate')->name('inventory.transfer-location-create');

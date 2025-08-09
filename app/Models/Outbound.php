@@ -20,7 +20,9 @@ class Outbound extends Model
         'deliv_loc',
         'deliv_dest',
         'created_by',
-        'note'
+        'note',
+        'delivery_date',
+        'delivery_note_number'
     ];
 
     public function user(): \Illuminate\Database\Eloquent\Relations\BelongsTo

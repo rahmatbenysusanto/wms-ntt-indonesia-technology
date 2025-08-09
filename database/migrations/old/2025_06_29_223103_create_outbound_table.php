@@ -21,6 +21,8 @@ return new class extends Migration
             $table->string('deliv_loc');
             $table->string('deliv_dest');
             $table->integer('qty_item')->default(0);
+            $table->timestamp('delivery_date');
+            $table->string('delivery_note_number')->nullable();
             $table->integer('created_by');
             $table->timestamps();
         });

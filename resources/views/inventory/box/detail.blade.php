@@ -18,7 +18,13 @@
         <div class="col-12">
             <div class="card">
                 <div class="card-header">
-                    <h4 class="card-title mb-0">List Item</h4>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="card-title mb-0">List Item</h4>
+                        <div class="d-flex gap-2">
+                            <a href="{{ route('inventory.change.new-box', ['packageId' => $products[0]->id]) }}" class="btn btn-primary btn-sm">Change to new box</a>
+                            <a href="{{ route('inventory.change.box', ['packageId' => $products[0]->id]) }}" class="btn btn-info btn-sm">Change to other box</a>
+                        </div>
+                    </div>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
@@ -73,7 +79,6 @@
                                                 <td>
                                                     <div class="d-flex gap-2">
                                                         <a class="btn btn-secondary btn-sm" onclick="changeType('{{ $item->id }}', '{{ $item->is_parent }}')">Change Type</a>
-                                                        <a href="{{ route('inventory.change.box', ['packageId' => $product->id,'id' => $item->id]) }}" class="btn btn-warning btn-sm">Change Box</a>
                                                     </div>
                                                 </td>
                                             </tr>

@@ -42,14 +42,24 @@
                                 @foreach($box as $index => $item)
                                     <tr>
                                         <td>{{ $box->firstItem() + $index }}</td>
-                                        <td>{{ $item->number }}</td>
-                                        <td>{{ $item->reff_number }}</td>
                                         <td>
-                                            <div><b>Raw: </b>{{ $item->storage->raw }}</div>
-                                            <div><b>Area: </b>{{ $item->storage->area }}</div>
-                                            <div><b>Rak: </b>{{ $item->storage->rak }}</div>
-                                            <div><b>Bin: </b>{{ $item->storage->bin }}</div>
+                                            <div>{{ $item->number }}</div>
+                                            @if($item->return == 1)
+                                                @switch($item->return_from)
+                                                    @case('gr')
+                                                        <span class="badge bg-danger">Return From General Room</span>
+                                                        @break
+                                                    @case('pm')
+                                                        <span class="badge bg-danger">Return From PM Room</span>
+                                                        @break
+                                                    @case('spare')
+                                                        <span class="badge bg-danger">Return From Spare Room</span>
+                                                        @break
+                                                @endswitch
+                                            @endif
                                         </td>
+                                        <td>{{ $item->reff_number }}</td>
+                                        <td>{{ $item->storage->raw.' - '.$item->storage->area.' - '.$item->storage->rak.' - '.$item->storage->bin }}</td>
                                         <td>{{ $item->purchaseOrder->purc_doc }}</td>
                                         <td>
                                             @foreach(json_decode($item->sales_docs) ?? [] as $salesDoc)

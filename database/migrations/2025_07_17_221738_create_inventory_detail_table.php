@@ -19,6 +19,7 @@ return new class extends Migration
             $table->integer('inventory_package_item_id');
             $table->string('sales_doc');
             $table->integer('qty')->default('0');
+            $table->timestamp('aging_date')->nullable();
             $table->timestamps();
         });
     }

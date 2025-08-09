@@ -677,7 +677,8 @@ class InboundController extends Controller
                         'storage_id'                => $request->post('bin'),
                         'inventory_package_item_id' => $inventoryPackageItem->id,
                         'sales_doc'                 => $parent['salesDoc'],
-                        'qty'                       => $parent['qtySelect']
+                        'qty'                       => $parent['qtySelect'],
+                        'aging_date'                => date('Y-m-d H:i:s'),
                     ]);
 
                     InventoryHistory::create([
@@ -688,27 +689,6 @@ class InboundController extends Controller
                         'type'                          => 'inbound',
                         'created_by'                    => Auth::id()
                     ]);
-
-                    $purchaseOrder = PurchaseOrder::find($productPackage->purchase_order_id);
-                    $checkInventoryItem = InventoryItem::where('purc_doc', $purchaseOrder->purc_doc)
-                        ->where('sales_doc', $parent['salesDoc'])
-                        ->where('product_id', $parent['productId'])
-                        ->where('storage_id', $request->post('bin'))
-                        ->where('type', 'inv')
-                        ->whereDate('created_at', now()->toDateString())
-                        ->first();
-                    if ($checkInventoryItem == null) {
-                        InventoryItem::create([
-                            'purc_doc'          => $purchaseOrder->purc_doc,
-                            'sales_doc'         => $parent['salesDoc'],
-                            'product_id'        => $parent['productId'],
-                            'stock'             => $parent['qtySelect'],
-                            'storage_id'        => $request->post('bin'),
-                            'type'              => 'inv'
-                        ]);
-                    } else {
-                        InventoryItem::where('id', $checkInventoryItem->id)->increment('stock', $parent['qtySelect']);
-                    }
 
                     $salesDocs[] = $parent['salesDoc'];
                     $stock += $parent['qtySelect'];
@@ -739,7 +719,8 @@ class InboundController extends Controller
                         'storage_id'                => $request->post('bin'),
                         'inventory_package_item_id' => $inventoryPackageItem->id,
                         'sales_doc'                 => $child['salesDoc'],
-                        'qty'                       => $child['qtySelect']
+                        'qty'                       => $child['qtySelect'],
+                        'aging_date'                => date('Y-m-d H:i:s'),
                     ]);
 
                     InventoryHistory::create([
@@ -750,27 +731,6 @@ class InboundController extends Controller
                         'type'                          => 'inbound',
                         'created_by'                    => Auth::id()
                     ]);
-
-                    $purchaseOrder = PurchaseOrder::find($productPackage->purchase_order_id);
-                    $checkInventoryItem = InventoryItem::where('purc_doc', $purchaseOrder->purc_doc)
-                        ->where('sales_doc', $child['salesDoc'])
-                        ->where('product_id', $child['productId'])
-                        ->where('storage_id', $request->post('bin'))
-                        ->where('type', 'inv')
-                        ->whereDate('created_at', now()->toDateString())
-                        ->first();
-                    if ($checkInventoryItem == null) {
-                        InventoryItem::create([
-                            'purc_doc'          => $purchaseOrder->purc_doc,
-                            'sales_doc'         => $child['salesDoc'],
-                            'product_id'        => $child['productId'],
-                            'stock'             => $child['qtySelect'],
-                            'storage_id'        => $request->post('bin'),
-                            'type'              => 'inv'
-                        ]);
-                    } else {
-                        InventoryItem::where('id', $checkInventoryItem->id)->increment('stock', $child['qtySelect']);
-                    }
 
                     $salesDocs[] = $child['salesDoc'];
                     $stock += $child['qtySelect'];
@@ -797,7 +757,7 @@ class InboundController extends Controller
             DB::commit();
             return response()->json([
                 'status'    => true,
-                'data'      => $putAwayNumber
+                'data'      => $request->post('productPackageId')
             ]);
         } catch (\Exception $err) {
             DB::rollBack();

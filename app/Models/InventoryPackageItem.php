@@ -13,7 +13,8 @@ class InventoryPackageItem extends Model
         'purchase_order_detail_id',
         'is_parent',
         'direct_outbound',
-        'qty'
+        'qty',
+        'inventory_item_id'
     ];
 
     public function purchaseOrderDetail(): \Illuminate\Database\Eloquent\Relations\BelongsTo
@@ -24,5 +25,10 @@ class InventoryPackageItem extends Model
     public function inventoryPackageItemSn(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(InventoryPackageItemSn::class, 'inventory_package_item_id', 'id');
+    }
+
+    public function inventoryPackage(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(InventoryPackage::class, 'inventory_package_id');
     }
 }

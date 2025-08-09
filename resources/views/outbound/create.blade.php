@@ -47,8 +47,12 @@
                             </select>
                         </div>
                         <div class="col-6 mb-3">
-                            <label class="form-label">Outbound Date</label>
-                            <input type="datetime-local" class="form-control" id="outboundDate">
+                            <label class="form-label">Delivery Date</label>
+                            <input type="datetime-local" class="form-control" id="deliveryDate">
+                        </div>
+                        <div class="col-6 mb-3">
+                            <label class="form-label">Delivery Note Number</label>
+                            <input type="text" class="form-control" id="deliveryNoteNumber" placeholder="Delivery Note Number">
                         </div>
                     </div>
                 </div>
@@ -444,7 +448,8 @@
                             delivLocation: document.getElementById('delivLocation').value,
                             customerId: document.getElementById('customerId').value,
                             deliveryDest: document.getElementById('deliveryDest').value,
-                            outboundDate: document.getElementById('outboundDate').value
+                            deliveryDate: document.getElementById('deliveryDate').value ?? '',
+                            deliveryNoteNumber: document.getElementById('deliveryNoteNumber').value ?? '',
                         },
                         success: (res) => {
                             if (res.status) {

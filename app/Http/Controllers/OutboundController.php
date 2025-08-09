@@ -212,7 +212,7 @@ class OutboundController extends Controller
                 'customer_id'   => $customer->id,
                 'purc_doc'      => $products[0]['purcDoc'],
                 'sales_docs'    => json_encode([]),
-                'outbound_date' => $request->post('outboundDate'),
+                'outbound_date' => $request->post('deliveryDate'),
                 'number'        => 'INV-' . date('ymdHis') . str_pad(rand(0, 999), 3, '0', STR_PAD_LEFT),
                 'qty_item'      => 0,
                 'qty'           => 0,
@@ -220,6 +220,8 @@ class OutboundController extends Controller
                 'status'        => 'close',
                 'deliv_loc'     => $request->post('delivLocation'),
                 'deliv_dest'    => $request->post('deliveryDest'),
+                'delivery_date' => $request->post('deliveryDate'),
+                'delivery_note_number' => $request->post('deliveryNoteNumber'),
                 'created_by'    => Auth::id()
             ]);
 

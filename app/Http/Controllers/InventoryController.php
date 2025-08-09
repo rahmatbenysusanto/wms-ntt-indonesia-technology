@@ -18,6 +18,7 @@ use App\Models\SerialNumber;
 use App\Models\Storage;
 use App\Models\TransferLocation;
 use App\Models\TransferLocationDetail;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -28,21 +29,21 @@ class InventoryController extends Controller
 {
     public function index(Request $request): View
     {
-        $inventory = InventoryItem::with(['storage', 'product'])
-            ->when(request('purc_doc'), function($query) {
-                $query->where('purc_doc', 'like', '%'.request('purc_doc').'%');
+        $inventory = InventoryDetail::with('purchaseOrderDetail.purchaseOrder', 'purchaseOrderDetail', 'storage', 'inventoryPackageItem', 'inventoryPackageItem.inventoryPackage')
+            ->where('qty', '!=', 0)
+            ->whereHas('purchaseOrderDetail.purchaseOrder', function ($purchaseOrder) use ($request) {
+                if ($request->query('purc_doc')) {
+                    $purchaseOrder->where('purc_doc', $request->query('purc_doc'));
+                }
             })
-            ->when(request('sales_doc'), function($query) {
-                $query->where('sales_doc', 'like', '%'.request('sales_doc').'%');
+            ->whereHas('purchaseOrderDetail', function ($purchaseOrderDetail) use ($request) {
+                if ($request->query('material')) {
+                    $purchaseOrderDetail->where('material', $request->query('material'));
+                }
             })
-            ->when(request('material'), function($query) {
-                $query->whereHas('product', function($q) {
-                    $q->where('name', 'like', '%'.request('material').'%')
-                        ->orWhere('code', 'like', '%'.request('material').'%');
-                });
+            ->when($request->query('sales_doc'), function ($q) use ($request) {
+                $q->where('sales_doc', $request->query('sales_doc'));
             })
-            ->where('stock', '!=', 0)
-            ->whereNotIn('storage_id', [2,3,4])
             ->latest()
             ->paginate(10)
             ->appends([
@@ -101,88 +102,30 @@ class InventoryController extends Controller
         return view('inventory.cycle-count', compact('title', 'cycleCount'));
     }
 
-    public function transferLocation(): View
+    public function transferLocation(Request $request): View
     {
+        $transfer = TransferLocation::with('inventoryPackage', 'oldLocation', 'newLocation', 'user')->latest()->paginate(10);
+
         $title = 'Transfer Location';
-        return view('inventory.transfer-location.index', compact('title'));
+        return view('inventory.transfer-location.index', compact('title', 'transfer'));
     }
 
     public function transferLocationCreate(): View
     {
-        $products = InventoryParent::where('storage_id', '!=', 1)
-            ->where('stock', '!=', 0)
+        $listBox = InventoryPackage::where('qty', '!=', 0)
+            ->whereNotIn('storage_id', [1,2,3,4])
             ->get();
 
-        $storageRaw = Storage::whereNull('area')->whereNull('rak')->whereNull('bin')->whereNot('id', 1)->get();
+        $storageRaw = Storage::whereNull('area')->whereNull('rak')->whereNull('bin')->whereNotIn('id', [1,2,3,4])->get();
 
         $title = 'Transfer Location';
-        return view('inventory.transfer-location.create', compact('title', 'products', 'storageRaw'));
+        return view('inventory.transfer-location.create', compact('title', 'listBox', 'storageRaw'));
     }
 
     public function transferLocationFindNumber(Request $request): \Illuminate\Http\JsonResponse
     {
-        $products = [];
-
-        $checkPaNumber = InventoryParent::where('pa_reff_number', $request->query('paNumber'))->first();
-        if (!$checkPaNumber) {
-            return response()->json([
-                'success' => false,
-            ]);
-        }
-
-        $parent = DB::table('inventory_parent_detail')
-            ->leftJoin('purchase_order_detail', 'purchase_order_detail.id', '=', 'inventory_parent_detail.purchase_order_detail_id')
-            ->where('inventory_parent_detail.inventory_parent_id', $checkPaNumber->id)
-            ->select([
-                'inventory_parent_detail.id',
-                'purchase_order_detail.sales_doc',
-                'purchase_order_detail.material',
-                'purchase_order_detail.po_item_desc',
-                'purchase_order_detail.prod_hierarchy_desc',
-                'inventory_parent_detail.qty',
-                'purchase_order_detail.id AS purchase_order_detail_id'
-            ])
-            ->get();
-
-        foreach ($parent as $item) {
-            $products[] = [
-                'id'            => $item->id,
-                'sales_doc'     => $item->sales_doc,
-                'material'      => $item->material,
-                'po_item_desc'  => $item->po_item_desc,
-                'prod_hierarchy'=> $item->prod_hierarchy_desc,
-                'qty'           => $item->qty,
-                'type'          => 'parent',
-                'purchase_order_detail_id' => $item->purchase_order_detail_id,
-            ];
-        }
-
-        $child = DB::table('inventory_child')
-            ->leftJoin('inventory_child_detail', 'inventory_child.id', '=', 'inventory_child_detail.inventory_child_id')
-            ->leftJoin('purchase_order_detail', 'purchase_order_detail.id', '=', 'inventory_child_detail.purchase_order_detail_id')
-            ->where('inventory_child.inventory_parent_id', $checkPaNumber->id)
-            ->select([
-                'inventory_child_detail.id',
-                'purchase_order_detail.sales_doc',
-                'purchase_order_detail.material',
-                'purchase_order_detail.po_item_desc',
-                'purchase_order_detail.prod_hierarchy_desc',
-                'inventory_child_detail.qty',
-                'purchase_order_detail.id AS purchase_order_detail_id'
-            ])
-            ->get();
-        foreach ($child as $item) {
-            $products[] = [
-                'id'            => $item->id,
-                'sales_doc'     => $item->sales_doc,
-                'material'      => $item->material,
-                'po_item_desc'  => $item->po_item_desc,
-                'prod_hierarchy'=> $item->prod_hierarchy_desc,
-                'qty'           => $item->qty,
-                'type'          => 'child',
-                'purchase_order_detail_id' => $item->purchase_order_detail_id,
-            ];
-        }
+        $package = InventoryPackage::with('purchaseOrder')->where('number', $request->get('paNumber'))->first();
+        $products = InventoryPackageItem::with('purchaseOrderDetail')->where('inventory_package_id', $package->id)->get();
 
         return response()->json([
             'status'    => true,
@@ -195,50 +138,27 @@ class InventoryController extends Controller
         try {
             DB::beginTransaction();
 
-            $inventoryParent = InventoryParent::where('pa_reff_number', $request->post('paNumber'))->first();
-            $purchaseOrder = PurchaseOrder::where('id', $inventoryParent->purchase_order_id)->first();
+            $inventoryPackage = InventoryPackage::where('number', $request->post('paNumber'))->first();
+            $inventoryPackageItem = InventoryPackageItem::where('inventory_package_id', $inventoryPackage->id)->get();
 
-            $transferLocation = TransferLocation::create([
-                'number'                => 'TRS-',
-                'inventory_parent_id'   => $inventoryParent->id,
-                'purc_doc'              => $purchaseOrder->purc_doc,
-                'old_location'          => $inventoryParent->storage_id,
-                'new_location'          => $request->post('storageId'),
+            TransferLocation::create([
+                'inventory_package_id'  => $inventoryPackage->id,
+                'old_storage'           => $inventoryPackage->storage_id,
+                'new_storage'           => $request->post('storageId'),
                 'created_by'            => Auth::id()
             ]);
 
-            foreach ($request->post('products') as $product) {
-                TransferLocationDetail::create([
-                    'transfer_location_id'          => $transferLocation->id,
-                    'type'                          => $product['type'],
-                    'inventory_parent_detail_id'    => $product['type'] == 'parent' ? $product['id'] : null,
-                    'inventory_child_detail_id'     => $product['type'] == 'child' ? $product['id'] : null,
-                    'qty'                           => $product['qty'],
+            InventoryPackage::where('number', $request->post('paNumber'))
+                ->update([
+                    'storage_id' => $request->post('storageId'),
                 ]);
 
-                // Old Location
-                InventoryDetail::where('purchase_order_detail_id', $product['purchase_order_detail_id'])
-                    ->where('storage_id', $inventoryParent->storage_id)
-                    ->decrement('stock', $product['qty']);
-
-                // New Location
-                $check = InventoryDetail::where('purchase_order_detail_id', $product['purchase_order_detail_id'])
-                    ->where('storage_id', $request->post('storageId'))
-                    ->first();
-                if ($check == null) {
-                    InventoryDetail::create([
-                        'purchase_order_detail_id'  => $product['purchase_order_detail_id'],
-                        'storage_id'                => $request->post('storageId'),
-                        'stock'                     => $product['qty'],
+            foreach ($inventoryPackageItem as $item) {
+                InventoryDetail::where('inventory_package_item_id', $item->id)
+                    ->update([
+                        'storage_id' => $request->post('storageId'),
                     ]);
-                } else {
-                    InventoryDetail::where('id'. $check->id)->increment('stock', $product['qty']);
-                }
             }
-
-            InventoryParent::where('id', $inventoryParent->id)->update([
-                'storage_id' => $request->post('storageId')
-            ]);
 
             DB::commit();
             return response()->json([
@@ -265,13 +185,14 @@ class InventoryController extends Controller
         ]);
     }
 
-    public function changeBox(Request $request): View
+    public function changeNewBox(Request $request): View
     {
         $inventoryPackage = InventoryPackage::with('storage', 'purchaseOrder')->find($request->query('packageId'));
         $listBox = InventoryPackage::whereNotIn('storage_id', [1,2,3,4])->whereNot('id', $request->query('packageId'))->get();
         $products = DB::table('inventory_package_item')
             ->leftJoin('inventory_package_item_sn', 'inventory_package_item_sn.inventory_package_item_id', '=', 'inventory_package_item.id')
             ->leftJoin('purchase_order_detail', 'inventory_package_item.purchase_order_detail_id', '=', 'purchase_order_detail.id')
+            ->leftJoin('purchase_order', 'purchase_order.id', '=', 'purchase_order_detail.purchase_order_id')
             ->where('inventory_package_item.inventory_package_id', $inventoryPackage->id)
             ->where('inventory_package_item.qty', '!=', 0)
             ->select([
@@ -279,6 +200,8 @@ class InventoryController extends Controller
                 'inventory_package_item.inventory_package_id',
                 'inventory_package_item.product_id',
                 'inventory_package_item.is_parent',
+                'inventory_package_item.inventory_item_id',
+                'purchase_order.purc_doc',
                 'purchase_order_detail.id AS purchase_order_detail_id',
                 'purchase_order_detail.item',
                 'purchase_order_detail.sales_doc',
@@ -287,6 +210,154 @@ class InventoryController extends Controller
                 'purchase_order_detail.prod_hierarchy_desc',
                 'inventory_package_item_sn.id AS sn_id',
                 'inventory_package_item_sn.serial_number',
+                'purchase_order_detail.purchase_order_id'
+            ])
+            ->get();
+
+        $storageRaw = Storage::where('raw', '!=', '-')
+            ->where('area', null)
+            ->where('rak', null)
+            ->where('bin', null)
+            ->whereNotIn('id', [1,2,3,4])
+            ->get();
+
+        $title = 'Inventory Box';
+        return view('inventory.box.change-new-box', compact('title', 'inventoryPackage', 'listBox', 'products', 'storageRaw'));
+    }
+
+    public function changeNewBoxStore(Request $request): \Illuminate\Http\JsonResponse
+    {
+        try {
+            DB::beginTransaction();
+
+            $inventoryPackage = InventoryPackage::create([
+                'purchase_order_id' => $request->post('purchaseOrderId'),
+                'storage_id'        => $request->post('storageId'),
+                'number'            => 'PA-'.date('YmdHis').rand(100, 999),
+                'reff_number'       => $request->post('reffNumber'),
+                'qty_item'          => 0,
+                'qty'               => 0,
+                'sales_docs'        => json_encode([]),
+                'created_by'        => Auth::id()
+            ]);
+
+            $qtyItem = 0;
+            foreach ($request->post('changeProducts') as $product) {
+                $checkInventoryPackageItem = InventoryPackageItem::where('inventory_package_id', $inventoryPackage->id)
+                    ->where('product_id', $product['product_id'])
+                    ->where('purchase_order_detail_id', $product['purchase_order_detail_id'])
+                    ->first();
+
+                if ($checkInventoryPackageItem == null) {
+                    $inventoryPackageItem = InventoryPackageItem::create([
+                        'inventory_package_id'      => $inventoryPackage->id,
+                        'product_id'                => $product['product_id'],
+                        'purchase_order_detail_id'  => $product['purchase_order_detail_id'],
+                        'is_parent'                 => $product['is_parent'],
+                        'qty'                       => 1,
+                    ]);
+
+                    $inventory = Inventory::where('purchase_order_id', $product['purchase_order_id'])->where('type', 'inv')->first();
+                    $productAging = InventoryDetail::where('inventory_package_item_id', $product['id'])
+                        ->where('purchase_order_detail_id', $product['purchase_order_detail_id'])
+                        ->first();
+                    InventoryDetail::create([
+                        'inventory_id'              => $inventory->id,
+                        'purchase_order_detail_id'  => $product['purchase_order_detail_id'],
+                        'storage_id'                => $inventoryPackage->storage_id,
+                        'inventory_package_item_id' => $inventoryPackageItem->id,
+                        'sales_doc'                 => $product['sales_doc'],
+                        'qty'                       => 1,
+                        'aging_date'                => $productAging->aging_date,
+                    ]);
+
+                    $inventoryPackageItemId = $inventoryPackageItem->id;
+                } else {
+                    $productAging = InventoryDetail::where('inventory_package_item_id', $product['id'])
+                        ->where('purchase_order_detail_id', $product['purchase_order_detail_id'])
+                        ->first();
+                    $checkInventoryDetail = InventoryDetail::where('storage_id', $inventoryPackage->storage_id)
+                        ->where('purchase_order_detail_id', $product['purchase_order_detail_id'])
+                        ->where('inventory_package_item_id', $checkInventoryPackageItem->id)
+                        ->whereDate('aging_date', Carbon::parse($productAging->aging_date)->format('Y-m-d'))
+                        ->first();
+                    if ($checkInventoryDetail == null) {
+                        $inventory = Inventory::where('purchase_order_id', $product['purchase_order_id'])->where('type', 'inv')->first();
+                        InventoryDetail::create([
+                            'inventory_id'              => $inventory->id,
+                            'purchase_order_detail_id'  => $product['purchase_order_detail_id'],
+                            'storage_id'                => $inventoryPackage->storage_id,
+                            'inventory_package_item_id' => $checkInventoryPackageItem->id,
+                            'sales_doc'                 => $product['sales_doc'],
+                            'qty'                       => 1,
+                            'aging_date'                => $productAging->aging_date,
+                        ]);
+                    } else {
+                        InventoryDetail::where('id', $checkInventoryDetail->id)->increment('qty', 1);
+                    }
+
+                    InventoryPackageItem::where('id', $checkInventoryPackageItem->id)->increment('qty', 1);
+                    $inventoryPackageItemId = $checkInventoryPackageItem->id;
+                }
+
+                InventoryPackageItemSN::create([
+                    'inventory_package_item_id' => $inventoryPackageItemId,
+                    'serial_number'             => $product['serial_number'],
+                    'qty'                       => 1
+                ]);
+
+                // Decrement Inventory Package
+                InventoryPackage::where('id', $product['inventory_package_id'])->decrement('qty', 1);
+                InventoryPackageItem::where('id', $product['id'])->decrement('qty', 1);
+                InventoryPackageItemSN::where('id', $product['sn_id'])->delete();
+            }
+
+            // Update QTY Inv Package
+            InventoryPackage::where('id', $inventoryPackage->id)->update([
+                'qty_item'  => $qtyItem,
+                'qty'       => count($request->post('changeProducts'))
+            ]);
+
+            DB::commit();
+            return response()->json([
+                'status'    => true,
+            ]);
+        } catch (\Exception $err) {
+            DB::rollBack();
+            Log::error($err->getMessage());
+            Log::error($err->getLine());
+            return response()->json([
+                'status'    => false,
+            ]);
+        }
+    }
+
+    public function changeBox(Request $request): View
+    {
+        $inventoryPackage = InventoryPackage::with('storage', 'purchaseOrder')->find($request->query('packageId'));
+        $listBox = InventoryPackage::whereNotIn('storage_id', [1,2,3,4])->whereNot('id', $request->query('packageId'))->get();
+        $products = DB::table('inventory_package_item')
+            ->leftJoin('inventory_package_item_sn', 'inventory_package_item_sn.inventory_package_item_id', '=', 'inventory_package_item.id')
+            ->leftJoin('purchase_order_detail', 'inventory_package_item.purchase_order_detail_id', '=', 'purchase_order_detail.id')
+            ->leftJoin('purchase_order', 'purchase_order.id', '=', 'purchase_order_detail.purchase_order_id')
+            ->where('inventory_package_item.inventory_package_id', $inventoryPackage->id)
+            ->where('inventory_package_item.qty', '!=', 0)
+            ->select([
+                'inventory_package_item.id',
+                'inventory_package_item.inventory_package_id',
+                'inventory_package_item.product_id',
+                'inventory_package_item.is_parent',
+                'inventory_package_item.inventory_item_id',
+                'purchase_order.purc_doc',
+                'purchase_order_detail.id AS purchase_order_detail_id',
+                'purchase_order_detail.item',
+                'purchase_order_detail.sales_doc',
+                'purchase_order_detail.material',
+                'purchase_order_detail.po_item_desc',
+                'purchase_order_detail.prod_hierarchy_desc',
+                'inventory_package_item_sn.id AS sn_id',
+                'inventory_package_item_sn.serial_number',
+                'purchase_order_detail.purchase_order_id'
             ])
             ->get();
 
@@ -305,20 +376,89 @@ class InventoryController extends Controller
                 $checkPackageItem = InventoryPackageItem::where('inventory_package_id', $inventoryPackage->id)
                     ->where('purchase_order_detail_id', $product['purchase_order_detail_id'])
                     ->first();
-                if ($checkPackageItem == null) {
-                    $inventoryPackageItem = InventoryPackageItem::create([
-                        'inventory_package_id'      => $inventoryPackage->id,
-                        'product_id'                => $product['product_id'],
-                        'purchase_order_detail_id'  => $product['purchase_order_detail_id'],
-                        'is_parent'                 => $product['is_parent'],
-                        'qty'                       => 1
-                    ]);
-                    $inventoryPackageItemId = $inventoryPackageItem->id;
 
-                    InventoryPackage::where('id', $inventoryPackage->id)->increment('qty_item', 1);
+                if ($checkPackageItem == null) {
+                    $newInventoryPackageItem = InventoryPackageItem::where('inventory_package_id', $inventoryPackage->id)
+                        ->where('product_id', $product['product_id'])
+                        ->where('purchase_order_detail_id', $product['purchase_order_detail_id'])
+                        ->where('type', 'inv')
+                        ->first();
+
+                    if ($newInventoryPackageItem == null) {
+                        $inventoryPackageItem = InventoryPackageItem::create([
+                            'inventory_package_id'      => $inventoryPackage->id,
+                            'product_id'                => $product['product_id'],
+                            'purchase_order_detail_id'  => $product['purchase_order_detail_id'],
+                            'is_parent'                 => $product['is_parent'],
+                            'qty'                       => 1,
+                        ]);
+                        $inventoryPackageItemId = $inventoryPackageItem->id;
+                    } else {
+                        InventoryPackageItem::where('id', $newInventoryPackageItem->id)->increment('qty', 1);
+                        $inventoryPackageItemId = $newInventoryPackageItem->id;
+                    }
+
+                    $productAging = InventoryDetail::where('inventory_package_item_id', $product['id'])
+                        ->where('purchase_order_detail_id', $product['purchase_order_detail_id'])
+                        ->first();
+                    $checkInventoryDetail = InventoryDetail::where('storage_id', $inventoryPackage->storage_id)
+                        ->where('purchase_order_detail_id', $product['purchase_order_detail_id'])
+                        ->where('inventory_package_item_id', $inventoryPackageItemId)
+                        ->whereDate('aging_date', Carbon::parse($productAging->aging_date)->format('Y-m-d'))
+                        ->first();
+                    if ($checkInventoryDetail == null) {
+                        $inventory = Inventory::where('purchase_order_id', $product['purchase_order_id'])->where('type', 'inv')->first();
+                        InventoryDetail::create([
+                            'inventory_id'              => $inventory->id,
+                            'purchase_order_detail_id'  => $product['purchase_order_detail_id'],
+                            'storage_id'                => $inventoryPackage->storage_id,
+                            'inventory_package_item_id' => $inventoryPackageItemId,
+                            'sales_doc'                 => $product['sales_doc'],
+                            'qty'                       => 1,
+                            'aging_date'                => $productAging->aging_date,
+                        ]);
+                    } else {
+                        InventoryDetail::where('id', $checkInventoryDetail->id)->increment('qty', 1);
+                    }
+
+                    // Decrement Inventory Detail
+                    InventoryDetail::where('id', $productAging->id)->decrement('qty', 1);
                 } else {
-                    InventoryPackageItem::where('id', $checkPackageItem->id)->increment('qty', 1);
-                    $inventoryPackageItemId = $checkPackageItem->id;
+                    $productAging = InventoryDetail::where('inventory_package_item_id', $product['id'])
+                        ->where('purchase_order_detail_id', $product['purchase_order_detail_id'])
+                        ->first();
+                    $checkInventoryDetail = InventoryDetail::where('storage_id', $inventoryPackage->storage_id)
+                        ->where('purchase_order_detail_id', $product['purchase_order_detail_id'])
+                        ->where('inventory_package_item_id', $checkPackageItem->id)
+                        ->whereDate('aging_date', Carbon::parse($productAging->aging_date)->format('Y-m-d'))
+                        ->first();
+                    if ($checkInventoryDetail == null) {
+                        $inventory = Inventory::where('purchase_order_id', $product['purchase_order_id'])->where('type', 'inv')->first();
+                        $inventoryPackageItem = InventoryPackageItem::create([
+                            'inventory_package_id'      => $inventoryPackage->id,
+                            'product_id'                => $product['product_id'],
+                            'purchase_order_detail_id'  => $product['purchase_order_detail_id'],
+                            'is_parent'                 => $product['is_parent'],
+                            'qty'                       => 1,
+                        ]);
+                        InventoryDetail::create([
+                            'inventory_id'              => $inventory->id,
+                            'purchase_order_detail_id'  => $product['purchase_order_detail_id'],
+                            'storage_id'                => $inventoryPackage->storage_id,
+                            'inventory_package_item_id' => $inventoryPackageItem->id,
+                            'sales_doc'                 => $product['sales_doc'],
+                            'qty'                       => 1,
+                            'aging_date'                => $productAging->aging_date,
+                        ]);
+                        $inventoryPackageItemId = $inventoryPackageItem->id;
+                    } else {
+                        InventoryPackageItem::where('id', $checkPackageItem->id)->increment('qty', 1);
+                        InventoryDetail::where('id', $checkInventoryDetail->id)->increment('qty', 1);
+                        $inventoryPackageItemId = $checkPackageItem->id;
+                    }
+
+                    // Decrement Inventory Detail
+                    InventoryDetail::where('id', $productAging->id)->decrement('qty', 1);
                 }
 
                 InventoryPackageItemSN::where('id', $product['sn_id'])->update(['inventory_package_item_id' => $inventoryPackageItemId]);

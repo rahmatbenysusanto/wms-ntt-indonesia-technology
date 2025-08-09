@@ -53,6 +53,7 @@
                                     <th>#</th>
                                     <th>Purc Doc</th>
                                     <th>Sales Doc</th>
+                                    <th>Box</th>
                                     <th>Material</th>
                                     <th>PO Item Desc</th>
                                     <th class="text-center">Stock</th>
@@ -66,11 +67,14 @@
                                 @foreach($inventory as $index => $item)
                                     <tr>
                                         <td>{{ $inventory->firstItem() + $index }}</td>
-                                        <td>{{ $item->purc_doc }}</td>
+                                        <td>{{ $item->purchaseOrderDetail->purchaseOrder->purc_doc }}</td>
                                         <td>{{ $item->sales_doc }}</td>
-                                        <td>{{ $item->product->material }}</td>
-                                        <td>{{ $item->product->po_item_desc }}</td>
-                                        <td class="text-center fw-bold">{{ number_format($item->stock) }}</td>
+                                        <td>
+                                            <div>{{ $item->inventoryPackageItem->inventoryPackage->number }}</div>
+                                        </td>
+                                        <td>{{ $item->purchaseOrderDetail->material }}</td>
+                                        <td>{{ $item->purchaseOrderDetail->po_item_desc }}</td>
+                                        <td class="text-center fw-bold">{{ number_format($item->qty) }}</td>
                                         <td>
                                             @if($item->storage->raw == '-')
                                                 <span class="badge bg-danger-subtle text-danger"> Cross Docking </span>
@@ -78,10 +82,10 @@
                                                 {{ $item->storage->raw.' - '.$item->storage->area.' - '.$item->storage->rak.' - '.$item->storage->bin }}
                                             @endif
                                         </td>
-                                        <td>{{ \Carbon\Carbon::parse($item->created_at)->translatedFormat('d F Y H:i') }}</td>
+                                        <td>{{ \Carbon\Carbon::parse($item->aging_date)->translatedFormat('d F Y H:i') }}</td>
                                         <td>
                                             @php
-                                                $tanggalMasuk = \Carbon\Carbon::parse($item->created_at);
+                                                $tanggalMasuk = \Carbon\Carbon::parse($item->aging_date);
                                                 $today = \Carbon\Carbon::now();
                                                 $totalHari = $tanggalMasuk->diffInDays($today);
 

@@ -14,7 +14,8 @@ class InventoryDetail extends Model
         'storage_id',
         'inventory_package_item_id',
         'sales_doc',
-        'qty'
+        'qty',
+        'aging_date'
     ];
 
     public function purchaseOrderDetail(): BelongsTo
@@ -25,5 +26,10 @@ class InventoryDetail extends Model
     public function storage(): BelongsTo
     {
         return $this->belongsTo(Storage::class, 'storage_id');
+    }
+
+    public function inventoryPackageItem(): BelongsTo
+    {
+        return $this->belongsTo(InventoryPackageItem::class, 'inventory_package_item_id');
     }
 }

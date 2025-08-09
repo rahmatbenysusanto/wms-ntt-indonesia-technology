@@ -903,7 +903,7 @@
                                     text: 'Put Away Product Success',
                                     icon: 'success'
                                 }).then((e) => {
-                                    window.location.href = '/inbound/put-away/detail?pa-number='+res.data;
+                                    window.location.href = '/inbound/put-away/detail?id='+res.data;
                                 });
                             } else {
                                 Swal.fire({

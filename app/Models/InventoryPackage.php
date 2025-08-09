@@ -17,7 +17,9 @@ class InventoryPackage extends Model
         'sales_docs',
         'product_package_id',
         'created_by',
-        'note'
+        'note',
+        'return',
+        'return_from'
     ];
 
     public function inventoryPackageItem(): \Illuminate\Database\Eloquent\Relations\HasMany

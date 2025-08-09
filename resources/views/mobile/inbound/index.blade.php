@@ -60,7 +60,7 @@
                                             <span class="badge bg-info-subtle text-info">Open</span>
                                             @break
                                         @case('process')
-                                            <span class="badge bg-primary-subtle text-primary">In Process</span>
+                                            <span class="badge bg-primary-subtle text-primary">partial</span>
                                             @break
                                         @case('done')
                                             <span class="badge bg-secondary-subtle text-secondary">Done</span>

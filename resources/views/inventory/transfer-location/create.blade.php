@@ -30,7 +30,7 @@
             </div>
         </div>
 
-        <div class="col-6">
+        <div class="col-8">
             <div class="card">
                 <div class="card-header">
                     <h4 class="card-title mb-0">List Product</h4>
@@ -40,9 +40,12 @@
                         <thead>
                             <tr>
                                 <th>#</th>
-                                <th>Type</th>
+                                <th>Item</th>
+                                <th>Sales Doc</th>
                                 <th>Material</th>
-                                <th>QTY</th>
+                                <th>Item Desc</th>
+                                <th>Hierarchy Desc</th>
+                                <th class="text-center">QTY</th>
                             </tr>
                         </thead>
                         <tbody id="listMaterial">
@@ -53,7 +56,7 @@
             </div>
         </div>
 
-        <div class="col-6">
+        <div class="col-4">
             <div class="card">
                 <div class="card-header">
                     <h4 class="card-title mb-0">New Location</h4>
@@ -102,18 +105,35 @@
             }
         });
 
-        function searchPutAwayData(keyword) {
+        function searchPutAwayData(value) {
             $.ajax({
                 url: '{{ route('inventory.transfer-location-find-pa-number') }}',
                 method: 'GET',
                 data: {
-                    paNumber: keyword
+                    paNumber: value
                 },
                 success: (res) => {
-                    console.log(res);
                     if (res.status) {
-                        localStorage.setItem('products', JSON.stringify(res.data));
-                        viewListProduct();
+                        const products = res.data;
+                        let html = '';
+                        let number = 1;
+
+                        products.forEach((product) => {
+                            html += `
+                                <tr>
+                                    <td>${number}</td>
+                                    <td>${product.purchase_order_detail.item}</td>
+                                    <td>${product.purchase_order_detail.sales_doc}</td>
+                                    <td>${product.purchase_order_detail.material}</td>
+                                    <td>${product.purchase_order_detail.po_item_desc}</td>
+                                    <td>${product.purchase_order_detail.prod_hierarchy_desc}</td>
+                                    <td class="text-center">${product.qty}</td>
+                                </tr>
+                            `;
+                            number++;
+                        });
+
+                        document.getElementById('listMaterial').innerHTML = html;
                     } else {
                         Swal.fire({
                             title: 'Error!',
@@ -123,27 +143,6 @@
                     }
                 }
             });
-        }
-
-        function viewListProduct() {
-            const products = JSON.parse(localStorage.getItem('products')) ?? [];
-            let html = '';
-            let number = 1;
-
-            products.forEach((item) => {
-                html += `
-                    <tr>
-                        <td>${number}</td>
-                        <td>${item.type === 'parent' ? '<span class="badge bg-danger-subtle text-danger">Parent</span>' : ''}</td>
-                        <td>${item.material}</td>
-                        <td>${item.qty}</td>
-                    </tr>
-                `;
-
-                number++;
-            });
-
-            document.getElementById('listMaterial').innerHTML = html;
         }
 
         function changeRaw(raw) {
@@ -236,7 +235,6 @@
                             _token: '{{ csrf_token() }}',
                             paNumber: document.getElementById('putAwaySearchInput').value,
                             storageId: document.getElementById('bin').value,
-                            products: JSON.parse(localStorage.getItem('products')) ?? []
                         },
                         success: (res) => {
                             if (res.status) {

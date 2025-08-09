@@ -19,6 +19,7 @@ return new class extends Migration
             $table->boolean('is_parent')->default(false);
             $table->boolean('direct_outbound')->default(false);
             $table->integer('qty')->default(0);
+            $table->integer('inventory_item_id')->nullable();
             $table->timestamps();
         });
     }
