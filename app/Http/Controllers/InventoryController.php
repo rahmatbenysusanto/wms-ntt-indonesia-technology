@@ -29,6 +29,131 @@ class InventoryController extends Controller
 {
     public function index(Request $request): View
     {
+        $inventory = InventoryDetail::whereNotIn('storage_id', [1,2,3,4])
+            ->where('qty', '!=', 0)
+            ->select([
+                'sales_doc',
+                'purchase_order_detail_id'
+            ])
+            ->groupBy('sales_doc', 'purchase_order_detail_id')
+            ->paginate(10);
+
+        foreach ($inventory as $inv) {
+            $queryInv = DB::table('inventory_detail')
+                ->leftJoin('purchase_order_detail', 'inventory_detail.purchase_order_detail_id', '=', 'purchase_order_detail.id')
+                ->leftJoin('purchase_order', 'purchase_order_detail.purchase_order_id', '=', 'purchase_order.id')
+                ->where('inventory_detail.qty', '!=', 0)
+                ->where('inventory_detail.sales_doc', $inv->sales_doc)
+                ->where('inventory_detail.purchase_order_detail_id', $inv->purchase_order_detail_id)
+                ->select([
+                    'purchase_order.purc_doc',
+                    'purchase_order_detail.material',
+                    'purchase_order_detail.po_item_desc',
+                    'purchase_order_detail.prod_hierarchy_desc',
+                    'purchase_order_detail.product_id',
+                    'inventory_detail.qty'
+                ])
+                ->get();
+
+            $qty = 0;
+            foreach ($queryInv as $item) {
+                $qty += $item->qty;
+            }
+
+            $inv->qty = $qty;
+            $inv->purc_doc = $queryInv[0]->purc_doc;
+            $inv->material = $queryInv[0]->material;
+            $inv->po_item_desc = $queryInv[0]->po_item_desc;
+            $inv->prod_hierarchy_desc = $queryInv[0]->prod_hierarchy_desc;
+            $inv->product_id = $queryInv[0]->product_id;
+        }
+
+        $title = 'Inventory';
+        return view('inventory.index', compact('title', 'inventory'));
+    }
+
+    public function indexDetail(Request $request): View
+    {
+        $salesDoc = $request->query('salesDoc');
+        $productId = $request->query('id');
+
+        $product = DB::table('purchase_order_detail')
+            ->leftJoin('purchase_order', 'purchase_order_detail.purchase_order_id', '=', 'purchase_order.id')
+            ->where('sales_doc', $salesDoc)
+            ->where('product_id', $productId)
+            ->select([
+                'purchase_order.purc_doc',
+                'purchase_order_detail.sales_doc',
+                'purchase_order_detail.material',
+                'purchase_order_detail.po_item_desc',
+                'purchase_order_detail.prod_hierarchy_desc',
+            ])
+            ->first();
+
+        // Box
+        $dataBox = DB::table('inventory_package_item')
+            ->leftJoin('purchase_order_detail', 'inventory_package_item.purchase_order_detail_id', '=', 'purchase_order_detail.id')
+            ->leftJoin('inventory_package', 'inventory_package_item.inventory_package_id', '=', 'inventory_package.id')
+            ->leftJoin('storage', 'storage.id', '=', 'inventory_package.storage_id')
+            ->where('purchase_order_detail.sales_doc', $salesDoc)
+            ->where('inventory_package_item.product_id', $productId)
+            ->where('inventory_package_item.qty', '!=', 0)
+            ->select([
+                'inventory_package.number',
+                'inventory_package.reff_number',
+                'inventory_package.return',
+                'inventory_package.return_from',
+                'storage.raw',
+                'storage.area',
+                'storage.rak',
+                'storage.bin',
+                'inventory_package_item.id AS inventory_package_item_id',
+                'inventory_package_item.qty',
+            ])
+            ->get();
+
+        foreach ($dataBox as $item) {
+            $item->serial_number = DB::table('inventory_package_item_sn')
+                ->where('inventory_package_item_id', $item->inventory_package_item_id)
+                ->where('qty', '!=', 0)
+                ->get();
+        }
+
+        // Outbound
+        $dataOutbound = DB::table('outbound_detail')
+            ->leftJoin('outbound', 'outbound.id', '=', 'outbound_detail.outbound_id')
+            ->leftJoin('inventory_package_item', 'inventory_package_item.id', '=', 'outbound_detail.inventory_package_item_id')
+            ->leftJoin('purchase_order_detail', 'inventory_package_item.purchase_order_detail_id', '=', 'purchase_order_detail.id')
+            ->leftJoin('users', 'users.id', '=', 'outbound.created_by')
+            ->where('purchase_order_detail.sales_doc', $salesDoc)
+            ->where('purchase_order_detail.product_id', $productId)
+            ->latest('outbound.delivery_date')
+            ->select([
+                'outbound.purc_doc',
+                'outbound.number',
+                'outbound.type',
+                'outbound.deliv_loc',
+                'outbound.deliv_dest',
+                'outbound.delivery_date',
+                'outbound.delivery_note_number',
+                'outbound_detail.qty',
+                'outbound_detail.id AS outbound_detail_id',
+                'users.name'
+            ])
+            ->get();
+
+        foreach ($dataOutbound as $item) {
+            $item->serial_number = DB::table('outbound_detail_sn')
+                ->where('outbound_detail_id', $item->outbound_detail_id)
+                ->get();
+        }
+
+        $title = 'Inventory';
+        return view('inventory.index-detail', compact('title', 'dataOutbound', 'dataBox', 'product'));
+    }
+
+    public function aging(Request $request): View
+    {
         $inventory = InventoryDetail::with('purchaseOrderDetail.purchaseOrder', 'purchaseOrderDetail', 'storage', 'inventoryPackageItem', 'inventoryPackageItem.inventoryPackage')
             ->where('qty', '!=', 0)
             ->whereHas('purchaseOrderDetail.purchaseOrder', function ($purchaseOrder) use ($request) {
@@ -41,6 +166,9 @@ class InventoryController extends Controller
                     $purchaseOrderDetail->where('material', $request->query('material'));
                 }
             })
+            ->whereHas('storage', function ($storage) {
+                $storage->whereNotIn('id', [1,2,3,4]);
+            })
             ->when($request->query('sales_doc'), function ($q) use ($request) {
                 $q->where('sales_doc', $request->query('sales_doc'));
             })
@@ -52,8 +180,8 @@ class InventoryController extends Controller
                 'material'  => $request->query('material'),
             ]);
 
-        $title = 'Inventory';
-        return view('inventory.index', compact('title', 'inventory'));
+        $title = 'Inventory Aging';
+        return view('inventory.aging', compact('title', 'inventory'));
     }
 
     public function box(): View

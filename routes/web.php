@@ -111,6 +111,8 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
 
     Route::prefix('/inventory')->controller(InventoryController::class)->group(function () {
         Route::get('/', 'index')->name('inventory.index');
+        Route::get('/product-detail', 'indexDetail')->name('inventory.indexDetail');
+        Route::get('/aging', 'aging')->name('inventory.aging');
         Route::get('/box', 'box')->name('inventory.box');
         Route::get('/box-detail', 'boxDetail')->name('inventory.box.detail');
         Route::get('/detail', 'detail')->name('inventory.detail');

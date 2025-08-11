@@ -5,11 +5,11 @@
     <div class="row">
         <div class="col-12">
             <div class="page-title-box d-sm-flex align-items-center justify-content-between">
-                <h4 class="mb-sm-0">Product List</h4>
+                <h4 class="mb-sm-0">Product Aging</h4>
                 <div class="page-title-right">
                     <ol class="breadcrumb m-0">
                         <li class="breadcrumb-item"><a href="javascript: void(0);">Inventory</a></li>
-                        <li class="breadcrumb-item active">Product List</li>
+                        <li class="breadcrumb-item active">Product Aging</li>
                     </ol>
                 </div>
             </div>
@@ -18,7 +18,7 @@
         <div class="col-12">
             <div class="card">
                 <div class="card-header">
-                    <h4 class="card-title mb-0">Product List</h4>
+                    <h4 class="card-title mb-0">Product Aging</h4>
                 </div>
                 <div class="card-header">
                     <form action="{{ url()->current() }}" method="GET">
@@ -49,30 +49,67 @@
                     <div class="table-responsive">
                         <table class="table table-striped align-middle">
                             <thead>
-                                <tr>
-                                    <th>#</th>
-                                    <th>Purc Doc</th>
-                                    <th>Sales Doc</th>
-                                    <th>Material</th>
-                                    <th>PO Item Desc</th>
-                                    <th class="text-center">Stock</th>
-                                    <th>Action</th>
-                                </tr>
+                            <tr>
+                                <th>#</th>
+                                <th>Purc Doc</th>
+                                <th>Sales Doc</th>
+                                <th>Box</th>
+                                <th>Material</th>
+                                <th>PO Item Desc</th>
+                                <th class="text-center">Stock</th>
+                                <th>Storage Loc</th>
+                                <th>Date In WH</th>
+                                <th>Aging Status</th>
+                                <th>Action</th>
+                            </tr>
                             </thead>
                             <tbody>
-                                @foreach($inventory as $index => $item)
-                                    <tr>
-                                        <td>{{ $inventory->firstItem() + $index }}</td>
-                                        <td>{{ $item->purc_doc }}</td>
-                                        <td>{{ $item->sales_doc }}</td>
-                                        <td>{{ $item->material }}</td>
-                                        <td>{{ $item->po_item_desc }}</td>
-                                        <td class="text-center fw-bold">{{ number_format($item->qty) }}</td>
-                                        <td>
-                                            <a href="{{ route('inventory.indexDetail', ['salesDoc' => $item->sales_doc, 'id' => $item->product_id]) }}" class="btn btn-info btn-sm">Detail</a>
-                                        </td>
-                                    </tr>
-                                @endforeach
+                            @foreach($inventory as $index => $item)
+                                <tr>
+                                    <td>{{ $inventory->firstItem() + $index }}</td>
+                                    <td>{{ $item->purchaseOrderDetail->purchaseOrder->purc_doc }}</td>
+                                    <td>{{ $item->sales_doc }}</td>
+                                    <td>
+                                        <div>{{ $item->inventoryPackageItem->inventoryPackage->number }}</div>
+                                    </td>
+                                    <td>{{ $item->purchaseOrderDetail->material }}</td>
+                                    <td>{{ $item->purchaseOrderDetail->po_item_desc }}</td>
+                                    <td class="text-center fw-bold">{{ number_format($item->qty) }}</td>
+                                    <td>
+                                        @if($item->storage->raw == '-')
+                                            <span class="badge bg-danger-subtle text-danger"> Cross Docking </span>
+                                        @else
+                                            {{ $item->storage->raw.' - '.$item->storage->area.' - '.$item->storage->rak.' - '.$item->storage->bin }}
+                                        @endif
+                                    </td>
+                                    <td>{{ \Carbon\Carbon::parse($item->aging_date)->translatedFormat('d F Y H:i') }}</td>
+                                    <td>
+                                        @php
+                                            $tanggalMasuk = \Carbon\Carbon::parse($item->aging_date);
+                                            $today = \Carbon\Carbon::now();
+                                            $totalHari = $tanggalMasuk->diffInDays($today);
+
+                                            if ($totalHari <= 90) {
+                                                $label = '0 - 90 Hari';
+                                                $class = 'bg-success-subtle text-success';
+                                            } elseif ($totalHari <= 180) {
+                                                $label = '91 - 180 Hari';
+                                                $class = 'bg-warning-subtle text-warning';
+                                            } elseif ($totalHari <= 365) {
+                                                $label = '181 - 365 Hari';
+                                                $class = 'bg-orange-subtle text-orange';
+                                            } else {
+                                                $label = '> 365 Hari';
+                                                $class = 'bg-danger-subtle text-danger';
+                                            }
+                                        @endphp
+                                        <span class="badge {{ $class }}">
+                                                {{ $label }} ({{ number_format($totalHari) }} hari)
+                                            </span>
+                                    </td>
+                                    <td><a href="{{ route('inventory.detail', ['id' => $item->id]) }}" class="btn btn-info btn-sm">Detail</a></td>
+                                </tr>
+                            @endforeach
                             </tbody>
                         </table>
                         <div class="d-flex justify-content-end mt-2">

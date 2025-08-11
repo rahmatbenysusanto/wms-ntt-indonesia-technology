@@ -481,13 +481,16 @@
                     </li>
 
                     <li class="nav-item">
-                        <a class="nav-link menu-link {{ in_array($title, ['Inventory', 'Cycle Count', 'Transfer Location', 'Inventory Box']) ? 'active' : '' }}" href="#sidebarInventory" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="sidebarInventory">
+                        <a class="nav-link menu-link {{ in_array($title, ['Inventory', 'Cycle Count', 'Transfer Location', 'Inventory Box', 'Inventory Aging']) ? 'active' : '' }}" href="#sidebarInventory" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="sidebarInventory">
                             <i class="mdi mdi-package-variant"></i> <span data-key="t-dashboards">Inventory</span>
                         </a>
-                        <div class="collapse menu-dropdown {{ in_array($title, ['Inventory', 'Cycle Count', 'Transfer Location', 'Inventory Box']) ? 'show' : '' }}" id="sidebarInventory">
+                        <div class="collapse menu-dropdown {{ in_array($title, ['Inventory', 'Cycle Count', 'Transfer Location', 'Inventory Box', 'Inventory Aging']) ? 'show' : '' }}" id="sidebarInventory">
                             <ul class="nav nav-sm flex-column">
                                 <li class="nav-item">
                                     <a href="{{ route('inventory.index') }}" class="nav-link {{ $title == 'Inventory' ? 'active' : '' }}" data-key="t-analytics"> Produk List </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="{{ route('inventory.aging') }}" class="nav-link {{ $title == 'Inventory Aging' ? 'active' : '' }}" data-key="t-analytics"> Produk Aging </a>
                                 </li>
                                 <li class="nav-item">
                                     <a href="{{ route('inventory.box') }}" class="nav-link {{ $title == 'Inventory Box' ? 'active' : '' }}" data-key="t-analytics"> Box List </a>
