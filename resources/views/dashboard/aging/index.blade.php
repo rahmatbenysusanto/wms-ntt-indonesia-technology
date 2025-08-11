@@ -25,24 +25,37 @@
                             <tr>
                                 <th>Aging Date</th>
                                 <th>Total Price</th>
+                                <th class="text-center">Total QTY</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr>
                                 <td>1 - 90 Day</td>
-                                <td>Rp {{ number_format($aging1, 2) }}</td>
+                                <td>Rp {{ number_format($agingType1->total, 2) }}</td>
+                                <td class="text-center fw-bold">
+                                    <a href="{{ route('dashboard.aging.detail', ['type' => 1]) }}" class="text-black">{{ number_format($agingType1->qty) }}</a>
+                                </td>
                             </tr>
                             <tr>
                                 <td>91 - 180 Day</td>
-                                <td>Rp {{ number_format($aging2, 2) }}</td>
+                                <td>Rp {{ number_format($agingType2->total, 2) }}</td>
+                                <td class="text-center fw-bold">
+                                    <a href="{{ route('dashboard.aging.detail', ['type' => 2]) }}" class="text-black">{{ number_format($agingType2->qty) }}</a>
+                                </td>
                             </tr>
                             <tr>
                                 <td>181 - 365 Day</td>
-                                <td>Rp {{ number_format($aging3, 2) }}</td>
+                                <td>Rp {{ number_format($agingType3->total, 2) }}</td>
+                                <td class="text-center fw-bold">
+                                    <a href="{{ route('dashboard.aging.detail', ['type' => 3]) }}" class="text-black">{{ number_format($agingType3->qty) }}</a>
+                                </td>
                             </tr>
                             <tr>
                                 <td>> 365 Day</td>
-                                <td>Rp {{ number_format($aging4, 2) }}</td>
+                                <td>Rp {{ number_format($agingType4->total, 2) }}</td>
+                                <td class="text-center fw-bold">
+                                    <a href="{{ route('dashboard.aging.detail', ['type' => 4]) }}" class="text-black">{{ number_format($agingType4->qty) }}</a>
+                                </td>
                             </tr>
                         </tbody>
                     </table>

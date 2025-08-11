@@ -55,28 +55,182 @@ class DashboardController extends Controller
 
     public function dashboardAging(): View
     {
-        $agingData = DB::table('inventory_package_item')
-            ->where('inventory_package_item.qty', '!=', 0)
-            ->leftJoin('purchase_order_detail', 'purchase_order_detail.id', '=', 'inventory_package_item.purchase_order_detail_id');
+        $queryAging = DB::table('inventory_detail')
+            ->leftJoin('purchase_order_detail', 'purchase_order_detail.id', '=', 'inventory_detail.purchase_order_detail_id')
+            ->where('qty', '!=', 0);
 
-        $aging1 = $agingData->whereBetween('inventory_package_item.created_at', [Carbon::now()->subDays(90)->startOfDay(), Carbon::now()->subDays(1)->endOfDay()])
-            ->selectRaw('SUM(inventory_package_item.qty * purchase_order_detail.net_order_price) as total')
-            ->value('total');
+        $agingType1 = $queryAging->whereBetween('inventory_detail.aging_date', [Carbon::now()->subDays(90)->startOfDay(), Carbon::now()->subDays(1)->endOfDay()])
+            ->select([
+                DB::raw('SUM(inventory_detail.qty * purchase_order_detail.net_order_price) as total'),
+                DB::raw('SUM(inventory_detail.qty) as qty'),
+            ])
+            ->first();
 
-        $aging2 = $agingData->whereBetween('inventory_package_item.created_at', [Carbon::now()->subDays(180)->startOfDay(), Carbon::now()->subDays(91)->endOfDay()])
-            ->selectRaw('SUM(inventory_package_item.qty * purchase_order_detail.net_order_price) as total')
-            ->value('total');
+        $agingType2 = $queryAging->whereBetween('inventory_detail.aging_date', [Carbon::now()->subDays(180)->startOfDay(), Carbon::now()->subDays(91)->endOfDay()])
+            ->select([
+                DB::raw('SUM(inventory_detail.qty * purchase_order_detail.net_order_price) as total'),
+                DB::raw('SUM(inventory_detail.qty) as qty'),
+            ])
+            ->first();
 
-        $aging3 = $agingData->whereBetween('inventory_package_item.created_at', [Carbon::now()->subDays(365)->startOfDay(), Carbon::now()->subDays(181)->endOfDay()])
-            ->selectRaw('SUM(inventory_package_item.qty * purchase_order_detail.net_order_price) as total')
-            ->value('total');
+        $agingType3 = $queryAging->whereBetween('inventory_detail.aging_date', [Carbon::now()->subDays(365)->startOfDay(), Carbon::now()->subDays(181)->endOfDay()])
+            ->select([
+                DB::raw('SUM(inventory_detail.qty * purchase_order_detail.net_order_price) as total'),
+                DB::raw('SUM(inventory_detail.qty) as qty'),
+            ])
+            ->first();
 
-        $aging4 = $agingData->where('inventory_package_item.created_at', '<', Carbon::now()->subDays(365)->startOfDay())
-            ->selectRaw('SUM(inventory_package_item.qty * purchase_order_detail.net_order_price) as total')
-            ->value('total');
+        $agingType4 = $queryAging->where('inventory_detail.aging_date', '<', Carbon::now()->subDays(365)->startOfDay())
+            ->select([
+                DB::raw('SUM(inventory_detail.qty * purchase_order_detail.net_order_price) as total'),
+                DB::raw('SUM(inventory_detail.qty) as qty'),
+            ])
+            ->first();
 
         $title = 'Dashboard Aging';
-        return view('dashboard.aging.index', compact('title', 'aging1', 'aging2', 'aging3', 'aging4'));
+        return view('dashboard.aging.index', compact('title', 'agingType1', 'agingType2', 'agingType3', 'agingType4'));
+    }
+
+    public function dashboardAgingDetail(Request $request): View
+    {
+        switch ($request->query('type')) {
+            case 1:
+                $text = '1 - 90 Day';
+                $start = Carbon::now()->subDays(90)->startOfDay();
+                $end = Carbon::now()->subDays(1)->endOfDay();
+
+                $inventoryDetail = DB::table('inventory_detail')
+                    ->leftJoin('purchase_order_detail', 'inventory_detail.purchase_order_detail_id', '=', 'purchase_order_detail.id')
+                    ->leftJoin('purchase_order', 'purchase_order.id', '=', 'purchase_order_detail.purchase_order_id')
+                    ->whereBetween('inventory_detail.aging_date', [$start, $end])
+                    ->where('inventory_detail.qty', '!=', 0)
+                    ->select([
+                        'purchase_order.purc_doc',
+                        'inventory_detail.sales_doc',
+                        'purchase_order_detail.material',
+                        'purchase_order_detail.po_item_desc',
+                        'purchase_order_detail.prod_hierarchy_desc',
+                        'inventory_detail.aging_date',
+                        DB::raw('SUM(inventory_detail.qty) as qty'),
+                        DB::raw('SUM(inventory_detail.qty * purchase_order_detail.net_order_price) as total')
+                    ])
+                    ->groupBy(
+                        'purchase_order.purc_doc',
+                        'inventory_detail.aging_date',
+                        'inventory_detail.sales_doc',
+                        'purchase_order_detail.material',
+                        'purchase_order_detail.po_item_desc',
+                        'purchase_order_detail.prod_hierarchy_desc'
+                    )
+                    ->paginate(10)
+                    ->appends([
+                        'type' => $request->query('type')
+                    ]);
+
+                break;
+            case 2:
+                $text = '91 - 180 Day';
+                $start = Carbon::now()->subDays(180)->startOfDay();
+                $end = Carbon::now()->subDays(91)->endOfDay();
+
+                $inventoryDetail = DB::table('inventory_detail')
+                    ->leftJoin('purchase_order_detail', 'inventory_detail.purchase_order_detail_id', '=', 'purchase_order_detail.id')
+                    ->leftJoin('purchase_order', 'purchase_order.id', '=', 'purchase_order_detail.purchase_order_id')
+                    ->whereBetween('inventory_detail.aging_date', [$start, $end])
+                    ->where('inventory_detail.qty', '!=', 0)
+                    ->select([
+                        'purchase_order.purc_doc',
+                        'inventory_detail.sales_doc',
+                        'purchase_order_detail.material',
+                        'purchase_order_detail.po_item_desc',
+                        'purchase_order_detail.prod_hierarchy_desc',
+                        'inventory_detail.aging_date',
+                        DB::raw('SUM(inventory_detail.qty) as qty'),
+                        DB::raw('SUM(inventory_detail.qty * purchase_order_detail.net_order_price) as total')
+                    ])
+                    ->groupBy(
+                        'purchase_order.purc_doc',
+                        'inventory_detail.aging_date',
+                        'inventory_detail.sales_doc',
+                        'purchase_order_detail.material',
+                        'purchase_order_detail.po_item_desc',
+                        'purchase_order_detail.prod_hierarchy_desc'
+                    )
+                    ->paginate(10)
+                    ->appends([
+                        'type' => $request->query('type')
+                    ]);
+
+                break;
+            case 3:
+                $text = '181 - 365 Day';
+                $start = Carbon::now()->subDays(365)->startOfDay();
+                $end = Carbon::now()->subDays(181)->endOfDay();
+
+                $inventoryDetail = DB::table('inventory_detail')
+                    ->leftJoin('purchase_order_detail', 'inventory_detail.purchase_order_detail_id', '=', 'purchase_order_detail.id')
+                    ->leftJoin('purchase_order', 'purchase_order.id', '=', 'purchase_order_detail.purchase_order_id')
+                    ->whereBetween('inventory_detail.aging_date', [$start, $end])
+                    ->where('inventory_detail.qty', '!=', 0)
+                    ->select([
+                        'purchase_order.purc_doc',
+                        'inventory_detail.sales_doc',
+                        'purchase_order_detail.material',
+                        'purchase_order_detail.po_item_desc',
+                        'purchase_order_detail.prod_hierarchy_desc',
+                        'inventory_detail.aging_date',
+                        DB::raw('SUM(inventory_detail.qty) as qty'),
+                        DB::raw('SUM(inventory_detail.qty * purchase_order_detail.net_order_price) as total')
+                    ])
+                    ->groupBy(
+                        'purchase_order.purc_doc',
+                        'inventory_detail.sales_doc',
+                        'inventory_detail.aging_date',
+                        'purchase_order_detail.material',
+                        'purchase_order_detail.po_item_desc',
+                        'purchase_order_detail.prod_hierarchy_desc'
+                    )
+                    ->paginate(10)
+                    ->appends([
+                        'type' => $request->query('type')
+                    ]);
+                break;
+            case 4:
+                $text = '> 365 Day';
+                $start = Carbon::now()->subDays(365)->startOfDay();
+
+                $inventoryDetail = DB::table('inventory_detail')
+                    ->leftJoin('purchase_order_detail', 'inventory_detail.purchase_order_detail_id', '=', 'purchase_order_detail.id')
+                    ->leftJoin('purchase_order', 'purchase_order.id', '=', 'purchase_order_detail.purchase_order_id')
+                    ->where('inventory_detail.aging_date', '<', $start)
+                    ->where('inventory_detail.qty', '!=', 0)
+                    ->select([
+                        'purchase_order.purc_doc',
+                        'inventory_detail.sales_doc',
+                        'purchase_order_detail.material',
+                        'purchase_order_detail.po_item_desc',
+                        'purchase_order_detail.prod_hierarchy_desc',
+                        'inventory_detail.aging_date',
+                        DB::raw('SUM(inventory_detail.qty) as qty'),
+                        DB::raw('SUM(inventory_detail.qty * purchase_order_detail.net_order_price) as total')
+                    ])
+                    ->groupBy(
+                        'purchase_order.purc_doc',
+                        'inventory_detail.sales_doc',
+                        'inventory_detail.aging_date',
+                        'purchase_order_detail.material',
+                        'purchase_order_detail.po_item_desc',
+                        'purchase_order_detail.prod_hierarchy_desc'
+                    )
+                    ->paginate(10)
+                    ->appends([
+                        'type' => $request->query('type')
+                    ]);
+                break;
+        }
+
+        $title = 'Dashboard Aging';
+        return view('dashboard.aging.detail', compact('title', 'text', 'inventoryDetail'));
     }
 
     public function dashboardOutbound(): View
