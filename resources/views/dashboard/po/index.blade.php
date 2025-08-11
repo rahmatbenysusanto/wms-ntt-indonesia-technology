@@ -14,42 +14,52 @@
             </div>
         </div>
 
-        @foreach($listPO as $po)
-            <div class="col-3">
-                <div class="card">
-                    <div class="card-body">
-                        <table>
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title mb-0">List Purchase Order</h4>
+                </div>
+                <div class="card-body">
+                    <table class="table table-responsive align-middle">
+                        <thead>
                             <tr>
-                                <td class="fw-bold">PO</td>
-                                <td class="fw-bold ps-3">:</td>
-                                <td class="ps-1">{{ $po->purc_doc }}</td>
+                                <th>#</th>
+                                <th>Purc Doc</th>
+                                <th>Client</th>
+                                <th class="text-center">Total SO</th>
+                                <th class="text-center">Total QTY PO</th>
+                                <th class="text-center">QTY Inbound</th>
+                                <th class="text-center">Stock Inventory</th>
+                                <th class="text-center">QTY Outbound</th>
+                                <th>Created Date</th>
+                                <th>Created By</th>
+                                <th>Detail</th>
                             </tr>
-                            <tr>
-                                <td class="fw-bold">Date</td>
-                                <td class="fw-bold ps-3">:</td>
-                                <td class="ps-1">{{ \Carbon\Carbon::parse($po->created_at)->translatedFormat('d F Y H:i') }}</td>
-                            </tr>
-                            <tr>
-                                <td class="fw-bold">Client Name</td>
-                                <td class="fw-bold ps-3">:</td>
-                                <td class="ps-1">{{ $po->customer->name }}</td>
-                            </tr>
-                            <tr>
-                                <td class="fw-bold">Value</td>
-                                <td class="fw-bold ps-3">:</td>
-                                <td class="ps-1">Rp {{ number_format($po->value) }}</td>
-                            </tr>
-                            @foreach($po->listSO as $index => $salesDoc)
+                        </thead>
+                        <tbody>
+                            @foreach($listPO as $index => $item)
                                 <tr>
-                                    <td class="fw-bold">SO# {{ $index + 1 }} ( {{ $salesDoc->sales_doc }} )</td>
-                                    <td class="fw-bold ps-3">:</td>
-                                    <td class="ps-1">Rp {{ number_format($salesDoc->total) }}</td>
+                                    <td>{{ $listPO->firstItem() + $index }}</td>
+                                    <td>{{ $item->purc_doc }}</td>
+                                    <td>{{ $item->customer->name }}</td>
+                                    <td class="text-center fw-bold">
+                                        <a href="" class="text-black">{{ number_format($item->sales_doc_qty) }}</a>
+                                    </td>
+                                    <td class="text-center fw-bold">{{ number_format($item->item_qty) }}</td>
+                                    <td class="text-center fw-bold">{{ number_format($item->qty_po) }}</td>
+                                    <td class="text-center fw-bold">{{ number_format($item->stock) }}</td>
+                                    <td class="text-center fw-bold">{{ number_format($item->qty_outbound) }}</td>
+                                    <td>{{ \Carbon\Carbon::parse($item->created_at)->translatedFormat('d F Y H:i') }}</td>
+                                    <td>{{ $item->user->name }}</td>
+                                    <td>
+                                        <a class="btn btn-info btn-sm">Detail</a>
+                                    </td>
                                 </tr>
                             @endforeach
-                        </table>
-                    </div>
+                        </tbody>
+                    </table>
                 </div>
             </div>
-        @endforeach
+        </div>
     </div>
 @endsection

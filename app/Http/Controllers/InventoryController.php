@@ -202,24 +202,20 @@ class InventoryController extends Controller
 
     public function detail(Request $request): View
     {
-        $inventory = InventoryItem::with('storage', 'product', 'purchaseOrder', 'purchaseOrder.vendor', 'purchaseOrder.customer')->where('id', $request->query('id'))->first();
-        $detail = DB::table('inventory_package')
-            ->leftJoin('inventory_package_item', 'inventory_package_item.inventory_package_id', '=', 'inventory_package.id')
-            ->leftJoin('purchase_order_detail', 'purchase_order_detail.id', '=', 'inventory_package_item.purchase_order_detail_id')
-            ->where('inventory_package_item.product_id', $inventory->product_id)
-            ->where('inventory_package.purchase_order_id', $inventory->purchaseOrder->id)
-            ->where('purchase_order_detail.sales_doc', $inventory->sales_doc)
-            ->whereDate('inventory_package.created_at', '=', $inventory->created_at->format('Y-m-d'))
+        $inventoryDetail = DB::table('inventory_detail')
+            ->leftJoin('inventory_package_item', 'inventory_detail.inventory_package_item_id', '=', 'inventory_package_item.id')
+            ->leftJoin('inventory_package', 'inventory_package_item.inventory_package_id', '=', 'inventory_package.id')
+            ->leftJoin('inventory_package_item_sn', 'inventory_package_item_sn.inventory_package_item_id', '=', 'inventory_package_item.id')
+            ->where('inventory_detail.id', $request->query('id'))
             ->select([
+                'inventory_package_item_sn.serial_number',
                 'inventory_package.number',
-                'inventory_package.reff_number',
-                'inventory_package_item.qty',
-                'inventory_package_item.is_parent'
+                'inventory_package.reff_number'
             ])
             ->get();
 
-        $title = 'Inventory';
-        return view('inventory.detail', compact('title', 'inventory', 'detail'));
+        $title = 'Inventory Aging';
+        return view('inventory.detail', compact('title', 'inventoryDetail'));
     }
 
     public function cycleCount(): View

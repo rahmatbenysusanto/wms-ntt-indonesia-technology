@@ -38,15 +38,16 @@ class DashboardController extends Controller
         $listPO = PurchaseOrder::with('customer')->whereIn('status', ['process', 'done', 'close'])->latest()->paginate(10);
 
         foreach ($listPO as $po) {
-            $po->value = DB::table('purchase_order_detail')->where('purchase_order_id', $po->id)->select(DB::raw('SUM(po_item_qty * net_order_price) as total'))->value('total');
-            $po->listSO = DB::table('purchase_order_detail')
+            $po->qty_po = DB::table('purchase_order_detail')->where('purchase_order_id', $po->id)->sum('qty_qc');
+            $po->stock = DB::table('inventory')
                 ->where('purchase_order_id', $po->id)
-                ->select([
-                    'sales_doc',
-                    DB::raw('SUM(po_item_qty * net_order_price) as total'),
-                ])
-                ->groupBy('sales_doc')
-                ->get();
+                ->where('type', 'inv')
+                ->value('stock');
+            $po->qty_outbound = DB::table('outbound_detail')
+                ->leftJoin('inventory_package_item', 'inventory_package_item.id', '=', 'outbound_detail.inventory_package_item_id')
+                ->leftJoin('purchase_order_detail', 'purchase_order_detail.id', '=', 'inventory_package_item.purchase_order_detail_id')
+                ->where('purchase_order_detail.purchase_order_id', $po->id)
+                ->sum('outbound_detail.qty');
         }
 
         $title = 'Dashboard PO';
@@ -235,8 +236,24 @@ class DashboardController extends Controller
 
     public function dashboardOutbound(): View
     {
+        $outbound = Outbound::with('customer', 'user')
+            ->where('type', 'outbound')
+            ->latest()
+            ->paginate(10);
+
+        foreach ($outbound as $item) {
+            $item->price = DB::table('outbound_detail')
+                ->leftJoin('inventory_package_item', 'inventory_package_item.id', '=', 'outbound_detail.inventory_package_item_id')
+                ->leftJoin('purchase_order_detail', 'purchase_order_detail.id', '=', 'inventory_package_item.purchase_order_detail_id')
+                ->where('outbound_detail.outbound_id', $item->id)
+                ->select([
+                    DB::raw('SUM(outbound_detail.qty * purchase_order_detail.net_order_price) as price'),
+                ])
+                ->value('price');
+        }
+
         $title = 'Dashboard Outbound';
-        return view('dashboard.outbound.index', compact('title'));
+        return view('dashboard.outbound.index', compact('title', 'outbound'));
     }
 
     // Mobile APP
