@@ -54,6 +54,14 @@ class DashboardController extends Controller
         return view('dashboard.po.index', compact('title', 'listPO'));
     }
 
+    public function dashboardDetail(Request $request): View
+    {
+        
+
+        $title = 'Dashboard PO';
+        return view('dashboard.po.detail', compact('title'));
+    }
+
     public function dashboardAging(): View
     {
         $queryAging = DB::table('inventory_detail')

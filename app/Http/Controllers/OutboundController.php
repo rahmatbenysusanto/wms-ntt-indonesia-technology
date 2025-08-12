@@ -404,6 +404,34 @@ class OutboundController extends Controller
     // Mobile APP
     public function indexMobile(): View
     {
-        return view('mobile.outbound.index');
+        $outbound = DB::table('outbound')
+            ->leftJoin('outbound_detail', 'outbound_detail.outbound_id', '=', 'outbound.id')
+            ->leftJoin('inventory_package_item', 'inventory_package_item.id', '=', 'outbound_detail.inventory_package_item_id')
+            ->leftJoin('purchase_order_detail', 'purchase_order_detail.id', '=', 'inventory_package_item.purchase_order_detail_id')
+            ->leftJoin('customer', 'customer.id', '=', 'outbound.customer_id')
+            ->select([
+                'outbound.number',
+                'outbound.purc_doc',
+                'outbound.sales_docs',
+                'outbound.delivery_date',
+                'outbound.qty',
+                'outbound.deliv_loc',
+                'outbound.deliv_dest',
+                'outbound.delivery_note_number',
+                DB::raw('SUM(outbound_detail.qty * purchase_order_detail.net_order_price) as nominal')
+            ])
+            ->groupBy([
+                'outbound.number',
+                'outbound.purc_doc',
+                'outbound.sales_docs',
+                'outbound.delivery_date',
+                'outbound.qty',
+                'outbound.deliv_loc',
+                'outbound.deliv_dest',
+                'outbound.delivery_note_number',
+            ])
+            ->paginate(5);
+
+        return view('mobile.outbound.index', compact('outbound'));
     }
 }

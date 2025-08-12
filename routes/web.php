@@ -28,6 +28,7 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
         Route::get('/dashboard', 'index')->name('dashboard');
 
         Route::get('/dashboard-po', 'dashboardPo')->name('dashboard.po');
+        Route::get('/dashboard-po/detail', 'dashboardDetail')->name('dashboard.po.detail');
 
         Route::get('/dashboard-aging', 'dashboardAging')->name('dashboard.aging');
         Route::get('/dashboard-aging-detail', 'dashboardAgingDetail')->name('dashboard.aging.detail');

@@ -74,10 +74,12 @@
                 </a>
             </div>
             <div class="col-6">
-                <div class="card custom-card text-center">
-                    <img src="{{ asset('assets/mobile/img/outbound.png') }}" alt="Inbound">
-                    <span class="menu-title">Outbound</span>
-                </div>
+                <a href="{{ route('outbound.index.mobile') }}">
+                    <div class="card custom-card text-center">
+                        <img src="{{ asset('assets/mobile/img/outbound.png') }}" alt="Inbound">
+                        <span class="menu-title">Outbound</span>
+                    </div>
+                </a>
             </div>
             <div class="col-6">
                 <a href="{{ route('inventory.index.mobile') }}">

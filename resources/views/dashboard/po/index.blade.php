@@ -52,7 +52,7 @@
                                     <td>{{ \Carbon\Carbon::parse($item->created_at)->translatedFormat('d F Y H:i') }}</td>
                                     <td>{{ $item->user->name }}</td>
                                     <td>
-                                        <a class="btn btn-info btn-sm">Detail</a>
+                                        <a href="{{ route('dashboard.po.detail', ['id' => $item->id]) }}" class="btn btn-info btn-sm">Detail</a>
                                     </td>
                                 </tr>
                             @endforeach
