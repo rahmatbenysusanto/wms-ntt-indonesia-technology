@@ -11,6 +11,7 @@ use App\Models\InventoryPackageItem;
 use App\Models\InventoryPackageItemSN;
 use App\Models\InventoryParent;
 use App\Models\InventoryParentDetail;
+use App\Models\OutboundDetail;
 use App\Models\Product;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderDetail;
@@ -643,7 +644,23 @@ class InventoryController extends Controller
 
     public function indexDetailMobile(Request $request): View
     {
-        return view('mobile.inventory.detail', compact(''));
+        $purcDoc = $request->query('po');
+        $salesDoc = $request->query('so');
+        $productId = $request->query('id');
+
+        $product = Product::find($productId);
+        $purchaseOrderDetail = PurchaseOrderDetail::where('sales_doc', $salesDoc)->where('product_id', $productId)->first();
+
+        $inventoryPackageItem = InventoryPackageItem::where('purchase_order_detail_id', $purchaseOrderDetail->id)->sum('qty');
+        $inventoryNominal = $inventoryPackageItem * $purchaseOrderDetail->net_order_price;
+
+        $outboundDetail = DB::table('outbound_detail')
+            ->leftJoin('inventory_package_item', 'inventory_package_item.id', '=', 'outbound_detail.inventory_package_item_id')
+            ->where('inventory_package_item.purchase_order_detail_id', $purchaseOrderDetail->id)
+            ->sum('outbound_detail.qty');
+        $outboundNominal = $outboundDetail * $purchaseOrderDetail->net_order_price;
+
+        return view('mobile.inventory.detail', compact('product', 'inventoryPackageItem', 'inventoryNominal', 'outboundDetail', 'outboundNominal'));
     }
 
     public function boxMobile(): View
