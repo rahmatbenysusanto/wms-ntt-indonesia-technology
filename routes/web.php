@@ -207,6 +207,7 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
         Route::prefix('/inbound')->controller(InboundController::class)->group(function () {
             Route::get('/', 'indexMobile')->name('inbound.index.mobile');
             Route::get('/detail', 'indexDetailMobile')->name('inbound.indexDetail.mobile');
+            Route::get('/detail/so', 'indexDetailSoMobile')->name('inbound.indexDetail.so');
         });
 
         Route::prefix('/outbound')->controller(OutboundController::class)->group(function () {
@@ -215,8 +216,12 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
 
         Route::prefix('/inventory')->controller(InventoryController::class)->group(function () {
             Route::get('/', 'indexMobile')->name('inventory.index.mobile');
+            Route::get('/detail', 'indexDetailMobile')->name('inventory.indexDetail.mobile');
+
             Route::get('/box', 'boxMobile')->name('inventory.box.mobile');
             Route::get('/box-detail', 'boxDetailMobile')->name('inventory.box.detail.mobile');
+
+            Route::get('/aging', 'agingMobile')->name('inventory.aging.mobile');
         });
     });
 });

@@ -615,24 +615,35 @@ class InventoryController extends Controller
         $inventory = DB::table('inventory')
             ->leftJoin('inventory_detail', 'inventory_detail.inventory_id', '=', 'inventory.id')
             ->leftJoin('purchase_order_detail', 'inventory_detail.purchase_order_detail_id', '=', 'purchase_order_detail.id')
-            ->leftJoin('storage', 'inventory_detail.storage_id', '=', 'storage.id')
             ->leftJoin('purchase_order', 'purchase_order.id', '=', 'inventory.purchase_order_id')
             ->where('inventory.type', 'inv')
             ->where('inventory_detail.qty', '!=', 0)
             ->select([
                 'purchase_order.purc_doc',
                 'purchase_order_detail.sales_doc',
+                'purchase_order_detail.product_id',
                 'purchase_order_detail.material',
-                'purchase_order_detail.item',
-                'storage.raw',
-                'storage.area',
-                'storage.rak',
-                'storage.bin',
-                'inventory_detail.qty'
+                'purchase_order_detail.po_item_desc',
+                'purchase_order_detail.prod_hierarchy_desc',
+                DB::raw('SUM(inventory_detail.qty) AS qty'),
+                DB::raw('SUM(inventory_detail.qty * purchase_order_detail.net_order_price) AS nominal'),
+            ])
+            ->groupBy([
+                'purchase_order.purc_doc',
+                'purchase_order_detail.sales_doc',
+                'purchase_order_detail.material',
+                'purchase_order_detail.product_id',
+                'purchase_order_detail.po_item_desc',
+                'purchase_order_detail.prod_hierarchy_desc'
             ])
             ->paginate(5);
 
         return view('mobile.inventory.index', compact('inventory'));
+    }
+
+    public function indexDetailMobile(Request $request): View
+    {
+        return view('mobile.inventory.detail', compact(''));
     }
 
     public function boxMobile(): View
@@ -648,5 +659,42 @@ class InventoryController extends Controller
         $detail = InventoryPackageItem::with('purchaseOrderDetail')->where('inventory_package_id', $request->query('id'))->get();
 
         return view('mobile.inventory.box-detail', compact('box', 'detail'));
+    }
+
+    public function agingMobile(): View
+    {
+        $queryAging = DB::table('inventory_detail')
+            ->leftJoin('purchase_order_detail', 'purchase_order_detail.id', '=', 'inventory_detail.purchase_order_detail_id')
+            ->where('qty', '!=', 0);
+
+        $agingType1 = $queryAging->whereBetween('inventory_detail.aging_date', [Carbon::now()->subDays(90)->startOfDay(), Carbon::now()->subDays(1)->endOfDay()])
+            ->select([
+                DB::raw('SUM(inventory_detail.qty * purchase_order_detail.net_order_price) as total'),
+                DB::raw('SUM(inventory_detail.qty) as qty'),
+            ])
+            ->first();
+
+        $agingType2 = $queryAging->whereBetween('inventory_detail.aging_date', [Carbon::now()->subDays(180)->startOfDay(), Carbon::now()->subDays(91)->endOfDay()])
+            ->select([
+                DB::raw('SUM(inventory_detail.qty * purchase_order_detail.net_order_price) as total'),
+                DB::raw('SUM(inventory_detail.qty) as qty'),
+            ])
+            ->first();
+
+        $agingType3 = $queryAging->whereBetween('inventory_detail.aging_date', [Carbon::now()->subDays(365)->startOfDay(), Carbon::now()->subDays(181)->endOfDay()])
+            ->select([
+                DB::raw('SUM(inventory_detail.qty * purchase_order_detail.net_order_price) as total'),
+                DB::raw('SUM(inventory_detail.qty) as qty'),
+            ])
+            ->first();
+
+        $agingType4 = $queryAging->where('inventory_detail.aging_date', '<', Carbon::now()->subDays(365)->startOfDay())
+            ->select([
+                DB::raw('SUM(inventory_detail.qty * purchase_order_detail.net_order_price) as total'),
+                DB::raw('SUM(inventory_detail.qty) as qty'),
+            ])
+            ->first();
+
+        return view('mobile.inventory.aging', compact('agingType1', 'agingType2', 'agingType3', 'agingType4'));
     }
 }

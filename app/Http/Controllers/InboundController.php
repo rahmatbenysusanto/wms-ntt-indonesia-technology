@@ -1272,9 +1272,27 @@ class InboundController extends Controller
     public function indexDetailMobile(Request $request): View
     {
         $purchaseOrder = PurchaseOrder::with('customer', 'user')->where('id', $request->query('id'))->first();
-        $purchaseOrderDetail = PurchaseOrderDetail::where('purchase_order_id', $request->query('id'))->get();
+        $purchaseOrderDetail = PurchaseOrderDetail::where('purchase_order_id', $request->query('id'))
+            ->select([
+                'sales_doc',
+                DB::raw('SUM(po_item_qty) as qty'),
+                DB::raw('count(sales_doc) as qtyProduct'),
+                DB::raw('SUM(qty_qc) as qtyQc')
+            ])
+            ->groupBy('sales_doc')
+            ->get();
 
         return view('mobile.inbound.detail', compact('purchaseOrderDetail', 'purchaseOrder'));
+    }
+
+    public function indexDetailSoMobile(Request $request): View
+    {
+        $salesDoc = $request->query('so');
+        $purchaseOrderId = $request->query('po');
+
+        $purchaseOrderDetail = PurchaseOrderDetail::where('purchase_order_id', $purchaseOrderId)->where('sales_doc', $salesDoc)->get();
+
+        return view('mobile.inbound.detail-so', compact('purchaseOrderDetail', 'purchaseOrderId'));
     }
 }
 

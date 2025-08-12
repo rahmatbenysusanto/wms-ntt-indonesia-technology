@@ -13,10 +13,39 @@
     <link href="{{ asset('assets/css/custom.min.css') }}" rel="stylesheet" type="text/css" />
     <style>
         .mobile-header {
-            padding-top: 12px;
-            padding-bottom: 12px;
-            background-color: #222163;
+            padding-top: 8px;
+            padding-bottom: 8px;
+            background-color: #39BBBD;
         }
+
+        .card-partial {
+            border-left: 4px solid #4b38b3;
+            font-size: 12px;
+            border-radius: 8px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+        }
+
+        .card-partial .badge {
+            font-size: 10px;
+            padding: 4px 6px;
+            border-radius: 6px;
+        }
+
+        .card-partial .info-row {
+            margin-bottom: 2px;
+        }
+
+        a {
+            text-decoration: none;
+            color: inherit;
+        }
+
+        @media (max-width: 576px) {
+            .card-partial {
+                margin-bottom: 8px;
+            }
+        }
+
     </style>
 </head>
 <body>
@@ -42,16 +71,10 @@
             <div class="col-12">
                 @foreach($purchaseOrder as $index => $item)
                     <a href="{{ route('inbound.indexDetail.mobile', ['id' => $item->id]) }}">
-                        <div class="card p-2 mb-3">
-                            <div class="row">
-                                <div class="col-9">
-                                    <div><b>Purc Doc: </b>{{ $item->purc_doc }}</div>
-                                    <div><b>Customer: </b>{{ $item->customer->name }}</div>
-                                    <div><b>SO#: </b>{{ $item->sales_doc_qty }}</div>
-                                    <div><b>QTY Item: </b>{{ number_format($item->item_qty) }}</div>
-                                    <div><b>Date: </b>{{ \Carbon\Carbon::parse($item->created_at)->translatedFormat('d F Y H:i') }}</div>
-                                </div>
-                                <div class="col-3 d-flex flex-column">
+                        <div class="card card-partial mb-2">
+                            <div class="card-body p-2">
+                                <div class="d-flex justify-content-between align-items-start mb-1">
+                                    <div class="fw-bold">{{ $item->purc_doc }}</div>
                                     @switch($item->status)
                                         @case('new')
                                             <span class="badge bg-success-subtle text-success">New</span>
@@ -60,7 +83,7 @@
                                             <span class="badge bg-info-subtle text-info">Open</span>
                                             @break
                                         @case('process')
-                                            <span class="badge bg-primary-subtle text-primary">partial</span>
+                                            <span class="badge bg-primary-subtle text-primary">Partial</span>
                                             @break
                                         @case('done')
                                             <span class="badge bg-secondary-subtle text-secondary">Done</span>
@@ -70,6 +93,10 @@
                                             @break
                                     @endswitch
                                 </div>
+                                <small class="text-muted d-block mb-1">{{ $item->customer->name }}</small>
+                                <div class="info-row"><b>SO#:</b> {{ $item->sales_doc_qty }}</div>
+                                <div class="info-row"><b>QTY Item:</b> {{ number_format($item->item_qty) }}</div>
+                                <div class="info-row"><b>Date:</b> {{ \Carbon\Carbon::parse($item->created_at)->translatedFormat('d F Y H:i') }}</div>
                             </div>
                         </div>
                     </a>
