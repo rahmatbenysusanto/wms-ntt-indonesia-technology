@@ -99,6 +99,7 @@ class InventoryController extends Controller
             ->where('purchase_order_detail.sales_doc', $salesDoc)
             ->where('inventory_package_item.product_id', $productId)
             ->where('inventory_package_item.qty', '!=', 0)
+            ->whereNotIn('storage.id', [1,2,3,4])
             ->select([
                 'inventory_package.number',
                 'inventory_package.reff_number',

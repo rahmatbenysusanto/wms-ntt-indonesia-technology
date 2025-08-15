@@ -34,6 +34,7 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
         Route::get('/dashboard-aging-detail', 'dashboardAgingDetail')->name('dashboard.aging.detail');
 
         Route::get('/dashboard-outbound', 'dashboardOutbound')->name('dashboard.outbound');
+        Route::get('/dashboard-outbound-detail', 'dashboardOutboundDetail')->name('dashboard.outbound.detail');
     });
 
     Route::prefix('/customer')->controller(CustomerController::class)->group(function () {

@@ -8,6 +8,7 @@ use App\Models\InventoryDetail;
 use App\Models\Outbound;
 use App\Models\OutboundDetail;
 use App\Models\PurchaseOrder;
+use App\Models\PurchaseOrderDetail;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -56,10 +57,36 @@ class DashboardController extends Controller
 
     public function dashboardDetail(Request $request): View
     {
-        
+        $purchaseOrder = PurchaseOrder::with('customer')->where('id', $request->query('id'))->first();
+
+        $purchaseOrderDetail = PurchaseOrderDetail::where('purchase_order_id', $request->query('id'))
+            ->select([
+                'sales_doc',
+                DB::raw('SUM(qty_qc) as qty_qc'),
+                DB::raw('SUM(po_item_qty) as qty'),
+            ])
+            ->groupBy([
+                'sales_doc'
+            ])
+            ->get();
+
+        foreach ($purchaseOrderDetail as $detail) {
+            $detail->stock = DB::table('inventory_detail')
+                ->where('sales_doc', $detail->sales_doc)
+                ->whereNotIn('storage_id', [1,2,3,4])
+                ->sum('qty');
+
+            $detail->qty_outbound = DB::table('outbound_detail')
+                ->leftJoin('outbound', 'outbound_detail.outbound_id', '=', 'outbound.id')
+                ->leftJoin('inventory_package_item', 'inventory_package_item.id', '=', 'outbound_detail.inventory_package_item_id')
+                ->leftJoin('purchase_order_detail', 'purchase_order_detail.id', '=', 'inventory_package_item.purchase_order_detail_id')
+                ->where('purchase_order_detail.sales_doc', $detail->sales_doc)
+                ->where('outbound.type', 'outbound')
+                ->sum('outbound_detail.qty');
+        }
 
         $title = 'Dashboard PO';
-        return view('dashboard.po.detail', compact('title'));
+        return view('dashboard.po.detail', compact('title', 'purchaseOrder', 'purchaseOrderDetail'));
     }
 
     public function dashboardAging(): View
@@ -262,6 +289,15 @@ class DashboardController extends Controller
 
         $title = 'Dashboard Outbound';
         return view('dashboard.outbound.index', compact('title', 'outbound'));
+    }
+
+    public function dashboardOutboundDetail(Request $request): View
+    {
+        $outbound = Outbound::with('customer', 'user')->where('id', $request->query('id'))->first();
+        $outboundDetail = OutboundDetail::with('inventoryPackageItem', 'inventoryPackageItem.purchaseOrderDetail', 'outboundDetailSn')->where('outbound_id', $request->query('id'))->get();
+
+        $title = 'Dashboard Outbound';
+        return view('dashboard.outbound.detail', compact('title', 'outbound', 'outboundDetail'));
     }
 
     // Mobile APP

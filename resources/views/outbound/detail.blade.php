@@ -24,9 +24,14 @@
                 <div class="card-body">
                     <table>
                         <tr>
-                            <td class="fw-bold">Number</td>
+                            <td class="fw-bold">Delivery Note Number</td>
                             <td class="fw-bold ps-3">:</td>
-                            <td class="ps-1">{{ $outbound->number }}</td>
+                            <td class="ps-1">{{ $outbound->delivery_note_number }}</td>
+                        </tr>
+                        <tr>
+                            <td class="fw-bold">Delivery Note Date</td>
+                            <td class="fw-bold ps-3">:</td>
+                            <td class="ps-1">{{ \Carbon\Carbon::parse($outbound->delivery_date)->translatedFormat('d F Y H:i') }}</td>
                         </tr>
                         <tr>
                             <td class="fw-bold">Client</td>

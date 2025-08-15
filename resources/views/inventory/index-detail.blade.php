@@ -73,6 +73,7 @@
                                 <td>
                                     <div><b>Number: </b>{{ $box->number }}</div>
                                     <div><b>Reff: </b>{{ $box->reff_number }}</div>
+                                    <div><b>Storage: </b>{{ $box->raw }} - {{ $box->area }} - {{ $box->rak }} - {{ $box->bin }}</div>
                                     @if($box->return == 1)
                                         @switch($box->return_from)
                                             @case('gr')
