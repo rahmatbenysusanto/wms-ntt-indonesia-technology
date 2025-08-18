@@ -66,7 +66,7 @@
         </div>
     </div>
 
-    <div class="container-fluid mt-4">
+    <div class="container-fluid mt-4" style="margin-bottom: 80px">
         <div class="row">
             <div class="col-12">
                 @foreach($purchaseOrder as $index => $item)
@@ -105,5 +105,6 @@
         </div>
     </div>
 
+    @include('mobile.layout.menu')
 </body>
 </html>

@@ -74,32 +74,60 @@
         </div>
     </div>
 
-    <div class="container-fluid mt-4">
+    <div class="container-fluid mt-4" style="margin-bottom: 80px">
         <div class="row">
             <div class="col-12">
                 <h6 class="mb-2 fw-bold">List Item SO {{ request()->get('so') }}</h6>
                 @foreach($purchaseOrderDetail as $detail)
-                    <div class="card item-card mb-2">
-                        <div class="card-body p-2">
-                            <div class="d-flex justify-content-between align-items-start mb-1">
-                                <div class="info-row"><b>{{ $detail->sales_doc }}</b></div>
-                                @if($detail->po_item_qty == $detail->qty_qc)
-                                    <span class="badge bg-success-subtle text-success">Complete</span>
-                                @else
-                                    <span class="badge bg-info-subtle text-info">Partial</span>
-                                @endif
+                    <a href="{{ route('inbound.indexDetail.so.sn', ['so' => request()->get('so'), 'po' => request()->get('po'), 'id' => $detail->id]) }}">
+                        <div class="card item-card mb-2">
+                            <div class="card-body p-2">
+                                <div class="d-flex justify-content-between align-items-start mb-1">
+                                    <div class="info-row"><b>{{ $detail->sales_doc }}</b></div>
+                                    @if($detail->po_item_qty == $detail->qty_qc)
+                                        <span class="badge bg-success-subtle text-success">Complete</span>
+                                    @else
+                                        <span class="badge bg-info-subtle text-info">Partial</span>
+                                    @endif
+                                </div>
+                                <div class="info-row"><b>Item </b>{{ $detail->item }}</div>
+                                <div class="info-row"><b>{{ $detail->material }}</b></div>
+                                <div class="info-row">{{ $detail->po_item_desc }}</div>
+                                <div class="info-row">{{ $detail->prod_hierarchy_desc }}</div>
+                                <div class="info-row"><b>QTY PO: </b>{{ number_format($detail->po_item_qty) }}</div>
+                                <div class="info-row"><b>QTY QC: </b>{{ number_format($detail->qty_qc) }}</div>
                             </div>
-                            <div class="info-row"><b>Item </b>{{ $detail->item }}</div>
-                            <div class="info-row"><b>{{ $detail->material }}</b></div>
-                            <div class="info-row">{{ $detail->po_item_desc }}</div>
-                            <div class="info-row">{{ $detail->prod_hierarchy_desc }}</div>
-                            <div class="info-row"><b>QTY PO: </b>{{ number_format($detail->po_item_qty) }}</div>
-                            <div class="info-row"><b>QTY QC: </b>{{ number_format($detail->qty_qc) }}</div>
                         </div>
-                    </div>
+                    </a>
                 @endforeach
             </div>
         </div>
     </div>
+
+    @include('mobile.layout.menu')
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

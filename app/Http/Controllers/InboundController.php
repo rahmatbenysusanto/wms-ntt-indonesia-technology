@@ -1354,6 +1354,23 @@ class InboundController extends Controller
 
         return $response;
     }
+
+    public function indexDetailSoSnMobile(Request $request): View
+    {
+        $serialNumber = DB::table('inventory_package')
+            ->leftJoin('inventory_package_item', 'inventory_package_item.inventory_package_id', '=', 'inventory_package.id')
+            ->leftJoin('inventory_package_item_sn', 'inventory_package_item_sn.inventory_package_item_id', '=', 'inventory_package_item.id')
+            ->where('inventory_package_item.purchase_order_detail_id', $request->query('id'))
+            ->whereNotIn('inventory_package.storage_id', [1,2,3,4])
+            ->where('inventory_package_item.qty', '!=', 0)
+            ->where('inventory_package_item_sn.qty', '!=', 0)
+            ->select([
+                'inventory_package_item_sn.serial_number'
+            ])
+            ->get();
+
+        return view('mobile.inbound.sn', compact('request', 'serialNumber'));
+    }
 }
 
 
