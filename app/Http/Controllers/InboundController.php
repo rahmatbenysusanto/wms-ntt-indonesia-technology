@@ -36,6 +36,9 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class InboundController extends Controller
 {
@@ -1293,6 +1296,63 @@ class InboundController extends Controller
         $purchaseOrderDetail = PurchaseOrderDetail::where('purchase_order_id', $purchaseOrderId)->where('sales_doc', $salesDoc)->get();
 
         return view('mobile.inbound.detail-so', compact('purchaseOrderDetail', 'purchaseOrderId'));
+    }
+
+    public function purchaseOrderDownloadExcel(Request $request): StreamedResponse
+    {
+        $purchaseOrder = PurchaseOrder::with('customer', 'user', 'vendor')->where('id', $request->query('id'))->first();
+        $purchaseOrderDetail = PurchaseOrderDetail::where('purchase_order_id', $request->query('id'))->get();
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+
+        $sheet->setCellValue('A1', 'Purc Doc');
+        $sheet->setCellValue('A2', 'Vendor');
+        $sheet->setCellValue('A3', 'Customer');
+        $sheet->setCellValue('A4', 'Date');
+        $sheet->setCellValue('A5', 'Created By');
+
+        $sheet->setCellValue('B1', $purchaseOrder->purc_doc);
+        $sheet->setCellValue('B2', $purchaseOrder->vendor->name);
+        $sheet->setCellValue('B3', $purchaseOrder->customer->name);
+        $sheet->setCellValue('B4', $purchaseOrder->created_at);
+        $sheet->setCellValue('B5', $purchaseOrder->user->name);
+
+        $sheet->setCellValue('A7', 'Sales Doc');
+        $sheet->setCellValue('B7', 'Item');
+        $sheet->setCellValue('C7', 'Material');
+        $sheet->setCellValue('D7', 'PO Item Desc');
+        $sheet->setCellValue('E7', 'Prod Hierarchy Desc');
+        $sheet->setCellValue('F7', 'PO Item QTY');
+        $sheet->setCellValue('G7', 'Net Order Price');
+        $sheet->setCellValue('H7', 'QTY Quality Control');
+
+        $column = 8;
+        foreach ($purchaseOrderDetail as $detail) {
+            $sheet->setCellValue('A' . $column, $detail->sales_doc);
+            $sheet->setCellValue('B' . $column, $detail->item);
+            $sheet->setCellValue('C' . $column, $detail->material);
+            $sheet->setCellValue('D' . $column, $detail->po_item_desc);
+            $sheet->setCellValue('E' . $column, $detail->prod_hierarchy_desc);
+            $sheet->setCellValue('F' . $column, $detail->po_item_qty);
+            $sheet->setCellValue('G' . $column, $detail->net_order_price);
+            $sheet->setCellValue('H' . $column, $detail->qty_qc);
+
+            $column++;
+        }
+
+        $writer = new Xlsx($spreadsheet);
+
+        $response = new StreamedResponse(function() use ($writer) {
+            $writer->save('php://output');
+        });
+
+        $fileName = 'Report Purchase Order ' . date('Y-m-d_H-i-s') . '.xlsx';
+        $response->headers->set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        $response->headers->set('Content-Disposition', "attachment;filename=\"$fileName\"");
+        $response->headers->set('Cache-Control','max-age=0');
+
+        return $response;
     }
 }
 

@@ -82,7 +82,7 @@
                                             {{ $item->storage->raw.' - '.$item->storage->area.' - '.$item->storage->rak.' - '.$item->storage->bin }}
                                         @endif
                                     </td>
-                                    <td>{{ \Carbon\Carbon::parse($item->aging_date)->translatedFormat('d F Y H:i') }}</td>
+                                    <td>{{ \Carbon\Carbon::parse($item->aging_date)->translatedFormat('d F Y') }}</td>
                                     <td>
                                         @php
                                             $tanggalMasuk = \Carbon\Carbon::parse($item->aging_date);

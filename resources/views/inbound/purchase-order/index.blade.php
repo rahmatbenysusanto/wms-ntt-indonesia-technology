@@ -77,6 +77,7 @@
                                     <th class="text-center">Status</th>
                                     <th>PO Created Date</th>
                                     <th>Po Created By</th>
+                                    <th class="text-center">Download Doc</th>
                                     <th>Action</th>
                                 </tr>
                             </thead>
@@ -111,6 +112,11 @@
                                     </td>
                                     <td>{{ \Carbon\Carbon::parse($po->created_at)->translatedFormat('d F Y H:i') }}</td>
                                     <td>{{ $po->user->name }}</td>
+                                    <td class="text-center">
+                                        <a href="{{ route('inbound.purchase-order-download-excel', ['id' => $po->id]) }}" class="btn btn-success btn-sm">
+                                            <i class="mdi mdi-file-excel"></i>
+                                        </a>
+                                    </td>
                                     <td>
                                         <div class="d-flex gap-2">
                                             @if($po->status == 'new')
