@@ -160,7 +160,22 @@
                             <td class="fw-bold ps-3">:</td>
                             <td class="ps-1" id="detailSN_sales_doc"></td>
                         </tr>
+                        <tr>
+                            <td class="fw-bold">QTY Scan Serial Number</td>
+                            <td class="fw-bold ps-3">:</td>
+                            <td class="ps-1" id="detailSN_qty_scan_serial_number"></td>
+                        </tr>
                     </table>
+
+                    <div class="mb-3">
+                        <input type="text" class="form-control" id="scanSerialNumber" placeholder="Scan Serial Number" autofocus>
+                    </div>
+
+                    <div id="scanSerialNumberError" class="alert alert-danger alert-dismissible alert-label-icon label-arrow shadow fade show" role="alert" style="display: none">
+                        <i class="ri-error-warning-line label-icon"></i>
+                        <strong>Error</strong> - <span id="scanSerialNumberErrorMessage"></span>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
 
                     <div class="row mb-3 mt-3">
                         <div class="col-8">
@@ -219,12 +234,27 @@
                                 <td class="fw-bold ps-3">:</td>
                                 <td class="ps-1" id="detail_Direct_qty"></td>
                             </tr>
+                            <tr>
+                                <td class="fw-bold">QTY Scan Serial Number</td>
+                                <td class="fw-bold ps-3">:</td>
+                                <td class="ps-1" id="detail_Direct_qty_scan_serial_number"></td>
+                            </tr>
                         </table>
                     </div>
 
                     <!-- Inject Data -->
                     <input type="hidden" id="detail_Direct_index">
                     <input type="hidden" id="detail_Direct_indexSalesDoc">
+
+                    <div class="mb-3">
+                        <input type="text" class="form-control" id="scanSerialNumberDirect" placeholder="Scan Serial Number" autofocus>
+                    </div>
+
+                    <div id="scanSerialNumberDirectError" class="alert alert-danger alert-dismissible alert-label-icon label-arrow shadow fade show" role="alert" style="display: none">
+                        <i class="ri-error-warning-line label-icon"></i>
+                        <strong>Error</strong> - <span id="scanSerialNumberDirectErrorMessage"></span>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
 
                     <div class="mb-3">
                         <div class="row">
@@ -383,7 +413,7 @@
                         <div class="d-flex gap-2 align-items-center">
                             <p class="mb-0" style="min-width: 140px;">${sales.salesDoc} <b>(QTY : ${sales.qty})</b></p>
                             ${item.putAwayStep === 0 ? `<a class="btn btn-dark btn-sm" onclick="directOutboundSerialNumber(${index}, ${indexSalesDoc})">SN Direct Outbound</a>` : ''}
-                            <a class="btn btn-secondary btn-sm" onclick="detailSerialNumber(${index}, ${indexSalesDoc})">Serial Number</a>
+                            <a class="btn ${(parseInt(sales.serialNumber.length) + parseInt(sales.snDirect.length ?? [])) === parseInt(sales.qty) ? 'btn-success' : 'btn-secondary'} btn-sm" onclick="detailSerialNumber(${index}, ${indexSalesDoc})">Serial Number</a>
                             <a class="btn btn-danger btn-sm" onclick="hapusSalesDoc(${index}, ${indexSalesDoc}, ${sales.id})">Hapus</a>
                         </div>
                     `;
@@ -440,6 +470,10 @@
             viewSerialNumberDirectOutbound(index, indexSalesDoc);
 
             $('#serialNumberDirectOutboundModal').modal('show');
+
+            setTimeout(() => {
+                document.getElementById('scanSerialNumberDirect').focus();
+            }, 500);
         }
 
         function viewSerialNumberDirectOutbound(index, indexSalesDoc) {
@@ -457,6 +491,7 @@
                 `;
             });
 
+            document.getElementById('detail_Direct_qty_scan_serial_number').innerText = serialNumber.length;
             document.getElementById('listDetailSerialNumberDirect').innerHTML = html;
         }
 
@@ -564,6 +599,10 @@
             viewSerialNumber(index, indexSalesDoc);
 
             $('#detailSerialNumberModal').modal('show');
+
+            setTimeout(() => {
+                document.getElementById('scanSerialNumber').focus();
+            }, 500);
         }
 
         function uploadSerialNumber() {
@@ -631,6 +670,7 @@
                 number++;
             });
 
+            document.getElementById('detailSN_qty_scan_serial_number').innerText = serialNumber.length;
             document.getElementById('listSerialNumber').innerHTML = html;
         }
 
@@ -869,6 +909,141 @@
                 });
         }
 
+        document.getElementById('scanSerialNumber').addEventListener('keydown', function(e) {
+            if (e.key === "Enter") {
+                e.preventDefault();
+                const value = this.value.trim();
+                if (value !== "") {
+                    const index = document.getElementById('detailSN_index').value;
+                    const indexSalesDoc = document.getElementById('detailSN_index_sales_doc').value;
+
+                    const compare = JSON.parse(localStorage.getItem('compare')) ?? [];
+                    let serialNumber = JSON.parse(localStorage.getItem('serialNumber')) ?? [];
+
+                    if (serialNumber.length === parseInt(compare[index].salesDoc[indexSalesDoc].qty)) {
+                        Swal.fire({
+                            title: 'Warning!',
+                            text: 'qty serial number exceeds qty product',
+                            icon: 'error'
+                        });
+                        return true;
+                    }
+
+                    const checkSN = serialNumber.find((item) => item === value);
+                    if (checkSN != null) {
+                        document.getElementById('scanSerialNumberErrorMessage').innerText = "Serial number is already in the list";
+                        document.getElementById('scanSerialNumberError').style.display = "block";
+
+                        setTimeout(() => {
+                            document.getElementById('scanSerialNumberError').style.display = "none";
+                        }, 3000);
+
+                        const sound = new Audio("{{ asset('assets/sound/error.mp3') }}");
+                        sound.play();
+
+                        document.getElementById('scanSerialNumber').value = "";
+                        document.getElementById('scanSerialNumber').focus();
+
+                        return true;
+                    }
+
+                    serialNumber.push(value);
+                    compare[index].salesDoc[indexSalesDoc].serialNumber = serialNumber;
+
+                    localStorage.setItem('compare', JSON.stringify(compare));
+                    localStorage.setItem('serialNumber', JSON.stringify(serialNumber));
+
+                    const sound = new Audio("{{ asset('assets/sound/scan.mp3') }}");
+                    sound.play();
+
+                    viewSerialNumber(index, indexSalesDoc);
+                    document.getElementById('scanSerialNumber').value = "";
+                    document.getElementById('scanSerialNumber').focus();
+                    viewCompareSAPCCW();
+                } else {
+                    document.getElementById('scanSerialNumberErrorMessage').innerText = "Serial number cannot be empty";
+                    document.getElementById('scanSerialNumberError').style.display = "block";
+
+                    setTimeout(() => {
+                        document.getElementById('scanSerialNumberError').style.display = "none";
+                    }, 3000);
+
+                    const sound = new Audio("{{ asset('assets/sound/error.mp3') }}");
+                    sound.play();
+
+                    document.getElementById('scanSerialNumber').value = "";
+                    document.getElementById('scanSerialNumber').focus();
+                }
+            }
+        });
+
+        document.getElementById('scanSerialNumberDirect').addEventListener('keydown', function(e) {
+            if (e.key === "Enter") {
+                e.preventDefault();
+                const value = this.value.trim();
+                if (value !== "") {
+                    const index = document.getElementById('detail_Direct_index').value;
+                    const indexSalesDoc = document.getElementById('detail_Direct_indexSalesDoc').value;
+                    const compare = JSON.parse(localStorage.getItem('compare')) ?? [];
+                    const serialNumber = compare[index].salesDoc[indexSalesDoc].snDirect;
+
+                    const checkSN = serialNumber.find((item) => item === value);
+                    if (checkSN != null) {
+                        document.getElementById('scanSerialNumberDirectErrorMessage').innerText = "Serial number is already in the list";
+                        document.getElementById('scanSerialNumberDirectError').style.display = "block";
+
+                        setTimeout(() => {
+                            document.getElementById('scanSerialNumberDirectError').style.display = "none";
+                        }, 3000);
+
+                        const sound = new Audio("{{ asset('assets/sound/error.mp3') }}");
+                        sound.play();
+
+                        document.getElementById('scanSerialNumberDirect').value = "";
+                        document.getElementById('scanSerialNumberDirect').focus();
+
+                        return true;
+                    }
+
+                    const checkQTY = compare[index].salesDoc[indexSalesDoc].snDirect.length + compare[index].salesDoc[indexSalesDoc].serialNumber.length;
+                    if (checkQTY === parseInt(compare[index].salesDoc[indexSalesDoc].qty)) {
+                        Swal.fire({
+                            title: 'Warning!',
+                            text: 'qty serial number exceeds qty product',
+                            icon: 'error'
+                        });
+
+                        return true;
+                    }
+
+                    serialNumber.push(value);
+                    compare[index].salesDoc[indexSalesDoc].qtyDirect = serialNumber.length;
+
+                    localStorage.setItem('compare', JSON.stringify(compare));
+                    viewSerialNumberDirectOutbound(index, indexSalesDoc);
+
+                    const sound = new Audio("{{ asset('assets/sound/scan.mp3') }}");
+                    sound.play();
+
+                    document.getElementById('scanSerialNumberDirect').value = "";
+                    document.getElementById('scanSerialNumberDirect').focus();
+                    viewCompareSAPCCW();
+                } else {
+                    document.getElementById('scanSerialNumberDirectErrorMessage').innerText = "Serial number cannot be empty";
+                    document.getElementById('scanSerialNumberDirectError').style.display = "block";
+
+                    setTimeout(() => {
+                        document.getElementById('scanSerialNumberDirectError').style.display = "none";
+                    }, 3000);
+
+                    const sound = new Audio("{{ asset('assets/sound/error.mp3') }}");
+                    sound.play();
+
+                    document.getElementById('scanSerialNumberDirect').value = "";
+                    document.getElementById('scanSerialNumberDirect').focus();
+                }
+            }
+        });
     </script>
 @endsection
 
