@@ -781,4 +781,54 @@ class InventoryController extends Controller
 
         return $response;
     }
+
+    public function downloadExcelAging(): StreamedResponse
+    {
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+
+        $sheet->setCellValue('A1', 'Purc Doc');
+        $sheet->setCellValue('B1', 'Sales Doc');
+        $sheet->setCellValue('C1', 'Material');
+        $sheet->setCellValue('D1', 'PO Item Desc');
+        $sheet->setCellValue('E1', 'Prod Hierarchy Desc');
+        $sheet->setCellValue('F1', 'Stock');
+        $sheet->setCellValue('G1', 'Nominal');
+        $sheet->setCellValue('H1', 'Aging Date');
+
+        $inventoryAging = InventoryDetail::with('purchaseOrderDetail.purchaseOrder', 'purchaseOrderDetail', 'storage', 'inventoryPackageItem', 'inventoryPackageItem.inventoryPackage')
+            ->where('qty', '!=', 0)
+            ->whereHas('storage', function ($storage) {
+                $storage->whereNotIn('id', [1,2,3,4]);
+            })
+            ->latest()
+            ->get();
+
+        $column = 2;
+        foreach ($inventoryAging as $detail) {
+            $sheet->setCellValue('A' . $column, $detail->purchaseOrderDetail->purchaseOrder->purc_doc);
+            $sheet->setCellValue('B' . $column, $detail->purchaseOrderDetail->sales_doc);
+            $sheet->setCellValue('C' . $column, $detail->purchaseOrderDetail->material);
+            $sheet->setCellValue('D' . $column, $detail->purchaseOrderDetail->po_item_desc);
+            $sheet->setCellValue('E' . $column, $detail->purchaseOrderDetail->prod_hierarchy_desc);
+            $sheet->setCellValue('F' . $column, $detail->qty);
+            $sheet->setCellValue('G' . $column, $detail->qty * $detail->purchaseOrderDetail->net_order_price);
+            $sheet->setCellValue('H' . $column, $detail->aging_date);
+
+            $column++;
+        }
+
+        $writer = new Xlsx($spreadsheet);
+
+        $response = new StreamedResponse(function() use ($writer) {
+            $writer->save('php://output');
+        });
+
+        $fileName = 'Report Aging ' . date('Y-m-d H:i:s') . '.xlsx';
+        $response->headers->set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        $response->headers->set('Content-Disposition', "attachment;filename=\"$fileName\"");
+        $response->headers->set('Cache-Control','max-age=0');
+
+        return $response;
+    }
 }

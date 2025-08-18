@@ -18,7 +18,10 @@
         <div class="col-12">
             <div class="card">
                 <div class="card-header">
-                    <h4 class="card-title mb-0">Product Aging</h4>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="card-title mb-0">Product Aging</h4>
+                        <a href="{{ route('inventory.aging.download-excel') }}" class="btn btn-info btn-sm">Download Report Excel</a>
+                    </div>
                 </div>
                 <div class="card-header">
                     <form action="{{ url()->current() }}" method="GET">
