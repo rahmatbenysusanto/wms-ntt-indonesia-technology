@@ -20,7 +20,10 @@
                 <div class="card-header">
                     <div class="d-flex justify-content-between align-items-center">
                         <h4 class="card-title mb-0">Order List</h4>
-                        <a href="{{ route('outbound.create') }}" class="btn btn-primary">Create Order</a>
+                        <div class="d-flex gap-2">
+                            <a href="{{ route('outbound.return') }}" class="btn btn-info">Return Order</a>
+                            <a href="{{ route('outbound.create') }}" class="btn btn-primary">Create Order</a>
+                        </div>
                     </div>
                 </div>
                 <div class="card-body">
@@ -29,13 +32,14 @@
                             <thead>
                                 <tr>
                                     <th>#</th>
-                                    <th>Number</th>
+                                    <th>Deliv Note Number</th>
                                     <th>Purc Doc</th>
                                     <th>Sales Doc</th>
                                     <th>Client</th>
                                     <th>Deliv Loc</th>
                                     <th class="text-center">Deliv Dest</th>
                                     <th class="text-center">QTY Item</th>
+                                    <th class="text-center">Status</th>
                                     <th>Order Date</th>
                                     <th>Created By</th>
                                     <th>Action</th>
@@ -45,7 +49,7 @@
                             @foreach($outbound as $index => $out)
                                 <tr>
                                     <td>{{ $outbound->firstItem() + $index }}</td>
-                                    <td>{{ $out->number }}</td>
+                                    <td>{{ $out->delivery_note_number }}</td>
                                     <td>{{ $out->purc_doc }}</td>
                                     <td>
                                         @foreach(json_decode($out->sales_docs) as $item)
@@ -66,6 +70,13 @@
                                         @endif
                                     </td>
                                     <td class="text-center fw-bold">{{ number_format($out->qty_item) }}</td>
+                                    <td class="text-center">
+                                        @if($out->status == 'outbound')
+                                            <span class="badge bg-success-subtle text-success">Outbound</span>
+                                        @else
+                                            <span class="badge bg-warning-subtle text-warning">Return</span>
+                                        @endif
+                                    </td>
                                     <td>{{ \Carbon\Carbon::parse($out->created_at)->translatedFormat('d F Y H:i') }}</td>
                                     <td>{{ $out->user->name }}</td>
                                     <td>

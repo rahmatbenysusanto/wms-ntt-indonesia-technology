@@ -188,6 +188,10 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
         Route::post('/create', 'store')->name('outbound.store');
         Route::get('/detail', 'detail')->name('outbound.detail');
 
+        Route::get('/return', 'return')->name('outbound.return');
+        Route::get('/return/get-products', 'returnGetProducts')->name('outbound.return.get-products');
+        Route::post('/return-store', 'returnStore')->name('outbound.return.store');
+
         // JSON
         Route::get('/sales-doc', 'getItemBySalesDoc')->name('outbound.sales-doc');
         Route::get('/find-inventory-detail', 'getItemByInventoryDetail')->name('outbound.inventory-detail');

@@ -95,28 +95,28 @@ class DashboardController extends Controller
             ->leftJoin('purchase_order_detail', 'purchase_order_detail.id', '=', 'inventory_detail.purchase_order_detail_id')
             ->where('qty', '!=', 0);
 
-        $agingType1 = $queryAging->whereBetween('inventory_detail.aging_date', [Carbon::now()->subDays(90)->startOfDay(), Carbon::now()->subDays(1)->endOfDay()])
+        $agingType1 = (clone $queryAging)->whereBetween('inventory_detail.aging_date', [Carbon::now()->subDays(90)->startOfDay(), Carbon::now()->subDays(1)->endOfDay()])
             ->select([
                 DB::raw('SUM(inventory_detail.qty * purchase_order_detail.net_order_price) as total'),
                 DB::raw('SUM(inventory_detail.qty) as qty'),
             ])
             ->first();
 
-        $agingType2 = $queryAging->whereBetween('inventory_detail.aging_date', [Carbon::now()->subDays(180)->startOfDay(), Carbon::now()->subDays(91)->endOfDay()])
+        $agingType2 = (clone $queryAging)->whereBetween('inventory_detail.aging_date', [Carbon::now()->subDays(180)->startOfDay(), Carbon::now()->subDays(91)->endOfDay()])
             ->select([
                 DB::raw('SUM(inventory_detail.qty * purchase_order_detail.net_order_price) as total'),
                 DB::raw('SUM(inventory_detail.qty) as qty'),
             ])
             ->first();
 
-        $agingType3 = $queryAging->whereBetween('inventory_detail.aging_date', [Carbon::now()->subDays(365)->startOfDay(), Carbon::now()->subDays(181)->endOfDay()])
+        $agingType3 = (clone $queryAging)->whereBetween('inventory_detail.aging_date', [Carbon::now()->subDays(365)->startOfDay(), Carbon::now()->subDays(181)->endOfDay()])
             ->select([
                 DB::raw('SUM(inventory_detail.qty * purchase_order_detail.net_order_price) as total'),
                 DB::raw('SUM(inventory_detail.qty) as qty'),
             ])
             ->first();
 
-        $agingType4 = $queryAging->where('inventory_detail.aging_date', '<', Carbon::now()->subDays(365)->startOfDay())
+        $agingType4 = (clone $queryAging)->where('inventory_detail.aging_date', '<', Carbon::now()->subDays(365)->startOfDay())
             ->select([
                 DB::raw('SUM(inventory_detail.qty * purchase_order_detail.net_order_price) as total'),
                 DB::raw('SUM(inventory_detail.qty) as qty'),
