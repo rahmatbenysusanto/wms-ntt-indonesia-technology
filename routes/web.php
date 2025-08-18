@@ -202,6 +202,9 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
         Route::get('/sales-doc', 'getItemBySalesDoc')->name('outbound.sales-doc');
         Route::get('/find-inventory-detail', 'getItemByInventoryDetail')->name('outbound.inventory-detail');
         Route::get('/find-product', 'getItemByProduct')->name('outbound.inventory-product');
+
+        // Download Report
+        Route::get('/download-excel', 'downloadExcel')->name('outbound.download-excel');
     });
 
     Route::prefix('/user')->controller(UserController::class)->group(function () {

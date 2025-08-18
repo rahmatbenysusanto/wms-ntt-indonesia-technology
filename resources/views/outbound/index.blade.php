@@ -42,6 +42,7 @@
                                     <th class="text-center">Status</th>
                                     <th>Order Date</th>
                                     <th>Created By</th>
+                                    <th class="text-center">Download Doc</th>
                                     <th>Action</th>
                                 </tr>
                             </thead>
@@ -79,6 +80,11 @@
                                     </td>
                                     <td>{{ \Carbon\Carbon::parse($out->created_at)->translatedFormat('d F Y H:i') }}</td>
                                     <td>{{ $out->user->name }}</td>
+                                    <td class="text-center">
+                                        <a href="{{ route('outbound.download-excel', ['id' => $out->id]) }}" class="btn btn-success btn-sm">
+                                            <i class="mdi mdi-file-excel"></i>
+                                        </a>
+                                    </td>
                                     <td>
                                         <a href="{{ route('outbound.detail', ['id' => $out->id]) }}" class="btn btn-info btn-sm">Detail</a>
                                     </td>

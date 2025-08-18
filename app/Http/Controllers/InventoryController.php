@@ -189,9 +189,24 @@ class InventoryController extends Controller
         return view('inventory.aging', compact('title', 'inventory'));
     }
 
-    public function box(): View
+    public function box(Request $request): View
     {
-        $box = InventoryPackage::with('purchaseOrder', 'user', 'storage')->whereNotIn('storage_id', [1,2,3,4])->where('qty', '!=', 0)->latest()->paginate(10);
+        $box = InventoryPackage::with('purchaseOrder', 'user', 'storage')
+            ->whereNotIn('storage_id', [1,2,3,4])
+            ->where('qty', '!=', 0)
+            ->whereHas('purchaseOrder', function ($purchaseOrder) use ($request) {
+                if ($request->query('purcDoc')) {
+                    $purchaseOrder->where('purc_doc', $request->query('purc_doc'));
+                }
+            })
+            ->when($request->query('salesDoc'), function ($q) use ($request) {
+                $q->where('purc_doc', '%' . $request->query('salesDoc') . '%');
+            })
+            ->when($request->query('paNumber'), function ($q) use ($request) {
+                $q->where('number', $request->query('paNumber'));
+            })
+            ->latest()
+            ->paginate(10);
 
         $title = "Inventory Box";
         return view('inventory.box.index', compact('title', 'box'));

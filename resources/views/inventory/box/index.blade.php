@@ -24,6 +24,31 @@
                     </div>
                 </div>
                 <div class="card-body">
+                    <form action="{{ url()->current() }}" method="GET">
+                        <div class="row">
+                            <div class="col-2">
+                                <label class="form-label">PA Number</label>
+                                <input type="text" class="form-control" name="paNumber" placeholder="Pa Number">
+                            </div>
+                            <div class="col-2">
+                                <label class="form-label">Purc Doc</label>
+                                <input type="text" class="form-control" name="purcDoc" placeholder="Purchase Order">
+                            </div>
+                            <div class="col-2">
+                                <label class="form-label">Sales Doc</label>
+                                <input type="text" class="form-control" name="salesDoc" placeholder="Sales Doc">
+                            </div>
+                            <div class="col-2">
+                                <label class="form-label text-white">-</label>
+                                <div class="d-flex gap-2">
+                                    <button type="submit" class="btn btn-info">Search</button>
+                                    <a href="{{ route('inventory.box') }}" class="btn btn-danger">Clear</a>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="card-body">
                     <div class="table-responsive">
                         <table class="table table-striped align-middle">
                             <thead>

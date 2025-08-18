@@ -25,6 +25,11 @@ class Outbound extends Model
         'delivery_note_number'
     ];
 
+    public function outboundDetail(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(OutboundDetail::class);
+    }
+
     public function user(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by', 'id');

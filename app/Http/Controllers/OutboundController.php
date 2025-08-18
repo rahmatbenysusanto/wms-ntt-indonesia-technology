@@ -34,6 +34,10 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
+use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class OutboundController extends Controller
 {
@@ -553,6 +557,36 @@ class OutboundController extends Controller
                 'status' => false,
             ]);
         }
+    }
+
+    public function downloadExcel(Request $request): StreamedResponse
+    {
+        $outbound = Outbound::with('outboundDetail', 'customer')
+            ->where('id', $request->query('id'))
+            ->firstOrFail();
+
+        $templatePath = public_path('assets/excel/DN-outbound.xlsx');
+        $spreadsheet = IOFactory::load($templatePath);
+        $sheet = $spreadsheet->getActiveSheet();
+
+        $sheet->setCellValue('D3', $outbound->customer->name ?? '');
+        $sheet->setCellValue('F3', ': '.$outbound->delivery_note_number ?? '');
+        $sheet->setCellValue('F5', ': '.Carbon::parse($outbound->delivery_date)->translatedFormat('d-m-Y'));
+
+        $sheet->getProtection()->setSheet(false);
+        $writer = new Xlsx($spreadsheet);
+        $response = new StreamedResponse(function () use ($writer) {
+            ob_end_clean();
+            $writer->save('php://output');
+        });
+
+        $fileName = 'Report Outbound ' . $outbound->delivery_note_number . ' ' . now()->format('Y-m-d_H-i-s') . '.xlsx';
+
+        $response->headers->set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        $response->headers->set('Content-Disposition', "attachment;filename=\"$fileName\"");
+        $response->headers->set('Cache-Control', 'max-age=0');
+
+        return $response;
     }
 
     // Mobile APP
