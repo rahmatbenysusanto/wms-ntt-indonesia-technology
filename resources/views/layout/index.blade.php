@@ -590,11 +590,11 @@
                             <i class="mdi mdi-database"></i> <span data-key="t-storage">Storage</span>
                         </a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link menu-link {{ $title == 'Warehouse' ? 'active' : '' }}" href="{{ route('warehouse') }}">
-                            <i class="mdi mdi-warehouse"></i> <span data-key="t-gudang">Warehouse</span>
-                        </a>
-                    </li>
+{{--                    <li class="nav-item">--}}
+{{--                        <a class="nav-link menu-link {{ $title == 'Warehouse' ? 'active' : '' }}" href="{{ route('warehouse') }}">--}}
+{{--                            <i class="mdi mdi-warehouse"></i> <span data-key="t-gudang">Warehouse</span>--}}
+{{--                        </a>--}}
+{{--                    </li>--}}
 
                 </ul>
             </div>

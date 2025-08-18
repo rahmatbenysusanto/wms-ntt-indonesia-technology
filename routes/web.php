@@ -139,6 +139,9 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
             // JSON
             Route::get('/find-pa-number', 'transferLocationFindNumber')->name('inventory.transfer-location-find-pa-number');
         });
+
+        // Download Excel
+        Route::get('/download-excel', 'downloadExcel')->name('inventory.download-excel');
     });
 
     Route::prefix('/general-room')->controller(GeneralRoomController::class)->group(function () {

@@ -65,9 +65,10 @@
                                     <th>Stor Loc</th>
                                     <th>SLoc Desc</th>
                                     <th>Valuation</th>
-                                    <th>PO Itm Qty</th>
+                                    <th class="text-center">PO Itm Qty</th>
                                     <th>Net Order Price</th>
                                     <th>Currency</th>
+                                    <th class="text-center">QTY QC</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -85,9 +86,10 @@
                                         <td>{{ $product->stor_loc }}</td>
                                         <td>{{ $product->sloc_desc }}</td>
                                         <td>{{ $product->valuation }}</td>
-                                        <td>{{ $product->po_item_qty }}</td>
+                                        <td class="text-center fw-bold">{{ number_format($product->po_item_qty) }}</td>
                                         <td>{{ $product->net_order_price }}</td>
                                         <td>{{ $product->currency }}</td>
+                                        <td class="text-center fw-bold">{{ number_format($product->qty_qc) }}</td>
                                     </tr>
                                 @endforeach
                             </tbody>

@@ -25,6 +25,9 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class InventoryController extends Controller
 {
@@ -714,5 +717,68 @@ class InventoryController extends Controller
             ->first();
 
         return view('mobile.inventory.aging', compact('agingType1', 'agingType2', 'agingType3', 'agingType4'));
+    }
+
+    public function downloadExcel(): StreamedResponse
+    {
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+
+        $sheet->setCellValue('A1', 'Purc Doc');
+        $sheet->setCellValue('B1', 'Sales Doc');
+        $sheet->setCellValue('C1', 'Material');
+        $sheet->setCellValue('D1', 'PO Item Desc');
+        $sheet->setCellValue('E1', 'Prod Hierarchy Desc');
+        $sheet->setCellValue('F1', 'Stock');
+        $sheet->setCellValue('G1', 'Nominal');
+
+        $inventoryDetail = DB::table('inventory_detail')
+            ->leftJoin('purchase_order_detail', 'purchase_order_detail.id', '=', 'inventory_detail.purchase_order_detail_id')
+            ->leftJoin('purchase_order', 'purchase_order.id', '=', 'purchase_order_detail.purchase_order_id')
+            ->where('inventory_detail.qty', '!=', 0)
+            ->whereNotIn('inventory_detail.storage_id', [1,2,3,4])
+            ->select([
+                'purchase_order.purc_doc',
+                'purchase_order_detail.sales_doc',
+                'purchase_order_detail.material',
+                'purchase_order_detail.po_item_desc',
+                'purchase_order_detail.prod_hierarchy_desc',
+                DB::raw('SUM(inventory_detail.qty) as qty'),
+                DB::raw('SUM(inventory_detail.qty * purchase_order_detail.net_order_price) as nominal'),
+            ])
+            ->groupBy([
+                'purchase_order.purc_doc',
+                'purchase_order_detail.sales_doc',
+                'purchase_order_detail.material',
+                'purchase_order_detail.po_item_desc',
+                'purchase_order_detail.prod_hierarchy_desc',
+            ])
+            ->get();
+
+        $column = 2;
+        foreach ($inventoryDetail as $detail) {
+            $sheet->setCellValue('A' . $column, $detail->purc_doc);
+            $sheet->setCellValue('B' . $column, $detail->sales_doc);
+            $sheet->setCellValue('C' . $column, $detail->material);
+            $sheet->setCellValue('D' . $column, $detail->po_item_desc);
+            $sheet->setCellValue('E' . $column, $detail->prod_hierarchy_desc);
+            $sheet->setCellValue('F' . $column, $detail->qty);
+            $sheet->setCellValue('G' . $column, $detail->nominal);
+
+            $column++;
+        }
+
+        $writer = new Xlsx($spreadsheet);
+
+        $response = new StreamedResponse(function() use ($writer) {
+            $writer->save('php://output');
+        });
+
+        $fileName = 'Report Inventory ' . date('Y-m-d H:i:s') . '.xlsx';
+        $response->headers->set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        $response->headers->set('Content-Disposition', "attachment;filename=\"$fileName\"");
+        $response->headers->set('Cache-Control','max-age=0');
+
+        return $response;
     }
 }
