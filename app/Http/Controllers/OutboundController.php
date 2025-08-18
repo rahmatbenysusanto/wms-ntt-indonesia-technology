@@ -449,7 +449,7 @@ class OutboundController extends Controller
                 'customer_id'   => $returnOutbound->customer_id,
                 'purc_doc'      => $returnOutbound->purc_doc,
                 'sales_docs'    => json_encode([]),
-                'outbound_date' => date('Y-m-d H:i:s'),
+                'outbound_date' => $request->post('outboundDate') ?? date('Y-m-d H:i:s'),
                 'number'        => 'inv-'.date('YmdHis').rand(111,999),
                 'qty_item'      => 0,
                 'qty'           => 0,
@@ -458,7 +458,8 @@ class OutboundController extends Controller
                 'deliv_loc'     => '-',
                 'deliv_dest'    => '-',
                 'note'          => $request->post('note'),
-                'delivery_date' => date('Y-m-d H:i:s'),
+                'delivery_date' => $request->post('outboundDate') ?? date('Y-m-d H:i:s'),
+                'delivery_note_number' => $returnOutbound->delivery_note_number,
                 'created_by'    => Auth::id(),
             ]);
 
@@ -512,14 +513,14 @@ class OutboundController extends Controller
                 foreach ($product['serialNumber'] ?? [] as $serialNumber) {
                     InventoryPackageItemSN::create([
                         'inventory_package_item_id' => $inventoryPackageItem->id,
-                        'serial_number'             => $serialNumber,
+                        'serial_number'             => $serialNumber['serialNumber'],
                         'qty'                       => 1,
                     ]);
 
                     OutboundDetailSN::create([
                         'outbound_detail_id'        => $outboundDetail->id,
                         'inventory_package_item_id' => $product['inventoryPackageItemId'],
-                        'serial_number'             => $serialNumber,
+                        'serial_number'             => $serialNumber['serialNumber'],
                     ]);
                 }
 

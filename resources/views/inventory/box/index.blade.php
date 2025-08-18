@@ -55,6 +55,8 @@
                                                     @case('spare')
                                                         <span class="badge bg-danger">Return From Spare Room</span>
                                                         @break
+                                                    @default
+                                                        <span class="badge bg-danger">Return From Outbound</span>
                                                 @endswitch
                                             @endif
                                         </td>
