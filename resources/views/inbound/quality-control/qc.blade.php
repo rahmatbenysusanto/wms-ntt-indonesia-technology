@@ -1068,6 +1068,23 @@
             }).then(function(t) {
                 if (t.value) {
 
+                    // Validation Serial Number & QTY
+                    const qualityControl = JSON.parse(localStorage.getItem('qc')) ?? [];
+                    qualityControl.forEach((item) => {
+                        item.forEach((product) => {
+                            const qtySN = parseInt(product.serialNumber.length) + parseInt(product.SnDirect.length ?? []);
+                            if (product.qty !== qtySN) {
+                                Swal.fire({
+                                    title: 'Warning!',
+                                    text: 'Validation QTY & Serial Number Failed, Please Check Serial Number Product',
+                                    icon: 'warning',
+                                });
+
+                                return true;
+                            }
+                        });
+                    });
+
                     $.ajax({
                         url: '{{ route('inbound.quality-control-store-process') }}',
                         method: 'POST',
