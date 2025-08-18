@@ -201,7 +201,7 @@
             container.style.height = `${height}px`;
             container.style.padding = '8px';
             container.style.background = '#fff';
-            container.style.textAlign = 'center';
+            container.style.textAlign = 'left';
             container.style.fontSize = '12px';
             container.setAttribute('id', 'barcodeFinal');
 
@@ -209,6 +209,7 @@
             qrWrapper.style.display = 'flex';
             qrWrapper.style.justifyContent = 'center';
             qrWrapper.style.alignItems = 'center';
+            qrWrapper.style.marginBottom = '4px';
 
             const qrDiv = document.createElement('div');
             qrDiv.setAttribute('id', 'qrCodeContainer');
@@ -220,7 +221,7 @@
             text1.style.marginTop = '2px';
 
             const textPO = document.createElement('div');
-            textPO.innerHTML = '<b>PO: </b>'+purcDoc;
+            textPO.innerHTML = '<b>Purc Doc: </b>'+purcDoc;
             textPO.style.marginTop = '2px';
 
             const textSO = document.createElement('div');
@@ -232,11 +233,11 @@
             textCustomer.style.marginTop = '2px';
 
             const text2 = document.createElement('div');
-            text2.innerHTML = '<b>Loc: </b>'+locationText;
+            text2.innerHTML = '<b>Location: </b>'+locationText;
             text2.style.marginTop = '2px';
 
             const text3 = document.createElement('div');
-            text3.innerHTML = '<b>Tgl Inb: </b>'+'{{ \Carbon\Carbon::parse($products[0]->created_at)->translatedFormat('d F Y') }}';
+            text3.innerHTML = '<b>Inbound Date: </b>'+'{{ \Carbon\Carbon::parse($products[0]->created_at)->translatedFormat('d F Y') }}';
             text3.style.marginTop = '2px';
             text3.style.marginBottom = '2px';
 
