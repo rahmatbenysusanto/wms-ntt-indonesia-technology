@@ -231,6 +231,11 @@
                             <td class="fw-bold ps-3">:</td>
                             <td class="ps-1" id="boxSerialNumber_qty"></td>
                         </tr>
+                        <tr>
+                            <td class="fw-bold">QTY Scan Serial Number</td>
+                            <td class="fw-bold ps-3">:</td>
+                            <td class="ps-1" id="boxSerialNumber_qty_scan_sn"></td>
+                        </tr>
                     </table>
 
                     <div class="row mt-3">
@@ -243,10 +248,17 @@
 {{--                                    <a class="btn btn-info w-100" onclick="pilihSerialNumber()">Pilih SN</a>--}}
 {{--                                </div>--}}
 {{--                            </div>--}}
+                            <input type="text" class="form-control" id="scanSerialNumber" placeholder="Scan Serial Number ...">
                         </div>
                         <div class="col-2">
                             <a class="btn btn-secondary w-100" onclick="tambahManualSerialNumber()">Tambah Manual</a>
                         </div>
+                    </div>
+
+                    <div id="scanSerialNumberError" class="alert alert-danger alert-dismissible alert-label-icon label-arrow shadow fade show mt-2" role="alert" style="display: none">
+                        <i class="ri-error-warning-line label-icon"></i>
+                        <strong>Error</strong> - <span id="scanSerialNumberErrorMessage"></span>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>
 
                     <div class="row mt-3">
@@ -266,7 +278,7 @@
                             </table>
                         </div>
                         <div class="col-6">
-                            <h5 class="mb-1">Serial Number Product</h5>
+                            <h5 class="mb-1">Serial Number Product In Box</h5>
                             <table class="table table-striped align-middle mt-3">
                                 <thead>
                                     <tr>
@@ -603,6 +615,10 @@
 
             viewListSerialNumber();
             $('#boxSerialNumberModal').modal('show');
+
+            setTimeout(() => {
+                document.getElementById('scanSerialNumber').focus();
+            }, 500);
         }
 
         function viewListSerialNumber() {
@@ -624,6 +640,7 @@
 
             viewListBox();
             document.getElementById('listSnBox').innerHTML = html;
+            document.getElementById('boxSerialNumber_qty_scan_sn').innerText = serialNumber.length;
         }
 
         function changeSN(indexSN, value) {
@@ -655,6 +672,10 @@
             const index = document.getElementById('boxSerialNumber_index').value;
             const indexDetail = document.getElementById('boxSerialNumber_indexDetail').value;
             const indexMaster = document.getElementById('boxSerialNumber_indexMaster').value;
+
+            const findSN = serialNumber[indexDelete];
+            const findMasterSN = master[indexMaster].serialNumber.find((item) => item.serialNumber === findSN);
+            findMasterSN.select = 0;
 
             serialNumber.splice(indexDelete, 1);
 
@@ -705,21 +726,63 @@
             const indexDetail = document.getElementById('boxSerialNumber_indexDetail').value;
             const indexMaster = document.getElementById('boxSerialNumber_indexMaster').value;
 
+            // Validation Apakah SN ada didalam list master
+            const check = master[indexMaster].serialNumber.find((item) => item.serialNumber === valueSN);
+            if (check === null) {
+                document.getElementById('scanSerialNumberErrorMessage').innerText = "Serial number is not in master data";
+                document.getElementById('scanSerialNumberError').style.display = "block";
+
+                setTimeout(() => {
+                    document.getElementById('scanSerialNumberError').style.display = "none";
+                }, 3000);
+
+                const sound = new Audio("{{ asset('assets/sound/error.mp3') }}");
+                sound.play();
+
+                document.getElementById('scanSerialNumber').value = "";
+                document.getElementById('scanSerialNumber').focus();
+
+                return true;
+            } else {
+                if (parseInt(check.select) === 1) {
+                    document.getElementById('scanSerialNumberErrorMessage').innerText = "Serial Number has been added";
+                    document.getElementById('scanSerialNumberError').style.display = "block";
+
+                    setTimeout(() => {
+                        document.getElementById('scanSerialNumberError').style.display = "none";
+                    }, 3000);
+
+                    const sound = new Audio("{{ asset('assets/sound/error.mp3') }}");
+                    sound.play();
+
+                    document.getElementById('scanSerialNumber').value = "";
+                    document.getElementById('scanSerialNumber').focus();
+
+                    return true;
+                }
+            }
+
             // Validation QTY
             if (type === 'parent') {
                 if (serialNumber.length === parseInt(box[index].parent[indexDetail].qtySelect)) {
+                    const sound = new Audio("{{ asset('assets/sound/error.mp3') }}");
+                    sound.play();
+
                     Swal.fire({
                         title: 'Warning!',
-                        text: 'Jumlah serial number sudah sama dengan QTY product',
+                        text: 'Count serial numbers is the same as the product QTY',
                         icon: 'warning'
                     });
                     return true;
                 }
             } else {
                 if (serialNumber.length === parseInt(box[index].child[indexDetail].qtySelect)) {
+                    const sound = new Audio("{{ asset('assets/sound/error.mp3') }}");
+                    sound.play();
+
                     Swal.fire({
                         title: 'Warning!',
-                        text: 'Jumlah serial number sudah sama dengan QTY product',
+                        text: 'Count serial numbers is the same as the product QTY',
                         icon: 'warning'
                     });
                     return true;
@@ -728,9 +791,12 @@
 
             if (type === 'parent') {
                 if (parseInt(box[index].parent[indexDetail].qtySelect + 1) > serialNumber.count) {
+                    const sound = new Audio("{{ asset('assets/sound/error.mp3') }}");
+                    sound.play();
+
                     Swal.fire({
                         title: 'Error!',
-                        text: 'Jumlah serial number melebihi qty',
+                        text: 'Count serial numbers exceeds qty',
                         icon: 'warning'
                     });
 
@@ -738,9 +804,12 @@
                 }
             } else {
                 if (parseInt(box[index].child[indexDetail].qtySelect + 1) > serialNumber.count) {
+                    const sound = new Audio("{{ asset('assets/sound/error.mp3') }}");
+                    sound.play();
+
                     Swal.fire({
                         title: 'Error!',
-                        text: 'Jumlah serial number melebihi qty',
+                        text: 'Count serial numbers exceeds qty',
                         icon: 'warning'
                     });
 
@@ -766,6 +835,9 @@
 
             viewListSerialNumber();
             viewSelectSnAvailable(indexMaster);
+
+            const sound = new Audio("{{ asset('assets/sound/scan.mp3') }}");
+            sound.play();
         }
 
         function tambahManualSerialNumber() {
@@ -854,6 +926,32 @@
             viewListBox();
         }
 
+        document.getElementById('scanSerialNumber').addEventListener('keydown', function(e) {
+            if (e.key === "Enter") {
+                e.preventDefault();
+                const value = this.value.trim();
+                if (value !== "") {
+                    pilihSerialNumber(value);
+
+                    document.getElementById('scanSerialNumber').value = "";
+                    document.getElementById('scanSerialNumber').focus();
+                } else {
+                    document.getElementById('scanSerialNumberErrorMessage').innerText = "Serial number cannot be empty";
+                    document.getElementById('scanSerialNumberError').style.display = "block";
+
+                    setTimeout(() => {
+                        document.getElementById('scanSerialNumberError').style.display = "none";
+                    }, 3000);
+
+                    const sound = new Audio("{{ asset('assets/sound/error.mp3') }}");
+                    sound.play();
+
+                    document.getElementById('scanSerialNumber').value = "";
+                    document.getElementById('scanSerialNumber').focus();
+                }
+            }
+        });
+
         function processPutAway() {
             Swal.fire({
                 title: "Are you sure?",
@@ -918,38 +1016,9 @@
             });
         }
 
+    </script>
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    <script>
         function setLocation(id) {
             document.getElementById('setLocationId').value = id;
             $('#setLocationModal').modal('show');
