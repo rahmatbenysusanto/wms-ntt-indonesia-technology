@@ -15,6 +15,12 @@
             box-sizing: border-box;
             padding: 5px;
         }
+        .col-6 {
+            float: left;
+            width: 50%;
+            box-sizing: border-box;
+            padding: 5px;
+        }
         .clearfix { clear: both; }
 
         .tbl {
@@ -126,6 +132,19 @@
             @endforeach
             </tbody>
         </table>
+    </section>
+
+    <div class="clearfix"></div>
+
+    <section style="margin-top: 80px">
+        <div class="row">
+            <div class="col-6" style="text-align: center">
+                <div>Logistic Executive</div>
+            </div>
+            <div class="col-6" style="text-align: center">
+                <div>Customer's name & signature</div>
+            </div>
+        </div>
     </section>
 </body>
 </html>
