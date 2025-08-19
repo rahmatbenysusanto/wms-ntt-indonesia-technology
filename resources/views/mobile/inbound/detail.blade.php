@@ -59,7 +59,7 @@
 <div class="mobile-header">
     <div class="container-fluid">
         <div class="row">
-            <div class="col-2 d-flex align-items-center">
+            <div class="col-2 d-flex align-items-start">
                 <a href="{{ route('inbound.index.mobile') }}" class="ps-3">
                     <i class="mdi mdi-arrow-left-thin text-white" style="font-size: 32px"></i>
                 </a>
@@ -67,8 +67,10 @@
             <div class="col-8 d-flex justify-content-center align-items-center">
                 <h5 class="mb-0 text-center text-white">Inbound Detail</h5>
             </div>
-            <div class="col-2">
-
+            <div class="col-2 d-flex align-items-center">
+                <a href="" class="ps-3">
+                    <i class="mdi mdi-file-excel text-white" style="font-size: 22px"></i>
+                </a>
             </div>
         </div>
     </div>

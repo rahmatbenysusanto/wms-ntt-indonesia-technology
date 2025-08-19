@@ -101,6 +101,9 @@
     </div>
 
     <footer class="mobile-footer">
+        <div class="container-fluid">
+            <a href="{{ route('logout') }}" class="btn btn-info w-100">Logout</a>
+        </div>
         <p>Trans Kargo Solusindo - <span>{{ date('Y') }}</span></p>
     </footer>
 

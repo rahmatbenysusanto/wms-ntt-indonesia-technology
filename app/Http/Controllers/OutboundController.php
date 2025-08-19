@@ -28,6 +28,7 @@ use App\Models\Storage;
 use App\Services\GrRoomService;
 use App\Services\PmRoomService;
 use App\Services\SpareRoomService;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -559,34 +560,18 @@ class OutboundController extends Controller
         }
     }
 
-    public function downloadExcel(Request $request): StreamedResponse
+    public function downloadExcel(Request $request): \Illuminate\Http\Response
     {
-        $outbound = Outbound::with('outboundDetail', 'customer')
-            ->where('id', $request->query('id'))
-            ->firstOrFail();
+        $outbound = Outbound::with('customer')->where('id', $request->query('id'))->first();
+        $outboundDetail = OutboundDetail::with('inventoryPackageItem', 'inventoryPackageItem.purchaseOrderDetail', 'outboundDetailSN')->where('outbound_id', $request->query('id'))->get();
 
-        $templatePath = public_path('assets/excel/DN-outbound.xlsx');
-        $spreadsheet = IOFactory::load($templatePath);
-        $sheet = $spreadsheet->getActiveSheet();
+        $data = [
+            'outbound'          => $outbound,
+            'outboundDetail'    => $outboundDetail,
+        ];
 
-        $sheet->setCellValue('D3', $outbound->customer->name ?? '');
-        $sheet->setCellValue('F3', ': '.$outbound->delivery_note_number ?? '');
-        $sheet->setCellValue('F5', ': '.Carbon::parse($outbound->delivery_date)->translatedFormat('d-m-Y'));
-
-        $sheet->getProtection()->setSheet(false);
-        $writer = new Xlsx($spreadsheet);
-        $response = new StreamedResponse(function () use ($writer) {
-            ob_end_clean();
-            $writer->save('php://output');
-        });
-
-        $fileName = 'Report Outbound ' . $outbound->delivery_note_number . ' ' . now()->format('Y-m-d_H-i-s') . '.xlsx';
-
-        $response->headers->set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        $response->headers->set('Content-Disposition', "attachment;filename=\"$fileName\"");
-        $response->headers->set('Cache-Control', 'max-age=0');
-
-        return $response;
+        $pdf = Pdf::loadView('pdf.outbound', $data);
+        return $pdf->stream('outbound '.$outbound->delivery_note_number.'.pdf');
     }
 
     // Mobile APP
