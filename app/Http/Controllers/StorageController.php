@@ -90,4 +90,13 @@ class StorageController extends Controller
 
         return redirect()->back()->with('success', 'Storage created successfully');
     }
+
+    public function delete(Request $request): \Illuminate\Http\JsonResponse
+    {
+        Storage::where('id', $request->get('id'))->update(['deleted_at' => now()]);
+
+        return response()->json([
+            'status' => true,
+        ]);
+    }
 }

@@ -47,10 +47,11 @@
                                     <td>{{ $item->rak }}</td>
                                     <td>{{ $item->bin }}</td>
                                     <td>
-                                        <div class="d-flex gap-2">
-                                            <a class="btn btn-info btn-sm">Edit</a>
-                                            <a class="btn btn-danger btn-sm">Delete</a>
-                                        </div>
+                                        @if(!in_array($item->id, [1,2,3,4]))
+                                            <div class="d-flex gap-2">
+                                                <a class="btn btn-danger btn-sm" onclick="deleteStorage(`{{ $item->id }}`)">Delete</a>
+                                            </div>
+                                        @endif
                                     </td>
                                 </tr>
                             @endforeach
@@ -256,6 +257,43 @@
                     });
 
                     document.getElementById('formBin_rak').innerHTML = html;
+                }
+            });
+        }
+
+        function deleteStorage(id) {
+            Swal.fire({
+                title: "Are you sure?",
+                text: "Delete Storage",
+                icon: "warning",
+                showCancelButton: true,
+                customClass: {
+                    confirmButton: "btn btn-primary w-xs me-2 mt-2",
+                    cancelButton: "btn btn-danger w-xs mt-2"
+                },
+                confirmButtonText: "Yes, Delete it!",
+                buttonsStyling: false,
+                showCloseButton: true
+            }).then(function(t) {
+                if (t.value) {
+
+                    $.ajax({
+                        url: '{{ route('storage.delete') }}',
+                        method: 'GET',
+                        data: {
+                            id: id
+                        },
+                        success: (res => {
+                            Swal.fire({
+                                title: 'Success',
+                                text: 'Delete Storage Success',
+                                icon: 'success'
+                            }).then((i) => {
+                                window.location.reload();
+                            });
+                        })
+                    });
+
                 }
             });
         }

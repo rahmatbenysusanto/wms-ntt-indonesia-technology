@@ -53,4 +53,35 @@ class UserController extends Controller
             'success' => true,
         ]);
     }
+
+    public function find(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $user = User::find($request->get('id'));
+
+        return response()->json([
+            'success'   => true,
+            'data'      => $user,
+        ]);
+    }
+
+    public function update(Request $request): \Illuminate\Http\JsonResponse
+    {
+        User::where('id', $request->post('id'))
+            ->update([
+                'username'  => $request->post('username'),
+                'name'      => $request->post('name'),
+                'email'     => $request->post('email'),
+            ]);
+
+        if ($request->post('password') != "********") {
+            User::where('id', $request->post('id'))
+                ->update([
+                    'password' => Hash::make($request->post('password')),
+                ]);
+        }
+
+        return response()->json([
+            'success'   => true,
+        ]);
+    }
 }

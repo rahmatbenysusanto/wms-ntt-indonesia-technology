@@ -61,6 +61,8 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
         Route::get('/find/bin', 'getBin')->name('storage.find.bin');
 
         Route::post('/create', 'store')->name('storage.create');
+
+        Route::get('/delete', 'delete')->name('storage.delete');
     });
 
     Route::prefix('/inbound')->controller(InboundController::class)->group(function () {
@@ -211,6 +213,8 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
         Route::get('/', 'index')->name('user.index');
         Route::post('/post', 'store')->name('user.store');
         Route::get('/delete', 'delete')->name('user.delete');
+        Route::get('/find', 'find')->name('user.find');
+        Route::post('/update', 'update')->name('user.update');
     });
 
     // Mobile APP

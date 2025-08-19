@@ -115,12 +115,76 @@
             </div>
         </div>
     </div>
+
+    <div id="editUserModal" class="modal fade" tabindex="-1" aria-labelledby="myModalLabel" aria-hidden="true" style="display: none;">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="myModalLabel">Edit User</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"> </button>
+                </div>
+                <div class="modal-body">
+                    <form action="{{ route('user.update') }}" method="POST">
+                        @csrf
+                        <input type="hidden" name="id" id="idUser">
+                        <div class="mb-3">
+                            <label class="form-label required">Username</label>
+                            <input type="text" class="form-control" name="username" id="username" required placeholder="Username">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label required">Name</label>
+                            <input type="text" class="form-control" name="name" id="name" required placeholder="Name">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label required">Email</label>
+                            <input type="email" class="form-control" name="email" id="email" required placeholder="admin@mail.com">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label required">Role</label>
+                            <select class="form-control" name="role" id="role" required>
+
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label required">Password</label>
+                            <input type="text" class="form-control" name="password" required value="********">
+                        </div>
+                        <div class="d-flex justify-content-end gap-2">
+                            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
+                            <button type="submit" class="btn btn-primary ">Update</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
 @endsection
 
 @section('js')
     <script>
         function editUser(id) {
+            $.ajax({
+                url: '{{ route('user.find') }}',
+                method: 'GET',
+                data: {
+                    id: id
+                },
+                success: (res) => {
+                    const data = res.data;
 
+                    document.getElementById('username').value = data.username;
+                    document.getElementById('name').value = data.name;
+                    document.getElementById('email').value = data.email;
+                    document.getElementById('role').innerHTML = `
+                        <option value="inbound" ${data.role === 'inbound' ? 'selected' : ''}>Inbound</option>
+                        <option value="outbound" ${data.role === 'outbound' ? 'selected' : ''}>Outbound</option>
+                        <option value="mobile" ${data.role === 'mobile' ? 'selected' : ''}>Mobile</option>
+                    `;
+                    document.getElementById('idUser').innerHTML = data.id;
+
+                    $('#editUserModal').modal('show');
+                }
+            });
         }
 
         function deleteUser(id) {
