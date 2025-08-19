@@ -61,6 +61,9 @@
             padding-bottom: 50px; /* kasih ruang supaya konten tidak ketutup footer */
         }
 
+        .text-sm {
+            font-size: 10px;
+        }
     </style>
 </head>
 <body>
@@ -108,7 +111,14 @@
                                 <div class="d-flex justify-content-between align-items-center mb-1">
                                     <div>
                                         <div class="fw-bold">{{ $inv->purc_doc }}</div>
-                                        <small class="text-muted">SO#: {{ $inv->sales_doc }}</small>
+                                        <div class="d-flex align-items-center justify-content-center">
+                                            <small class="text-muted">SO#: {{ $inv->sales_doc }}</small>
+                                            @if($inv->is_parent == 1)
+                                                <span class="badge bg-info ms-2" style="font-size: 8px">Parent</span>
+                                            @else
+                                                <span class="badge bg-secondary ms-2" style="font-size: 8px">Child</span>
+                                            @endif
+                                        </div>
                                     </div>
                                     <span class="badge bg-primary">{{ number_format($inv->qty) }}</span>
                                 </div>

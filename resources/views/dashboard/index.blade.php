@@ -93,11 +93,11 @@
                                     </span>
                                 </div>
                                 <div class="flex-grow-1 overflow-hidden ms-3">
-                                    <p class="text-uppercase fw-medium text-muted text-truncate mb-3">Total Stock General Room</p>
+                                    <p class="text-uppercase fw-medium text-muted text-truncate mb-3">Total Box</p>
                                     <div class="d-flex align-items-center mb-3">
                                         <h4 class="fs-4 flex-grow-1 mb-0"><span class="counter-value" data-target="{{ $stockGR }}">0</span></h4>
                                     </div>
-                                    <p class="text-muted text-truncate mb-0">Data Stock General Room</p>
+                                    <p class="text-muted text-truncate mb-0">Data Total Box</p>
                                 </div>
                             </div>
                         </div>

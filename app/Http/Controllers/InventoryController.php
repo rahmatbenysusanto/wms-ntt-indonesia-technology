@@ -636,6 +636,7 @@ class InventoryController extends Controller
             ->leftJoin('inventory_detail', 'inventory_detail.inventory_id', '=', 'inventory.id')
             ->leftJoin('purchase_order_detail', 'inventory_detail.purchase_order_detail_id', '=', 'purchase_order_detail.id')
             ->leftJoin('purchase_order', 'purchase_order.id', '=', 'inventory.purchase_order_id')
+            ->leftJoin('inventory_package_item', 'inventory_package_item.id', '=', 'inventory_detail.inventory_package_item_id')
             ->where('inventory.type', 'inv')
             ->where('inventory_detail.qty', '!=', 0)
             ->select([
@@ -645,6 +646,7 @@ class InventoryController extends Controller
                 'purchase_order_detail.material',
                 'purchase_order_detail.po_item_desc',
                 'purchase_order_detail.prod_hierarchy_desc',
+                'inventory_package_item.is_parent',
                 DB::raw('SUM(inventory_detail.qty) AS qty'),
                 DB::raw('SUM(inventory_detail.qty * purchase_order_detail.net_order_price) AS nominal'),
             ])
@@ -654,7 +656,8 @@ class InventoryController extends Controller
                 'purchase_order_detail.material',
                 'purchase_order_detail.product_id',
                 'purchase_order_detail.po_item_desc',
-                'purchase_order_detail.prod_hierarchy_desc'
+                'purchase_order_detail.prod_hierarchy_desc',
+                'inventory_package_item.is_parent',
             ])
             ->paginate(5);
 

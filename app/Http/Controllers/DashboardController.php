@@ -18,10 +18,10 @@ class DashboardController extends Controller
 {
     public function index(): View
     {
-        $totalPurcDoc = 0;
-        $totalSalesDoc = 0;
-        $totalStock = 0;
-        $stockGR = 0;
+        $totalPurcDoc = DB::table('purchase_order')->whereBetween('created_at', [date('Y-m-01'), date('Y-m-d')])->count();
+        $totalSalesDoc = DB::table('purchase_order_detail')->whereBetween('created_at', [date('Y-m-01'), date('Y-m-d')])->groupBy('sales_doc')->count();
+        $totalStock = DB::table('inventory')->where('type', 'inv')->sum('stock');
+        $stockGR = DB::table('inventory_package')->whereNotIn('storage_id', [1,2,3,4])->where('qty', '!=', 0)->count();
 
         $listPO = [];
 
@@ -65,6 +65,7 @@ class DashboardController extends Controller
                 DB::raw('SUM(qty_qc) as qty_qc'),
                 DB::raw('SUM(po_item_qty) as qty'),
             ])
+            ->orderBy('sales_doc')
             ->groupBy([
                 'sales_doc'
             ])
