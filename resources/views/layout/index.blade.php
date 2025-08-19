@@ -461,24 +461,26 @@
                     </li>
 
                     <li class="menu-title"><span data-key="t-menu">WAREHOUSE MODULE</span></li>
-                    <li class="nav-item">
-                        <a class="nav-link menu-link {{ in_array($title, ['Purchase Order', 'Quality Control', 'Put Away']) ? 'active' : '' }}" href="#sidebarInbound" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="sidebarInbound">
-                            <i class="mdi mdi-package-down"></i> <span data-key="t-dashboards">Inbound</span>
-                        </a>
-                        <div class="collapse menu-dropdown {{ in_array($title, ['Purchase Order', 'Quality Control', 'Put Away']) ? 'show' : '' }}" id="sidebarInbound">
-                            <ul class="nav nav-sm flex-column">
-                                <li class="nav-item">
-                                    <a href="{{ route('inbound.purchase-order') }}" class="nav-link {{ in_array($title, ['Purchase Order']) ? 'active' : '' }}" data-key="t-analytics"> Purchase Order </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="{{ route('inbound.quality-control') }}" class="nav-link {{ in_array($title, ['Quality Control']) ? 'active' : '' }}" data-key="t-analytics"> Quality Control </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="{{ route('inbound.put-away') }}" class="nav-link {{ in_array($title, ['Put Away']) ? 'active' : '' }}" data-key="t-analytics"> Put Away </a>
-                                </li>
-                            </ul>
-                        </div>
-                    </li>
+                    @if(in_array(['admin', 'inbound'], Session::get('user')->role))
+                        <li class="nav-item">
+                            <a class="nav-link menu-link {{ in_array($title, ['Purchase Order', 'Quality Control', 'Put Away']) ? 'active' : '' }}" href="#sidebarInbound" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="sidebarInbound">
+                                <i class="mdi mdi-package-down"></i> <span data-key="t-dashboards">Inbound</span>
+                            </a>
+                            <div class="collapse menu-dropdown {{ in_array($title, ['Purchase Order', 'Quality Control', 'Put Away']) ? 'show' : '' }}" id="sidebarInbound">
+                                <ul class="nav nav-sm flex-column">
+                                    <li class="nav-item">
+                                        <a href="{{ route('inbound.purchase-order') }}" class="nav-link {{ in_array($title, ['Purchase Order']) ? 'active' : '' }}" data-key="t-analytics"> Purchase Order </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a href="{{ route('inbound.quality-control') }}" class="nav-link {{ in_array($title, ['Quality Control']) ? 'active' : '' }}" data-key="t-analytics"> Quality Control </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a href="{{ route('inbound.put-away') }}" class="nav-link {{ in_array($title, ['Put Away']) ? 'active' : '' }}" data-key="t-analytics"> Put Away </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </li>
+                    @endif
 
                     <li class="nav-item">
                         <a class="nav-link menu-link {{ in_array($title, ['Inventory', 'Cycle Count', 'Transfer Location', 'Inventory Box', 'Inventory Aging']) ? 'active' : '' }}" href="#sidebarInventory" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="sidebarInventory">
@@ -505,18 +507,20 @@
                         </div>
                     </li>
 
-                    <li class="nav-item">
-                        <a class="nav-link menu-link {{ $title == 'Outbound' ? 'active' : '' }}" href="#sidebarOutbound" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="sidebarOutbound">
-                            <i class="mdi mdi-package-up"></i> <span data-key="t-dashboards">Outbound</span>
-                        </a>
-                        <div class="collapse menu-dropdown {{ $title == 'Outbound' ? 'show' : '' }}" id="sidebarOutbound">
-                            <ul class="nav nav-sm flex-column">
-                                <li class="nav-item">
-                                    <a href="{{ route('outbound.index') }}" class="nav-link {{ $title == 'Outbound' ? 'active' : '' }}" data-key="t-analytics"> Order List </a>
-                                </li>
-                            </ul>
-                        </div>
-                    </li>
+                    @if(in_array(['admin', 'outbound'], Session::get('user')->role))
+                        <li class="nav-item">
+                            <a class="nav-link menu-link {{ $title == 'Outbound' ? 'active' : '' }}" href="#sidebarOutbound" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="sidebarOutbound">
+                                <i class="mdi mdi-package-up"></i> <span data-key="t-dashboards">Outbound</span>
+                            </a>
+                            <div class="collapse menu-dropdown {{ $title == 'Outbound' ? 'show' : '' }}" id="sidebarOutbound">
+                                <ul class="nav nav-sm flex-column">
+                                    <li class="nav-item">
+                                        <a href="{{ route('outbound.index') }}" class="nav-link {{ $title == 'Outbound' ? 'active' : '' }}" data-key="t-analytics"> Order List </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </li>
+                    @endif
 
                     <li class="menu-title"><span data-key="t-menu">Warehouse Room</span></li>
                     <li class="nav-item">
