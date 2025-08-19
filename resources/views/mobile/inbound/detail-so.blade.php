@@ -74,7 +74,7 @@
         </div>
     </div>
 
-    <div class="container-fluid mt-4" style="margin-bottom: 80px">
+    <div class="container-fluid mt-2" style="margin-bottom: 80px">
         <div class="row">
             <div class="col-12">
                 <h6 class="mb-2 fw-bold">List Item SO {{ request()->get('so') }}</h6>

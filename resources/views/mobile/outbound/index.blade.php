@@ -81,28 +81,36 @@
         </div>
     </div>
 
-    <div class="container-fluid mt-4">
+    <div class="container-fluid mt-4" style="margin-bottom: 80px">
         <div class="row">
             <div class="col-12">
                 @foreach ($outbound as $item)
-                    <div class="card inventory-card mb-2">
-                        <div class="card-body p-2">
-                            <div class="d-flex justify-content-between align-items-center mb-1">
-                                <div>
-                                    <div class="fw-bold">{{ $item->purc_doc }}</div>
-                                    <small class="text-muted">SO#: {{ $item->sales_docs }}</small>
-                                </div>
-                                <div class="text-end">
-                                    <span class="badge bg-primary">{{ number_format($item->qty) }}</span>
-                                    <div class="info-row fw-bold">
-                                        {{ \Carbon\Carbon::parse($item->delivery_date)->translatedFormat('d M Y') }}
+                    <a href="{{ route('outbound.indexDetail.mobile', ['id' => $item->id]) }}">
+                        <div class="card inventory-card mb-2">
+                            <div class="card-body p-2">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <div>
+                                        <div class="fw-bold">{{ $item->purc_doc }}</div>
+                                        <small class="text-muted">SO#: {{ $item->sales_docs }}</small>
+                                        <div class="info-row"><b>{{ $item->delivery_note_number ?? '-' }}</b></div>
+                                    </div>
+                                    <div class="text-end">
+                                        <span class="badge bg-primary">{{ number_format($item->qty) }}</span>
+                                        <div class="info-row fw-bold">
+                                            {{ \Carbon\Carbon::parse($item->delivery_date)->translatedFormat('d M Y') }}
+                                        </div>
+                                        @if($item->status == 'outbound')
+                                            <span class="badge bg-secondary">Outbound</span>
+                                        @else
+                                            <span class="badge bg-warning">Return</span>
+                                        @endif
                                     </div>
                                 </div>
+                                <div class="info-row"><b>Nominal:</b> Rp {{ number_format($item->nominal) }}</div>
+                                <div class="info-row"><b>Deliv Dest:</b>{{ $item->deliv_dest }}</div>
                             </div>
-                            <div class="info-row"><b>{{ $item->delivery_note_number ?? '-' }}</b></div>
-                            <div class="info-row"><b>Nominal:</b> Rp {{ number_format($item->nominal) }}</div>
                         </div>
-                    </div>
+                    </a>
                 @endforeach
                 <div class="pagination-footer">
                         <div class="d-flex justify-content-center">
@@ -143,5 +151,6 @@
         </div>
     </div>
 
+    @include('mobile.layout.menu')
 </body>
 </html>

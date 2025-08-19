@@ -83,28 +83,28 @@
                             <td>1 - 90 Day</td>
                             <td>Rp {{ number_format($agingType1->total, 2) }}</td>
                             <td class="text-center fw-bold">
-                                <a href="{{ route('dashboard.aging.detail', ['type' => 1]) }}" class="text-black">{{ number_format($agingType1->qty) }}</a>
+                                <a href="{{ route('dashboard.mobile.aging.detail', ['type' => 1]) }}" class="text-black">{{ number_format($agingType1->qty) }}</a>
                             </td>
                         </tr>
                         <tr>
                             <td>91 - 180 Day</td>
                             <td>Rp {{ number_format($agingType2->total, 2) }}</td>
                             <td class="text-center fw-bold">
-                                <a href="{{ route('dashboard.aging.detail', ['type' => 2]) }}" class="text-black">{{ number_format($agingType2->qty) }}</a>
+                                <a href="{{ route('dashboard.mobile.aging.detail', ['type' => 2]) }}" class="text-black">{{ number_format($agingType2->qty) }}</a>
                             </td>
                         </tr>
                         <tr>
                             <td>181 - 365 Day</td>
                             <td>Rp {{ number_format($agingType3->total, 2) }}</td>
                             <td class="text-center fw-bold">
-                                <a href="{{ route('dashboard.aging.detail', ['type' => 3]) }}" class="text-black">{{ number_format($agingType3->qty) }}</a>
+                                <a href="{{ route('dashboard.mobile.aging.detail', ['type' => 3]) }}" class="text-black">{{ number_format($agingType3->qty) }}</a>
                             </td>
                         </tr>
                         <tr>
                             <td>> 365 Day</td>
                             <td>Rp {{ number_format($agingType4->total, 2) }}</td>
                             <td class="text-center fw-bold">
-                                <a href="{{ route('dashboard.aging.detail', ['type' => 4]) }}" class="text-black">{{ number_format($agingType4->qty) }}</a>
+                                <a href="{{ route('dashboard.mobile.aging.detail', ['type' => 4]) }}" class="text-black">{{ number_format($agingType4->qty) }}</a>
                             </td>
                         </tr>
                         </tbody>
@@ -117,7 +117,7 @@
                     <div id="simple_pie_chart" data-colors='["--vz-primary", "--vz-success", "--vz-warning", "--vz-danger", "--vz-info"]' class="apex-charts" dir="ltr"></div>
                 </div>
             </div>
-            <div class="col-12">
+            <div class="col-12" style="margin-bottom: 80px">
                 <div class="card p-2">
                     <h6 class="mb-0">Aging By Total Price</h6>
                     <div id="agingByTotalPrice" data-colors='["--vz-primary", "--vz-success", "--vz-warning", "--vz-danger", "--vz-info"]' class="apex-charts" dir="ltr"></div>
@@ -126,6 +126,7 @@
         </div>
     </div>
 
+    @include('mobile.layout.menu')
     @include('mobile.layout.js')
     <script>
         function getChartColorsArray(id) {
@@ -238,8 +239,6 @@
                 }
             });
         }
-
-
     </script>
 </body>
 </html>

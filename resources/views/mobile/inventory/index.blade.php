@@ -83,7 +83,7 @@
         </div>
     </div>
 
-    <div class="container-fluid mt-4">
+    <div class="container-fluid mt-4" style="margin-bottom: 80px">
         <div class="row">
             <div class="col-12 mb-3">
                 <form action="{{ url()->current() }}" method="GET">
@@ -159,5 +159,6 @@
         </div>
     </div>
 
+    @include('mobile.layout.menu')
 </body>
 </html>

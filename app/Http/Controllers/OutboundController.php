@@ -598,22 +598,26 @@ class OutboundController extends Controller
             ->leftJoin('purchase_order_detail', 'purchase_order_detail.id', '=', 'inventory_package_item.purchase_order_detail_id')
             ->leftJoin('customer', 'customer.id', '=', 'outbound.customer_id')
             ->select([
+                'outbound.id',
                 'outbound.number',
                 'outbound.purc_doc',
                 'outbound.sales_docs',
                 'outbound.delivery_date',
                 'outbound.qty',
+                'outbound.status',
                 'outbound.deliv_loc',
                 'outbound.deliv_dest',
                 'outbound.delivery_note_number',
                 DB::raw('SUM(outbound_detail.qty * purchase_order_detail.net_order_price) as nominal')
             ])
             ->groupBy([
+                'outbound.id',
                 'outbound.number',
                 'outbound.purc_doc',
                 'outbound.sales_docs',
                 'outbound.delivery_date',
                 'outbound.qty',
+                'outbound.status',
                 'outbound.deliv_loc',
                 'outbound.deliv_dest',
                 'outbound.delivery_note_number',
@@ -621,5 +625,21 @@ class OutboundController extends Controller
             ->paginate(5);
 
         return view('mobile.outbound.index', compact('outbound'));
+    }
+
+    public function indexDetailMobile(Request $request): View
+    {
+        $outbound = Outbound::with('user', 'customer')->where('id', $request->query('id'))->first();
+        $outboundDetail = OutboundDetail::with('inventoryPackageItem', 'inventoryPackageItem.purchaseOrderDetail', 'inventoryPackageItem.purchaseOrderDetail.purchaseOrder')->where('outbound_id', $request->query('id'))->get();
+
+        return view('mobile.outbound.detail', compact('request', 'outbound', 'outboundDetail'));
+    }
+
+    public function indexDetailSnMobile(Request $request): View
+    {
+        $outboundId = $request->query('outbound');
+        $serialNumber = OutboundDetailSN::where('outbound_detail_id', $request->query('id'))->get();
+
+        return view('mobile.outbound.sn', compact('request', 'serialNumber', 'outboundId'));
     }
 }
