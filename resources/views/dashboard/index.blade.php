@@ -106,7 +106,7 @@
             </div>
         </div><!-- end col -->
 
-        <div class="col-xl-8">
+        <div style="display: none" class="col-xl-8">
             <div class="card">
                 <div class="card-header border-0 align-items-center d-flex">
                     <h4 class="card-title mb-0 flex-grow-1">Warehouse Overview</h4>
@@ -152,7 +152,7 @@
             </div><!-- end card -->
         </div>
 
-        <div class="col-xxl-4">
+        <div style="display: none" class="col-xxl-4">
             <div class="card">
                 <div class="card-header border-0">
                     <h4 class="card-title mb-0">Daftar Purchase Order Terbaru</h4>
