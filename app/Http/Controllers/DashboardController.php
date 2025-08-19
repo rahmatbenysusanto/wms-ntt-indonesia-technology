@@ -90,6 +90,61 @@ class DashboardController extends Controller
         return view('dashboard.po.detail', compact('title', 'purchaseOrder', 'purchaseOrderDetail'));
     }
 
+    public function dashboardSoDetail(Request $request): View
+    {
+        $purchaseOrderDetail = PurchaseOrderDetail::where('purchase_order_id', $request->query('po'))
+            ->where('sales_doc', $request->query('so'))
+            ->orderBy('sales_doc')
+            ->get();
+
+        foreach ($purchaseOrderDetail as $detail) {
+            $detail->stock = DB::table('inventory_detail')->where('purchase_order_detail_id', $detail->id)->sum('qty');
+            $detail->qty_outbound = DB::table('outbound_detail')
+                ->leftJoin('inventory_package_item', 'inventory_package_item.id', '=', 'outbound_detail.inventory_package_item_id')
+                ->where('inventory_package_item.purchase_order_detail_id', $detail->id)
+                ->sum('outbound_detail.qty');
+        }
+
+        $title = 'Dashboard PO';
+        return view('dashboard.po.detail-so', compact('title', 'purchaseOrderDetail'));
+    }
+
+    public function dashboardStockSN(Request $request): View
+    {
+        $serialNumber = DB::table('inventory_package_item')
+            ->leftJoin('inventory_package', 'inventory_package_item.inventory_package_id', '=', 'inventory_package.id')
+            ->leftJoin('inventory_package_item_sn', 'inventory_package_item_sn.inventory_package_item_id', '=', 'inventory_package_item.id')
+            ->where('purchase_order_detail_id', $request->query('id'))
+            ->whereNotIn('inventory_package.storage_id', [1,2,3,4])
+            ->where('inventory_package_item.qty', '!=', 0)
+            ->where('inventory_package_item_sn.qty', '!=', 0)
+            ->select([
+                'inventory_package_item_sn.serial_number',
+            ])
+            ->get();
+
+        $title = 'Dashboard PO';
+        return view('dashboard.po.sn', compact('title', 'serialNumber'));
+    }
+
+    public function dashboardOutboundSN(Request $request): View
+    {
+        $serialNumber = DB::table('outbound')
+            ->leftJoin('outbound_detail', 'outbound_detail.outbound_id', '=', 'outbound.id')
+            ->leftJoin('inventory_package_item', 'inventory_package_item.id', '=', 'outbound_detail.inventory_package_item_id')
+            ->leftJoin('outbound_detail_sn', 'outbound_detail_sn.outbound_detail_id', '=', 'outbound_detail.id')
+            ->where('inventory_package_item.purchase_order_detail_id', $request->query('id'))
+            ->where('type', 'outbound')
+            ->where('status', 'outbound')
+            ->select([
+                'outbound_detail_sn.serial_number',
+            ])
+            ->get();
+
+        $title = 'Dashboard PO';
+        return view('dashboard.po.sn', compact('title', 'serialNumber'));
+    }
+
     public function dashboardAging(): View
     {
         $queryAging = DB::table('inventory_detail')

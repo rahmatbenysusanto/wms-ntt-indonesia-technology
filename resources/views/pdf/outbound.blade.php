@@ -77,9 +77,20 @@
                 <div>Phone : (021) 2854-8000</div>
             </div>
             <div class="col-4">
-                <div><i>DELIVER / SHIP TO </i></div>
-                <div><b>{{ $outbound->customer->name }}</b></div>
-                <div>{{ $outbound->deliv_loc }}</div>
+                @if($outbound->deliv_dest == 'client')
+                    <div><i>DELIVER / SHIP TO </i></div>
+                    <div><b>{{ $outbound->customer->name }}</b></div>
+                    <div>{{ $outbound->deliv_loc }}</div>
+                @elseif($outbound->deliv_dest == 'general room')
+                    <div><i>DELIVER / SHIP TO </i></div>
+                    <div><b>General Room</b></div>
+                @elseif($outbound->deliv_dest == 'pm room')
+                    <div><i>DELIVER / SHIP TO </i></div>
+                    <div><b>PM Room</b></div>
+                @elseif($outbound->deliv_dest == 'spare room')
+                    <div><i>DELIVER / SHIP TO </i></div>
+                    <div><b>Spare Room</b></div>
+                @endif
             </div>
             <div class="col-4">
                 <table>
@@ -104,7 +115,7 @@
         <table class="tbl">
             <thead>
                 <tr>
-                    <th style="width:5%;">No</th>
+                    <th style="width:5%; text-align: center">No</th>
                     <th style="width:15%;">Product</th>
                     <th style="width: 55%">Description</th>
                     <th style="width:10%; text-align: center">QTY</th>
@@ -115,7 +126,7 @@
             @php $number = 1; @endphp
             @foreach($outboundDetail as $detail)
                 <tr>
-                    <td>{{ $number++ }}</td>
+                    <td style="text-align: center">{{ $number++ }}</td>
                     <td>{{ $detail->inventoryPackageItem->purchaseOrderDetail->sales_doc }}</td>
                     <td>
                         <div><b>{{ $detail->inventoryPackageItem->purchaseOrderDetail->material }}</b></div>

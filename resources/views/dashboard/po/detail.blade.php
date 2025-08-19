@@ -86,7 +86,9 @@
                                 @foreach($purchaseOrderDetail as $detail)
                                     <tr>
                                         <td>{{ $loop->iteration }}</td>
-                                        <td>{{ $detail->sales_doc }}</td>
+                                        <td>
+                                            <a href="{{ route('dashboard.so.detail', ['po' => request()->get('id'), 'so' => $detail->sales_doc]) }}">{{ $detail->sales_doc }}</a>
+                                        </td>
                                         <td class="text-center fw-bold">{{ number_format($detail->qty) }}</td>
                                         <td class="text-center fw-bold">{{ number_format($detail->qty_qc) }}</td>
                                         <td class="text-center fw-bold">{{ number_format($detail->stock) }}</td>
