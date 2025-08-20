@@ -571,7 +571,7 @@ class OutboundController extends Controller
         ];
 
         $pdf = Pdf::loadView('pdf.outbound', $data);
-        return $pdf->stream('outbound '.$outbound->delivery_note_number.'.pdf');
+        return $pdf->download('outbound '.$outbound->delivery_note_number.'.pdf');
     }
 
     // Mobile APP
@@ -607,6 +607,7 @@ class OutboundController extends Controller
                 'outbound.deliv_dest',
                 'outbound.delivery_note_number',
             ])
+            ->latest('outbound.delivery_date')
             ->paginate(5);
 
         return view('mobile.outbound.index', compact('outbound'));

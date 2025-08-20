@@ -68,15 +68,17 @@
     <div class="container-fluid">
         <div class="row">
             <div class="col-2 d-flex align-items-center">
-                <a href="{{ route('inbound.index.mobile') }}" class="ps-3">
+                <a href="{{ route('outbound.index.mobile') }}" class="ps-3">
                     <i class="mdi mdi-arrow-left-thin text-white" style="font-size: 32px"></i>
                 </a>
             </div>
             <div class="col-8 d-flex justify-content-center align-items-center">
                 <h5 class="mb-0 text-center text-white">Outbound Detail</h5>
             </div>
-            <div class="col-2">
-
+            <div class="col-2 d-flex align-items-center">
+                <a href="{{ route('outbound.download-excel', ['id' => $outbound->id]) }}" class="ps-3">
+                    <i class="mdi mdi-file-pdf-box text-white" style="font-size: 22px"></i>
+                </a>
             </div>
         </div>
     </div>
@@ -102,8 +104,8 @@
                         <div class="card-body p-2">
                             <div class="d-flex justify-content-between align-items-center mb-1">
                                 <div>
-                                    <div class="fw-bold">{{ $detail->inventoryPackageItem->purchaseOrderDetail->purchaseOrder->purc_doc }}</div>
-                                    <small class="text-muted">SO#: {{ $detail->inventoryPackageItem->purchaseOrderDetail->sales_doc }}</small>
+                                    <div class="fw-bold">{{ $detail->inventoryPackageItem?->purchaseOrderDetail?->purchaseOrder?->purc_doc }}</div>
+                                    <small class="text-muted">SO#: {{ $detail->inventoryPackageItem?->purchaseOrderDetail?->sales_doc }}</small>
                                 </div>
                                 <span class="badge bg-primary">{{ number_format($detail->qty) }}</span>
                             </div>

@@ -68,7 +68,7 @@
                 <h5 class="mb-0 text-center text-white">Inbound Detail</h5>
             </div>
             <div class="col-2 d-flex align-items-center">
-                <a href="" class="ps-3">
+                <a href="{{ route('inbound.purchase-order-download-excel', ['id' => request()->get('id')]) }}" class="ps-3">
                     <i class="mdi mdi-file-excel text-white" style="font-size: 22px"></i>
                 </a>
             </div>

@@ -682,7 +682,31 @@ class InventoryController extends Controller
             ->sum('outbound_detail.qty');
         $outboundNominal = $outboundDetail * $purchaseOrderDetail->net_order_price;
 
-        return view('mobile.inventory.detail', compact('product', 'inventoryPackageItem', 'inventoryNominal', 'outboundDetail', 'outboundNominal'));
+        $serialNumberOutbound = DB::table('outbound')
+            ->leftJoin('outbound_detail', 'outbound_detail.outbound_id', '=', 'outbound.id')
+            ->leftJoin('inventory_package_item', 'inventory_package_item.id', '=', 'outbound_detail.inventory_package_item_id')
+            ->leftJoin('outbound_detail_sn', 'outbound_detail_sn.outbound_detail_id', '=', 'outbound_detail.id')
+            ->where('outbound.type', 'outbound')
+            ->where('outbound.status','outbound')
+            ->where('inventory_package_item.purchase_order_detail_id', $purchaseOrderDetail->id)
+            ->select([
+                'outbound_detail_sn.serial_number'
+            ])
+            ->get();
+
+        $serialNumberStock = DB::table('inventory_package')
+            ->leftJoin('inventory_package_item', 'inventory_package_item.inventory_package_id', '=', 'inventory_package.id')
+            ->leftJoin('inventory_package_item_sn', 'inventory_package_item_sn.inventory_package_item_id', '=', 'inventory_package_item.id')
+            ->whereNotIn('inventory_package.storage_id', [1,2,3,4])
+            ->where('inventory_package_item.qty', '!=', 0)
+            ->where('inventory_package_item_sn.qty', '!=', 0)
+            ->where('inventory_package_item.purchase_order_detail_id', $purchaseOrderDetail->id)
+            ->select([
+                'serial_number',
+            ])
+            ->get();
+
+        return view('mobile.inventory.detail', compact('product', 'inventoryPackageItem', 'inventoryNominal', 'outboundDetail', 'outboundNominal', 'serialNumberStock', 'serialNumberOutbound'));
     }
 
     public function boxMobile(): View

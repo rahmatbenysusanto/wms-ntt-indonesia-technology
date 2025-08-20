@@ -155,6 +155,31 @@
                     <div class="stat-sub">Rp {{ number_format($outboundNominal) }}</div>
                 </div>
             </div>
+
+            <div class="col-6">
+                <div class="card p-1">
+                    <span class="fw-bold">Serial Number Stock</span>
+                    <table class="table table-striped">
+                        @foreach($serialNumberStock as $sn)
+                            <tr>
+                                <td>{{ $sn->serial_number }}</td>
+                            </tr>
+                        @endforeach
+                    </table>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="card p-1">
+                    <span class="fw-bold">Serial Number Outbound</span>
+                    <table class="table table-striped">
+                        @foreach($serialNumberOutbound as $sn)
+                            <tr>
+                                <td>{{ $sn->serial_number }}</td>
+                            </tr>
+                        @endforeach
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
 

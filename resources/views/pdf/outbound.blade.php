@@ -90,6 +90,9 @@
                 @elseif($outbound->deliv_dest == 'spare room')
                     <div><i>DELIVER / SHIP TO </i></div>
                     <div><b>Spare Room</b></div>
+                @elseif($outbound->deliv_dest == '-')
+                    <div><i>DELIVER / SHIP TO </i></div>
+                    <div><b>Return To Inventory</b></div>
                 @endif
             </div>
             <div class="col-4">
