@@ -107,10 +107,10 @@
                     <div class="mb-3">
                         <label for="sizeSelector" class="form-label">Ukuran Barcode:</label>
                         <select id="sizeSelector" class="form-select w-auto d-inline" onchange="updateBarcodePreview()">
-                            <option value="small" selected>Small (5.8 x 4 cm)</option>
-                            <option value="medium">Medium (7 x 5 cm)</option>
-                            <option value="large">Large (8 x 6 cm)</option>
-                            <option value="xlarge">Extra Large (10 x 7 cm)</option>
+                            <option value="small" selected>Small (7 x 47 cm)</option>
+                            <option value="medium">Medium (8 x 8 cm)</option>
+                            <option value="large">Large (9 x 9 cm)</option>
+                            <option value="xlarge">Extra Large (10 x 10 cm)</option>
                         </select>
                     </div>
 
@@ -168,11 +168,11 @@
         function getSize(scale) {
             const cmToPx = cm => cm * 37.8;
             switch (scale) {
-                case 'small': return { width: cmToPx(5.8), height: cmToPx(5.5) };
-                case 'medium': return { width: cmToPx(7), height: cmToPx(6) };
-                case 'large': return { width: cmToPx(8), height: cmToPx(6) };
-                case 'xlarge': return { width: cmToPx(10), height: cmToPx(6) };
-                default: return { width: cmToPx(7), height: cmToPx(6) };
+                case 'small': return { width: cmToPx(7), height: cmToPx(7), fontSize: 12 };
+                case 'medium': return { width: cmToPx(8), height: cmToPx(8), fontSize: 13 };
+                case 'large': return { width: cmToPx(9), height: cmToPx(9), fontSize: 14 };
+                case 'xlarge': return { width: cmToPx(10), height: cmToPx(10), fontSize: 15 };
+                default: return { width: cmToPx(7), height: cmToPx(7), fontSize: 12 };
             }
         }
 
@@ -187,7 +187,7 @@
             const dataPackage = @json($products);
             const find = dataPackage[index];
 
-            currentBarcodeId = 'hahahahaha';
+            currentBarcodeId = find.number;
             purcDoc = find.purchase_order.purc_doc;
             boxName = find.reff_number;
             customer = find.purchase_order.customer.name;
@@ -206,83 +206,74 @@
             area.innerHTML = '';
 
             const scale = document.getElementById('sizeSelector').value;
-            const { width, height } = getSize(scale);
+            const { width, height, fontSize } = getSize(scale);
 
             const container = document.createElement('div');
-            container.style.width = `${width}px`;
-            container.style.height = `${height}px`;
-            container.style.padding = '8px';
-            container.style.background = '#fff';
-            container.style.textAlign = 'left';
-            container.style.fontSize = '12px';
+            Object.assign(container.style, {
+                width: `${width}px`,
+                height: `${height}px`,
+                padding: '8px',
+                background: '#fff',
+                fontSize: `${fontSize}px`,
+            });
             container.setAttribute('id', 'barcodeFinal');
 
             const qrWrapper = document.createElement('div');
-            qrWrapper.style.display = 'flex';
-            qrWrapper.style.justifyContent = 'center';
-            qrWrapper.style.alignItems = 'center';
+            Object.assign(qrWrapper.style, {
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                marginBottom: '15px',
+            });
 
             const qrDiv = document.createElement('div');
             qrDiv.setAttribute('id', 'qrCodeContainer');
-
             qrWrapper.appendChild(qrDiv);
 
-            const text1 = document.createElement('div');
-            text1.innerHTML = '<b>Box:</b> '+boxName;
-            text1.style.marginTop = '2px';
+            const table = document.createElement('table');
+            table.style.width = '100%';
+            table.style.borderCollapse = 'collapse';
 
-            const textPO = document.createElement('div');
-            textPO.innerHTML = '<b>Purc Doc: </b>'+purcDoc;
-            textPO.style.marginTop = '2px';
+            const addRow = (label, value) => {
+                const tr = document.createElement('tr');
 
-            const textSO = document.createElement('div');
-            textSO.innerHTML = '<b>Sales Doc: </b>'+salesDoc;
-            textSO.style.marginTop = '2px';
+                const tdLabel = document.createElement('td');
+                tdLabel.textContent = label;
+                tdLabel.style.fontWeight = '600';
+                tdLabel.style.textAlign = 'left';
+                tdLabel.style.whiteSpace = 'nowrap';
 
-            const textCustomer = document.createElement('div');
-            textCustomer.innerHTML = '<b>Customer: </b>'+customer;
-            textCustomer.style.marginTop = '2px';
+                const tdColon = document.createElement('td');
+                tdColon.textContent = ':';
+                tdColon.style.width = '10px';
+                tdColon.style.textAlign = 'center';
 
-            const text2 = document.createElement('div');
-            text2.innerHTML = '<b>Location: </b>'+locationText;
-            text2.style.marginTop = '2px';
+                const tdValue = document.createElement('td');
+                tdValue.textContent = value ?? '';
+                tdValue.style.textAlign = 'left';
+                tdValue.style.paddingLeft = '2px';
 
-            const text3 = document.createElement('div');
-            text3.innerHTML = '<b>Inbound Date: </b>'+'{{ \Carbon\Carbon::parse($products[0]->created_at)->translatedFormat('d F Y') }}';
-            text3.style.marginTop = '2px';
-            text3.style.marginBottom = '2px';
+                tr.append(tdLabel, tdColon, tdValue);
+                table.appendChild(tr);
+            };
 
-            container.appendChild(qrWrapper);
-            container.appendChild(text1);
-            container.appendChild(textPO);
-            container.appendChild(textSO);
-            container.appendChild(textCustomer);
-            container.appendChild(text2);
-            container.appendChild(text3);
+            addRow('Box', boxName);
+            addRow('Purc Doc', purcDoc);
+            addRow('Sales Doc', salesDoc);
+            addRow('Customer', customer);
+            addRow('Location', locationText);
+            addRow('Inbound Date', '{{ \Carbon\Carbon::parse($products[0]->created_at)->translatedFormat('d F Y') }}');
 
-            if ('{{ $products[0]->return }}' === "1") {
-                const returnText = document.createElement('div');
-                returnText.innerHTML = '<b>Return Note: </b>'+'{{ $products[0]->note }}';
-                returnText.style.marginTop = '2px';
-                returnText.style.marginBottom = '2px';
-                container.appendChild(returnText);
+            if ('{{ $products[0]->return }}' === '1') {
+                addRow('Return Note', '{{ $products[0]->note }}');
             }
 
+            container.appendChild(qrWrapper);
+            container.appendChild(table);
             area.appendChild(container);
 
-            // Generate QR Code
-            const qrSize = {
-                small: 70,
-                medium: 100,
-                large: 140,
-                xlarge: 180
-            }[scale] || 100;
-
-            new QRCode(qrDiv, {
-                text: currentBarcodeId,
-                width: qrSize,
-                height: qrSize
-            });
+            const qrSize = { small: 100, medium: 120, large: 140, xlarge: 180 }[scale] || 100;
+            new QRCode(qrDiv, { text: currentBarcodeId, width: qrSize, height: qrSize });
         }
 
         function printBarcode() {
