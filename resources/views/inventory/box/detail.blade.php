@@ -139,6 +139,8 @@
                         <thead>
                         <tr>
                             <th>Serial Number</th>
+                            <th class="text-center">QTY</th>
+                            <th class="text-center">Status</th>
                         </tr>
                         </thead>
                         <tbody id="listSerialNumber"></tbody>
@@ -313,7 +315,11 @@
 
                     serialNumber.forEach((sn) => {
                         html += `
-                            <tr><td>${sn.serial_number}</td></tr>
+                            <tr>
+                                <td>${sn.serial_number}</td>
+                                <td class="text-center fw-bold">${sn.qty}</td>
+                                <td class="text-center">${sn.qty === 1 ? '<span class="badge bg-success">Stock Available</span>' : '<span class="badge bg-danger">Stock Not Available</span>'}</td>
+                            </tr>
                         `;
                     });
 
