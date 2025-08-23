@@ -53,3 +53,13 @@
 .pagination li a:focus {
     box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
 }
+
+.btn-pdf {
+    background-color: #FF5722; /* oren kemerahan */
+    color: #fff;
+}
+.btn-pdf:hover {
+    background-color: #E64A19;
+    color: #fff;
+}
+

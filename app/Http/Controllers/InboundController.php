@@ -4,33 +4,23 @@ namespace App\Http\Controllers;
 
 use App\Models\Customer;
 use App\Models\Inventory;
-use App\Models\InventoryChild;
-use App\Models\InventoryChildDetail;
 use App\Models\InventoryDetail;
 use App\Models\InventoryHistory;
 use App\Models\InventoryItem;
 use App\Models\InventoryPackage;
 use App\Models\InventoryPackageItem;
 use App\Models\InventoryPackageItemSN;
-use App\Models\InventoryParent;
-use App\Models\InventoryParentDetail;
 use App\Models\Product;
-use App\Models\ProductChild;
-use App\Models\ProductChildDetail;
 use App\Models\ProductPackage;
 use App\Models\ProductPackageItem;
 use App\Models\ProductPackageItemSN;
-use App\Models\ProductParent;
-use App\Models\ProductParentDetail;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderDetail;
 use App\Models\PurchaseOrderEditReq;
-use App\Models\QualityControl;
-use App\Models\QualityControlDetail;
-use App\Models\QualityControlItem;
 use App\Models\SerialNumber;
 use App\Models\Storage;
 use App\Models\Vendor;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -1326,19 +1316,41 @@ class InboundController extends Controller
         $sheet->setCellValue('F7', 'PO Item QTY');
         $sheet->setCellValue('G7', 'Net Order Price');
         $sheet->setCellValue('H7', 'QTY Quality Control');
+        $sheet->setCellValue('I7', 'Serial Number');
 
         $column = 8;
         foreach ($purchaseOrderDetail as $detail) {
-            $sheet->setCellValue('A' . $column, $detail->sales_doc);
-            $sheet->setCellValue('B' . $column, $detail->item);
-            $sheet->setCellValue('C' . $column, $detail->material);
-            $sheet->setCellValue('D' . $column, $detail->po_item_desc);
-            $sheet->setCellValue('E' . $column, $detail->prod_hierarchy_desc);
-            $sheet->setCellValue('F' . $column, $detail->po_item_qty);
-            $sheet->setCellValue('G' . $column, $detail->net_order_price);
-            $sheet->setCellValue('H' . $column, $detail->qty_qc);
+            if ($detail->qty_qc == 0) {
+                $this->extracted($sheet, $column, $detail);
 
-            $column++;
+                $column++;
+            } else {
+                $serialNumber = DB::table('product_package_item')
+                    ->leftJoin('product_package_item_sn', 'product_package_item_sn.product_package_item_id', '=', 'product_package_item.id')
+                    ->where('product_package_item.purchase_order_detail_id', $detail->id)
+                    ->select([
+                        'product_package_item_sn.serial_number'
+                    ])
+                    ->get();
+
+                foreach ($serialNumber as $index => $item) {
+                    if ($index == 0) {
+                        $this->extracted($sheet, $column, $detail);
+                    } else {
+                        $sheet->setCellValue('A' . $column, '');
+                        $sheet->setCellValue('B' . $column, '');
+                        $sheet->setCellValue('C' . $column, '');
+                        $sheet->setCellValue('D' . $column, '');
+                        $sheet->setCellValue('E' . $column, '');
+                        $sheet->setCellValue('F' . $column, '');
+                        $sheet->setCellValue('G' . $column, '');
+                        $sheet->setCellValue('H' . $column, '');
+
+                    }
+                    $sheet->setCellValue('I' . $column, $item->serial_number);
+                    $column++;
+                }
+            }
         }
 
         $writer = new Xlsx($spreadsheet);
@@ -1347,7 +1359,7 @@ class InboundController extends Controller
             $writer->save('php://output');
         });
 
-        $fileName = 'Report Purchase Order ' . date('Y-m-d_H-i-s') . '.xlsx';
+        $fileName = 'Report Purchase Order '. $purchaseOrder->purc_doc. ' '. date('Y-m-d') . '.xlsx';
         $response->headers->set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         $response->headers->set('Content-Disposition', "attachment;filename=\"$fileName\"");
         $response->headers->set('Cache-Control','max-age=0');
@@ -1370,6 +1382,48 @@ class InboundController extends Controller
             ->get();
 
         return view('mobile.inbound.sn', compact('request', 'serialNumber'));
+    }
+
+    /**
+     * @param \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet
+     * @param int $column
+     * @param mixed $detail
+     * @return void
+     */
+    public function extracted(\PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet, int $column, mixed $detail): void
+    {
+        $sheet->setCellValue('A' . $column, $detail->sales_doc);
+        $sheet->setCellValue('B' . $column, $detail->item);
+        $sheet->setCellValue('C' . $column, $detail->material);
+        $sheet->setCellValue('D' . $column, $detail->po_item_desc);
+        $sheet->setCellValue('E' . $column, $detail->prod_hierarchy_desc);
+        $sheet->setCellValue('F' . $column, $detail->po_item_qty);
+        $sheet->setCellValue('G' . $column, $detail->net_order_price);
+        $sheet->setCellValue('H' . $column, $detail->qty_qc);
+    }
+
+    public function purchaseOrderDownloadPdf(Request $request): \Illuminate\Http\Response
+    {
+        $purchaseOrder = PurchaseOrder::with('customer', 'user', 'vendor')->where('id', $request->query('id'))->first();
+        $purchaseOrderDetail = PurchaseOrderDetail::where('purchase_order_id', $request->query('id'))->get();
+
+        foreach ($purchaseOrderDetail as $detail) {
+            $detail->serialNumber = DB::table('product_package_item')
+                ->leftJoin('product_package_item_sn', 'product_package_item_sn.product_package_item_id', '=', 'product_package_item.id')
+                ->where('product_package_item.purchase_order_detail_id', $detail->id)
+                ->select([
+                    'product_package_item_sn.serial_number'
+                ])
+                ->get();
+        }
+
+        $data = [
+            'purchaseOrder'          => $purchaseOrder,
+            'purchaseOrderDetail'    => $purchaseOrderDetail,
+        ];
+
+        $pdf = Pdf::loadView('pdf.inbound', $data)->setPaper('a4', 'landscape');;
+        return $pdf->stream('Purchase Order '.$purchaseOrder->purc_doc.'.pdf');
     }
 }
 

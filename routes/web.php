@@ -75,7 +75,9 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
             Route::get('/upload', 'purchaseOrderUpload')->name('inbound.purchase-order-upload');
             Route::post('/upload', 'purchaseOrderUploadProcess')->name('inbound.purchase-order-upload-process');
             Route::post('/update-status', 'changeStatusPurchaseOrder')->name('inbound.changeStatusPurchaseOrder');
+
             Route::get('/download-excel', 'purchaseOrderDownloadExcel')->name('inbound.purchase-order-download-excel');
+            Route::get('/download-pdf', 'purchaseOrderDownloadPdf')->name('inbound.purchase-order-download-pdf');
 
             // Upload Serial Number
             Route::get('/upload/serial-number', 'purchaseOrderSerialNumber')->name('inbound.upload.serial-number');
