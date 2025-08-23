@@ -149,6 +149,7 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
 
         // Download Excel
         Route::get('/download-excel', 'downloadExcel')->name('inventory.download-excel');
+        Route::get('/download-pdf', 'downloadPdf')->name('inventory.download-pdf');
         Route::get('/aging/download-excel', 'downloadExcelAging')->name('inventory.aging.download-excel');
         Route::get('/box/download-excel', 'downloadExcelBox')->name('inventory.box.report-excel');
     });

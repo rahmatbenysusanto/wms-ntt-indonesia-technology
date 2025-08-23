@@ -12,6 +12,7 @@ use App\Models\Product;
 use App\Models\PurchaseOrderDetail;
 use App\Models\Storage;
 use App\Models\TransferLocation;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -1068,5 +1069,51 @@ class InventoryController extends Controller
         $response->headers->set('Cache-Control','max-age=0');
 
         return $response;
+    }
+
+    public function downloadPdf(): \Illuminate\Http\Response
+    {
+        $inventoryDetail = DB::table('inventory_detail')
+            ->leftJoin('purchase_order_detail', 'purchase_order_detail.id', '=', 'inventory_detail.purchase_order_detail_id')
+            ->leftJoin('purchase_order', 'purchase_order.id', '=', 'purchase_order_detail.purchase_order_id')
+            ->where('inventory_detail.qty', '!=', 0)
+            ->whereNotIn('inventory_detail.storage_id', [1,2,3,4])
+            ->select([
+                'purchase_order.purc_doc',
+                'purchase_order_detail.id',
+                'purchase_order_detail.sales_doc',
+                'purchase_order_detail.material',
+                'purchase_order_detail.po_item_desc',
+                'purchase_order_detail.prod_hierarchy_desc',
+                DB::raw('SUM(inventory_detail.qty) as stock'),
+                DB::raw('SUM(inventory_detail.qty * purchase_order_detail.net_order_price) as nominal'),
+            ])
+            ->groupBy([
+                'purchase_order.purc_doc',
+                'purchase_order_detail.id',
+                'purchase_order_detail.sales_doc',
+                'purchase_order_detail.material',
+                'purchase_order_detail.po_item_desc',
+                'purchase_order_detail.prod_hierarchy_desc',
+            ])
+            ->get();
+
+        foreach ($inventoryDetail as $detail) {
+            $detail->serialNumber = DB::table('inventory_package_item')
+                ->leftJoin('inventory_package_item_sn', 'inventory_package_item_sn.inventory_package_item_id', '=', 'inventory_package_item.id')
+                ->where('inventory_package_item.purchase_order_detail_id', $detail->id)
+                ->where('inventory_package_item_sn.qty', '!=', 0)
+                ->select([
+                    'inventory_package_item_sn.serial_number',
+                ])
+                ->get();
+        }
+
+        $data = [
+            'inventoryDetail' => $inventoryDetail,
+        ];
+
+        $pdf = Pdf::loadView('pdf.product-list', $data)->setPaper('a4', 'landscape');;
+        return $pdf->stream('Product List.pdf');
     }
 }

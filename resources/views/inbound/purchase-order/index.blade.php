@@ -77,7 +77,7 @@
                                     <th class="text-center">Status</th>
                                     <th>PO Created Date</th>
                                     <th>Po Created By</th>
-                                    <th>Download Doc</th>
+                                    <th class="text-center">Download Doc</th>
                                     <th>Action</th>
                                 </tr>
                             </thead>
@@ -112,13 +112,13 @@
                                     </td>
                                     <td>{{ \Carbon\Carbon::parse($po->created_at)->translatedFormat('d F Y H:i') }}</td>
                                     <td>{{ $po->user->name }}</td>
-                                    <td>
-                                        <div class="d-flex gap-2">
+                                    <td class="text-center">
+                                        <div class="d-flex gap-2 justify-content-center">
                                             <a href="{{ route('inbound.purchase-order-download-excel', ['id' => $po->id]) }}" class="btn btn-success btn-sm">
-                                                <i class="mdi mdi-file-excel"></i>
+                                                <i class="mdi mdi-file-excel" style="font-size: 14px;"></i>
                                             </a>
                                             <a href="{{ route('inbound.purchase-order-download-pdf', ['id' => $po->id]) }}" class="btn btn-pdf btn-sm text-white" target="_blank">
-                                                <i class="mdi mdi-file-pdf-box"></i>
+                                                <i class="mdi mdi-file-pdf-box" style="font-size: 14px;"></i>
                                             </a>
                                         </div>
                                     </td>

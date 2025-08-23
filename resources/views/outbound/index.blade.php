@@ -81,9 +81,14 @@
                                     <td>{{ \Carbon\Carbon::parse($out->created_at)->translatedFormat('d F Y H:i') }}</td>
                                     <td>{{ $out->user->name }}</td>
                                     <td class="text-center">
-                                        <a href="{{ route('outbound.download-excel', ['id' => $out->id]) }}" target="_blank">
-                                            <i class="mdi mdi-file-pdf-box" style="font-size: 24px; color: #FFA500"></i>
-                                        </a>
+                                        <div class="d-flex justify-content-center gap-2">
+                                            <a href="{{ route('outbound.download-excel', ['id' => $out->id]) }}" class="btn btn-success btn-sm">
+                                                <i class="mdi mdi-file-excel" style="font-size: 14px;"></i>
+                                            </a>
+                                            <a href="{{ route('outbound.download-excel', ['id' => $out->id]) }}" class="btn btn-pdf btn-sm" target="_blank">
+                                                <i class="mdi mdi-file-pdf-box" style="font-size: 14px;"></i>
+                                            </a>
+                                        </div>
                                     </td>
                                     <td>
                                         <a href="{{ route('outbound.detail', ['id' => $out->id]) }}" class="btn btn-info btn-sm">Detail</a>

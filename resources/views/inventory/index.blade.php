@@ -20,7 +20,10 @@
                 <div class="card-header">
                     <div class="d-flex justify-content-between align-items-center">
                         <h4 class="card-title mb-0">Product List</h4>
-                        <a href="{{ route('inventory.download-excel') }}" class="btn btn-info btn-sm">Download Excel</a>
+                        <div class="d-flex gap-2">
+                            <a href="{{ route('inventory.download-excel') }}" class="btn btn-success btn-sm">Download Excel</a>
+                            <a href="{{ route('inventory.download-pdf') }}" class="btn btn-pdf btn-sm" target="_blank">Download PDF</a>
+                        </div>
                     </div>
                 </div>
                 <div class="card-header">
