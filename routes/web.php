@@ -151,7 +151,9 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
         Route::get('/download-excel', 'downloadExcel')->name('inventory.download-excel');
         Route::get('/download-pdf', 'downloadPdf')->name('inventory.download-pdf');
         Route::get('/aging/download-excel', 'downloadExcelAging')->name('inventory.aging.download-excel');
+        Route::get('/aging/download-pdf', 'downloadPdfAging')->name('inventory.aging.download-pdf');
         Route::get('/box/download-excel', 'downloadExcelBox')->name('inventory.box.report-excel');
+        Route::get('/box/download-pdf', 'downloadPdfBox')->name('inventory.box.report-pdf');
     });
 
     Route::prefix('/general-room')->controller(GeneralRoomController::class)->group(function () {

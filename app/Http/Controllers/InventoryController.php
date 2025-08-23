@@ -908,6 +908,7 @@ class InventoryController extends Controller
         $sheet->setCellValue('E1', 'Prod Hierarchy Desc');
         $sheet->setCellValue('F1', 'Stock');
         $sheet->setCellValue('G1', 'Nominal');
+        $sheet->setCellValue('H1', 'Serial Number');
 
         $inventoryDetail = DB::table('inventory_detail')
             ->leftJoin('purchase_order_detail', 'purchase_order_detail.id', '=', 'inventory_detail.purchase_order_detail_id')
@@ -916,6 +917,7 @@ class InventoryController extends Controller
             ->whereNotIn('inventory_detail.storage_id', [1,2,3,4])
             ->select([
                 'purchase_order.purc_doc',
+                'purchase_order_detail.id',
                 'purchase_order_detail.sales_doc',
                 'purchase_order_detail.material',
                 'purchase_order_detail.po_item_desc',
@@ -925,6 +927,7 @@ class InventoryController extends Controller
             ])
             ->groupBy([
                 'purchase_order.purc_doc',
+                'purchase_order_detail.id',
                 'purchase_order_detail.sales_doc',
                 'purchase_order_detail.material',
                 'purchase_order_detail.po_item_desc',
@@ -934,6 +937,15 @@ class InventoryController extends Controller
 
         $column = 2;
         foreach ($inventoryDetail as $detail) {
+            $serialNumber = DB::table('inventory_package_item')
+                ->leftJoin('inventory_package_item_sn', 'inventory_package_item_sn.inventory_package_item_id', '=', 'inventory_package_item.id')
+                ->where('inventory_package_item.purchase_order_detail_id', $detail->id)
+                ->where('inventory_package_item_sn.qty', '!=', 0)
+                ->select([
+                    'inventory_package_item_sn.serial_number',
+                ])
+                ->get();
+
             $sheet->setCellValue('A' . $column, $detail->purc_doc);
             $sheet->setCellValue('B' . $column, $detail->sales_doc);
             $sheet->setCellValue('C' . $column, $detail->material);
@@ -942,7 +954,19 @@ class InventoryController extends Controller
             $sheet->setCellValue('F' . $column, $detail->qty);
             $sheet->setCellValue('G' . $column, $detail->nominal);
 
-            $column++;
+            foreach ($serialNumber as $index => $serial) {
+                if ($index != 0) {
+                    $sheet->setCellValue('A' . $column, '');
+                    $sheet->setCellValue('B' . $column, '');
+                    $sheet->setCellValue('C' . $column, '');
+                    $sheet->setCellValue('D' . $column, '');
+                    $sheet->setCellValue('E' . $column, '');
+                    $sheet->setCellValue('F' . $column, '');
+                    $sheet->setCellValue('G' . $column, '');
+                }
+                $sheet->setCellValue('H' . $column, $serial->serial_number);
+                $column++;
+            }
         }
 
         $writer = new Xlsx($spreadsheet);
@@ -959,7 +983,7 @@ class InventoryController extends Controller
         return $response;
     }
 
-    public function downloadExcelAging(): StreamedResponse
+    public function downloadExcelAging()
     {
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
@@ -972,11 +996,15 @@ class InventoryController extends Controller
         $sheet->setCellValue('F1', 'Stock');
         $sheet->setCellValue('G1', 'Nominal');
         $sheet->setCellValue('H1', 'Aging Date');
+        $sheet->setCellValue('I1', 'Serial Number');
 
-        $inventoryAging = InventoryDetail::with('purchaseOrderDetail.purchaseOrder', 'purchaseOrderDetail', 'storage', 'inventoryPackageItem', 'inventoryPackageItem.inventoryPackage')
+        $inventoryAging = InventoryDetail::with('purchaseOrderDetail.purchaseOrder', 'purchaseOrderDetail', 'storage', 'inventoryPackageItem', 'inventoryPackageItem.inventoryPackageItemSN', 'inventoryPackageItem.inventoryPackage')
             ->where('qty', '!=', 0)
             ->whereHas('storage', function ($storage) {
                 $storage->whereNotIn('id', [1,2,3,4]);
+            })
+            ->whereHas('inventoryPackageItem.inventoryPackageItemSN', function ($inventoryPackageItemSn) {
+                $inventoryPackageItemSn->where('qty', '!=', 0);
             })
             ->latest()
             ->get();
@@ -992,7 +1020,20 @@ class InventoryController extends Controller
             $sheet->setCellValue('G' . $column, $detail->qty * $detail->purchaseOrderDetail->net_order_price);
             $sheet->setCellValue('H' . $column, $detail->aging_date);
 
-            $column++;
+            foreach ($detail->inventoryPackageItem->inventoryPackageItemSN ?? [] as $index => $inventoryPackageItemSN) {
+                if ($index != 0) {
+                    $sheet->setCellValue('A' . $column, '');
+                    $sheet->setCellValue('B' . $column, '');
+                    $sheet->setCellValue('C' . $column, '');
+                    $sheet->setCellValue('D' . $column, '');
+                    $sheet->setCellValue('E' . $column, '');
+                    $sheet->setCellValue('F' . $column, '');
+                    $sheet->setCellValue('G' . $column, '');
+                    $sheet->setCellValue('H' . $column, '');
+                }
+                $sheet->setCellValue('I' . $column, $inventoryPackageItemSN->serial_number);
+                $column++;
+            }
         }
 
         $writer = new Xlsx($spreadsheet);
@@ -1009,12 +1050,39 @@ class InventoryController extends Controller
         return $response;
     }
 
+    public function downloadPdfAging(): \Illuminate\Http\Response
+    {
+        $inventoryAging = InventoryDetail::with('purchaseOrderDetail.purchaseOrder', 'purchaseOrderDetail', 'storage', 'inventoryPackageItem', 'inventoryPackageItem.inventoryPackageItemSN', 'inventoryPackageItem.inventoryPackage')
+            ->where('qty', '!=', 0)
+            ->whereHas('storage', function ($storage) {
+                $storage->whereNotIn('id', [1,2,3,4]);
+            })
+            ->withWhereHas('inventoryPackageItem.inventoryPackageItemSN', function ($q) {
+                $q->where('qty', '!=', 0);
+            })
+            ->latest()
+            ->get();
+
+        $data = [
+            'inventoryAging' => $inventoryAging,
+        ];
+
+        $pdf = Pdf::loadView('pdf.aging', $data)->setPaper('a4', 'landscape');;
+        return $pdf->stream('Product Aging.pdf');
+    }
+
     public function downloadExcelBox(): StreamedResponse
     {
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
 
-        $listBox = InventoryPackage::with('purchaseOrder', 'user', 'storage', 'inventoryPackageItem', 'inventoryPackageItem.purchaseOrderDetail')->whereNotIn('storage_id', [1,2,3,4])->where('qty', '!=', 0)->get();
+        $listBox = InventoryPackage::with('purchaseOrder', 'user', 'storage', 'inventoryPackageItem', 'inventoryPackageItem.inventoryPackageItemSN', 'inventoryPackageItem.purchaseOrderDetail')
+            ->whereNotIn('storage_id', [1,2,3,4])
+            ->where('qty', '!=', 0)
+            ->withWhereHas('inventoryPackageItem.inventoryPackageItemSN', function ($q) {
+                $q->where('qty', '!=', 0);
+            })
+            ->get();
 
         $sheet->setCellValue('A1', 'PA Number');
         $sheet->setCellValue('B1', 'Reff Number');
@@ -1026,7 +1094,8 @@ class InventoryController extends Controller
         $sheet->setCellValue('H1', 'PO Item Desc');
         $sheet->setCellValue('I1', 'Prod Hierarchy Desc');
         $sheet->setCellValue('J1', 'QTY');
-        $sheet->setCellValue('K1', 'Note Return');
+        $sheet->setCellValue('K1', 'Serial Number');
+        $sheet->setCellValue('L1', 'Note Return');
 
         $column = 2;
         foreach ($listBox as $detail) {
@@ -1042,7 +1111,7 @@ class InventoryController extends Controller
                     $sheet->setCellValue('H' . $column, $item->purchaseOrderDetail->po_item_desc);
                     $sheet->setCellValue('I' . $column, $item->purchaseOrderDetail->prod_hierarchy_desc);
                     $sheet->setCellValue('J' . $column, $item->qty);
-                    $sheet->setCellValue('K' . $column, $detail->note);
+                    $sheet->setCellValue('L' . $column, $detail->note);
                 } else {
                     $sheet->setCellValue('D' . $column, $detail->purchaseOrder->purc_doc);
                     $sheet->setCellValue('E' . $column, $item->purchaseOrderDetail->sales_doc);
@@ -1053,7 +1122,10 @@ class InventoryController extends Controller
                     $sheet->setCellValue('J' . $column, $item->qty);
                 }
 
-                $column++;
+                foreach ($item->inventoryPackageItemSN as $serialNumber) {
+                    $sheet->setCellValue('K' . $column, $serialNumber->serial_number);
+                    $column++;
+                }
             }
         }
 
@@ -1069,6 +1141,24 @@ class InventoryController extends Controller
         $response->headers->set('Cache-Control','max-age=0');
 
         return $response;
+    }
+
+    public function downloadPdfBox(Request $request): \Illuminate\Http\Response
+    {
+        $listBox = InventoryPackage::with('purchaseOrder', 'user', 'storage', 'inventoryPackageItem', 'inventoryPackageItem.inventoryPackageItemSN', 'inventoryPackageItem.purchaseOrderDetail')
+            ->whereNotIn('storage_id', [1,2,3,4])
+            ->where('qty', '!=', 0)
+            ->withWhereHas('inventoryPackageItem.inventoryPackageItemSN', function ($q) {
+                $q->where('qty', '!=', 0);
+            })
+            ->get();
+
+        $data = [
+            'listBox' => $listBox,
+        ];
+
+        $pdf = Pdf::loadView('pdf.box', $data)->setPaper('a4', 'landscape');;
+        return $pdf->stream('Box Product.pdf');
     }
 
     public function downloadPdf(): \Illuminate\Http\Response

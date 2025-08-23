@@ -22,7 +22,7 @@
                         <h4 class="card-title mb-0">Product Aging</h4>
                         <div class="d-flex gap-2">
                             <a href="{{ route('inventory.aging.download-excel') }}" class="btn btn-success btn-sm">Download Report Excel</a>
-                            <a href="{{ route('inventory.aging.download-excel') }}" class="btn btn-pdf btn-sm">Download Report PDF</a>
+                            <a href="{{ route('inventory.aging.download-pdf') }}" class="btn btn-pdf btn-sm" target="_blank">Download Report PDF</a>
                         </div>
                     </div>
                 </div>
