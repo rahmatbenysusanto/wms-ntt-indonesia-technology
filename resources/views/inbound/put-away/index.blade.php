@@ -49,6 +49,7 @@
                                     <th>#</th>
                                     <th>Purc Doc</th>
                                     <th>Sales Doc</th>
+                                    <th>Customer</th>
                                     <th>Parent Material</th>
                                     <th>Parent Item Desc</th>
                                     <th class="text-center">QTY Item</th>
@@ -68,6 +69,7 @@
                                             <div class="mb-1">{{ $salesDoc }}</div>
                                         @endforeach
                                     </td>
+                                    <td>{{ $item->purchaseOrder->customer->name }}</td>
                                     <td>{{ $item->product->product->material }}</td>
                                     <td>{{ $item->product->product->po_item_desc }}</td>
                                     <td class="text-center fw-bold">{{ number_format($item->qty_item) }}</td>

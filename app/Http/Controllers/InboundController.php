@@ -507,7 +507,7 @@ class InboundController extends Controller
 
     public function putAway(Request $request): View
     {
-        $putAway = ProductPackage::with('purchaseOrder')->latest()->paginate(10);
+        $putAway = ProductPackage::with('purchaseOrder', 'purchaseOrder.customer')->latest()->paginate(10);
 
         foreach ($putAway as $product) {
             $productPackageItemParent = ProductPackageItem::with('product')->where('product_package_id', $product->id)->where('is_parent', 1)->first();
