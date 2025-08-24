@@ -16,7 +16,8 @@ class InventoryHistory extends Model
         'qty',
         'type',
         'created_by',
-        'note'
+        'note',
+        'serial_number'
     ];
 
     public function purchaseOrder(): BelongsTo
@@ -32,5 +33,10 @@ class InventoryHistory extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function outbound(): BelongsTo
+    {
+        return $this->belongsTo(Outbound::class, 'outbound_id');
     }
 }

@@ -240,6 +240,7 @@ class OutboundController extends Controller
                         'qty'                       => $product['qtySelect'],
                     ]);
 
+                    $serialNumber = [];
                     foreach ($product['serialNumber'] ?? [] as $serialNumber) {
                         OutboundDetailSN::create([
                             'outbound_detail_id'        => $outboundDetail->id,
@@ -252,6 +253,8 @@ class OutboundController extends Controller
                             ->update([
                                 'qty' => 0
                             ]);
+
+                        $serialNumber[] = $serialNumber['serialNumber'];
                     }
 
                     // Decrement Stock
@@ -271,6 +274,7 @@ class OutboundController extends Controller
                         'inventory_package_item_id' => $product['inventoryPackageItemId'],
                         'qty'                       => $product['qtySelect'],
                         'type'                      => 'outbound',
+                        'serial_number'             => json_encode($serialNumber),
                         'created_by'                => Auth::id(),
                         'note'                      => 'Outbound From Inventory',
                     ]);

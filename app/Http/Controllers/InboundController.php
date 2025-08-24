@@ -27,6 +27,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -458,6 +459,7 @@ class InboundController extends Controller
                                 'inventory_package_item_id'     => $inventoryPackageItem->id,
                                 'qty'                           => $product['qtyDirect'],
                                 'type'                          => 'inbound',
+                                'serial_number'                 => json_encode($product['SnDirect']),
                                 'created_by'                    => Auth::id()
                             ]);
 
@@ -680,6 +682,7 @@ class InboundController extends Controller
                         'inventory_package_item_id'     => $inventoryPackageItem->id,
                         'qty'                           => $parent['qtySelect'],
                         'type'                          => 'inbound',
+                        'serial_number'                 => json_encode($parent['serialNumber']),
                         'created_by'                    => Auth::id()
                     ]);
 
@@ -722,6 +725,7 @@ class InboundController extends Controller
                         'inventory_package_item_id'     => $inventoryPackageItem->id,
                         'qty'                           => $child['qtySelect'],
                         'type'                          => 'inbound',
+                        'serial_number'                 => json_encode($child['serialNumber']),
                         'created_by'                    => Auth::id()
                     ]);
 
@@ -976,6 +980,7 @@ class InboundController extends Controller
                                     'inventory_package_item_id'     => $inventoryPackageItem->id,
                                     'qty'                           => $salesDoc['qtyDirect'],
                                     'type'                          => 'inbound',
+                                    'serial_number'                 => json_encode($salesDoc['snDirect']),
                                     'created_by'                    => Auth::id()
                                 ]);
 
@@ -1060,6 +1065,7 @@ class InboundController extends Controller
                                         'inventory_package_item_id'     => $inventoryPackageItem->id,
                                         'qty'                           => $salesDoc['qtyDirect'],
                                         'type'                          => 'inbound',
+                                        'serial_number'                 => json_encode($salesDoc['snDirect']),
                                         'created_by'                    => Auth::id()
                                     ]);
 
@@ -1385,12 +1391,12 @@ class InboundController extends Controller
     }
 
     /**
-     * @param \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet
+     * @param Worksheet $sheet
      * @param int $column
      * @param mixed $detail
      * @return void
      */
-    public function extracted(\PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet, int $column, mixed $detail): void
+    public function extracted(Worksheet $sheet, int $column, mixed $detail): void
     {
         $sheet->setCellValue('A' . $column, $detail->sales_doc);
         $sheet->setCellValue('B' . $column, $detail->item);

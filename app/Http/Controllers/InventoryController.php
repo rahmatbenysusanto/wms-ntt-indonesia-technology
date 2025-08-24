@@ -240,6 +240,14 @@ class InventoryController extends Controller
         return view('inventory.cycle-count', compact('title', 'cycleCount'));
     }
 
+    public function cycleCountDetail(Request $request): View
+    {
+        $cycleCount = InventoryHistory::with('purchaseOrder', 'purchaseOrderDetail', 'user', 'outbound')->where('id', $request->query('id'))->first();
+
+        $title = 'Cycle Count';
+        return view('inventory.cycle-count-detail', compact('title', 'cycleCount'));
+    }
+
     public function transferLocation(Request $request): View
     {
         $transfer = TransferLocation::with('inventoryPackage', 'oldLocation', 'newLocation', 'user')->latest()->paginate(10);

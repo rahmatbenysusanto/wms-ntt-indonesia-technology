@@ -14,6 +14,7 @@
                 </div>
             </div>
         </div>
+
         <div class="col-12">
             <div class="card">
                 <div class="card-header">
@@ -31,6 +32,7 @@
                                 <th>Hierarchy Desc</th>
                                 <th class="text-center">QTY</th>
                                 <th>Type</th>
+                                <th class="text-center">Serial Number</th>
                                 <th>Created By</th>
                                 <td>Date</td>
                             </tr>
@@ -51,6 +53,9 @@
                                     @else
                                         <span class="badge bg-success-subtle text-success">Inbound</span>
                                     @endif
+                                </td>
+                                <td class="text-center">
+                                    <a href="{{ route('inventory.cycle-count-detail', ['id' => $item->id]) }}" class="btn btn-info btn-sm">Detail SN</a>
                                 </td>
                                 <td>{{ $item->user->name }}</td>
                                 <td>{{ \Carbon\Carbon::parse($item->created_at)->translatedFormat('d F Y H:i') }}</td>

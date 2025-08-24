@@ -129,7 +129,9 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
         Route::get('/box', 'box')->name('inventory.box');
         Route::get('/box-detail', 'boxDetail')->name('inventory.box.detail');
         Route::get('/detail', 'detail')->name('inventory.detail');
+
         Route::get('/cycle-count', 'cycleCount')->name('inventory.cycle-count');
+        Route::get('/cycle-count-detail', 'cycleCountDetail')->name('inventory.cycle-count-detail');
 
         Route::post('/change-type', 'changeTypeProduct')->name('inventory.change.type.product');
         Route::get('/change-box', 'changeBox')->name('inventory.change.box');

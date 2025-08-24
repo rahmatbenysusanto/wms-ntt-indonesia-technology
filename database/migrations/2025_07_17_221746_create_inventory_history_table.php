@@ -20,6 +20,7 @@ return new class extends Migration
             $table->integer('qty')->default('0');
             $table->string('type');
             $table->text('note')->nullable();
+            $table->json('serial_number')->nullable();
             $table->integer('created_by');
             $table->timestamps();
         });
