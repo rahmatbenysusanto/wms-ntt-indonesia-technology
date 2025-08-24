@@ -464,7 +464,7 @@ class OutboundController extends Controller
                 'deliv_dest'    => '-',
                 'note'          => $request->post('note'),
                 'delivery_date' => $request->post('outboundDate') ?? date('Y-m-d H:i:s'),
-                'delivery_note_number' => $returnOutbound->delivery_note_number,
+                'delivery_note_number' => $request->post('reffNumber') ?? null,
                 'created_by'    => Auth::id(),
             ]);
 

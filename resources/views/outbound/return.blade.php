@@ -39,6 +39,10 @@
                             <label class="form-label">Box Name</label>
                             <input type="text" class="form-control" id="boxName" placeholder="Box name">
                         </div>
+                        <div class="col-6 mb-3">
+                            <label class="form-label">Reff Number</label>
+                            <input type="text" class="form-control" id="reffNumber" placeholder="Reff Number">
+                        </div>
                         <div class="col-12">
                             <label class="form-label">Note</label>
                             <textarea class="form-control" id="note"></textarea>
@@ -450,7 +454,8 @@
                             masterBox: document.getElementById('masterBox').value ?? null,
                             outboundDate: document.getElementById('outboundDate').value,
                             note: document.getElementById('note').value,
-                            bin: document.getElementById('bin').value
+                            bin: document.getElementById('bin').value,
+                            reffNumber: document.getElementById('reffNumber').value ?? null
                         },
                         success: (res) => {
                             if (res.status) {
