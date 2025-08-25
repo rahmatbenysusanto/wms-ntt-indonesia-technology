@@ -248,6 +248,76 @@ class InventoryController extends Controller
         return view('inventory.cycle-count-detail', compact('title', 'cycleCount'));
     }
 
+    public function cycleCountDownloadPDF(Request $request): \Illuminate\Http\Response
+    {
+        $cycleCount = InventoryHistory::with('purchaseOrder', 'purchaseOrderDetail')->whereBetween('created_at', [$request->get('startDate'), $request->get('endDate')])
+            ->where('type', $request->get('type'))
+            ->get();
+
+        $data = [
+            'cycleCount' => $cycleCount
+        ];
+
+        $pdf = Pdf::loadView('pdf.cycle-count', $data)->setPaper('a4', 'landscape');;
+        return $pdf->stream('Cycle Count.pdf');
+    }
+
+    public function cycleCountDownloadExcel(Request $request): StreamedResponse
+    {
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+
+        $cycleCount = InventoryHistory::with('purchaseOrder', 'purchaseOrderDetail')->whereBetween('created_at', [$request->get('startDate'), $request->get('endDate')])
+            ->where('type', $request->get('type'))
+            ->get();
+
+        $sheet->setCellValue('A1', 'Purc Doc');
+        $sheet->setCellValue('B1', 'Sales Doc');
+        $sheet->setCellValue('C1', 'Material');
+        $sheet->setCellValue('D1', 'PO Item Desc');
+        $sheet->setCellValue('E1', 'Prod Hierarchy Desc');
+        $sheet->setCellValue('F1', 'QTY');
+        $sheet->setCellValue('G1', 'Type');
+        $sheet->setCellValue('H1', 'Date');
+        $sheet->setCellValue('I1', 'Serial Number');
+
+        $column = 2;
+        foreach ($cycleCount as $item) {
+            $sheet->setCellValue('A'.$column, data_get($item, 'purchaseOrderDetail.purchaseOrder.purc_doc', ''));
+            $sheet->setCellValue('B'.$column, data_get($item, 'purchaseOrderDetail.sales_doc', ''));
+            $sheet->setCellValue('C'.$column, data_get($item, 'purchaseOrderDetail.material', ''));
+            $sheet->setCellValue('D'.$column, data_get($item, 'purchaseOrderDetail.po_item_desc', ''));
+            $sheet->setCellValue('E'.$column, data_get($item, 'purchaseOrderDetail.prod_hierarchy_desc', ''));
+            $sheet->setCellValue('F'.$column, (string) $item->qty);
+            $sheet->setCellValue('G'.$column, (string) $item->type);
+            $sheet->setCellValue('H'.$column, optional($item->created_at)->format('Y-m-d H:i:s') ?? '');
+
+            $serials = json_decode($item->serial_number ?: '[]', true) ?: [];
+
+            if (count($serials) === 0) {
+                $column++;
+            } else {
+                foreach ($serials as $sn) {
+                    $sheet->setCellValue('I'.$column, (string) $sn);
+                    $column++;
+                }
+            }
+        }
+
+        $writer = new Xlsx($spreadsheet);
+
+        $response = new StreamedResponse(function() use ($writer) {
+            $writer->save('php://output');
+        });
+
+        $fileName = 'Report Cycle Count ' . date('Y-m-d H:i:s') . '.xlsx';
+        $response->headers->set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        $response->headers->set('Content-Disposition', "attachment;filename=\"$fileName\"");
+        $response->headers->set('Cache-Control','max-age=0');
+
+        return $response;
+    }
+
     public function transferLocation(Request $request): View
     {
         $transfer = TransferLocation::with('inventoryPackage', 'oldLocation', 'newLocation', 'user')->latest()->paginate(10);
@@ -991,7 +1061,7 @@ class InventoryController extends Controller
         return $response;
     }
 
-    public function downloadExcelAging()
+    public function downloadExcelAging(): StreamedResponse
     {
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();

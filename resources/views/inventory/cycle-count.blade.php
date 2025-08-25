@@ -18,7 +18,13 @@
         <div class="col-12">
             <div class="card">
                 <div class="card-header">
-                    <h4 class="card-title mb-0">List Cycle Count Product</h4>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="card-title mb-0">List Cycle Count Product</h4>
+                        <div class="d-flex gap-2">
+                            <a class="btn btn-pdf btn-sm" onclick="downloadPDF()">Download PDF</a>
+                            <a class="btn btn-success btn-sm" onclick="downloadExcel()">Download Excel</a>
+                        </div>
+                    </div>
                 </div>
                 <div class="card-body">
                     <table class="table table-striped align-middle">
@@ -95,10 +101,89 @@
                                 @endif
                             </ul>
                         @endif
-
                     </div>
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- Download PDF Modals -->
+    <div id="download-pdf-modal" class="modal fade" tabindex="-1" aria-labelledby="myModalLabel" aria-hidden="true" style="display: none;">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="myModalLabel">Download Cycle Count PDF</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"> </button>
+                </div>
+                <div class="modal-body">
+                    <form action="{{ route('inventory.cycle-count.download-pdf') }}" method="GET">
+                        <div class="mb-3">
+                            <label class="form-label">Start Date</label>
+                            <input type="date" class="form-control" name="startDate" id="startDate">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">End Date</label>
+                            <input type="date" class="form-control" name="endDate" id="endDate">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Type</label>
+                            <select class="form-control" name="type">
+                                <option value="inbound">Inbound</option>
+                                <option value="outbound">Outbound</option>
+                            </select>
+                        </div>
+                        <div class="d-flex justify-content-end">
+                            <button type="submit" class="btn btn-primary" formtarget="_blank" rel="noopener noreferrer">Download</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Download Excel Modals -->
+    <div id="download-excel-modal" class="modal fade" tabindex="-1" aria-labelledby="myModalLabel" aria-hidden="true" style="display: none;">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="myModalLabel">Download Cycle Count Excel</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"> </button>
+                </div>
+                <div class="modal-body">
+                    <form action="{{ route('inventory.cycle-count.download-excel') }}" method="GET">
+                        <div class="mb-3">
+                            <label class="form-label">Start Date</label>
+                            <input type="date" class="form-control" name="startDate" id="startDate">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">End Date</label>
+                            <input type="date" class="form-control" name="endDate" id="endDate">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Type</label>
+                            <select class="form-control" name="type">
+                                <option value="inbound">Inbound</option>
+                                <option value="outbound">Outbound</option>
+                            </select>
+                        </div>
+                        <div class="d-flex justify-content-end">
+                            <button type="submit" class="btn btn-primary" formtarget="_blank" rel="noopener noreferrer">Download</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+@endsection
+
+@section('js')
+    <script>
+        function downloadPDF() {
+            $('#download-pdf-modal').modal('show');
+        }
+
+        function downloadExcel() {
+            $('#download-excel-modal').modal('show');
+        }
+    </script>
 @endsection

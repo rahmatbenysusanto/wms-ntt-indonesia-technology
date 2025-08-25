@@ -132,6 +132,8 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
 
         Route::get('/cycle-count', 'cycleCount')->name('inventory.cycle-count');
         Route::get('/cycle-count-detail', 'cycleCountDetail')->name('inventory.cycle-count-detail');
+        Route::get('/cycle-count/download/pdf', 'cycleCountDownloadPDF')->name('inventory.cycle-count.download-pdf');
+        Route::get('/cycle-count/download/excel', 'cycleCountDownloadExcel')->name('inventory.cycle-count.download-excel');
 
         Route::post('/change-type', 'changeTypeProduct')->name('inventory.change.type.product');
         Route::get('/change-box', 'changeBox')->name('inventory.change.box');
