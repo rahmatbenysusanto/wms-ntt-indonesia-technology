@@ -16,12 +16,16 @@ use App\Models\OutboundDetail;
 use App\Models\OutboundDetailSN;
 use App\Models\PmRoom;
 use App\Models\Storage;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class PmRoomController extends Controller
 {
@@ -536,5 +540,77 @@ class PmRoomController extends Controller
                 'status' => false,
             ]);
         }
+    }
+
+    public function downloadPdf(): \Illuminate\Http\Response
+    {
+        $listBox = InventoryPackage::with('inventoryPackageItem', 'inventoryPackageItem.inventoryPackageItemSN', 'inventoryPackageItem.purchaseOrderDetail', 'inventoryPackageItem.purchaseOrderDetail.purchaseOrder')
+            ->where('storage_id', 3)
+            ->get();
+
+        $data = [
+            'listBox' => $listBox,
+        ];
+
+        $pdf = Pdf::loadView('pdf.pm-room', $data)->setPaper('a4', 'landscape');;
+        return $pdf->stream('PM Room.pdf');
+    }
+
+    public function downloadExcel(): StreamedResponse
+    {
+        $listBox = InventoryPackage::with('inventoryPackageItem', 'inventoryPackageItem.inventoryPackageItemSN', 'inventoryPackageItem.purchaseOrderDetail', 'inventoryPackageItem.purchaseOrderDetail.purchaseOrder')
+            ->where('storage_id', 3)
+            ->get();
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+
+        $sheet->setCellValue('A1', 'PA Number');
+        $sheet->setCellValue('B1', 'Reff Number');
+        $sheet->setCellValue('C1', 'Storage');
+        $sheet->setCellValue('D1', 'Purc Doc');
+        $sheet->setCellValue('E1', 'Sales Doc');
+        $sheet->setCellValue('F1', 'Item');
+        $sheet->setCellValue('G1', 'Material');
+        $sheet->setCellValue('H1', 'PO Item Desc');
+        $sheet->setCellValue('I1', 'Prod Hierarchy Desc');
+        $sheet->setCellValue('J1', 'QTY');
+        $sheet->setCellValue('K1', 'Serial Number');
+
+        $column = 2;
+        foreach ($listBox as $detail) {
+            foreach ($detail->inventoryPackageItem as $index => $item) {
+                if ($index == 0) {
+                    $sheet->setCellValue('A' . $column, $detail->number);
+                    $sheet->setCellValue('B' . $column, $detail->reff_number);
+                    $sheet->setCellValue('C' . $column, $detail->storage->raw.'-'.$detail->storage->area.'-'.$detail->storage->rak.'-'.$detail->storage->bin);
+                }
+                $sheet->setCellValue('D' . $column, $detail->purchaseOrder->purc_doc);
+                $sheet->setCellValue('E' . $column, $item->purchaseOrderDetail->sales_doc);
+                $sheet->setCellValue('F' . $column, $item->purchaseOrderDetail->item);
+                $sheet->setCellValue('G' . $column, $item->purchaseOrderDetail->material);
+                $sheet->setCellValue('H' . $column, $item->purchaseOrderDetail->po_item_desc);
+                $sheet->setCellValue('I' . $column, $item->purchaseOrderDetail->prod_hierarchy_desc);
+                $sheet->setCellValue('J' . $column, $item->qty);
+
+                foreach ($item->inventoryPackageItemSN as $serialNumber) {
+                    $sheet->setCellValue('K' . $column, $serialNumber->serial_number);
+                    $column++;
+                }
+            }
+        }
+
+        $writer = new Xlsx($spreadsheet);
+
+        $response = new StreamedResponse(function() use ($writer) {
+            $writer->save('php://output');
+        });
+
+        $fileName = 'Report PM Room ' . date('Y-m-d H:i:s') . '.xlsx';
+        $response->headers->set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        $response->headers->set('Content-Disposition', "attachment;filename=\"$fileName\"");
+        $response->headers->set('Cache-Control','max-age=0');
+
+        return $response;
     }
 }

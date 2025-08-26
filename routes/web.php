@@ -172,9 +172,13 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
 
         Route::get('/return', 'return')->name('general-room.return');
         Route::post('/return-store', 'returnStore')->name('general-room.return.store');
+
+        // Download Report
+        Route::get('/download-pdf', 'downloadPdf')->name('general-room.download-pdf');
+        Route::get('/download-excel', 'downloadExcel')->name('general-room.download-excel');
     });
 
-    Route::prefix('/pm-room')->controller(PMRoomController::class)->group(function () {
+    Route::prefix('/pm-room')->controller(PmRoomController::class)->group(function () {
         Route::get('/', 'index')->name('pm-room.index');
         Route::get('/detail', 'detail')->name('pm-room.detail');
         Route::get('/create-box', 'createBox')->name('pm-room.create-box');
@@ -186,6 +190,10 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
 
         Route::get('/return', 'return')->name('pm-room.return');
         Route::post('/return-store', 'returnStore')->name('pm-room.return.store');
+
+        // Download Report
+        Route::get('/download-pdf', 'downloadPdf')->name('pm-room.download-pdf');
+        Route::get('/download-excel', 'downloadExcel')->name('pm-room.download-excel');
     });
 
     Route::prefix('/spare-room')->controller(SpareRoomController::class)->group(function () {
@@ -200,6 +208,10 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
 
         Route::get('/return', 'return')->name('spare-room.return');
         Route::post('/return-store', 'returnStore')->name('spare-room.return.store');
+
+        // Download Report
+        Route::get('/download-pdf', 'downloadPdf')->name('spare-room.download-pdf');
+        Route::get('/download-excel', 'downloadExcel')->name('spare-room.download-excel');
     });
 
     Route::prefix('/outbound')->controller(OutboundController::class)->group(function () {

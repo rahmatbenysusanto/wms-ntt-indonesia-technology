@@ -21,8 +21,8 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <h4 class="card-title mb-0">Order List</h4>
                         <div class="d-flex gap-2">
-                            <a href="{{ route('outbound.return') }}" class="btn btn-info">Return Order</a>
-                            <a href="{{ route('outbound.create') }}" class="btn btn-primary">Create Order</a>
+                            <a href="{{ route('outbound.return') }}" class="btn btn-info btn-sm">Return Order</a>
+                            <a href="{{ route('outbound.create') }}" class="btn btn-primary btn-sm">Create Order</a>
                         </div>
                     </div>
                 </div>

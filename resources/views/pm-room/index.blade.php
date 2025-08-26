@@ -20,7 +20,11 @@
                 <div class="card-header">
                     <div class="d-flex justify-content-between align-items-center">
                         <h4 class="card-title mb-0">List PM Room</h4>
-                        <a href="{{ route('pm-room.create-box') }}" class="btn btn-primary">Create Box</a>
+                        <div class="d-flex gap-2">
+                            <a href="{{ route('pm-room.download-pdf') }}" class="btn btn-pdf btn-sm" target="_blank">Download Report PDF</a>
+                            <a href="{{ route('pm-room.download-excel') }}" class="btn btn-success btn-sm" target="_blank">Download Report Excel</a>
+                            <a href="{{ route('pm-room.create-box') }}" class="btn btn-primary btn-sm">Create Box</a>
+                        </div>
                     </div>
                 </div>
                 <div class="card-body">
