@@ -102,7 +102,7 @@
                 const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
 
                 const filteredData = jsonData.map((row) => ({
-                    purc_doc: row["Purchasing Document"],
+                    purc_doc: row["Pur. Doc."],
                     sales_doc: row["Sales Doc"],
                     item: row["Item"],
                     material: row["Material"] = row["Material"].replace(/\./g, ""),
@@ -115,8 +115,8 @@
                     sloc_desc: row["SLoc Desc"],
                     valuation: row["Valuation"],
                     po_item_qty: row["PO Itm Qty"],
-                    net_order_price: row["Net Order Price"] ?? 0,
-                    currency: row["Currency"] ?? "",
+                    net_order_price: row["Net Price"] ?? 0,
+                    currency: row["Crcy"] ?? "",
                 }));
 
                 viewListData(filteredData);

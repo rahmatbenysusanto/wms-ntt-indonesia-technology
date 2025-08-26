@@ -259,7 +259,7 @@ class InventoryController extends Controller
         ];
 
         $pdf = Pdf::loadView('pdf.cycle-count', $data)->setPaper('a4', 'landscape');;
-        return $pdf->stream('Cycle Count.pdf');
+        return $pdf->download('Cycle Count.pdf');
     }
 
     public function cycleCountDownloadExcel(Request $request): StreamedResponse
@@ -1146,7 +1146,7 @@ class InventoryController extends Controller
         ];
 
         $pdf = Pdf::loadView('pdf.aging', $data)->setPaper('a4', 'landscape');;
-        return $pdf->stream('Product Aging.pdf');
+        return $pdf->download('Product Aging.pdf');
     }
 
     public function downloadExcelBox(): StreamedResponse
@@ -1236,7 +1236,7 @@ class InventoryController extends Controller
         ];
 
         $pdf = Pdf::loadView('pdf.box', $data)->setPaper('a4', 'landscape');;
-        return $pdf->stream('Box Product.pdf');
+        return $pdf->download('Box Product.pdf');
     }
 
     public function downloadPdf(): \Illuminate\Http\Response
@@ -1282,6 +1282,6 @@ class InventoryController extends Controller
         ];
 
         $pdf = Pdf::loadView('pdf.product-list', $data)->setPaper('a4', 'landscape');;
-        return $pdf->stream('Product List.pdf');
+        return $pdf->download('Product List.pdf');
     }
 }

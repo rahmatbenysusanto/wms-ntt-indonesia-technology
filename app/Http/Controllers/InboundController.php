@@ -1429,7 +1429,7 @@ class InboundController extends Controller
         ];
 
         $pdf = Pdf::loadView('pdf.inbound', $data)->setPaper('a4', 'landscape');;
-        return $pdf->stream('Purchase Order '.$purchaseOrder->purc_doc.'.pdf');
+        return $pdf->download('Purchase Order '.$purchaseOrder->purc_doc.'.pdf');
     }
 }
 
