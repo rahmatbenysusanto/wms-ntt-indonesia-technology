@@ -176,6 +176,8 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
         // Download Report
         Route::get('/download-pdf', 'downloadPdf')->name('general-room.download-pdf');
         Route::get('/download-excel', 'downloadExcel')->name('general-room.download-excel');
+        Route::get('/outbound/download-pdf', 'outboundDownloadPdf')->name('general-room.outbound-download-pdf');
+        Route::get('/outbound/download-excel', 'outboundDownloadExcel')->name('general-room.outbound-download-excel');
     });
 
     Route::prefix('/pm-room')->controller(PmRoomController::class)->group(function () {
@@ -194,6 +196,8 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
         // Download Report
         Route::get('/download-pdf', 'downloadPdf')->name('pm-room.download-pdf');
         Route::get('/download-excel', 'downloadExcel')->name('pm-room.download-excel');
+        Route::get('/outbound/download-pdf', 'outboundDownloadPdf')->name('pm-room.outbound-download-pdf');
+        Route::get('/outbound/download-excel', 'outboundDownloadExcel')->name('pm-room.outbound-download-excel');
     });
 
     Route::prefix('/spare-room')->controller(SpareRoomController::class)->group(function () {
@@ -212,6 +216,8 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
         // Download Report
         Route::get('/download-pdf', 'downloadPdf')->name('spare-room.download-pdf');
         Route::get('/download-excel', 'downloadExcel')->name('spare-room.download-excel');
+        Route::get('/outbound/download-pdf', 'outboundDownloadPdf')->name('spare-room.outbound-download-pdf');
+        Route::get('/outbound/download-excel', 'outboundDownloadExcel')->name('spare-room.outbound-download-excel');
     });
 
     Route::prefix('/outbound')->controller(OutboundController::class)->group(function () {
@@ -231,6 +237,7 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
 
         // Download Report
         Route::get('/download-excel', 'downloadExcel')->name('outbound.download-excel');
+        Route::get('/download-pdf', 'downloadPdf')->name('outbound.download-pdf');
     });
 
     Route::prefix('/user')->controller(UserController::class)->group(function () {

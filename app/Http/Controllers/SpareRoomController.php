@@ -613,4 +613,93 @@ class SpareRoomController extends Controller
 
         return $response;
     }
+
+    public function outboundDownloadPdf(Request $request): \Illuminate\Http\Response
+    {
+        $outbound = Outbound::with('customer')->where('id', $request->query('id'))->first();
+        $outboundDetail = OutboundDetail::with('inventoryPackageItem', 'inventoryPackageItem.purchaseOrderDetail', 'outboundDetailSN')->where('outbound_id', $request->query('id'))->get();
+
+        $data = [
+            'outbound'          => $outbound,
+            'outboundDetail'    => $outboundDetail,
+        ];
+
+        $pdf = Pdf::loadView('pdf.outbound', $data);
+        return $pdf->stream('outbound Spare Room '.$outbound->delivery_note_number.'.pdf');
+    }
+
+    public function outboundDownloadExcel(Request $request): StreamedResponse
+    {
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+
+        $outbound = Outbound::with('customer')
+            ->where('id', $request->query('id'))
+            ->firstOrFail();
+
+        $sheet->setCellValue('A1', 'From');
+        $sheet->setCellValue('A2', 'NTT Global Technology');
+
+        $sheet->setCellValue('C1', 'To');
+        $sheet->setCellValue('C2', $outbound->customer->name);
+
+        $sheet->setCellValue('E1', 'No : '.$outbound->delivery_note_number);
+        $sheet->setCellValue('E2', $outbound->created_at);
+
+        $outboundDetail = OutboundDetail::with([
+            'inventoryPackageItem',
+            'inventoryPackageItem.purchaseOrderDetail',
+            'outboundDetailSN'
+        ])
+            ->where('outbound_id', $request->query('id'))
+            ->get();
+
+        $sheet->setCellValue('A7', 'No');
+        $sheet->setCellValue('B7', 'Product');
+        $sheet->setCellValue('C7', 'Description');
+        $sheet->setCellValue('D7', 'QTY');
+        $sheet->setCellValue('E7', 'Serial Number');
+
+        $row = 8;
+        $no  = 1;
+
+        foreach ($outboundDetail as $detail) {
+            $pod = optional(optional($detail->inventoryPackageItem)->purchaseOrderDetail);
+
+            $sheet->setCellValue('A' . $row, $no);
+            $sheet->setCellValue('B' . $row, (string) $pod->sales_doc);
+
+            $descLines = [
+                'Material: ' . (string) $pod->material,
+                'PO Item Desc: ' . (string) $pod->po_item_desc,
+                'Hierarchy Desc: ' . (string) $pod->prod_hierarchy_desc,
+            ];
+            $sheet->setCellValue('C' . $row, implode("\n", $descLines));
+            $sheet->getStyle('C' . $row)->getAlignment()->setWrapText(true);
+            $sheet->setCellValue('D' . $row, (float) $detail->qty);
+            $snList = [];
+            foreach ($detail->outboundDetailSN as $sn) {
+                $snList[] = (string) $sn->serial_number;
+            }
+            $sheet->setCellValue('E' . $row, implode("\n", $snList));
+            $sheet->getStyle('E' . $row)->getAlignment()->setWrapText(true);
+
+            $row++;
+            $no++;
+        }
+
+        $writer = new Xlsx($spreadsheet);
+
+        $response = new StreamedResponse(function() use ($writer) {
+            if (ob_get_length()) { @ob_end_clean(); }
+            $writer->save('php://output');
+        });
+
+        $fileName = 'Report Outbound Spare Room' . date('Y-m-d_H-i-s') . '.xlsx';
+        $response->headers->set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        $response->headers->set('Content-Disposition', 'attachment; filename="'.$fileName.'"');
+        $response->headers->set('Cache-Control','max-age=0');
+
+        return $response;
+    }
 }

@@ -21,8 +21,8 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <h4 class="card-title mb-0">List Outbound</h4>
                         <div class="d-flex gap-2">
-                            <a href="{{ route('general-room.create') }}" class="btn btn-primary">Create Outbound</a>
-                            <a href="{{ route('general-room.return') }}" class="btn btn-info">Create Return</a>
+                            <a href="{{ route('general-room.create') }}" class="btn btn-primary btn-sm">Create Outbound</a>
+                            <a href="{{ route('general-room.return') }}" class="btn btn-info btn-sm">Create Return</a>
                         </div>
                     </div>
                 </div>
@@ -42,6 +42,7 @@
                                     <th class="text-center">Type</th>
                                     <th>Order Date</th>
                                     <th>Created By</th>
+                                    <th class="text-center">Download Doc</th>
                                     <th>Action</th>
                                 </tr>
                             </thead>
@@ -69,6 +70,16 @@
                                     </td>
                                     <td>{{ \Carbon\Carbon::parse($item->created_at)->translatedFormat('d F Y H:i') }}</td>
                                     <td>{{ $item->user->name }}</td>
+                                    <td class="text-center">
+                                        <div class="d-flex gap-2 justify-content-center">
+                                            <a href="{{ route('general-room.outbound-download-pdf', ['id' => $item->id]) }}" class="btn btn-pdf btn-sm" target="_blank">
+                                                <span class="mdi mdi-file-pdf-box"></span>
+                                            </a>
+                                            <a href="{{ route('general-room.outbound-download-excel', ['id' => $item->id]) }}" class="btn btn-success btn-sm">
+                                                <span class="mdi mdi-file-excel"></span>
+                                            </a>
+                                        </div>
+                                    </td>
                                     <td>
                                         <a href="{{ route('outbound.detail', ['id' => $item->id]) }}" class="btn btn-info btn-sm">Detail</a>
                                     </td>

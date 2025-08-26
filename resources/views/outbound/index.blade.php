@@ -85,7 +85,7 @@
                                             <a href="{{ route('outbound.download-excel', ['id' => $out->id]) }}" class="btn btn-success btn-sm">
                                                 <i class="mdi mdi-file-excel" style="font-size: 14px;"></i>
                                             </a>
-                                            <a href="{{ route('outbound.download-excel', ['id' => $out->id]) }}" class="btn btn-pdf btn-sm" target="_blank">
+                                            <a href="{{ route('outbound.download-pdf', ['id' => $out->id]) }}" class="btn btn-pdf btn-sm" target="_blank">
                                                 <i class="mdi mdi-file-pdf-box" style="font-size: 14px;"></i>
                                             </a>
                                         </div>
