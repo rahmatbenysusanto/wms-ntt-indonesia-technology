@@ -649,7 +649,7 @@ class InboundController extends Controller
                     'created_by'            => Auth::id()
                 ]);
 
-                foreach ($box['parent'] as $parent) {
+                foreach ($box['parent'] ?? [] as $parent) {
                     $inventoryPackageItem = InventoryPackageItem::create([
                         'inventory_package_id'      => $inventoryPackage->id,
                         'product_id'                => $parent['productId'],
@@ -692,7 +692,7 @@ class InboundController extends Controller
                     $qty += $parent['qtySelect'];
                 }
 
-                foreach ($box['child'] as $child) {
+                foreach ($box['child'] ?? [] as $child) {
                     $inventoryPackageItem = InventoryPackageItem::create([
                         'inventory_package_id'      => $inventoryPackage->id,
                         'product_id'                => $child['productId'],
