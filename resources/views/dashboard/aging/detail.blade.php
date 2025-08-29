@@ -46,7 +46,7 @@
                                         <td>{{ $detail->po_item_desc }}</td>
                                         <td>{{ $detail->prod_hierarchy_desc }}</td>
                                         <td class="text-center fw-bold">{{ number_format($detail->qty) }}</td>
-                                        <td>Rp {{ number_format($detail->total) }}</td>
+                                        <td>$ {{ number_format($detail->total) }}</td>
                                         <td>{{ \Carbon\Carbon::parse($detail->aging_date)->translatedFormat('d F Y') }}</td>
                                     </tr>
                                 @endforeach

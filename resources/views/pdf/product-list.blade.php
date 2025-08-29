@@ -92,7 +92,7 @@
                         <td>{{ $detail->po_item_desc }}</td>
                         <td>{{ $detail->prod_hierarchy_desc }}</td>
                         <td style="text-align: center;">{{ number_format($detail->stock) }}</td>
-                        <td>Rp {{ number_format($detail->nominal) }}</td>
+                        <td>$ {{ number_format($detail->nominal) }}</td>
                         <td>
                             @foreach($detail->serialNumber as $serialNumber)
                                 <div>{{ $serialNumber->serial_number }}</div>

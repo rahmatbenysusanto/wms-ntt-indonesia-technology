@@ -94,7 +94,7 @@
                                     <td>{{ $detail->inventoryPackageItem->purchaseOrderDetail->po_item_desc }}</td>
                                     <td>{{ $detail->inventoryPackageItem->purchaseOrderDetail->prod_hierarchy_desc }}</td>
                                     <td class="text-center fw-bold">{{ $detail->qty }}</td>
-                                    <td>Rp {{ number_format($detail->qty * $detail->inventoryPackageItem->purchaseOrderDetail->net_order_price) }}</td>
+                                    <td>$ {{ number_format($detail->qty * $detail->inventoryPackageItem->purchaseOrderDetail->net_order_price) }}</td>
                                     <td>
                                         @foreach($detail->outboundDetailSN as $serialNumber)
                                             <div>{{ $serialNumber->serial_number }}</div>

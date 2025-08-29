@@ -66,7 +66,7 @@
                                 <td>{{ $item->deliv_loc }}</td>
                                 <td>{{ $item->customer->name }}</td>
                                 <td class="text-center fw-bold">{{ number_format($item->qty_item) }}</td>
-                                <td>Rp {{ number_format($item->price) }}</td>
+                                <td>$ {{ number_format($item->price) }}</td>
                                 <td>{{ \Carbon\Carbon::parse($item->delivery_date)->translatedFormat('d F Y H:i') }}</td>
                                 <td>
                                     <a href="{{ route('dashboard.outbound.detail', ['id' => $item->id]) }}" class="btn btn-info btn-sm">Detail</a>

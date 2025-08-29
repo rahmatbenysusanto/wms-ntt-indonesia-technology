@@ -50,7 +50,7 @@
                                     {{ $item->purchaseOrder->purc_doc }}
                                     @if($item->inventoryPackageItem->inventoryPackage->storage->id == 1)
                                         <br>
-                                        <span class="badge bg-danger">Direct Outbound</span>
+                                        <span class="badge bg-danger">Cross Docking</span>
                                     @endif
                                 </td>
                                 <td>{{ $item->purchaseOrderDetail->sales_doc }}</td>

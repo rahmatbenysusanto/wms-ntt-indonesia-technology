@@ -106,7 +106,7 @@
                                         @endif
                                     </div>
                                 </div>
-                                <div class="info-row"><b>Nominal:</b> Rp {{ number_format($item->nominal) }}</div>
+                                <div class="info-row"><b>Nominal:</b> $ {{ number_format($item->nominal) }}</div>
                                 <div class="info-row"><b>Deliv Dest:</b>{{ $item->deliv_dest }}</div>
                             </div>
                         </div>

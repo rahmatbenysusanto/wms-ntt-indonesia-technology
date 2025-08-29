@@ -124,7 +124,7 @@
                                     </div>
                                     <span class="badge bg-primary">{{ number_format($inv->qty) }}</span>
                                 </div>
-                                <div class="info-row"><b>Nominal:</b> Rp {{ number_format($inv->nominal) }}</div>
+                                <div class="info-row"><b>Nominal:</b> $ {{ number_format($inv->nominal) }}</div>
                                 <div class="info-row"><b>Material:</b> {{ $inv->material }}</div>
                                 <div class="info-row">{{ $inv->po_item_desc }}</div>
                                 <div class="info-row">{{ $inv->prod_hierarchy_desc }}</div>

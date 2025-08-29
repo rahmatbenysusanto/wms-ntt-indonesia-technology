@@ -347,6 +347,10 @@ class InboundController extends Controller
 
                     if ($product['putAwayStep'] == 0) {
                         $directOutbound = true;
+
+                        if (count($product['SnDirect']) == $product['qty']) {
+                            ProductPackage::where('id', $productPackage->id)->update(['status' => 'done']);
+                        }
                     }
                 }
 

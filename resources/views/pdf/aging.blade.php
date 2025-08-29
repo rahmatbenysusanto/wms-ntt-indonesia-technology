@@ -93,7 +93,7 @@
                         <td>{{ $aging->purchaseOrderDetail->po_item_desc }}</td>
                         <td>{{ $aging->purchaseOrderDetail->prod_hierarchy_desc }}</td>
                         <td style="text-align: center;">{{ number_format($aging->qty) }}</td>
-                        <td>Rp {{ number_format($aging->qty * $aging->purchaseOrderDetail->net_order_price) }}</td>
+                        <td>$ {{ number_format($aging->qty * $aging->purchaseOrderDetail->net_order_price) }}</td>
                         <td>{{ $aging->aging_date }}</td>
                         <td>
                             @foreach($aging->inventoryPackageItem->inventoryPackageItemSN as $serialNumber)

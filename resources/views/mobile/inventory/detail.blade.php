@@ -145,14 +145,14 @@
                 <div class="card stat-card text-center">
                     <p class="title">Inventory</p>
                     <div class="stat-value">{{ number_format($inventoryPackageItem) }}</div>
-                    <div class="stat-sub">Rp {{ number_format($inventoryNominal) }}</div>
+                    <div class="stat-sub">$ {{ number_format($inventoryNominal) }}</div>
                 </div>
             </div>
             <div class="col-6">
                 <div class="card stat-card text-center">
                     <p class="title">Outbound</p>
                     <div class="stat-value">{{ number_format($outboundDetail) }}</div>
-                    <div class="stat-sub">Rp {{ number_format($outboundNominal) }}</div>
+                    <div class="stat-sub">$ {{ number_format($outboundNominal) }}</div>
                 </div>
             </div>
 
