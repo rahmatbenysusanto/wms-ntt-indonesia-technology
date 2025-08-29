@@ -234,7 +234,7 @@ class InventoryController extends Controller
 
     public function cycleCount(): View
     {
-        $cycleCount = InventoryHistory::with('purchaseOrder', 'purchaseOrderDetail', 'user')->latest()->paginate(10);
+        $cycleCount = InventoryHistory::with('purchaseOrder', 'purchaseOrderDetail', 'user', 'inventoryPackageItem.inventoryPackage', 'inventoryPackageItem.inventoryPackage.storage')->latest()->paginate(10);
 
         $title = 'Cycle Count';
         return view('inventory.cycle-count', compact('title', 'cycleCount'));
@@ -242,7 +242,7 @@ class InventoryController extends Controller
 
     public function cycleCountDetail(Request $request): View
     {
-        $cycleCount = InventoryHistory::with('purchaseOrder', 'purchaseOrderDetail', 'user', 'outbound')->where('id', $request->query('id'))->first();
+        $cycleCount = InventoryHistory::with('purchaseOrder', 'purchaseOrderDetail', 'user', 'outbound', 'inventoryPackageItem.inventoryPackage', 'inventoryPackageItem.inventoryPackage.storage')->where('id', $request->query('id'))->first();
 
         $title = 'Cycle Count';
         return view('inventory.cycle-count-detail', compact('title', 'cycleCount'));
@@ -250,7 +250,7 @@ class InventoryController extends Controller
 
     public function cycleCountDownloadPDF(Request $request): \Illuminate\Http\Response
     {
-        $cycleCount = InventoryHistory::with('purchaseOrder', 'purchaseOrderDetail')->whereBetween('created_at', [$request->get('startDate'), $request->get('endDate')])
+        $cycleCount = InventoryHistory::with('purchaseOrder', 'purchaseOrderDetail', 'inventoryPackageItem.inventoryPackage', 'inventoryPackageItem.inventoryPackage.storage')->whereBetween('created_at', [$request->get('startDate'), $request->get('endDate')])
             ->where('type', $request->get('type'))
             ->get();
 

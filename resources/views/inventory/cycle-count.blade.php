@@ -34,9 +34,8 @@
                                 <th>Purc Doc</th>
                                 <th>Sales Doc</th>
                                 <th>Material</th>
-                                <th>Desc</th>
-                                <th>Hierarchy Desc</th>
                                 <th class="text-center">QTY</th>
+                                <th>Storage Loc</th>
                                 <th>Type</th>
                                 <th class="text-center">Serial Number</th>
                                 <th>Created By</th>
@@ -49,10 +48,22 @@
                                 <td>{{ $cycleCount->firstItem() + $index }}</td>
                                 <td>{{ $item->purchaseOrder->purc_doc }}</td>
                                 <td>{{ $item->purchaseOrderDetail->sales_doc }}</td>
-                                <td>{{ $item->purchaseOrderDetail->material }}</td>
-                                <td>{{ $item->purchaseOrderDetail->po_item_desc }}</td>
-                                <td>{{ $item->purchaseOrderDetail->prod_hierarchy_desc }}</td>
+                                <td>
+                                    <div class="fw-bold">{{ $item->purchaseOrderDetail->material }}</div>
+                                    <div>{{ $item->purchaseOrderDetail->po_item_desc }}</div>
+                                    <div>{{ $item->purchaseOrderDetail->prod_hierarchy_desc }}</div>
+                                </td>
                                 <td class="text-center fw-bold">{{ number_format($item->qty) }}</td>
+                                <td>
+                                    @if(in_array($item->inventoryPackageItem->inventoryPackage->storage->id, [2,3,4]))
+                                        <b>{{ $item->inventoryPackageItem->inventoryPackage->storage->raw }}</b>
+                                    @else
+                                        <b>{{ $item->inventoryPackageItem->inventoryPackage->storage->raw }}</b> -
+                                        <b>{{ $item->inventoryPackageItem->inventoryPackage->storage->area }}</b> -
+                                        <b>{{ $item->inventoryPackageItem->inventoryPackage->storage->rak }}</b> -
+                                        <b>{{ $item->inventoryPackageItem->inventoryPackage->storage->bin }}</b>
+                                    @endif
+                                </td>
                                 <td>
                                     @if($item->type == 'outbound')
                                         <span class="badge bg-danger-subtle text-danger">Outbound</span>

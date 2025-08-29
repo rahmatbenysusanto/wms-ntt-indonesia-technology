@@ -39,4 +39,9 @@ class InventoryHistory extends Model
     {
         return $this->belongsTo(Outbound::class, 'outbound_id');
     }
+
+    public function inventoryPackageItem(): BelongsTo
+    {
+        return $this->belongsTo(InventoryPackageItem::class, 'inventory_package_item_id');
+    }
 }
