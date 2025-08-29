@@ -267,7 +267,7 @@ class InventoryController extends Controller
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
 
-        $cycleCount = InventoryHistory::with('purchaseOrder', 'purchaseOrderDetail')->whereBetween('created_at', [$request->get('startDate'), $request->get('endDate')])
+        $cycleCount = InventoryHistory::with('purchaseOrder', 'purchaseOrderDetail', 'inventoryPackageItem.inventoryPackage', 'inventoryPackageItem.inventoryPackage.storage')->whereBetween('created_at', [$request->get('startDate'), $request->get('endDate')])
             ->where('type', $request->get('type'))
             ->get();
 
@@ -277,9 +277,10 @@ class InventoryController extends Controller
         $sheet->setCellValue('D1', 'PO Item Desc');
         $sheet->setCellValue('E1', 'Prod Hierarchy Desc');
         $sheet->setCellValue('F1', 'QTY');
-        $sheet->setCellValue('G1', 'Type');
-        $sheet->setCellValue('H1', 'Date');
-        $sheet->setCellValue('I1', 'Serial Number');
+        $sheet->setCellValue('G1', 'Storage Location');
+        $sheet->setCellValue('H1', 'Type');
+        $sheet->setCellValue('I1', 'Date');
+        $sheet->setCellValue('J1', 'Serial Number');
 
         $column = 2;
         foreach ($cycleCount as $item) {
@@ -289,8 +290,16 @@ class InventoryController extends Controller
             $sheet->setCellValue('D'.$column, data_get($item, 'purchaseOrderDetail.po_item_desc', ''));
             $sheet->setCellValue('E'.$column, data_get($item, 'purchaseOrderDetail.prod_hierarchy_desc', ''));
             $sheet->setCellValue('F'.$column, (string) $item->qty);
-            $sheet->setCellValue('G'.$column, (string) $item->type);
-            $sheet->setCellValue('H'.$column, optional($item->created_at)->format('Y-m-d H:i:s') ?? '');
+
+            if (in_array($item->inventoryPackageItem->inventoryPackage->storage->id, [2,3,4])) {
+                $storage = $item->inventoryPackageItem->inventoryPackage->storage->raw;
+            } else {
+                $storage = $item->inventoryPackageItem->inventoryPackage->storage->raw.' - '.$item->inventoryPackageItem->inventoryPackage->storage->area.' - '.$item->inventoryPackageItem->inventoryPackage->storage->rak.' - '.$item->inventoryPackageItem->inventoryPackage->storage->bin;
+            }
+
+            $sheet->setCellValue('G'.$column, $storage);
+            $sheet->setCellValue('H'.$column, (string) $item->type);
+            $sheet->setCellValue('I'.$column, optional($item->created_at)->format('Y-m-d H:i:s') ?? '');
 
             $serials = json_decode($item->serial_number ?: '[]', true) ?: [];
 
@@ -298,7 +307,7 @@ class InventoryController extends Controller
                 $column++;
             } else {
                 foreach ($serials as $sn) {
-                    $sheet->setCellValue('I'.$column, (string) $sn);
+                    $sheet->setCellValue('J'.$column, (string) $sn);
                     $column++;
                 }
             }

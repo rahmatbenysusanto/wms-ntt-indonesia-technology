@@ -87,7 +87,8 @@
                     <th>PO Item Desc</th>
                     <th>Prod Hierarchy Desc</th>
                     <th style="width: 5%; text-align: center;">QTY</th>
-                    <th  style="width: 7%; text-align: center;">Type</th>
+                    <th>Storage</th>
+                    <th style="width: 7%; text-align: center;">Type</th>
                     <th>Date</th>
                     <th>Serial Number</th>
                 </tr>
@@ -96,12 +97,24 @@
             @foreach($cycleCount as $item)
                 <tr>
                     <td style="width: 5%; text-align: center;">{{ $loop->iteration }}</td>
-                    <td>{{ $item->purchaseOrder->purc_doc }}</td>
+                    <td>
+                        {{ $item->purchaseOrder->purc_doc }}
+                    </td>
                     <td>{{ $item->purchaseOrderDetail->sales_doc }}</td>
                     <td>{{ $item->purchaseOrderDetail->material }}</td>
                     <td>{{ $item->purchaseOrderDetail->po_item_desc }}</td>
                     <td>{{ $item->purchaseOrderDetail->prod_hierarchy_desc }}</td>
                     <td style="width: 5%; text-align: center;">{{ number_format($item->qty) }}</td>
+                    <td>
+                        @if(in_array($item->inventoryPackageItem->inventoryPackage->storage->id, [2,3,4]))
+                            <b>{{ $item->inventoryPackageItem->inventoryPackage->storage->raw }}</b>
+                        @else
+                            <b>{{ $item->inventoryPackageItem->inventoryPackage->storage->raw }}</b> -
+                            <b>{{ $item->inventoryPackageItem->inventoryPackage->storage->area }}</b> -
+                            <b>{{ $item->inventoryPackageItem->inventoryPackage->storage->rak }}</b> -
+                            <b>{{ $item->inventoryPackageItem->inventoryPackage->storage->bin }}</b>
+                        @endif
+                    </td>
                     <td style="width: 5%; text-align: center;">{{ $item->type }}</td>
                     <td>{{ \Carbon\Carbon::parse($item->created_at)->translatedFormat('d F Y') }}</td>
                     <td>

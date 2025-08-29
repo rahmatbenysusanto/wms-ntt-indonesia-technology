@@ -378,13 +378,15 @@ class InboundController extends Controller
                         if ($product['putAwayStep'] == 0) {
                             $purchaseOrderDetail = PurchaseOrderDetail::where('id', $product['id'])->first();
 
+                            $qtyDirectSN = count($product['SnDirect'] ?? []);
+
                             $productPackageItem = ProductPackageItem::create([
                                 'product_package_id'        => $productPackage->id,
                                 'product_id'                => $purchaseOrderDetail->product_id,
                                 'purchase_order_detail_id'  => $product['id'],
                                 'is_parent'                 => $product['parent'],
                                 'direct_outbound'           => 1,
-                                'qty'                       => $product['qtyDirect']
+                                'qty'                       => $qtyDirectSN
                             ]);
 
                             $inventoryPackageItem = InventoryPackageItem::create([
@@ -393,7 +395,7 @@ class InboundController extends Controller
                                 'purchase_order_detail_id'  => $purchaseOrderDetail->id,
                                 'is_parent'                 => $product['parent'],
                                 'direct_outbound'           => 1,
-                                'qty'                       => $product['qtyDirect'],
+                                'qty'                       => $qtyDirectSN,
                             ]);
 
                             // Insert Inventory Package Item SN
@@ -413,12 +415,12 @@ class InboundController extends Controller
                             // Tambah Stock Inventory
                             $checkInventory = Inventory::where('purchase_order_id', $request->post('purchaseOrderId'))->where('type', 'inv')->first();
                             if ($checkInventory != null) {
-                                Inventory::where('id', $checkInventory->id)->increment('stock', $product['qtyDirect']);
+                                Inventory::where('id', $checkInventory->id)->increment('stock', $qtyDirectSN);
                                 $inventoryId = $checkInventory->id;
                             } else {
                                 $inventory = Inventory::create([
                                     'purchase_order_id' => $request->post('purchaseOrderId'),
-                                    'stock'             => $product['qtyDirect'],
+                                    'stock'             => $qtyDirectSN,
                                     'type'              => 'inv'
                                 ]);
                                 $inventoryId = $inventory->id;
@@ -430,7 +432,7 @@ class InboundController extends Controller
                                 'storage_id'                => 1,
                                 'inventory_package_item_id' => $inventoryPackageItem->id,
                                 'sales_doc'                 => $purchaseOrderDetail->sales_doc,
-                                'qty'                       => $product['qtyDirect'],
+                                'qty'                       => $qtyDirectSN,
                             ]);
 
                             $checkInventoryItem = InventoryItem::where('purc_doc', $purchaseOrder->purc_doc)
@@ -440,14 +442,14 @@ class InboundController extends Controller
                                 ->where('type', 'inv')
                                 ->first();
                             if ($checkInventoryItem != null) {
-                                InventoryItem::where('id', $checkInventoryItem->id)->increment('stock', $product['qtyDirect']);
+                                InventoryItem::where('id', $checkInventoryItem->id)->increment('stock', $qtyDirectSN);
                             } else {
                                 InventoryItem::create([
                                     'purc_doc'      => $purchaseOrder->purc_doc,
                                     'sales_doc'     => $purchaseOrderDetail->sales_doc,
                                     'product_id'    => $purchaseOrderDetail->product_id,
                                     'storage_id'    => 1,
-                                    'stock'         => $product['qtyDirect'],
+                                    'stock'         => $qtyDirectSN,
                                     'type'          => 'inv'
                                 ]);
                             }
@@ -457,14 +459,16 @@ class InboundController extends Controller
                                 'purchase_order_id'             => $purchaseOrder->id,
                                 'purchase_order_detail_id'      => $purchaseOrderDetail->id,
                                 'inventory_package_item_id'     => $inventoryPackageItem->id,
-                                'qty'                           => $product['qtyDirect'],
+                                'qty'                           => $qtyDirectSN,
                                 'type'                          => 'inbound',
                                 'serial_number'                 => json_encode($product['SnDirect']),
                                 'created_by'                    => Auth::id()
                             ]);
 
+                            Log::info($qtyDirectSN);
+
                             $qtyItemDirect++;
-                            $qtyDirect += $product['qtyDirect'];
+                            $qtyDirect += $qtyDirectSN;
                             $salesDocsDirect[] = $purchaseOrderDetail->sales_doc;
                         }
                     }

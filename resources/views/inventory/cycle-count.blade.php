@@ -46,7 +46,13 @@
                         @foreach($cycleCount as $index => $item)
                             <tr>
                                 <td>{{ $cycleCount->firstItem() + $index }}</td>
-                                <td>{{ $item->purchaseOrder->purc_doc }}</td>
+                                <td>
+                                    {{ $item->purchaseOrder->purc_doc }}
+                                    @if($item->inventoryPackageItem->inventoryPackage->storage->id == 1)
+                                        <br>
+                                        <span class="badge bg-danger">Direct Outbound</span>
+                                    @endif
+                                </td>
                                 <td>{{ $item->purchaseOrderDetail->sales_doc }}</td>
                                 <td>
                                     <div class="fw-bold">{{ $item->purchaseOrderDetail->material }}</div>
@@ -57,6 +63,8 @@
                                 <td>
                                     @if(in_array($item->inventoryPackageItem->inventoryPackage->storage->id, [2,3,4]))
                                         <b>{{ $item->inventoryPackageItem->inventoryPackage->storage->raw }}</b>
+                                    @elseif($item->inventoryPackageItem->inventoryPackage->storage->id == 1)
+                                        <b>Direct Outbound</b>
                                     @else
                                         <b>{{ $item->inventoryPackageItem->inventoryPackage->storage->raw }}</b> -
                                         <b>{{ $item->inventoryPackageItem->inventoryPackage->storage->area }}</b> -

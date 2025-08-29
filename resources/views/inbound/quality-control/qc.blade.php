@@ -612,7 +612,7 @@
 
             qualityControl.forEach((item, index) => {
                 item.forEach((product, indexProduct) => {
-                    html += `
+                    return html += `
                         <tr>
                             <td>${indexProduct === 0 ? `${number}` : ''}</td>
                             <td>${product.sku}</td>
@@ -1033,16 +1033,9 @@
             const products = JSON.parse(localStorage.getItem('master')) ?? [];
             const data = qualityControl[index];
 
-            (data.parent).forEach((parent) => {
-                const product = products.find((item => item.id === parent.id));
-                product.qty = parent.qty;
-                product.qty_qc = 0;
-            });
-
-            (data.child).forEach((child) => {
-                const product = products.find((item => item.id === child.id));
-                product.qty = child.qty;
-                product.qty_qc = 0;
+            data.forEach((productQC) => {
+                const product = products.find((item => item.id === parseInt(productQC.id)));
+                product.qty_qc -= parseInt(productQC.qty);
             });
 
             qualityControl.splice(index, 1);
