@@ -250,7 +250,8 @@ class InventoryController extends Controller
 
     public function cycleCountDownloadPDF(Request $request): \Illuminate\Http\Response
     {
-        $cycleCount = InventoryHistory::with('purchaseOrder', 'purchaseOrderDetail', 'inventoryPackageItem.inventoryPackage', 'inventoryPackageItem.inventoryPackage.storage')->whereBetween('created_at', [$request->get('startDate'), $request->get('endDate')])
+        $cycleCount = InventoryHistory::with('purchaseOrder', 'purchaseOrderDetail', 'inventoryPackageItem.inventoryPackage', 'inventoryPackageItem.inventoryPackage.storage')
+            ->whereBetween('created_at', [$request->get('startDate').' 00:00:00', $request->get('endDate').' 23:59:59'])
             ->where('type', $request->get('type'))
             ->get();
 
@@ -267,7 +268,8 @@ class InventoryController extends Controller
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
 
-        $cycleCount = InventoryHistory::with('purchaseOrder', 'purchaseOrderDetail', 'inventoryPackageItem.inventoryPackage', 'inventoryPackageItem.inventoryPackage.storage')->whereBetween('created_at', [$request->get('startDate'), $request->get('endDate')])
+        $cycleCount = InventoryHistory::with('purchaseOrder', 'purchaseOrderDetail', 'inventoryPackageItem.inventoryPackage', 'inventoryPackageItem.inventoryPackage.storage')
+            ->whereBetween('created_at', [$request->get('startDate').' 00:00:00', $request->get('endDate').' 23:59:59'])
             ->where('type', $request->get('type'))
             ->get();
 
@@ -293,6 +295,8 @@ class InventoryController extends Controller
 
             if (in_array($item->inventoryPackageItem->inventoryPackage->storage->id, [2,3,4])) {
                 $storage = $item->inventoryPackageItem->inventoryPackage->storage->raw;
+            } else if ($item->inventoryPackageItem->inventoryPackage->storage->id == 1) {
+                $storage = 'Cross Docking';
             } else {
                 $storage = $item->inventoryPackageItem->inventoryPackage->storage->raw.' - '.$item->inventoryPackageItem->inventoryPackage->storage->area.' - '.$item->inventoryPackageItem->inventoryPackage->storage->rak.' - '.$item->inventoryPackageItem->inventoryPackage->storage->bin;
             }

@@ -98,7 +98,10 @@
                 <tr>
                     <td style="width: 5%; text-align: center;">{{ $loop->iteration }}</td>
                     <td>
-                        {{ $item->purchaseOrder->purc_doc }}
+                        <div>{{ $item->purchaseOrder->purc_doc }}</div>
+                        @if($item->inventoryPackageItem->inventoryPackage->storage->id == 1)
+                            <b>Cross Docking</b>
+                        @endif
                     </td>
                     <td>{{ $item->purchaseOrderDetail->sales_doc }}</td>
                     <td>{{ $item->purchaseOrderDetail->material }}</td>
