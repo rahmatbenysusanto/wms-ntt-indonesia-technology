@@ -77,7 +77,12 @@
                                     <td>{{ $loop->iteration }}</td>
                                     <td>{{ $detail->inventoryPackageItem->purchaseOrderDetail->item }}</td>
                                     <td>{{ $detail->inventoryPackageItem->purchaseOrderDetail->sales_doc }}</td>
-                                    <td>{{ $detail->inventoryPackageItem->purchaseOrderDetail->material }}</td>
+                                    <td>
+                                        <div>{{ $detail->inventoryPackageItem->purchaseOrderDetail->material }}</div>
+                                        @if($detail->inventoryPackageItem->inventoryPackage->storage->id == 1)
+                                            <span class="badge bg-danger">Cross Docking</span>
+                                        @endif
+                                    </td>
                                     <td>{{ $detail->inventoryPackageItem->purchaseOrderDetail->po_item_desc }}</td>
                                     <td class="text-center fw-bold">{{ number_format($detail->qty) }}</td>
                                     <td>

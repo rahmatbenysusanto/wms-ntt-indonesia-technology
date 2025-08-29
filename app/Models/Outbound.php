@@ -39,4 +39,9 @@ class Outbound extends Model
     {
         return $this->belongsTo(Customer::class, 'customer_id', 'id');
     }
+
+    public function inventoryPackageItem(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(InventoryPackageItem::class, 'inventory_package_item_id', 'id');
+    }
 }

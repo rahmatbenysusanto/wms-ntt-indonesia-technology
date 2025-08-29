@@ -403,7 +403,7 @@ class OutboundController extends Controller
     public function detail(Request $request): View
     {
         $outbound = Outbound::with('user', 'customer')->where('id', $request->query('id'))->first();
-        $outboundDetail = OutboundDetail::with('inventoryPackageItem', 'inventoryPackageItem.purchaseOrderDetail', 'outboundDetailSn')->where('outbound_id', $outbound->id)->get();
+        $outboundDetail = OutboundDetail::with('inventoryPackageItem', 'inventoryPackageItem.purchaseOrderDetail', 'outboundDetailSn', 'inventoryPackageItem.inventoryPackage', 'inventoryPackageItem.inventoryPackage.storage')->where('outbound_id', $outbound->id)->get();
 
         $title = 'Outbound';
         return view('outbound.detail', compact('title', 'outboundDetail', 'outbound'));
@@ -566,7 +566,7 @@ class OutboundController extends Controller
 
     public function downloadPdf(Request $request): \Illuminate\Http\Response
     {
-        $outbound = Outbound::with('customer')->where('id', $request->query('id'))->first();
+        $outbound = Outbound::with('customer', 'inventoryPackageItem', 'inventoryPackageItem.inventoryPackage', 'inventoryPackageItem.inventoryPackage.storage')->where('id', $request->query('id'))->first();
         $outboundDetail = OutboundDetail::with('inventoryPackageItem', 'inventoryPackageItem.purchaseOrderDetail', 'outboundDetailSN')->where('outbound_id', $request->query('id'))->get();
 
         $data = [

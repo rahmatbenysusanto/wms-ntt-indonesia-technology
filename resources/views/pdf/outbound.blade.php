@@ -103,6 +103,11 @@
                         <td>{{ $outbound->delivery_note_number }}</td>
                     </tr>
                     <tr>
+                        <td>Purc Doc</td>
+                        <td>:</td>
+                        <td>{{ $outbound->purc_doc }}</td>
+                    </tr>
+                    <tr>
                         <td>Date</td>
                         <td>:</td>
                         <td>{{ \Carbon\Carbon::parse($outbound->delivery_date)->translatedFormat('d F Y H:i') }}</td>
@@ -114,7 +119,7 @@
 
     <div class="clearfix"></div>
 
-    <section style="margin-top: 20px">
+    <section style="margin-top: 20px;">
         <table class="tbl">
             <thead>
                 <tr>
@@ -130,7 +135,12 @@
             @foreach($outboundDetail as $detail)
                 <tr>
                     <td style="text-align: center">{{ $number++ }}</td>
-                    <td>{{ $detail->inventoryPackageItem->purchaseOrderDetail->sales_doc }}</td>
+                    <td>
+                        <div>{{ $detail->inventoryPackageItem->purchaseOrderDetail->sales_doc }}</div>
+                        @if($detail->inventoryPackageItem->inventoryPackage->storage->id == 1)
+                            <b>Cross Docking</b>
+                        @endif
+                    </td>
                     <td>
                         <div><b>{{ $detail->inventoryPackageItem->purchaseOrderDetail->material }}</b></div>
                         <div>{{ $detail->inventoryPackageItem->purchaseOrderDetail->po_item_desc }}</div>
