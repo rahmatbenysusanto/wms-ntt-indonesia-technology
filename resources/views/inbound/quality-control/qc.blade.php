@@ -1061,19 +1061,22 @@
             }).then(function(t) {
                 if (t.value) {
 
-                    // Validation Serial Number & QTY
                     const qualityControl = JSON.parse(localStorage.getItem('qc')) ?? [];
-                    qualityControl.forEach((item) => {
-                        item.forEach((product) => {
-                            const qtySN = parseInt(product.serialNumber.length) + parseInt(product.SnDirect.length ?? []);
-                            if (product.qty !== qtySN) {
-                                Swal.fire({
-                                    title: 'Warning!',
-                                    text: 'Validation QTY & Serial Number Failed, Please Check Serial Number Product',
-                                    icon: 'warning',
-                                });
 
-                                return true;
+                    // Validation  Serial Number n/a
+                    qualityControl.forEach(group => {
+                        group.forEach(product => {
+                            product.serialNumber = Array.isArray(product.serialNumber) ? product.serialNumber : [];
+                            product.SnDirect     = Array.isArray(product.SnDirect)     ? product.SnDirect     : [];
+
+                            product.serialNumber = product.serialNumber.map(v => (v == null || v === '' ? 'n/a' : v));
+                            product.SnDirect     = product.SnDirect.map(v => (v == null || v === '' ? 'n/a' : v));
+
+                            const qty   = Number(product.qty) || 0;
+                            const qtySN = product.serialNumber.length + product.SnDirect.length;
+
+                            for (let i = qtySN; i < qty; i++) {
+                                product.serialNumber.push('n/a');
                             }
                         });
                     });
@@ -1083,7 +1086,7 @@
                         method: 'POST',
                         data:{
                             _token: '{{ csrf_token() }}',
-                            qualityControl: JSON.parse(localStorage.getItem('qc')) ?? [],
+                            qualityControl: qualityControl,
                             purchaseOrderId: '{{ request()->get('id') }}',
                         },
                         success: (res) => {
@@ -1098,7 +1101,7 @@
                                     },
                                     buttonsStyling: false
                                 }).then(() => {
-                                    window.location.href = '{{ route('inbound.quality-control') }}';
+                                    {{--window.location.href = '{{ route('inbound.quality-control') }}';--}}
                                 });
                             } else {
                                 Swal.fire({
@@ -1128,7 +1131,7 @@
 
             serialNumber.push("");
 
-            if (serialNumber.length > parseInt(qc[index][indexProduct].qty)) {
+            if ((serialNumber.length + qc[index][indexProduct].SnDirect.length) > parseInt(qc[index][indexProduct].qty)) {
                 Swal.fire({
                     title: 'Warning!',
                     text: 'qty serial number exceeds qty product',

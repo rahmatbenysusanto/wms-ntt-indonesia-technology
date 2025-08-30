@@ -303,6 +303,8 @@ class InboundController extends Controller
         try {
             DB::beginTransaction();
 
+            Log::info(json_encode($request->all()));
+
             $purchaseOrder = PurchaseOrder::find($request->post('purchaseOrderId'));
 
             foreach ($request->post('qualityControl') as $products) {
@@ -468,8 +470,6 @@ class InboundController extends Controller
                                 'serial_number'                 => json_encode($product['SnDirect']),
                                 'created_by'                    => Auth::id()
                             ]);
-
-                            Log::info($qtyDirectSN);
 
                             $qtyItemDirect++;
                             $qtyDirect += $qtyDirectSN;

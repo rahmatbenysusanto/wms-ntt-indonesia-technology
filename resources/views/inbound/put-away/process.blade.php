@@ -675,7 +675,9 @@
 
             const findSN = serialNumber[indexDelete];
             const findMasterSN = master[indexMaster].serialNumber.find((item) => item.serialNumber === findSN);
-            findMasterSN.select = 0;
+            if (findMasterSN) {
+                findMasterSN.select = 0;
+            }
 
             serialNumber.splice(indexDelete, 1);
 
@@ -707,7 +709,9 @@
                     <tr>
                         <td>${number}</td>
                         <td>${sn.serialNumber}</td>
-                        <td><a class="btn btn-info btn-sm" onclick="pilihSerialNumber('${sn.serialNumber}')">Pilih</a></td>
+                        <td>
+                            ${sn.serialNumber === 'n/a' ? '' : `<a class="btn btn-info btn-sm" onclick="pilihSerialNumber('${sn.serialNumber}')">Pilih</a>`}
+                        </td>
                     </tr>
                 `;
                 number++;
@@ -974,7 +978,7 @@
                         if (parseInt(item.qty) !== parseInt(item.qtyPa)) {
                             Swal.fire({
                                 title: 'Warning!',
-                                text: 'Belum Semua QTY dimasukan ke box',
+                                text: 'Not all QTY have been entered into the box',
                                 icon: 'warning'
                             });
 
@@ -982,7 +986,40 @@
                         }
                     });
 
+                    // Validation Serial Number n/a
+                    const box = JSON.parse(localStorage.getItem('box')) ?? [];
+
+                    const updateSerialNumbers = (items) => {
+                        items.forEach(item => {
+                            item.forEach(subItem => {
+                                const qtySelect = Number(subItem.qtySelect);
+                                const serialNumberLength = subItem.serialNumber.length;
+
+                                if (qtySelect !== serialNumberLength) {
+                                    const missingQty = qtySelect - serialNumberLength;
+                                    subItem.serialNumber.push(...Array(missingQty).fill('n/a'));
+                                }
+
+                                subItem.serialNumber = subItem.serialNumber.map(sn => (sn === null || sn === '') ? 'n/a' : sn);
+                            });
+                        });
+                    };
+
+                    box.forEach(item => {
+                        updateSerialNumbers([item.parent, item.child]);
+                    });
+
                     // Validation Storage Location
+                    const storage = document.getElementById('bin').value;
+                    if (storage === null) {
+                        Swal.fire({
+                            title: 'Warning!',
+                            text: 'Storage must be filled',
+                            icon: 'warning'
+                        });
+
+                        return true;
+                    }
 
                     // Insert ke Database
                     $.ajax({
@@ -990,7 +1027,7 @@
                         method: 'POST',
                         data: {
                             _token: '{{ csrf_token() }}',
-                            box: JSON.parse(localStorage.getItem('box')) ?? [],
+                            box: box,
                             bin: document.getElementById('bin').value,
                             productPackageId: '{{ request()->get('id') }}'
                         },
