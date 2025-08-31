@@ -435,8 +435,21 @@
             }).then(function(t) {
                 if (t.value) {
 
-                    // Validation
+                    // Validation QTY
                     const products = JSON.parse(localStorage.getItem('salesDocProduct')) ?? [];
+                    products.forEach((product) => {
+                        if (parseInt(product.qtySelect) !== 0) {
+                            if (parseInt(product.qtySelect) !== product.serialNumber.length) {
+                                Swal.fire({
+                                    title: 'Warning!',
+                                    text: 'Select serial number as many as QTY Out',
+                                    icon: "warning",
+                                });
+
+                                return true;
+                            }
+                        }
+                    });
 
                     // Create Order Process
                     $.ajax({

@@ -1118,7 +1118,7 @@
                                     },
                                     buttonsStyling: false
                                 }).then(() => {
-                                    {{--window.location.href = '{{ route('inbound.quality-control') }}';--}}
+                                    window.location.href = '{{ route('inbound.quality-control') }}';
                                 });
                             } else {
                                 Swal.fire({

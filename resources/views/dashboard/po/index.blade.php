@@ -20,6 +20,33 @@
                     <h4 class="card-title mb-0">List Purchase Order</h4>
                 </div>
                 <div class="card-body">
+                    <form action="{{ url()->current() }}" method="GET">
+                        <div class="row">
+                            <div class="col-2">
+                                <div>
+                                    <label class="form-label">Purc Doc</label>
+                                    <input type="text" class="form-control" name="purcDoc" value="{{ request()->get('purcDoc') }}" placeholder="Purc Doc ...">
+                                </div>
+                            </div>
+                            <div class="col-2">
+                                <div>
+                                    <label class="form-label">Client</label>
+                                    <input type="text" class="form-control" name="client" value="{{ request()->get('client') }}" placeholder="Client ...">
+                                </div>
+                            </div>
+                            <div class="col-2">
+                                <div>
+                                    <label class="form-label text-white">-</label>
+                                    <div class="d-flex gap-2">
+                                        <button type="submit" class="btn btn-primary">Search</button>
+                                        <a href="{{ url()->current() }}" class="btn btn-danger">Clear</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="card-body">
                     <table class="table table-responsive align-middle">
                         <thead>
                             <tr>

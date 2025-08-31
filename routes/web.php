@@ -264,6 +264,9 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
             Route::get('/detail', 'indexDetailMobile')->name('inbound.indexDetail.mobile');
             Route::get('/detail/so', 'indexDetailSoMobile')->name('inbound.indexDetail.so');
             Route::get('/detail/so/sn', 'indexDetailSoSnMobile')->name('inbound.indexDetail.so.sn');
+
+            Route::get('/download-pdf', 'mobileDownloadPdf')->name('inbound.mobile-download-pdf');
+            Route::get('/download-excel', 'mobileDownloadExcel')->name('inbound.mobile-download-excel');
         });
 
         Route::prefix('/outbound')->controller(OutboundController::class)->group(function () {

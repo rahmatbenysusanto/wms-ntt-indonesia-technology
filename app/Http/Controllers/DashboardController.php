@@ -34,9 +34,20 @@ class DashboardController extends Controller
         return view('dashboard.index', compact('title', 'totalPurcDoc', 'totalSalesDoc', 'listPO', 'totalStock', 'stockGR', 'totalPO', 'totalQtyPO', 'totalOutbound', 'totalQtyOutbound'));
     }
 
-    public function dashboardPo(): View
+    public function dashboardPo(Request $request): View
     {
-        $listPO = PurchaseOrder::with('customer')->whereIn('status', ['process', 'done', 'close'])->latest()->paginate(10);
+        $listPO = PurchaseOrder::with('customer')
+            ->whereIn('status', ['process', 'done', 'close'])
+            ->when($request->query('purcDoc'), function ($query) use ($request) {
+                $query->where('purc_doc', 'LIKE', '%' . $request->query('purcDoc') . '%');
+            })
+            ->whereHas('customer', function ($query) use ($request) {
+                if ($request->query('customer') != null) {
+                    $query->where('name', 'LIKE', '%' . $request->query('customer') . '%');
+                }
+            })
+            ->latest()
+            ->paginate(10);
 
         foreach ($listPO as $po) {
             $po->qty_po = DB::table('purchase_order_detail')->where('purchase_order_id', $po->id)->sum('qty_qc');
@@ -151,7 +162,7 @@ class DashboardController extends Controller
             ->leftJoin('purchase_order_detail', 'purchase_order_detail.id', '=', 'inventory_detail.purchase_order_detail_id')
             ->where('qty', '!=', 0);
 
-        $agingType1 = (clone $queryAging)->whereBetween('inventory_detail.aging_date', [Carbon::now()->subDays(90)->startOfDay(), Carbon::now()->subDays(1)->endOfDay()])
+        $agingType1 = (clone $queryAging)->whereBetween('inventory_detail.aging_date', [Carbon::now()->subDays(90)->startOfDay(), Carbon::now()->subDays(0)->endOfDay()])
             ->select([
                 DB::raw('SUM(inventory_detail.qty * purchase_order_detail.net_order_price) as total'),
                 DB::raw('SUM(inventory_detail.qty) as qty'),
