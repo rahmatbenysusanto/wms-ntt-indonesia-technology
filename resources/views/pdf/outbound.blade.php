@@ -124,7 +124,7 @@
             <thead>
                 <tr>
                     <th style="width:5%; text-align: center">No</th>
-                    <th style="width:15%;">Product</th>
+                    <th style="width:17%;">Product</th>
                     <th style="width: 55%">Description</th>
                     <th style="width:10%; text-align: center">QTY</th>
                     <th style="width:15%;">Serial Number</th>
@@ -137,14 +137,14 @@
                     <td style="text-align: center">{{ $number++ }}</td>
                     <td>
                         <div>{{ $detail->inventoryPackageItem->purchaseOrderDetail->sales_doc }}</div>
-                        @if($detail->inventoryPackageItem->inventoryPackage->storage->id == 1)
-                            <b>Cross Docking</b>
-                        @endif
                     </td>
                     <td>
                         <div><b>{{ $detail->inventoryPackageItem->purchaseOrderDetail->material }}</b></div>
                         <div>{{ $detail->inventoryPackageItem->purchaseOrderDetail->po_item_desc }}</div>
                         <div>{{ $detail->inventoryPackageItem->purchaseOrderDetail->prod_hierarchy_desc }}</div>
+                        @if($detail->inventoryPackageItem->inventoryPackage->storage->id == 1)
+                            <div><b style="color: green;">Note: Delivered Directly to Client</b></div>
+                        @endif
                     </td>
                     <td style="text-align: center">{{ number_format($detail->qty) }}</td>
                     <td>

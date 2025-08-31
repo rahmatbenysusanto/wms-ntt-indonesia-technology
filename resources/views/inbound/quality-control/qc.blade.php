@@ -1080,20 +1080,20 @@
 
                     const qualityControl = JSON.parse(localStorage.getItem('qc')) ?? [];
 
-                    // Validation  Serial Number n/a
+                    // Validation  Serial Number N/A
                     qualityControl.forEach(group => {
                         group.forEach(product => {
                             product.serialNumber = Array.isArray(product.serialNumber) ? product.serialNumber : [];
                             product.SnDirect     = Array.isArray(product.SnDirect)     ? product.SnDirect     : [];
 
-                            product.serialNumber = product.serialNumber.map(v => (v == null || v === '' ? 'n/a' : v));
-                            product.SnDirect     = product.SnDirect.map(v => (v == null || v === '' ? 'n/a' : v));
+                            product.serialNumber = product.serialNumber.map(v => (v == null || v === '' ? 'N/A' : v));
+                            product.SnDirect     = product.SnDirect.map(v => (v == null || v === '' ? 'N/A' : v));
 
                             const qty   = Number(product.qty) || 0;
                             const qtySN = product.serialNumber.length + product.SnDirect.length;
 
                             for (let i = qtySN; i < qty; i++) {
-                                product.serialNumber.push('n/a');
+                                product.serialNumber.push('N/A');
                             }
                         });
                     });

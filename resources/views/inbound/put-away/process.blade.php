@@ -710,7 +710,7 @@
                         <td>${number}</td>
                         <td>${sn.serialNumber}</td>
                         <td>
-                            ${sn.serialNumber === 'n/a' ? '' : `<a class="btn btn-info btn-sm" onclick="pilihSerialNumber('${sn.serialNumber}')">Pilih</a>`}
+                            ${sn.serialNumber === 'N/A' ? '' : `<a class="btn btn-info btn-sm" onclick="pilihSerialNumber('${sn.serialNumber}')">Pilih</a>`}
                         </td>
                     </tr>
                 `;
@@ -986,7 +986,7 @@
                         }
                     });
 
-                    // Validation Serial Number n/a
+                    // Validation Serial Number N/A
                     const box = JSON.parse(localStorage.getItem('box')) ?? [];
 
                     const updateSerialNumbers = (items) => {
@@ -997,10 +997,10 @@
 
                                 if (qtySelect !== serialNumberLength) {
                                     const missingQty = qtySelect - serialNumberLength;
-                                    subItem.serialNumber.push(...Array(missingQty).fill('n/a'));
+                                    subItem.serialNumber.push(...Array(missingQty).fill('N/A'));
                                 }
 
-                                subItem.serialNumber = subItem.serialNumber.map(sn => (sn === null || sn === '') ? 'n/a' : sn);
+                                subItem.serialNumber = subItem.serialNumber.map(sn => (sn === null || sn === '') ? 'N/A' : sn);
                             });
                         });
                     };

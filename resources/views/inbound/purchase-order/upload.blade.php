@@ -114,7 +114,7 @@
                     stor_loc: row["Stor Loc"],
                     sloc_desc: row["SLoc Desc"],
                     valuation: row["Valuation"],
-                    po_item_qty: row["PO Itm Qty"],
+                    po_item_qty: parseInt(row["PO Itm Qty"]),
                     net_order_price: row["Net Price"] ?? 0,
                     currency: row["Crcy"] ?? "",
                 }));

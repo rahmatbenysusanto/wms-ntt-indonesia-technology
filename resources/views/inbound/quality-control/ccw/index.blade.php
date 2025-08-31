@@ -341,7 +341,7 @@
                     itemName: row['Item Name'],
                     itemDesc: row['Item Description'],
                     serialNumber: row['Serial Numbers'].split("\r\n").filter(Boolean) ?? [],
-                    qty: row['Quantity Ordered'],
+                    qty: parseInt(row['Quantity Ordered']),
                     qtyAdd: 0,
                     salesDoc: [],
                     listSalesDoc: [],
@@ -849,7 +849,7 @@
                             if ((salesDoc.serialNumber.length + salesDoc.snDirect.length) !== salesDoc.qty) {
                                 const sisaQTY = (salesDoc.serialNumber.length + salesDoc.snDirect.length) - salesDoc.qty;
                                 for (let i = 0; i < sisaQTY; i++) {
-                                    salesDoc.serialNumber.push('n/a');
+                                    salesDoc.serialNumber.push('N/A');
                                 }
                             }
                         });
