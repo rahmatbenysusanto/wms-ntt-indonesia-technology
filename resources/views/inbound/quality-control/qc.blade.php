@@ -293,22 +293,22 @@
                         <input type="text" class="form-control" id="scanSerialNumberDirect" placeholder="Scan Serial Number" autofocus>
                     </div>
 
-                    <div id="scanSerialNumberDirectError" class="alert alert-danger alert-dismissible alert-label-icon label-arrow shadow fade show" role="alert" style="display: none">
+                    <div id="scanSerialNumberDirectError" class="alert alert-danger alert-dismissible alert-label-icon label-arrow shadow fade show" role="alert" style="display: none;">
                         <i class="ri-error-warning-line label-icon"></i>
                         <strong>Error</strong> - <span id="scanSerialNumberDirectErrorMessage"></span>
                         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>
 
-{{--                    <div class="mb-3">--}}
-{{--                        <div class="row">--}}
-{{--                            <div class="col-2">--}}
-{{--                                <label class="form-label text-white">-</label>--}}
-{{--                                <div>--}}
-{{--                                    <a class="btn btn-secondary w-100" onclick="addSerialNumberManualDirect()">SN Manual</a>--}}
-{{--                                </div>--}}
-{{--                            </div>--}}
-{{--                        </div>--}}
-{{--                    </div>--}}
+                    <div class="mb-3">
+                        <div class="row">
+                            <div class="col-2">
+                                <label class="form-label text-white">-</label>
+                                <div>
+                                    <a class="btn btn-secondary w-100" onclick="addSerialNumberManualDirect()">SN Manual</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
                     <table class="table table-striped align-middle">
                         <thead>
@@ -742,6 +742,23 @@
             const indexProduct = document.getElementById('detail_Direct_productIndex').value;
             const qc = JSON.parse(localStorage.getItem('qc')) ?? [];
             const product = qc[index][indexProduct].SnDirect;
+
+            if ((qc[index][indexProduct].serialNumber.length + qc[index][indexProduct].SnDirect.length) === qc[index][indexProduct].qty) {
+                document.getElementById('scanSerialNumberDirectErrorMessage').innerText = "Serial number exceeds item quantity";
+                document.getElementById('scanSerialNumberDirectError').style.display = "block";
+
+                setTimeout(() => {
+                    document.getElementById('scanSerialNumberDirectError').style.display = "none";
+                }, 3000);
+
+                const sound = new Audio("{{ asset('assets/sound/error.mp3') }}");
+                sound.play();
+
+                document.getElementById('scanSerialNumberDirect').value = "";
+                document.getElementById('scanSerialNumberDirect').focus();
+
+                return true;
+            }
 
             product.push("");
 

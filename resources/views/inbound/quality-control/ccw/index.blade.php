@@ -501,6 +501,23 @@
             const compare = JSON.parse(localStorage.getItem('compare')) ?? [];
             const serialNumber = compare[index].salesDoc[indexSalesDoc].snDirect;
 
+            if ((compare[index].salesDoc[indexSalesDoc].snDirect.length + compare[index].salesDoc[indexSalesDoc].serialNumber.length) === compare[index].salesDoc[indexSalesDoc].qty) {
+                document.getElementById('scanSerialNumberDirectErrorMessage').innerText = "Serial number exceeds item quantity";
+                document.getElementById('scanSerialNumberDirectError').style.display = "block";
+
+                setTimeout(() => {
+                    document.getElementById('scanSerialNumberDirectError').style.display = "none";
+                }, 3000);
+
+                const sound = new Audio("{{ asset('assets/sound/error.mp3') }}");
+                sound.play();
+
+                document.getElementById('scanSerialNumberDirect').value = "";
+                document.getElementById('scanSerialNumberDirect').focus();
+
+                return true;
+            }
+
             serialNumber.push("");
             compare[index].salesDoc[indexSalesDoc].qtyDirect = serialNumber.length;
 
@@ -824,6 +841,30 @@
                 showCloseButton: true
             }).then(function(t) {
                 if (t.value) {
+
+                    // Validation Serial Number n/a
+                    const compare = JSON.parse(localStorage.getItem('compare')) ?? [];
+                    compare.forEach((item) => {
+                        item.salesDoc.forEach((salesDoc) => {
+                            if ((salesDoc.serialNumber.length + salesDoc.snDirect.length) !== salesDoc.qty) {
+                                const sisaQTY = (salesDoc.serialNumber.length + salesDoc.snDirect.length) - salesDoc.qty;
+                                for (let i = 0; i < sisaQTY; i++) {
+                                    salesDoc.serialNumber.push('n/a');
+                                }
+                            }
+                        });
+
+                        if (parseInt(item.qty) !== parseInt(item.qtyAdd)) {
+                            Swal.fire({
+                               title: 'Warning!',
+                               text: 'There are unprocessed CCW items',
+                               icon: 'warning',
+                            });
+
+                            return true;
+                        }
+                    });
+                    localStorage.setItem('compare', JSON.stringify(compare));
 
                     // Kirim File JSON ke Backend Terlebih dahulu
                     sendLocalStorageAsJsonFileToBackend({
