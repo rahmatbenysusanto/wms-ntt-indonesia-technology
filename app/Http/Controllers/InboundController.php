@@ -1290,7 +1290,14 @@ class InboundController extends Controller
                 }
             })
             ->latest()
-            ->paginate(10);
+            ->paginate(10)
+            ->appends([
+                'purcDoc'   => $request->query('purcDoc'),
+                'salesDoc'  => $request->query('salesDoc'),
+                'material'  => $request->query('material'),
+                'customer'  => $request->query('customer'),
+                'search'    => $request->query('search')
+            ]);
 
         return view('mobile.inbound.index', compact('purchaseOrder'));
     }
