@@ -46,6 +46,10 @@
             }
         }
 
+        .btn-info {
+            background-color: #39BBBD!important;
+            border-color: #39BBBD!important;
+        }
     </style>
 </head>
 <body>
@@ -66,7 +70,14 @@
         </div>
     </div>
 
-    <div class="container-fluid mt-4" style="margin-bottom: 80px">
+    <div class="container-fluid mt-3" style="margin-bottom: 80px;">
+        <div class="d-flex justify-content-end align-items-center gap-2 mb-3">
+            <a class="btn btn-info btn-sm" data-bs-toggle="modal" data-bs-target="#filterModal">Search Filter</a>
+            @if(request()->get('search') == 1)
+                <a href="{{ url()->current() }}" class="btn btn-danger btn-sm">Clear Filter</a>
+            @endif
+        </div>
+
         <div class="row">
             <div class="col-12">
                 @foreach($purchaseOrder as $index => $item)
@@ -101,6 +112,42 @@
                         </div>
                     </a>
                 @endforeach
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Search Modals -->
+    <div id="filterModal" class="modal fade" tabindex="-1" aria-labelledby="myModalLabel" aria-hidden="true" style="display: none;">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="myModalLabel">Filter Search</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"> </button>
+                </div>
+                <div class="modal-body">
+                    <form action="{{ url()->current() }}" method="GET">
+                        <input type="hidden" name="search" value="1">
+                        <div class="mb-3">
+                            <label class="form-label">Purc Doc</label>
+                            <input type="text" class="form-control form-control-sm" name="purcDoc" value="{{ request()->get('purcDoc', null) }}" placeholder="Purc Doc ...">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Sales Doc</label>
+                            <input type="text" class="form-control form-control-sm" name="salesDoc" value="{{ request()->get('salesDoc', null) }}" placeholder="Sales Doc ...">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Customer</label>
+                            <input type="text" class="form-control form-control-sm" name="customer" value="{{ request()->get('customer', null) }}" placeholder="Customer ...">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Material</label>
+                            <input type="text" class="form-control form-control-sm" name="material" value="{{ request()->get('material', null) }}" placeholder="Material ...">
+                        </div>
+                        <div class="d-flex justify-content-end">
+                            <button type="submit" class="btn btn-primary btn-sm">Search</button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
     </div>

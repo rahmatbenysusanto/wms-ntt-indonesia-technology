@@ -56,8 +56,12 @@
             bottom: 0;
             width: 100%;
             font-weight: normal;
+            margin-bottom: 10px;
         }
 
+        .btn-info {
+            background-color: #39BBBD!important;
+        }
     </style>
 </head>
 <body>
@@ -104,7 +108,6 @@
         <div class="container-fluid">
             <a href="{{ route('logout') }}" class="btn btn-info w-100">Logout</a>
         </div>
-        <p>Trans Kargo Solusindo - <span>{{ date('Y') }}</span></p>
     </footer>
 
     @include('mobile.layout.js')

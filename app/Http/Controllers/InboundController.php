@@ -1269,9 +1269,28 @@ class InboundController extends Controller
         ]);
     }
 
-    public function indexMobile(): View
+    public function indexMobile(Request $request): View
     {
-        $purchaseOrder = PurchaseOrder::with('customer', 'user')->latest()->paginate(10);
+        $purchaseOrder = PurchaseOrder::with('customer', 'user', 'purchaseOrderDetail')
+            ->when($request->query('purcDoc'), function ($q) use ($request) {
+                $q->where('purc_doc', 'LIKE', '%'.$request->query('purcDoc').'%');
+            })
+            ->whereHas('customer', function ($customer) use ($request) {
+                if ($request->query('customer') != null) {
+                    $customer->where('name', 'LIKE', '%'.$request->query('customer').'%');
+                }
+            })
+            ->whereHas('purchaseOrderDetail', function ($purchaseOrderDetail) use ($request) {
+                if ($request->query('salesDoc') != null) {
+                    $purchaseOrderDetail->where('sales_doc', 'LIKE', '%'.$request->query('salesDoc').'%');
+                }
+
+                if ($request->query('material') != null) {
+                    $purchaseOrderDetail->where('material', 'LIKE', '%'.$request->query('material').'%');
+                }
+            })
+            ->latest()
+            ->paginate(10);
 
         return view('mobile.inbound.index', compact('purchaseOrder'));
     }
