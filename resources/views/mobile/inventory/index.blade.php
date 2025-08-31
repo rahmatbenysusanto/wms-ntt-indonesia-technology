@@ -64,6 +64,11 @@
         .text-sm {
             font-size: 10px;
         }
+
+        .btn-info {
+            background-color: #39BBBD!important;
+            border-color: #39BBBD!important;
+        }
     </style>
 </head>
 <body>
@@ -88,23 +93,15 @@
         </div>
     </div>
 
-    <div class="container-fluid mt-4" style="margin-bottom: 80px">
-        <div class="row">
-            <div class="col-12 mb-3">
-                <form action="{{ url()->current() }}" method="GET">
-                    <div class="row gx-1">
-                        <div class="col-10">
-                            <input type="number" class="form-control w-100" name="search" placeholder="Search ...">
-                        </div>
-                        <div class="col-2">
-                            <button type="submit" class="btn btn-primary w-100">
-                                <i class="mdi mdi-search-web" style="font-size: 14px"></i>
-                            </button>
-                        </div>
-                    </div>
-                </form>
-            </div>
+    <div class="container-fluid mt-3" style="margin-bottom: 80px">
+        <div class="d-flex justify-content-end align-items-center gap-2 mb-3">
+            <a class="btn btn-info btn-sm" data-bs-toggle="modal" data-bs-target="#filterModal">Search Filter</a>
+            @if(request()->get('search') == 1)
+                <a href="{{ url()->current() }}" class="btn btn-danger btn-sm">Clear Filter</a>
+            @endif
+        </div>
 
+        <div class="row">
             <div class="col-12">
                 @foreach($inventory as $index => $inv)
                     <a href="{{ route('inventory.indexDetail.mobile', ['po' => $inv->purc_doc, 'so' => $inv->sales_doc, 'id' => $inv->product_id]) }}">
@@ -132,7 +129,7 @@
                         </div>
                     </a>
                 @endforeach
-                    <div class="pagination-footer">
+                    <div>
                         <div class="d-flex justify-content-center">
                             @if ($inventory->hasPages())
                                 <ul class="pagination mb-0">
@@ -183,6 +180,42 @@
                         <a href="{{ route('inventory.download-pdf') }}" class="btn btn-pdf btn-sm">Download PDF</a>
                         <a href="{{ route('inventory.download-excel') }}" class="btn btn-success btn-sm">Download Excel</a>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Search Modals -->
+    <div id="filterModal" class="modal fade" tabindex="-1" aria-labelledby="myModalLabel" aria-hidden="true" style="display: none;">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="myModalLabel">Filter Search</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"> </button>
+                </div>
+                <div class="modal-body">
+                    <form action="{{ url()->current() }}" method="GET">
+                        <input type="hidden" name="search" value="1">
+                        <div class="mb-3">
+                            <label class="form-label">Purc Doc</label>
+                            <input type="text" class="form-control form-control-sm" name="purcDoc" value="{{ request()->get('purcDoc', null) }}" placeholder="Purc Doc ...">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Sales Doc</label>
+                            <input type="text" class="form-control form-control-sm" name="salesDoc" value="{{ request()->get('salesDoc', null) }}" placeholder="Sales Doc ...">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Customer</label>
+                            <input type="text" class="form-control form-control-sm" name="customer" value="{{ request()->get('customer', null) }}" placeholder="Customer ...">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Material</label>
+                            <input type="text" class="form-control form-control-sm" name="material" value="{{ request()->get('material', null) }}" placeholder="Material ...">
+                        </div>
+                        <div class="d-flex justify-content-end">
+                            <button type="submit" class="btn btn-primary btn-sm">Search</button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>

@@ -724,15 +724,28 @@ class InventoryController extends Controller
     }
 
     // Mobile App
-    public function indexMobile(): View
+    public function indexMobile(Request $request): View
     {
         $inventory = DB::table('inventory')
             ->leftJoin('inventory_detail', 'inventory_detail.inventory_id', '=', 'inventory.id')
             ->leftJoin('purchase_order_detail', 'inventory_detail.purchase_order_detail_id', '=', 'purchase_order_detail.id')
             ->leftJoin('purchase_order', 'purchase_order.id', '=', 'inventory.purchase_order_id')
+            ->leftJoin('customer', 'customer.id', '=', 'purchase_order.customer_id')
             ->leftJoin('inventory_package_item', 'inventory_package_item.id', '=', 'inventory_detail.inventory_package_item_id')
             ->where('inventory.type', 'inv')
             ->where('inventory_detail.qty', '!=', 0)
+            ->when($request->query('purcDoc'), function ($query) use ($request) {
+                $query->where('purchase_order.purc_doc', 'LIKE', '%'.$request->query('purcDoc').'%');
+            })
+            ->when($request->query('salesDoc'), function ($query) use ($request) {
+                $query->where('purchase_order_detail.sales_doc', 'LIKE', '%'.$request->query('salesDoc').'%');
+            })
+            ->when($request->query('material'), function ($query) use ($request) {
+                $query->where('purchase_order_detail.material', 'LIKE', '%'.$request->query('material').'%');
+            })
+            ->when($request->query('customer'), function ($query) use ($request) {
+                $query->where('customer.name', 'LIKE', '%'.$request->query('customer').'%');
+            })
             ->select([
                 'purchase_order.purc_doc',
                 'purchase_order_detail.sales_doc',
@@ -753,7 +766,14 @@ class InventoryController extends Controller
                 'purchase_order_detail.prod_hierarchy_desc',
                 'inventory_package_item.is_parent',
             ])
-            ->paginate(5);
+            ->paginate(5)
+            ->appends([
+                'purcDoc'   => $request->query('purcDoc'),
+                'salesDoc'  => $request->query('salesDoc'),
+                'material'  => $request->query('material'),
+                'customer'  => $request->query('customer'),
+                'search'    =>  $request->query('search'),
+            ]);
 
         return view('mobile.inventory.index', compact('inventory'));
     }
