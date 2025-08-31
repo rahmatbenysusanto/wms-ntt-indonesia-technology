@@ -539,7 +539,6 @@
                                 </ul>
                             </div>
                         </li>
-
                         <li class="nav-item">
                             <a class="nav-link menu-link {{ in_array($title, ['Pm Room', 'Pm Room Outbound']) ? 'active' : '' }}" href="#sidebarPmRoom" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="sidebarPmRoom">
                                 <i class="mdi mdi-notebook-outline"></i> <span data-key="t-dashboards">PM Room</span>
@@ -591,10 +590,31 @@
                             <i class="mdi mdi-account-circle"></i> <span data-key="t-user"> User </span>
                         </a>
                     </li>
+{{--                    <li class="nav-item">--}}
+{{--                        <a class="nav-link menu-link {{ $title == 'Warehouse' ? 'active' : '' }}" href="{{ route('storage') }}">--}}
+{{--                            <i class="mdi mdi-database"></i> <span data-key="t-storage">Storage</span>--}}
+{{--                        </a>--}}
+{{--                    </li>--}}
                     <li class="nav-item">
-                        <a class="nav-link menu-link {{ $title == 'Warehouse' ? 'active' : '' }}" href="{{ route('storage') }}">
-                            <i class="mdi mdi-database"></i> <span data-key="t-storage">Storage</span>
+                        <a class="nav-link menu-link {{ in_array($title, ['Storage Raw', 'Storage Area', 'Storage Rak', 'Storage Bin']) ? 'active' : '' }}" href="#sidebarStorage" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="sidebarStorage">
+                            <i class="mdi mdi-database"></i> <span data-key="t-dashboards">Storage</span>
                         </a>
+                        <div class="collapse menu-dropdown {{ in_array($title, ['Storage Raw', 'Storage Area', 'Storage Rak', 'Storage Bin']) ? 'show' : '' }}" id="sidebarStorage">
+                            <ul class="nav nav-sm flex-column">
+                                <li class="nav-item">
+                                    <a href="{{ route('storage.raw') }}" class="nav-link {{ $title == 'Storage Raw' ? 'active' : '' }}" data-key="t-analytics"> Raw </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="{{ route('storage.area') }}" class="nav-link {{ $title == 'Storage Area' ? 'active' : '' }}" data-key="t-analytics"> Area </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="{{ route('storage.rak') }}" class="nav-link {{ $title == 'Storage Rak' ? 'active' : '' }}" data-key="t-analytics"> Rak </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="{{ route('storage.bin') }}" class="nav-link {{ $title == 'Storage Bin' ? 'active' : '' }}" data-key="t-analytics"> Bin </a>
+                                </li>
+                            </ul>
+                        </div>
                     </li>
 {{--                    <li class="nav-item">--}}
 {{--                        <a class="nav-link menu-link {{ $title == 'Warehouse' ? 'active' : '' }}" href="{{ route('warehouse') }}">--}}

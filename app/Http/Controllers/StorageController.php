@@ -99,4 +99,74 @@ class StorageController extends Controller
             'status' => true,
         ]);
     }
+
+    public function raw(): View
+    {
+        $storage = Storage::whereNull('area')
+            ->whereNull('rak')
+            ->whereNull('bin')
+            ->where('deleted_at', null)
+            ->whereNotIn('id', [1, 2, 3, 4])
+            ->paginate(10);
+
+        $title = 'Storage Raw';
+        return view('storage.raw', compact('title', 'storage'));
+    }
+
+    public function area(): View
+    {
+        $storage = Storage::whereNull('rak')
+            ->whereNull('bin')
+            ->whereNotNull('area')
+            ->where('deleted_at', null)
+            ->whereNotIn('id', [1, 2, 3, 4])
+            ->paginate(10);
+
+        $raw = Storage::whereNull('area')
+            ->whereNull('rak')
+            ->whereNull('bin')
+            ->whereNotIn('id', [1, 2, 3, 4])
+            ->whereNull('deleted_at')
+            ->get();
+
+        $title = 'Storage Area';
+        return view('storage.area', compact('title', 'storage', 'raw'));
+    }
+
+    public function rak(): View
+    {
+        $storage = Storage::whereNull('bin')
+            ->whereNotNull('rak')
+            ->where('deleted_at', null)
+            ->whereNotIn('id', [1, 2, 3, 4])
+            ->paginate(10);
+
+        $raw = Storage::whereNull('area')
+            ->whereNull('rak')
+            ->whereNull('bin')
+            ->whereNotIn('id', [1, 2, 3, 4])
+            ->whereNull('deleted_at')
+            ->get();
+
+        $title = 'Storage Rak';
+        return view('storage.rak', compact('title', 'storage', 'raw'));
+    }
+
+    public function bin(): View
+    {
+        $storage = Storage::whereNotNull('bin')
+            ->where('deleted_at', null)
+            ->whereNotIn('id', [1, 2, 3, 4])
+            ->paginate(10);
+
+        $raw = Storage::whereNull('area')
+            ->whereNull('rak')
+            ->whereNull('bin')
+            ->whereNotIn('id', [1, 2, 3, 4])
+            ->whereNull('deleted_at')
+            ->get();
+
+        $title = 'Storage Bin';
+        return view('storage.bin', compact('title', 'storage', 'raw'));
+    }
 }
