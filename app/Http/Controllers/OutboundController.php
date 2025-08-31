@@ -655,13 +655,25 @@ class OutboundController extends Controller
     }
 
     // Mobile APP
-    public function indexMobile(): View
+    public function indexMobile(Request $request): View
     {
         $outbound = DB::table('outbound')
             ->leftJoin('outbound_detail', 'outbound_detail.outbound_id', '=', 'outbound.id')
             ->leftJoin('inventory_package_item', 'inventory_package_item.id', '=', 'outbound_detail.inventory_package_item_id')
             ->leftJoin('purchase_order_detail', 'purchase_order_detail.id', '=', 'inventory_package_item.purchase_order_detail_id')
             ->leftJoin('customer', 'customer.id', '=', 'outbound.customer_id')
+            ->when($request->query('purcDoc'), function ($query) use ($request) {
+                $query->where('outbound.purc_doc', 'LIKE', '%'.$request->query('purcDoc').'%');
+            })
+            ->when($request->query('salesDoc'), function ($query) use ($request) {
+                $query->where('outbound.sales_docs', 'LIKE', '%'.$request->query('salesDoc').'%');
+            })
+            ->when($request->query('material'), function ($query) use ($request) {
+                $query->where('purchase_order_detail.material', 'LIKE', '%'.$request->query('material').'%');
+            })
+            ->when($request->query('customer'), function ($query) use ($request) {
+                $query->where('customer.name', 'LIKE', '%'.$request->query('customer').'%');
+            })
             ->select([
                 'outbound.id',
                 'outbound.number',
@@ -688,7 +700,14 @@ class OutboundController extends Controller
                 'outbound.delivery_note_number',
             ])
             ->latest('outbound.delivery_date')
-            ->paginate(5);
+            ->paginate(5)
+            ->appends([
+                'purcDoc'   => $request->query('purcDoc'),
+                'salesDoc'  => $request->query('salesDoc'),
+                'material'  => $request->query('material'),
+                'customer'  => $request->query('customer'),
+                'search'    =>  $request->query('search'),
+            ]);
 
         return view('mobile.outbound.index', compact('outbound'));
     }
