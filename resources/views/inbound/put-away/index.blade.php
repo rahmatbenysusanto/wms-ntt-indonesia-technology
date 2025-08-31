@@ -86,7 +86,7 @@
                                         <div class="d-flex gap-2">
                                             @if($item->status == 'open')
                                                 <a href="{{ route('inbound.put-away-detail.open', ['id' => $item->id]) }}" class="btn btn-primary btn-sm">Detail</a>
-                                                <a href="{{ route('inbound.put-away-edit', ['id' => $item->id]) }}" class="btn btn-warning btn-sm">Edit</a>
+                                                {{--<a href="{{ route('inbound.put-away-edit', ['id' => $item->id]) }}" class="btn btn-warning btn-sm">Edit</a>--}}
                                                 <a href="{{ route('inbound.put-away-process', ['id' => $item->id]) }}" class="btn btn-info btn-sm">Put Away</a>
                                             @else
                                                 <a href="{{ route('inbound.put-away-detail', ['id' => $item->id]) }}" class="btn btn-primary btn-sm">Detail</a>

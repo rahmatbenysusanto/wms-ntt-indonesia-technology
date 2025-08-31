@@ -498,6 +498,7 @@ class InventoryController extends Controller
                     $productAging = InventoryDetail::where('inventory_package_item_id', $product['id'])
                         ->where('purchase_order_detail_id', $product['purchase_order_detail_id'])
                         ->first();
+
                     InventoryDetail::create([
                         'inventory_id'              => $inventory->id,
                         'purchase_order_detail_id'  => $product['purchase_order_detail_id'],
@@ -1167,7 +1168,7 @@ class InventoryController extends Controller
         ];
 
         $pdf = Pdf::loadView('pdf.aging', $data)->setPaper('a4', 'landscape');;
-        return $pdf->download('Product Aging.pdf');
+        return $pdf->stream('Product Aging.pdf');
     }
 
     public function downloadExcelBox(): StreamedResponse
@@ -1257,7 +1258,7 @@ class InventoryController extends Controller
         ];
 
         $pdf = Pdf::loadView('pdf.box', $data)->setPaper('a4', 'landscape');;
-        return $pdf->download('Box Product.pdf');
+        return $pdf->stream('Box Product.pdf');
     }
 
     public function downloadPdf(): \Illuminate\Http\Response
@@ -1303,6 +1304,6 @@ class InventoryController extends Controller
         ];
 
         $pdf = Pdf::loadView('pdf.product-list', $data)->setPaper('a4', 'landscape');;
-        return $pdf->download('Product List.pdf');
+        return $pdf->stream('Product List.pdf');
     }
 }

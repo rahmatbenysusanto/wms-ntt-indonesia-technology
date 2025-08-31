@@ -576,7 +576,7 @@ class OutboundController extends Controller
         ];
 
         $pdf = Pdf::loadView('pdf.outbound', $data);
-        return $pdf->download('outbound '.$outbound->delivery_note_number.'.pdf');
+        return $pdf->stream('outbound '.$outbound->delivery_note_number.'.pdf');
     }
 
     public function downloadExcel(Request $request): StreamedResponse
