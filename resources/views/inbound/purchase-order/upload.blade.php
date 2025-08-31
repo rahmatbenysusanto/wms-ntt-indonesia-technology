@@ -117,6 +117,7 @@
                     po_item_qty: parseInt(row["PO Itm Qty"]),
                     net_order_price: row["Net Price"] ?? 0,
                     currency: row["Crcy"] ?? "",
+                    date: '{{ date('Y-m-d') }}'
                 }));
 
                 viewListData(filteredData);

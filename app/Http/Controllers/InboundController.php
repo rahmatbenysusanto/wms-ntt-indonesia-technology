@@ -21,9 +21,14 @@ use App\Models\SerialNumber;
 use App\Models\Storage;
 use App\Models\Vendor;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Carbon\Carbon;
+use GuzzleHttp\Client;
+use GuzzleHttp\Exception\GuzzleException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -68,6 +73,9 @@ class InboundController extends Controller
         return view('inbound.purchase-order.upload', compact('title'));
     }
 
+    /**
+     * @throws GuzzleException
+     */
     public function purchaseOrderUploadProcess(Request $request): \Illuminate\Http\JsonResponse
     {
         try {
@@ -134,19 +142,62 @@ class InboundController extends Controller
         }
     }
 
+    /**
+     * @throws GuzzleException
+     */
+
     private function storePurchaseOrderDetail($checkPO, mixed $item): void
     {
-        // Check Products Master
         $checkProduct = Product::where('material', $item['material'])->first();
-        if ($checkProduct) {
-            $productId = $checkProduct->id;
-        } else {
-            $product = Product::create([
-                'material'              => $item['material'],
-                'po_item_desc'          => $item['po_item_desc'],
-                'prod_hierarchy_desc'   => $item['prod_hierarchy_desc'],
+        $productId = $checkProduct?->id ?? Product::create([
+            'material'            => $item['material'],
+            'po_item_desc'        => $item['po_item_desc'] ?? null,
+            'prod_hierarchy_desc' => $item['prod_hierarchy_desc'] ?? null,
+        ])->id;
+
+        $formattedDate = !empty($item['date']) ? Carbon::createFromFormat('Y-m-d', $item['date'])->format('Y-m-d') : Carbon::now()->format('Y-m-d');
+
+        $fxKey = "fx:USD:IDR:{$formattedDate}";
+        $fx = Cache::remember($fxKey, 86400, function () use ($formattedDate) {
+            $resp = Http::retry(3, 200)->timeout(10)->get("https://api.frankfurter.dev/v1/{$formattedDate}", [
+                'base'    => 'USD',
+                'symbols' => 'IDR',
             ]);
-            $productId = $product->id;
+
+            if ($resp->failed()) {
+                $resp = Http::retry(2, 300)->timeout(10)->get('https://api.frankfurter.dev/v1/latest', [
+                    'base'    => 'USD',
+                    'symbols' => 'IDR',
+                ]);
+            }
+
+            $json = $resp->json() ?? [];
+            return [
+                'date' => $json['date'] ?? $formattedDate,
+                'rate' => (float)($json['rates']['IDR'] ?? 0.0),
+            ];
+        });
+
+        $apiDate  = $fx['date'];
+        $usdToIDR = $fx['rate'];
+
+        $rawPrice   = (float)($item['net_order_price'] ?? 0);
+        $rawCurr    = strtoupper($item['currency'] ?? '');
+
+        if ($rawPrice > 0 && $usdToIDR > 0) {
+            if ($rawCurr === 'USD') {
+                $netOrderPrice = round($rawPrice, 2);
+                $currency      = 'USD';
+                $priceIDR      = (int) round($rawPrice * $usdToIDR);
+            } else {
+                $netOrderPrice = round($rawPrice / $usdToIDR, 2);
+                $currency      = 'IDR';
+                $priceIDR      = (int) round($rawPrice);
+            }
+        } else {
+            $netOrderPrice = 0.0;
+            $currency      = $rawCurr ?: '';
+            $priceIDR      = 0;
         }
 
         PurchaseOrderDetail::create([
@@ -154,7 +205,7 @@ class InboundController extends Controller
             'product_id'            => $productId,
             'status'                => 'new',
             'qty_quality_control'   => 0,
-            'sales_doc'             => $item['sales_doc'],
+            'sales_doc'             => $item['sales_doc'] ?? null,
             'item'                  => $item['item'] ?? null,
             'material'              => $item['material'] ?? null,
             'po_item_desc'          => $item['po_item_desc'] ?? null,
@@ -166,19 +217,21 @@ class InboundController extends Controller
             'sloc_desc'             => $item['sloc_desc'] ?? null,
             'valuation'             => $item['valuation'] ?? null,
             'po_item_qty'           => $item['po_item_qty'] ?? null,
-            'net_order_price'       => $item['net_order_price'] ?? null,
-            'currency'              => $item['currency'] ?? null,
+            'net_order_price'       => $netOrderPrice,
+            'currency'              => $currency,
+            'price_idr'             => $priceIDR,
+            'price_date'            => $apiDate,
         ]);
 
-        $query = PurchaseOrderDetail::where('purchase_order_id', $checkPO->id);
+        $query        = PurchaseOrderDetail::where('purchase_order_id', $checkPO->id);
         $salesDocsQty = (clone $query)->distinct('sales_doc')->count();
         $materialQty  = (clone $query)->distinct('material')->count();
-        $itemQty = (clone $query)->sum('po_item_qty');
+        $itemQty      = (clone $query)->sum('po_item_qty');
 
         PurchaseOrder::where('id', $checkPO->id)->update([
-            'sales_doc_qty'  => $salesDocsQty,
-            'material_qty'   => $materialQty,
-            'item_qty'       => $itemQty,
+            'sales_doc_qty' => $salesDocsQty,
+            'material_qty'  => $materialQty,
+            'item_qty'      => $itemQty,
         ]);
     }
 

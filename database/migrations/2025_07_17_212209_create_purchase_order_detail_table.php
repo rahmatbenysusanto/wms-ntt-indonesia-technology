@@ -31,6 +31,8 @@ return new class extends Migration
             $table->integer('po_item_qty')->nullable();
             $table->decimal('net_order_price', 12, 2)->default(0);
             $table->string('currency')->nullable();
+            $table->integer('price_idr')->default(0);
+            $table->timestamp('price_date')->nullable();
             $table->timestamps();
         });
     }

@@ -97,7 +97,7 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"> </button>
                 </div>
                 <div class="modal-body">
-                    <form action="{{ route('customer.store') }}" method="POST">
+                    <form action="{{ route('storage.create') }}" method="POST">
                         @csrf
                         <input type="hidden" name="type" value="bin">
                         <div class="mb-3">

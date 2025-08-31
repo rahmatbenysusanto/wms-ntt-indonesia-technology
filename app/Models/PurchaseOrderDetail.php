@@ -27,6 +27,8 @@ class PurchaseOrderDetail extends Model
         'po_item_qty',
         'net_order_price',
         'currency',
+        'price_idr',
+        'price_date'
     ];
 
     public function purchaseOrder(): BelongsTo
