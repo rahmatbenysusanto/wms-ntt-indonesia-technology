@@ -157,6 +157,7 @@ class SpareRoomController extends Controller
                 foreach ($product['serialNumber'] ?? [] as $serialNumber) {
                     InventoryPackageItemSN::where('serial_number', $serialNumber['serial_number'])
                         ->where('inventory_package_item_id', $product['inventoryPackageItemId'])
+                        ->where('id', $serialNumber['id'])
                         ->update([
                             'qty' => 0
                         ]);
@@ -236,6 +237,7 @@ class SpareRoomController extends Controller
 
                         InventoryPackageItemSN::where('inventory_package_item_id', $product['inventoryPackageItemId'])
                             ->where('serial_number', $serialNumber['serialNumber'])
+                            ->where('id', $serialNumber['id'])
                             ->update([
                                 'qty' => 0
                             ]);
@@ -415,6 +417,7 @@ class SpareRoomController extends Controller
 
                         InventoryPackageItemSN::where('inventory_package_item_id', $product['inventoryPackageItemId'])
                             ->where('serial_number', $serialNumber['serialNumber'])
+                            ->where('id', $serialNumber['id'])
                             ->update([
                                 'qty' => 0
                             ]);

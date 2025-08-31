@@ -241,20 +241,21 @@ class OutboundController extends Controller
                     ]);
 
                     $serialNumber = [];
-                    foreach ($product['serialNumber'] ?? [] as $serialNumber) {
+                    foreach ($product['serialNumber'] ?? [] as $sn) {
                         OutboundDetailSN::create([
                             'outbound_detail_id'        => $outboundDetail->id,
                             'inventory_package_item_id' => $product['inventoryPackageItemId'],
-                            'serial_number'             => $serialNumber['serialNumber'],
+                            'serial_number'             => $sn['serialNumber'],
                         ]);
 
                         InventoryPackageItemSN::where('inventory_package_item_id', $product['inventoryPackageItemId'])
-                            ->where('serial_number', $serialNumber['serialNumber'])
+                            ->where('serial_number', $sn['serialNumber'])
+                            ->where('id', $sn['id'])
                             ->update([
                                 'qty' => 0
                             ]);
 
-                        $serialNumber[] = $serialNumber['serialNumber'];
+                        $serialNumber[] = $sn['serialNumber'];
                     }
 
                     // Decrement Stock

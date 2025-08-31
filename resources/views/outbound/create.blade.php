@@ -458,7 +458,7 @@
                                     text: 'Create Order Successfully',
                                     icon: 'success'
                                 }).then((e) => {
-                                    {{--window.location.href = '{{ route('outbound.index') }}';--}}
+                                    window.location.href = '{{ route('outbound.index') }}';
                                 });
                             } else {
                                 Swal.fire({
