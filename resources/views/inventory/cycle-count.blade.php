@@ -147,6 +147,7 @@
                         <div class="mb-3">
                             <label class="form-label">Type</label>
                             <select class="form-control" name="type">
+                                <option value="all">All</option>
                                 <option value="inbound">Inbound</option>
                                 <option value="outbound">Outbound</option>
                             </select>
@@ -181,6 +182,7 @@
                         <div class="mb-3">
                             <label class="form-label">Type</label>
                             <select class="form-control" name="type">
+                                <option value="all">All</option>
                                 <option value="inbound">Inbound</option>
                                 <option value="outbound">Outbound</option>
                             </select>

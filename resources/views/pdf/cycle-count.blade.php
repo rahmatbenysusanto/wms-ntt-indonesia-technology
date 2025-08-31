@@ -111,6 +111,8 @@
                     <td>
                         @if(in_array($item->inventoryPackageItem->inventoryPackage->storage->id, [2,3,4]))
                             <b>{{ $item->inventoryPackageItem->inventoryPackage->storage->raw }}</b>
+                        @elseif($item->inventoryPackageItem->inventoryPackage->storage->id == 1)
+                            <b>Cross Docking</b>
                         @else
                             <b>{{ $item->inventoryPackageItem->inventoryPackage->storage->raw }}</b> -
                             <b>{{ $item->inventoryPackageItem->inventoryPackage->storage->area }}</b> -

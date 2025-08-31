@@ -251,16 +251,20 @@ class InventoryController extends Controller
     public function cycleCountDownloadPDF(Request $request): \Illuminate\Http\Response
     {
         $cycleCount = InventoryHistory::with('purchaseOrder', 'purchaseOrderDetail', 'inventoryPackageItem.inventoryPackage', 'inventoryPackageItem.inventoryPackage.storage')
-            ->whereBetween('created_at', [$request->get('startDate').' 00:00:00', $request->get('endDate').' 23:59:59'])
-            ->where('type', $request->get('type'))
-            ->get();
+            ->whereBetween('created_at', [$request->get('startDate').' 00:00:00', $request->get('endDate').' 23:59:59']);
+
+        if ($request->get('type') != 'all') {
+            $cycleCount = $cycleCount->where('type', $request->get('type'));
+        }
+
+        $cycleCount = $cycleCount->get();
 
         $data = [
             'cycleCount' => $cycleCount
         ];
 
         $pdf = Pdf::loadView('pdf.cycle-count', $data)->setPaper('a4', 'landscape');;
-        return $pdf->download('Cycle Count.pdf');
+        return $pdf->stream('Cycle Count.pdf');
     }
 
     public function cycleCountDownloadExcel(Request $request): StreamedResponse
@@ -269,9 +273,13 @@ class InventoryController extends Controller
         $sheet = $spreadsheet->getActiveSheet();
 
         $cycleCount = InventoryHistory::with('purchaseOrder', 'purchaseOrderDetail', 'inventoryPackageItem.inventoryPackage', 'inventoryPackageItem.inventoryPackage.storage')
-            ->whereBetween('created_at', [$request->get('startDate').' 00:00:00', $request->get('endDate').' 23:59:59'])
-            ->where('type', $request->get('type'))
-            ->get();
+            ->whereBetween('created_at', [$request->get('startDate').' 00:00:00', $request->get('endDate').' 23:59:59']);
+
+        if ($request->get('type') != 'all') {
+            $cycleCount = $cycleCount->where('type', $request->get('type'));
+        }
+
+        $cycleCount = $cycleCount->get();
 
         $sheet->setCellValue('A1', 'Purc Doc');
         $sheet->setCellValue('B1', 'Sales Doc');
