@@ -52,6 +52,11 @@
         .card-partial {
             border-left: 4px solid ;
         }
+
+        .btn-info {
+            background-color: #39BBBD!important;
+            border-color: #39BBBD!important;
+        }
     </style>
 </head>
 <body>
@@ -89,7 +94,16 @@
         </div>
 
         <div class="col-12" style="margin-bottom: 80px">
-            <h6 class="mb-2 fw-bold">List SO</h6>
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h6 class="mb-2 fw-bold">List SO</h6>
+                <div class="d-flex gap-2">
+                    <a class="btn btn-info btn-sm" data-bs-toggle="modal" data-bs-target="#filterModal">Search Filter</a>
+                    @if(request()->get('search') == 1)
+                        <a href="{{ route('inbound.indexDetail.mobile',['id' => request()->get('id')]) }}" class="btn btn-danger btn-sm">Clear Filter</a>
+                    @endif
+                </div>
+            </div>
+
             @foreach($purchaseOrderDetail as $detail)
                 <a href="{{ route('inbound.indexDetail.so', ['so' => $detail->sales_doc, 'po' => $purchaseOrder->id]) }}">
                     <div class="card item-card mb-2 {{ $detail->qty == $detail->qtyQc ? 'card-complete' : 'card-partial' }}">
@@ -124,6 +138,35 @@
                     <a href="{{ route('inbound.purchase-order-download-pdf', ['id' => $purchaseOrder->id]) }}" class="btn btn-pdf btn-sm">Download PDF</a>
                     <a href="{{ route('inbound.purchase-order-download-excel', ['id' => $purchaseOrder->id]) }}" class="btn btn-success btn-sm">Download Excel</a>
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filter Search Modals -->
+<div id="filterModal" class="modal fade" tabindex="-1" aria-labelledby="myModalLabel" aria-hidden="true" style="display: none;">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="myModalLabel">Filter Search</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"> </button>
+            </div>
+            <div class="modal-body">
+                <form action="{{ url()->current() }}" method="GET">
+                    <input type="hidden" name="search" value="1">
+                    <input type="hidden" name="id" value="{{ request()->get('id') }}">
+                    <div class="mb-3">
+                        <label class="form-label">Sales Doc</label>
+                        <input type="text" class="form-control form-control-sm" name="salesDoc" value="{{ request()->get('salesDoc', null) }}" placeholder="Sales Doc ...">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Material</label>
+                        <input type="text" class="form-control form-control-sm" name="material" value="{{ request()->get('material', null) }}" placeholder="Material ...">
+                    </div>
+                    <div class="d-flex justify-content-end">
+                        <button type="submit" class="btn btn-primary btn-sm">Search</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>

@@ -1299,6 +1299,12 @@ class InboundController extends Controller
     {
         $purchaseOrder = PurchaseOrder::with('customer', 'user')->where('id', $request->query('id'))->first();
         $purchaseOrderDetail = PurchaseOrderDetail::where('purchase_order_id', $request->query('id'))
+            ->when($request->query('salesDoc'), function ($q) use ($request) {
+                $q->where('sales_doc', 'LIKE', '%'.$request->query('salesDoc').'%');
+            })
+            ->when($request->query('material'), function ($q) use ($request) {
+                $q->where('material', 'LIKE', '%'.$request->query('material').'%');
+            })
             ->select([
                 'sales_doc',
                 DB::raw('SUM(po_item_qty) as qty'),
