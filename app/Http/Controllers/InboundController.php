@@ -1322,7 +1322,12 @@ class InboundController extends Controller
         $salesDoc = $request->query('so');
         $purchaseOrderId = $request->query('po');
 
-        $purchaseOrderDetail = PurchaseOrderDetail::where('purchase_order_id', $purchaseOrderId)->where('sales_doc', $salesDoc)->get();
+        $purchaseOrderDetail = PurchaseOrderDetail::where('purchase_order_id', $purchaseOrderId)
+            ->where('sales_doc', $salesDoc)
+            ->when($request->query('material'), function ($q) use ($request) {
+                $q->where('material', 'LIKE', '%'.$request->query('material').'%');
+            })
+            ->get();
 
         return view('mobile.inbound.detail-so', compact('purchaseOrderDetail', 'purchaseOrderId'));
     }
