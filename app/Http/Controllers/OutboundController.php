@@ -50,10 +50,34 @@ class OutboundController extends Controller
 
     public function index(Request $request): View
     {
-        $outbound = Outbound::with('user', 'customer')->where('type', 'outbound')->latest()->paginate(10);
+        $outbound = Outbound::with('user', 'customer')
+            ->where('type', 'outbound')
+            ->when($request->query('purcDoc'), function ($query) use ($request) {
+                $query->where('purc_doc', 'like', '%' . $request->query('purcDoc') . '%');
+            })
+            ->when($request->query('salesDoc'), function ($query) use ($request) {
+                $query->where('sales_doc', 'like', '%' . $request->query('salesDoc') . '%');
+            })
+            ->when($request->query('client'), function ($query) use ($request) {
+                $query->where('customer_id', $request->query('client'));
+            })
+            ->when($request->query('start'), function ($query) use ($request) {
+                $query->whereBetween('outbound_date', [$request->query('start'), $request->query('end')]);
+            })
+            ->latest()
+            ->paginate(10)
+            ->appends([
+                'start'     => $request->query('start'),
+                'end'       => $request->query('end'),
+                'purcDoc'   => $request->query('purcDoc'),
+                'salesDoc'  => $request->query('salesDoc'),
+                'client'    => $request->query('client'),
+            ]);
+
+        $customer = Customer::all();
 
         $title = 'Outbound';
-        return view('outbound.index', compact('title', 'outbound'));
+        return view('outbound.index', compact('title', 'outbound', 'customer'));
     }
 
     public function create(): View

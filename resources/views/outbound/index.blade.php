@@ -21,10 +21,56 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <h4 class="card-title mb-0">Order List</h4>
                         <div class="d-flex gap-2">
+                            <a href="" class="btn btn-pdf btn-sm">
+                                <span class="mdi mdi-file-pdf-box"></span>
+                                Download PDF
+                            </a>
+                            <a href="" class="btn btn-success btn-sm">
+                                <span class="mdi mdi-file-pdf-box"></span>
+                                Download Excel
+                            </a>
                             <a href="{{ route('outbound.return') }}" class="btn btn-info btn-sm">Return Order</a>
                             <a href="{{ route('outbound.create') }}" class="btn btn-primary btn-sm">Create Order</a>
                         </div>
                     </div>
+                </div>
+                <div class="card-body">
+                    <form action="{{ url()->current() }}" method="GET">
+                        <div class="row">
+                            <div class="col-2">
+                                <label class="form-label">Purc Doc</label>
+                                <input type="text" class="form-control" name="purcDoc" value="{{ request()->get('purcDoc') }}" placeholder="Purc Doc ...">
+                            </div>
+                            <div class="col-2">
+                                <label class="form-label">Sales Doc</label>
+                                <input type="text" class="form-control" name="salesDoc" value="{{ request()->get('salesDoc') }}" placeholder="Sales Doc ...">
+                            </div>
+                            <div class="col-2">
+                                <label class="form-label">Client</label>
+                                <select class="form-control" name="client">
+                                    <option value="">-- Select Client --</option>
+                                    @foreach($customer as $item)
+                                        <option value="{{ $item->id }}" {{ $item->id == request()->get('client') ? 'selected' : '' }}>{{ $item->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-2">
+                                <label class="form-label">Start Date</label>
+                                <input type="date" class="form-control" name="start" value="{{ request()->get('start', date('Y-m-01')) }}">
+                            </div>
+                            <div class="col-2">
+                                <label class="form-label">End Date</label>
+                                <input type="date" class="form-control" name="end" value="{{ request()->get('end', date('Y-m-d')) }}">
+                            </div>
+                            <div class="col-2">
+                                <label class="form-label text-white">-</label>
+                                <div class="d-flex gap-2">
+                                    <button type="submit" class="btn btn-primary">Search</button>
+                                    <a href="{{ url()->current() }}" class="btn btn-danger">Clear</a>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
