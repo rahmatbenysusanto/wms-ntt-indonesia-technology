@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Customer;
 use App\Models\GeneralRoom;
 use App\Models\Inventory;
 use App\Models\InventoryDetail;
@@ -336,12 +337,26 @@ class DashboardController extends Controller
         return view('dashboard.aging.detail', compact('title', 'text', 'inventoryDetail'));
     }
 
-    public function dashboardOutbound(): View
+    public function dashboardOutbound(Request $request): View
     {
         $outbound = Outbound::with('customer', 'user')
             ->where('type', 'outbound')
+            ->when($request->query('purcDoc'), function ($q) use ($request) {
+                $q->where('purc_doc', $request->query('purcDoc'));
+            })
+            ->when($request->query('salesDoc'), function ($q) use ($request) {
+                $q->where('sales_doc', 'LIKE', '%'.$request->query('salesDoc').'%');
+            })
+            ->when($request->query('customer'), function ($q) use ($request) {
+                $q->where('customer_id', $request->query('customer'));
+            })
             ->latest()
-            ->paginate(10);
+            ->paginate(10)
+            ->appends([
+                'purcDoc'   => $request->query('purcDoc'),
+                'salesDoc'  => $request->query('salesDoc'),
+                'customer'  => $request->query('customer'),
+            ]);
 
         foreach ($outbound as $item) {
             $item->price = DB::table('outbound_detail')
@@ -354,8 +369,10 @@ class DashboardController extends Controller
                 ->value('price');
         }
 
+        $customers = Customer::all();
+
         $title = 'Dashboard Outbound';
-        return view('dashboard.outbound.index', compact('title', 'outbound'));
+        return view('dashboard.outbound.index', compact('title', 'outbound', 'customers'));
     }
 
     public function dashboardOutboundDetail(Request $request): View

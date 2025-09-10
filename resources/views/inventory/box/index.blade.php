@@ -42,6 +42,10 @@
                                 <input type="text" class="form-control" name="salesDoc" placeholder="Sales Doc">
                             </div>
                             <div class="col-2">
+                                <label class="form-label">Reff Number</label>
+                                <input type="text" class="form-control" name="reff" placeholder="Reff Number">
+                            </div>
+                            <div class="col-2">
                                 <label class="form-label text-white">-</label>
                                 <div class="d-flex gap-2">
                                     <button type="submit" class="btn btn-info">Search</button>

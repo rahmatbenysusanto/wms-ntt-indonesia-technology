@@ -25,11 +25,15 @@
                         <div class="row">
                             <div class="col-2">
                                 <label class="form-label">Purc Doc</label>
-                                <input type="text" class="form-control" value="{{ request()->get('purcDoc', null) }}" name="purcDoc">
+                                <input type="text" class="form-control" value="{{ request()->get('purcDoc', null) }}" name="purcDoc" placeholder="Purc Doc ...">
                             </div>
                             <div class="col-2">
                                 <label class="form-label">Sales Doc</label>
-                                <input type="text" class="form-control" value="{{ request()->get('salesDoc', null) }}" name="salesDoc">
+                                <input type="text" class="form-control" value="{{ request()->get('salesDoc', null) }}" name="salesDoc" placeholder="Sales Doc ...">
+                            </div>
+                            <div class="col-2">
+                                <label class="form-label">Parent Material</label>
+                                <input type="text" class="form-control" value="{{ request()->get('material', null) }}" name="material" placeholder="Parent Material ...">
                             </div>
                             <div class="col-2">
                                 <label class="form-label text-white">-</label>

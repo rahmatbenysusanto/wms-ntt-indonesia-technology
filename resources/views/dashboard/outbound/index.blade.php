@@ -37,6 +37,36 @@
                             </tr>
                         </thead>
                         <tbody>
+                            <form action="{{ url()->current() }}" method="GET">
+                                <div class="row">
+                                    <div class="col-2">
+                                        <label class="form-label">Purc Doc</label>
+                                        <input type="text" class="form-control" name="purcDoc" value="{{ request()->get('purcDoc') }}" placeholder="Purc Doc ...">
+                                    </div>
+                                    <div class="col-2">
+                                        <label class="form-label">Sales Doc</label>
+                                        <input type="text" class="form-control" name="salesDoc" value="{{ request()->get('salesDoc') }}" placeholder="Sales Doc ...">
+                                    </div>
+                                    <div class="col-2">
+                                        <label class="form-label">Customer</label>
+                                        <select class="form-control" name="customer">
+                                            <option value="">-- Select Customer --</option>
+                                            @foreach($customers as $customer)
+                                                <option value="{{ $customer->id }}" {{ request()->get('customer') == $customer->id ? 'selected' : '' }}>{{ $customer->name }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div class="col-2">
+                                        <label class="form-label text-white">-</label>
+                                        <div class="d-flex gap-2">
+                                            <button type="submit" class="btn btn-primary">Search</button>
+                                            <a href="{{ url()->current() }}" class="btn btn-danger">Clear</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                        </tbody>
+                        <tbody>
                         @foreach($outbound as $index => $item)
                             <tr>
                                 <td>{{ $outbound->firstItem() + $index }}</td>

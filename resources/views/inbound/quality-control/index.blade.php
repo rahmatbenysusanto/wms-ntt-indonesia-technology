@@ -27,7 +27,7 @@
                         <div class="row">
                             <div class="col-2">
                                 <label class="form-label">Purc Doc</label>
-                                <input type="text" class="form-control" value="{{ request()->get('purcDoc', null) }}" name="purcDoc">
+                                <input type="text" class="form-control" value="{{ request()->get('purcDoc', null) }}" name="purcDoc" placeholder="Purc Doc ...">
                             </div>
                             <div class="col-2">
                                 <label class="form-label">Vendor</label>
