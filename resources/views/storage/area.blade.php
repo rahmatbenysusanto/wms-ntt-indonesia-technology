@@ -1,15 +1,15 @@
 @extends('layout.index')
-@section('title', 'Storage Area')
+@section('title', 'Storage Raw')
 
 @section('content')
     <div class="row">
         <div class="col-12">
             <div class="page-title-box d-sm-flex align-items-center justify-content-between">
-                <h4 class="mb-sm-0">Storage Area</h4>
+                <h4 class="mb-sm-0">Storage Raw</h4>
                 <div class="page-title-right">
                     <ol class="breadcrumb m-0">
                         <li class="breadcrumb-item"><a>Storage</a></li>
-                        <li class="breadcrumb-item active">Storage Area</li>
+                        <li class="breadcrumb-item active">Storage Raw</li>
                     </ol>
                 </div>
             </div>
@@ -19,8 +19,8 @@
             <div class="card">
                 <div class="card-header">
                     <div class="d-flex justify-content-between align-items-center">
-                        <h4 class="card-title mb-0">List Storage Area</h4>
-                        <a class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addArea">Create Area</a>
+                        <h4 class="card-title mb-0">List Storage Raw</h4>
+                        <a class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addRaw">Create Raw</a>
                     </div>
                 </div>
                 <div class="card-body">
@@ -28,8 +28,8 @@
                         <thead>
                         <tr>
                             <th>#</th>
-                            <th>Raw</th>
                             <th>Area</th>
+                            <th>Raw</th>
                             <th>Action</th>
                         </tr>
                         </thead>
@@ -85,7 +85,7 @@
         </div>
     </div>
 
-    <div id="addArea" class="modal fade" tabindex="-1" aria-labelledby="myModalLabel" aria-hidden="true" style="display: none;">
+    <div id="addRaw" class="modal fade" tabindex="-1" aria-labelledby="myModalLabel" aria-hidden="true" style="display: none;">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
@@ -97,7 +97,7 @@
                         @csrf
                         <input type="hidden" name="type" value="area">
                         <div class="mb-3">
-                            <label class="form-label">Raw Name</label>
+                            <label class="form-label">Area Name</label>
                             <select class="form-control" name="raw">
                                 <option>-- Select Area --</option>
                                 @foreach($raw as $item)
@@ -106,7 +106,7 @@
                             </select>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Area Name</label>
+                            <label class="form-label">Raw Name</label>
                             <input type="text" class="form-control" name="area" required>
                         </div>
                         <div class="d-flex justify-content-end">

@@ -485,7 +485,7 @@
                 html += `
                     <tr>
                         <td>${indexSN + 1}</td>
-                        <td><input type="text" class="form-control" value="${item}" onchange="changeSNDirect(${indexSN}, this.value)"></td>
+                        <td><input type="text" class="form-control" value="${item}" onchange="changeSNDirect(${indexSN}, this.value)" placeholder="N/A"></td>
                         <td><a class="btn btn-danger btn-sm">Delete</a></td>
                     </tr>
                 `;
@@ -679,7 +679,7 @@
                 html += `
                     <tr>
                         <td>${number}</td>
-                        <td><input type="text" class="form-control" value="${item}" onchange="changeSerialNumber(${index}, ${indexSalesDoc}, ${indexDetail}, this.value)"></td>
+                        <td><input type="text" class="form-control" value="${item}" onchange="changeSerialNumber(${index}, ${indexSalesDoc}, ${indexDetail}, this.value)" placeholder="N/A"></td>
                         <td><a class="btn btn-danger btn-sm" onclick="deleteSerialNumber(${index}, ${indexSalesDoc}, ${indexDetail})">Delete</a></td>
                     </tr>
                 `;

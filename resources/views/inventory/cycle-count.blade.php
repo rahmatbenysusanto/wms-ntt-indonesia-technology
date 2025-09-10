@@ -26,6 +26,43 @@
                         </div>
                     </div>
                 </div>
+                <div class="card-header">
+                    <form action="{{ url()->current() }}" method="GET">
+                        <div class="row">
+                            <div class="col-2">
+                                <label class="form-label">Purc Doc</label>
+                                <input type="text" class="form-control" name="purcDoc" value="{{ request()->get('purcDoc') }}" placeholder="Purc Doc ...">
+                            </div>
+                            <div class="col-2">
+                                <label class="form-label">Sales Doc</label>
+                                <input type="text" class="form-control" name="salesDoc" value="{{ request()->get('salesDoc') }}" placeholder="Sales Doc ...">
+                            </div>
+                            <div class="col-2">
+                                <label class="form-label">Material</label>
+                                <input type="text" class="form-control" name="material" value="{{ request()->get('material') }}" placeholder="Material ...">
+                            </div>
+                            <div class="col-2">
+                                <label class="form-label">Type</label>
+                                <select class="form-control" name="type">
+                                    <option value="">-- Select Type --</option>
+                                    <option value="inbound">Inbound</option>
+                                    <option value="outbound">Outbound</option>
+                                </select>
+                            </div>
+                            <div class="col-2">
+                                <label class="form-label">Date</label>
+                                <input type="date" class="form-control" name="date" value="{{ request()->get('date') }}">
+                            </div>
+                            <div class="col-2">
+                                <label class="form-label text-white">-</label>
+                                <div class="d-flex gap-2">
+                                    <button type="submit" class="btn btn-primary">Search</button>
+                                    <a href="{{ url()->current() }}" class="btn btn-danger">Clear</a>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
                 <div class="card-body">
                     <table class="table table-striped align-middle">
                         <thead>

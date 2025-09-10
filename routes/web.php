@@ -63,8 +63,8 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
         Route::get('/find/rak', 'getRak')->name('storage.find.rak');
         Route::get('/find/bin', 'getBin')->name('storage.find.bin');
 
-        Route::get('/raw', 'raw')->name('storage.raw');
-        Route::get('/area', 'area')->name('storage.area');
+        Route::get('/area', 'raw')->name('storage.raw');
+        Route::get('/raw', 'area')->name('storage.area');
         Route::get('/rak', 'rak')->name('storage.rak');
         Route::get('/bin', 'bin')->name('storage.bin');
 

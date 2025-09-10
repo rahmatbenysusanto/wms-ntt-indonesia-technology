@@ -55,16 +55,16 @@
                 <div class="card-body">
                     <div class="row">
                         <div class="col-3">
-                            <label class="form-label">Raw</label>
+                            <label class="form-label">Area</label>
                             <select class="form-control" onchange="changeRaw(this.value)" id="raw">
-                                <option value="">-- Select Raw --</option>
+                                <option value="">-- Select Area --</option>
                                 @foreach($storageRaw as $raw)
                                     <option value="{{ $raw->raw }}">{{ $raw->raw }}</option>
                                 @endforeach
                             </select>
                         </div>
                         <div class="col-3">
-                            <label class="form-label">Area</label>
+                            <label class="form-label">Raw</label>
                             <select class="form-control" id="area" onchange="changeArea(this.value)">
 
                             </select>
@@ -1070,7 +1070,7 @@
                 },
                 success: (res) => {
                     const data = res.data;
-                    let html = '<option value="">-- Select Area --</option>';
+                    let html = '<option value="">-- Select Raw --</option>';
 
                     data.forEach((item) => {
                         html += `<option value="${item.area}">${item.area}</option>`;

@@ -28,8 +28,8 @@
                         <thead>
                         <tr>
                             <th>#</th>
-                            <th>Raw</th>
                             <th>Area</th>
+                            <th>Raw</th>
                             <th>Rak</th>
                             <th>Bin</th>
                             <th>Action</th>
@@ -101,7 +101,7 @@
                         @csrf
                         <input type="hidden" name="type" value="bin">
                         <div class="mb-3">
-                            <label class="form-label">Raw Name</label>
+                            <label class="form-label">Area Name</label>
                             <select class="form-control" name="raw" id="formBin_raw" onchange="changeRaw('bin', this.value)">
                                 <option>-- Select Area --</option>
                                 @foreach($raw as $item)
@@ -110,9 +110,9 @@
                             </select>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Area Name</label>
+                            <label class="form-label">Raw Name</label>
                             <select class="form-control" name="area" id="formBin_area" onchange="changeArea(this.value)">
-                                <option>-- Select Area --</option>
+                                <option>-- Select Raw --</option>
                             </select>
                         </div>
                         <div class="mb-3">
@@ -147,7 +147,7 @@
                 success: (res) => {
                     const data = res.data;
 
-                    let html = '<option value="">-- Select Area --</option>';
+                    let html = '<option value="">-- Select Raw --</option>';
 
                     data.forEach((item) => {
                         html += `<option value="${item.area}">${item.area}</option>`;

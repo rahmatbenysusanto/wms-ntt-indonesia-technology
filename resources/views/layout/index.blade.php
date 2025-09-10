@@ -602,10 +602,10 @@
                         <div class="collapse menu-dropdown {{ in_array($title, ['Storage Raw', 'Storage Area', 'Storage Rak', 'Storage Bin']) ? 'show' : '' }}" id="sidebarStorage">
                             <ul class="nav nav-sm flex-column">
                                 <li class="nav-item">
-                                    <a href="{{ route('storage.raw') }}" class="nav-link {{ $title == 'Storage Raw' ? 'active' : '' }}" data-key="t-analytics"> Raw </a>
+                                    <a href="{{ route('storage.raw') }}" class="nav-link {{ $title == 'Storage Raw' ? 'active' : '' }}" data-key="t-analytics"> Area </a>
                                 </li>
                                 <li class="nav-item">
-                                    <a href="{{ route('storage.area') }}" class="nav-link {{ $title == 'Storage Area' ? 'active' : '' }}" data-key="t-analytics"> Area </a>
+                                    <a href="{{ route('storage.area') }}" class="nav-link {{ $title == 'Storage Area' ? 'active' : '' }}" data-key="t-analytics"> Raw </a>
                                 </li>
                                 <li class="nav-item">
                                     <a href="{{ route('storage.rak') }}" class="nav-link {{ $title == 'Storage Rak' ? 'active' : '' }}" data-key="t-analytics"> Rak </a>
