@@ -19,7 +19,7 @@ class AuthController extends Controller
             return view('auth.login');
         } else {
             return view('mobile.auth.login');
-        }
+        } // TESTING
     }
 
     public function loginPost(Request $request): \Illuminate\Http\RedirectResponse
