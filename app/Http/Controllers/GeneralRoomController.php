@@ -16,6 +16,8 @@ use App\Models\InventoryParent;
 use App\Models\Outbound;
 use App\Models\OutboundDetail;
 use App\Models\OutboundDetailSN;
+use App\Models\Product;
+use App\Models\PurchaseOrderDetail;
 use App\Models\Storage;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
@@ -714,6 +716,116 @@ class GeneralRoomController extends Controller
         $response->headers->set('Cache-Control','max-age=0');
 
         return $response;
+    }
+
+    // Mobile View
+
+    public function indexMobile(Request $request): View
+    {
+        $inventory = DB::table('inventory')
+            ->leftJoin('inventory_detail', 'inventory_detail.inventory_id', '=', 'inventory.id')
+            ->leftJoin('purchase_order_detail', 'inventory_detail.purchase_order_detail_id', '=', 'purchase_order_detail.id')
+            ->leftJoin('purchase_order', 'purchase_order.id', '=', 'inventory.purchase_order_id')
+            ->leftJoin('customer', 'customer.id', '=', 'purchase_order.customer_id')
+            ->leftJoin('inventory_package_item', 'inventory_package_item.id', '=', 'inventory_detail.inventory_package_item_id')
+            ->where('inventory.type', 'gr')
+            ->where('inventory_detail.qty', '!=', 0)
+            ->when($request->query('purcDoc'), function ($query) use ($request) {
+                $query->where('purchase_order.purc_doc', 'LIKE', '%'.$request->query('purcDoc').'%');
+            })
+            ->when($request->query('salesDoc'), function ($query) use ($request) {
+                $query->where('purchase_order_detail.sales_doc', 'LIKE', '%'.$request->query('salesDoc').'%');
+            })
+            ->when($request->query('material'), function ($query) use ($request) {
+                $query->where('purchase_order_detail.material', 'LIKE', '%'.$request->query('material').'%');
+            })
+            ->when($request->query('customer'), function ($query) use ($request) {
+                $query->where('customer.name', 'LIKE', '%'.$request->query('customer').'%');
+            })
+            ->select([
+                'purchase_order.purc_doc',
+                'purchase_order_detail.sales_doc',
+                'purchase_order_detail.product_id',
+                'purchase_order_detail.material',
+                'purchase_order_detail.po_item_desc',
+                'purchase_order_detail.prod_hierarchy_desc',
+                'inventory_package_item.is_parent',
+                DB::raw('SUM(inventory_detail.qty) AS qty'),
+                DB::raw('SUM(inventory_detail.qty * purchase_order_detail.net_order_price) AS nominal'),
+            ])
+            ->groupBy([
+                'purchase_order.purc_doc',
+                'purchase_order_detail.sales_doc',
+                'purchase_order_detail.material',
+                'purchase_order_detail.product_id',
+                'purchase_order_detail.po_item_desc',
+                'purchase_order_detail.prod_hierarchy_desc',
+                'inventory_package_item.is_parent',
+            ])
+            ->paginate(5)
+            ->appends([
+                'purcDoc'   => $request->query('purcDoc'),
+                'salesDoc'  => $request->query('salesDoc'),
+                'material'  => $request->query('material'),
+                'customer'  => $request->query('customer'),
+                'search'    =>  $request->query('search'),
+            ]);
+
+        return view('mobile.gr.index', compact('inventory'));
+    }
+
+    public function indexDetailMobile(Request $request): View
+    {
+        $purcDoc = $request->query('po');
+        $salesDoc = $request->query('so');
+        $productId = $request->query('id');
+
+        $product = Product::find($productId);
+        $purchaseOrderDetail = PurchaseOrderDetail::where('sales_doc', $salesDoc)->where('product_id', $productId)->first();
+
+        $inventoryPackageItem = InventoryPackageItem::with('inventoryPackage')
+            ->where('purchase_order_detail_id', $purchaseOrderDetail->id)
+            ->whereHas('inventoryPackage', function ($query) {
+                $query->where('storage_id', 2);
+            })
+            ->sum('qty');
+
+        $inventoryNominal = $inventoryPackageItem * $purchaseOrderDetail->net_order_price;
+
+        $outboundDetail = DB::table('outbound_detail')
+            ->leftJoin('outbound', 'outbound.id', '=', 'outbound_detail.outbound_id')
+            ->leftJoin('inventory_package_item', 'inventory_package_item.id', '=', 'outbound_detail.inventory_package_item_id')
+            ->where('inventory_package_item.purchase_order_detail_id', $purchaseOrderDetail->id)
+            ->where('outbound.type', 'general room')
+            ->sum('outbound_detail.qty');
+
+        $outboundNominal = $outboundDetail * $purchaseOrderDetail->net_order_price;
+
+        $serialNumberOutbound = DB::table('outbound')
+            ->leftJoin('outbound_detail', 'outbound_detail.outbound_id', '=', 'outbound.id')
+            ->leftJoin('inventory_package_item', 'inventory_package_item.id', '=', 'outbound_detail.inventory_package_item_id')
+            ->leftJoin('outbound_detail_sn', 'outbound_detail_sn.outbound_detail_id', '=', 'outbound_detail.id')
+            ->where('outbound.type', 'general room')
+            ->where('outbound.status','outbound')
+            ->where('inventory_package_item.purchase_order_detail_id', $purchaseOrderDetail->id)
+            ->select([
+                'outbound_detail_sn.serial_number'
+            ])
+            ->get();
+
+        $serialNumberStock = DB::table('inventory_package')
+            ->leftJoin('inventory_package_item', 'inventory_package_item.inventory_package_id', '=', 'inventory_package.id')
+            ->leftJoin('inventory_package_item_sn', 'inventory_package_item_sn.inventory_package_item_id', '=', 'inventory_package_item.id')
+            ->where('inventory_package.storage_id', 2)
+            ->where('inventory_package_item.qty', '!=', 0)
+            ->where('inventory_package_item_sn.qty', '!=', 0)
+            ->where('inventory_package_item.purchase_order_detail_id', $purchaseOrderDetail->id)
+            ->select([
+                'serial_number',
+            ])
+            ->get();
+
+        return view('mobile.gr.detail', compact('product', 'inventoryPackageItem', 'inventoryNominal', 'outboundDetail', 'outboundNominal', 'serialNumberStock', 'serialNumberOutbound'));
     }
 }
 

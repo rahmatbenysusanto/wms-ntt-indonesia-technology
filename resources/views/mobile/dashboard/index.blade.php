@@ -27,21 +27,30 @@
         .custom-card {
             background: linear-gradient(135deg, #f8f9fa, #eaeaea);
             border-radius: 12px;
-            padding: 20px;
+            padding: 16px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            height: 150px;
+            height: 150px;               /* tinggi kartu konsisten */
         }
 
-        .custom-card img {
-            max-width: 100px;
-            max-height: 100px;
-            margin-bottom: 10px;
+        .icon-slot {
+            height: 90px;                /* slot gambar seragam */
+            width: 100%;
+            display: flex;
+            align-items: center;         /* vertikal center */
+            justify-content: center;     /* horizontal center */
+        }
+
+        .icon-slot img {
+            max-height: 100%;
+            max-width: 100%;
+            object-fit: contain;         /* jaga proporsi */
+            display: block;
         }
 
         .menu-title {
+            margin-top: auto;            /* nempel di bawah */
             font-weight: bold;
             font-size: 14px;
             color: #0a0a0a;
@@ -61,6 +70,7 @@
 
         .btn-info {
             background-color: #39BBBD!important;
+            border: none!important;
         }
     </style>
 </head>
@@ -72,35 +82,58 @@
             <div class="col-6">
                 <a href="{{ route('inbound.index.mobile') }}">
                     <div class="card custom-card text-center">
-                        <img src="{{ asset('assets/mobile/img/inbound.png') }}" alt="Inbound">
+                        <div class="icon-slot">
+                            <img src="{{ asset('assets/mobile/img/inbound.png') }}" alt="Inbound">
+                        </div>
                         <span class="menu-title">Inbound</span>
                     </div>
                 </a>
             </div>
+
             <div class="col-6">
                 <a href="{{ route('outbound.index.mobile') }}">
                     <div class="card custom-card text-center">
-                        <img src="{{ asset('assets/mobile/img/outbound.png') }}" alt="Inbound">
+                        <div class="icon-slot">
+                            <img src="{{ asset('assets/mobile/img/outbound.png') }}" alt="Inbound">
+                        </div>
                         <span class="menu-title">Outbound</span>
                     </div>
                 </a>
             </div>
+
             <div class="col-6">
                 <a href="{{ route('inventory.index.mobile') }}">
                     <div class="card custom-card text-center">
-                        <img src="{{ asset('assets/mobile/img/inventory.png') }}" alt="Inbound">
+                        <div class="icon-slot">
+                            <img src="{{ asset('assets/mobile/img/inventory.png') }}" alt="Inbound">
+                        </div>
                         <span class="menu-title">Inventory</span>
                     </div>
                 </a>
             </div>
+
             <div class="col-6">
                 <a href="{{ route('inventory.aging.mobile') }}">
                     <div class="card custom-card text-center">
-                        <img src="{{ asset('assets/mobile/img/aging.png') }}" alt="Inbound">
+                        <div class="icon-slot">
+                            <img src="{{ asset('assets/mobile/img/aging.png') }}" alt="Inbound">
+                        </div>
                         <span class="menu-title">Aging</span>
                     </div>
                 </a>
             </div>
+
+            <div class="col-6">
+                <a href="{{ route('gr.index.mobile') }}">
+                    <div class="card custom-card text-center">
+                        <div class="icon-slot">
+                            <img src="{{ asset('assets/mobile/img/gr.png') }}" alt="Inbound">
+                        </div>
+                        <span class="menu-title">General Room</span>
+                    </div>
+                </a>
+            </div>
+
         </div>
     </div>
 

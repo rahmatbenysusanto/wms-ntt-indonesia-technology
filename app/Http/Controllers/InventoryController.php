@@ -787,12 +787,20 @@ class InventoryController extends Controller
         $product = Product::find($productId);
         $purchaseOrderDetail = PurchaseOrderDetail::where('sales_doc', $salesDoc)->where('product_id', $productId)->first();
 
-        $inventoryPackageItem = InventoryPackageItem::where('purchase_order_detail_id', $purchaseOrderDetail->id)->sum('qty');
+        $inventoryPackageItem = InventoryPackageItem::with('inventoryPackage')
+            ->where('purchase_order_detail_id', $purchaseOrderDetail->id)
+            ->whereHas('inventoryPackage', function ($query) {
+                $query->whereNotIn('storage_id', [1,2,3,4]);
+            })
+            ->sum('qty');
+
         $inventoryNominal = $inventoryPackageItem * $purchaseOrderDetail->net_order_price;
 
         $outboundDetail = DB::table('outbound_detail')
+            ->leftJoin('outbound', 'outbound.id', '=', 'outbound_detail.outbound_id')
             ->leftJoin('inventory_package_item', 'inventory_package_item.id', '=', 'outbound_detail.inventory_package_item_id')
             ->where('inventory_package_item.purchase_order_detail_id', $purchaseOrderDetail->id)
+            ->where('outbound.type', 'outbound')
             ->sum('outbound_detail.qty');
         $outboundNominal = $outboundDetail * $purchaseOrderDetail->net_order_price;
 
