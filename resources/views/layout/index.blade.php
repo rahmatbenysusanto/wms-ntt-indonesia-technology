@@ -434,80 +434,110 @@
         <div id="scrollbar">
             <div class="container-fluid">
 
-                <div id="two-column-menu">
-                </div>
+                <div id="two-column-menu"></div>
                 <ul class="navbar-nav" id="navbar-nav">
                     <li class="menu-title"><span data-key="t-menu">Dashboard</span></li>
                     <li class="nav-item">
-                        <a class="nav-link menu-link {{ in_array($title, ['Dashboard', 'Dashboard PO', 'Dashboard Aging', 'Dashboard Outbound']) ? 'active' : '' }}" href="#sidebarDashboard" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="sidebarDashboard">
-                            <i class="mdi mdi-speedometer"></i> <span data-key="t-widgets">Dashboard</span>
+                        <a class="nav-link menu-link {{ in_array($title, ['Dashboard', 'Dashboard PO', 'Dashboard Aging', 'Dashboard Outbound']) ? 'active' : '' }}"
+                           href="#sidebarDashboard" data-bs-toggle="collapse" role="button"
+                           aria-expanded="false" aria-controls="sidebarDashboard">
+                            <i class="mdi mdi-speedometer"></i>
+                            <span data-key="t-widgets">Dashboard</span>
                         </a>
-                        <div class="collapse menu-dropdown {{ in_array($title, ['Dashboard', 'Dashboard PO', 'Dashboard Aging', 'Dashboard Outbound']) ? 'show' : '' }}" id="sidebarDashboard">
+
+                        <div class="collapse menu-dropdown {{ in_array($title, ['Dashboard', 'Dashboard PO', 'Dashboard Aging', 'Dashboard Outbound']) ? 'show' : '' }}"
+                             id="sidebarDashboard">
                             <ul class="nav nav-sm flex-column">
-                                <li class="nav-item">
-                                    <a href="{{ route('dashboard') }}" class="nav-link {{ $title == 'Dashboard' ? 'active' : '' }}" data-key="t-analytics"> Main </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="{{ route('dashboard.po') }}" class="nav-link {{ $title == 'Dashboard PO' ? 'active' : '' }}" data-key="t-analytics"> PO </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="{{ route('dashboard.aging') }}" class="nav-link {{ $title == 'Dashboard Aging' ? 'active' : '' }}" data-key="t-analytics"> Aging </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="{{ route('dashboard.outbound') }}" class="nav-link {{ $title == 'Dashboard Outbound' ? 'active' : '' }}" data-key="t-analytics"> Outbound </a>
-                                </li>
+                                @if(Session::get('userHasMenu')->contains('Main Dashboard'))
+                                    <li class="nav-item">
+                                        <a href="{{ route('dashboard') }}" class="nav-link {{ $title == 'Dashboard' ? 'active' : '' }}" data-key="t-analytics"> Main </a>
+                                    </li>
+                                @endif
+                                @if(Session::get('userHasMenu')->contains('PO Dashboard'))
+                                    <li class="nav-item">
+                                        <a href="{{ route('dashboard.po') }}" class="nav-link {{ $title == 'Dashboard PO' ? 'active' : '' }}" data-key="t-analytics"> PO </a>
+                                    </li>
+                                @endif
+                                @if(Session::get('userHasMenu')->contains('Aging Dashboard'))
+                                    <li class="nav-item">
+                                        <a href="{{ route('dashboard.aging') }}" class="nav-link {{ $title == 'Dashboard Aging' ? 'active' : '' }}" data-key="t-analytics"> Aging </a>
+                                    </li>
+                                @endif
+                                @if(Session::get('userHasMenu')->contains('Outbound Dashboard'))
+                                    <li class="nav-item">
+                                        <a href="{{ route('dashboard.outbound') }}" class="nav-link {{ $title == 'Dashboard Outbound' ? 'active' : '' }}" data-key="t-analytics"> Outbound </a>
+                                    </li>
+                                @endif
                             </ul>
                         </div>
                     </li>
 
                     <li class="menu-title"><span data-key="t-menu">WAREHOUSE MODULE</span></li>
-                    @if(in_array(Session::get('user')->role, ['admin', 'inbound']))
+                    @if(Session::get('userHasMenu', collect())->intersect(['Purchase Order', 'Quality Control', 'Put Away'])->isNotEmpty())
                         <li class="nav-item">
                             <a class="nav-link menu-link {{ in_array($title, ['Purchase Order', 'Quality Control', 'Put Away']) ? 'active' : '' }}" href="#sidebarInbound" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="sidebarInbound">
                                 <i class="mdi mdi-package-down"></i> <span data-key="t-dashboards">Inbound</span>
                             </a>
                             <div class="collapse menu-dropdown {{ in_array($title, ['Purchase Order', 'Quality Control', 'Put Away']) ? 'show' : '' }}" id="sidebarInbound">
                                 <ul class="nav nav-sm flex-column">
-                                    <li class="nav-item">
-                                        <a href="{{ route('inbound.purchase-order') }}" class="nav-link {{ in_array($title, ['Purchase Order']) ? 'active' : '' }}" data-key="t-analytics"> Purchase Order </a>
-                                    </li>
-                                    <li class="nav-item">
-                                        <a href="{{ route('inbound.quality-control') }}" class="nav-link {{ in_array($title, ['Quality Control']) ? 'active' : '' }}" data-key="t-analytics"> Quality Control </a>
-                                    </li>
-                                    <li class="nav-item">
-                                        <a href="{{ route('inbound.put-away') }}" class="nav-link {{ in_array($title, ['Put Away']) ? 'active' : '' }}" data-key="t-analytics"> Put Away </a>
-                                    </li>
+                                    @if(Session::get('userHasMenu')->contains('Purchase Order'))
+                                        <li class="nav-item">
+                                            <a href="{{ route('inbound.purchase-order') }}" class="nav-link {{ in_array($title, ['Purchase Order']) ? 'active' : '' }}" data-key="t-analytics"> Purchase Order </a>
+                                        </li>
+                                    @endif
+                                    @if(Session::get('userHasMenu')->contains('Quality Control'))
+                                        <li class="nav-item">
+                                            <a href="{{ route('inbound.quality-control') }}" class="nav-link {{ in_array($title, ['Quality Control']) ? 'active' : '' }}" data-key="t-analytics"> Quality Control </a>
+                                        </li>
+                                    @endif
+                                    @if(Session::get('userHasMenu')->contains('Put Away'))
+                                        <li class="nav-item">
+                                            <a href="{{ route('inbound.put-away') }}" class="nav-link {{ in_array($title, ['Put Away']) ? 'active' : '' }}" data-key="t-analytics"> Put Away </a>
+                                        </li>
+                                    @endif
                                 </ul>
                             </div>
                         </li>
                     @endif
 
-                    <li class="nav-item">
-                        <a class="nav-link menu-link {{ in_array($title, ['Inventory', 'Cycle Count', 'Transfer Location', 'Inventory Box', 'Inventory Aging']) ? 'active' : '' }}" href="#sidebarInventory" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="sidebarInventory">
-                            <i class="mdi mdi-package-variant"></i> <span data-key="t-dashboards">Inventory</span>
-                        </a>
-                        <div class="collapse menu-dropdown {{ in_array($title, ['Inventory', 'Cycle Count', 'Transfer Location', 'Inventory Box', 'Inventory Aging']) ? 'show' : '' }}" id="sidebarInventory">
-                            <ul class="nav nav-sm flex-column">
-                                <li class="nav-item">
-                                    <a href="{{ route('inventory.index') }}" class="nav-link {{ $title == 'Inventory' ? 'active' : '' }}" data-key="t-analytics"> Produk List </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="{{ route('inventory.aging') }}" class="nav-link {{ $title == 'Inventory Aging' ? 'active' : '' }}" data-key="t-analytics"> Produk Aging </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="{{ route('inventory.box') }}" class="nav-link {{ $title == 'Inventory Box' ? 'active' : '' }}" data-key="t-analytics"> Box List </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="{{ route('inventory.transfer-location') }}" class="nav-link {{ $title == 'Transfer Location' ? 'active' : '' }}" data-key="t-analytics"> Transfer Location </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="{{ route('inventory.cycle-count') }}" class="nav-link {{ $title == 'Cycle Count' ? 'active' : '' }}" data-key="t-analytics"> Cycle Count </a>
-                                </li>
-                            </ul>
-                        </div>
-                    </li>
+                    @if(Session::get('userHasMenu', collect())->intersect(['Produk List', 'Produk Aging', 'Box List', 'Transfer Location', 'Cycle Count'])->isNotEmpty())
+                        <li class="nav-item">
+                            <a class="nav-link menu-link {{ in_array($title, ['Inventory', 'Cycle Count', 'Transfer Location', 'Inventory Box', 'Inventory Aging']) ? 'active' : '' }}" href="#sidebarInventory" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="sidebarInventory">
+                                <i class="mdi mdi-package-variant"></i> <span data-key="t-dashboards">Inventory</span>
+                            </a>
+                            <div class="collapse menu-dropdown {{ in_array($title, ['Inventory', 'Cycle Count', 'Transfer Location', 'Inventory Box', 'Inventory Aging']) ? 'show' : '' }}" id="sidebarInventory">
+                                <ul class="nav nav-sm flex-column">
+                                    @if(Session::get('userHasMenu')->contains('Produk List'))
+                                        <li class="nav-item">
+                                            <a href="{{ route('inventory.index') }}" class="nav-link {{ $title == 'Inventory' ? 'active' : '' }}" data-key="t-analytics"> Produk List </a>
+                                        </li>
+                                    @endif
+                                    @if(Session::get('userHasMenu')->contains('Produk Aging'))
+                                        <li class="nav-item">
+                                            <a href="{{ route('inventory.aging') }}" class="nav-link {{ $title == 'Inventory Aging' ? 'active' : '' }}" data-key="t-analytics"> Produk Aging </a>
+                                        </li>
+                                    @endif
+                                    @if(Session::get('userHasMenu')->contains('Box List'))
+                                        <li class="nav-item">
+                                            <a href="{{ route('inventory.box') }}" class="nav-link {{ $title == 'Inventory Box' ? 'active' : '' }}" data-key="t-analytics"> Box List </a>
+                                        </li>
+                                    @endif
+                                    @if(Session::get('userHasMenu')->contains('Transfer Location'))
+                                        <li class="nav-item">
+                                            <a href="{{ route('inventory.transfer-location') }}" class="nav-link {{ $title == 'Transfer Location' ? 'active' : '' }}" data-key="t-analytics"> Transfer Location </a>
+                                        </li>
+                                    @endif
+                                    @if(Session::get('userHasMenu')->contains('Cycle Count'))
+                                        <li class="nav-item">
+                                            <a href="{{ route('inventory.cycle-count') }}" class="nav-link {{ $title == 'Cycle Count' ? 'active' : '' }}" data-key="t-analytics"> Cycle Count </a>
+                                        </li>
+                                    @endif
+                                </ul>
+                            </div>
+                        </li>
+                    @endif
 
-                    @if(in_array(Session::get('user')->role, ['admin', 'outbound']))
+                    @if(Session::get('userHasMenu')->contains('Order List'))
                         <li class="nav-item">
                             <a class="nav-link menu-link {{ $title == 'Outbound' ? 'active' : '' }}" href="#sidebarOutbound" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="sidebarOutbound">
                                 <i class="mdi mdi-package-up"></i> <span data-key="t-dashboards">Outbound</span>
@@ -522,109 +552,130 @@
                         </li>
                     @endif
 
-                    @if(in_array(Session::get('user')->role, ['admin', 'inbound']))
+                    @if(Session::get('userHasMenu', collect())->intersect(['General Room Inventory', 'General Room Outbound', 'PM Room Inventory', 'PM Room Outbound', 'Spare Room Inventory', 'Spare Room Outbound'])->isNotEmpty())
                         <li class="menu-title"><span data-key="t-menu">Warehouse Room</span></li>
-                        <li class="nav-item">
-                            <a class="nav-link menu-link {{ in_array($title, ['General Room', 'General Room Outbound']) ? 'active' : '' }}" href="#sidebarGeneralRoom" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="sidebarGeneralRoom">
-                                <i class="mdi mdi-book-clock"></i> <span data-key="t-dashboards">General Room</span>
-                            </a>
-                            <div class="collapse menu-dropdown {{ in_array($title, ['General Room', 'General Room Outbound']) ? 'show' : '' }}" id="sidebarGeneralRoom">
-                                <ul class="nav nav-sm flex-column">
-                                    <li class="nav-item">
-                                        <a href="{{ route('general-room.index') }}" class="nav-link {{ $title == 'General Room' ? 'active' : '' }}" data-key="t-analytics"> Inventory </a>
-                                    </li>
-                                    <li class="nav-item">
-                                        <a href="{{ route('general-room.outbound') }}" class="nav-link {{ $title == 'General Room Outbound' ? 'active' : '' }}" data-key="t-analytics"> Outbound </a>
-                                    </li>
-                                </ul>
-                            </div>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link menu-link {{ in_array($title, ['Pm Room', 'Pm Room Outbound']) ? 'active' : '' }}" href="#sidebarPmRoom" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="sidebarPmRoom">
-                                <i class="mdi mdi-notebook-outline"></i> <span data-key="t-dashboards">PM Room</span>
-                            </a>
-                            <div class="collapse menu-dropdown {{ in_array($title, ['Pm Room', 'Pm Room Outbound']) ? 'show' : '' }}" id="sidebarPmRoom">
-                                <ul class="nav nav-sm flex-column">
-                                    <li class="nav-item">
-                                        <a href="{{ route('pm-room.index') }}" class="nav-link {{ $title == 'Pm Room' ? 'active' : '' }}" data-key="t-analytics"> Inventory </a>
-                                    </li>
-                                    <li class="nav-item">
-                                        <a href="{{ route('pm-room.outbound') }}" class="nav-link {{ $title == 'Pm Room Outbound' ? 'active' : '' }}" data-key="t-analytics"> Outbound </a>
-                                    </li>
-                                </ul>
-                            </div>
-                        </li>
 
-                        <li class="nav-item">
-                            <a class="nav-link menu-link {{ in_array($title, ['Spare Room', 'Spare Room Outbound']) ? 'active' : '' }}" href="#sidebarSpareRoom" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="sidebarSpareRoom">
-                                <i class="mdi mdi-notebook-check-outline"></i> <span data-key="t-dashboards">Spare Room</span>
-                            </a>
-                            <div class="collapse menu-dropdown {{ in_array($title, ['Spare Room', 'Spare Room Outbound']) ? 'show' : '' }}" id="sidebarSpareRoom">
-                                <ul class="nav nav-sm flex-column">
-                                    <li class="nav-item">
-                                        <a href="{{ route('spare-room.index') }}" class="nav-link {{ $title == 'Spare Room' ? 'active' : '' }}" data-key="t-analytics"> Inventory </a>
-                                    </li>
-                                    <li class="nav-item">
-                                        <a href="{{ route('spare-room.outbound') }}" class="nav-link {{ $title == 'Spare Room Outbound' ? 'active' : '' }}" data-key="t-analytics"> Outbound </a>
-                                    </li>
-                                </ul>
-                            </div>
-                        </li>
+                        @if(Session::get('userHasMenu', collect())->intersect(['General Room Inventory', 'General Room Outbound'])->isNotEmpty())
+                            <li class="nav-item">
+                                <a class="nav-link menu-link {{ in_array($title, ['General Room', 'General Room Outbound']) ? 'active' : '' }}" href="#sidebarGeneralRoom" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="sidebarGeneralRoom">
+                                    <i class="mdi mdi-book-clock"></i> <span data-key="t-dashboards">General Room</span>
+                                </a>
+                                <div class="collapse menu-dropdown {{ in_array($title, ['General Room', 'General Room Outbound']) ? 'show' : '' }}" id="sidebarGeneralRoom">
+                                    <ul class="nav nav-sm flex-column">
+                                        @if(Session::get('userHasMenu')->contains('General Room Inventory'))
+                                            <li class="nav-item">
+                                                <a href="{{ route('general-room.index') }}" class="nav-link {{ $title == 'General Room' ? 'active' : '' }}" data-key="t-analytics"> Inventory </a>
+                                            </li>
+                                        @endif
+                                        @if(Session::get('userHasMenu')->contains('General Room Outbound'))
+                                            <li class="nav-item">
+                                                <a href="{{ route('general-room.outbound') }}" class="nav-link {{ $title == 'General Room Outbound' ? 'active' : '' }}" data-key="t-analytics"> Outbound </a>
+                                            </li>
+                                        @endif
+                                    </ul>
+                                </div>
+                            </li>
+                        @endif
+
+                        @if(Session::get('userHasMenu', collect())->intersect(['PM Room Inventory', 'PM Room Outbound'])->isNotEmpty())
+                            <li class="nav-item">
+                                <a class="nav-link menu-link {{ in_array($title, ['Pm Room', 'Pm Room Outbound']) ? 'active' : '' }}" href="#sidebarPmRoom" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="sidebarPmRoom">
+                                    <i class="mdi mdi-notebook-outline"></i> <span data-key="t-dashboards">PM Room</span>
+                                </a>
+                                <div class="collapse menu-dropdown {{ in_array($title, ['Pm Room', 'Pm Room Outbound']) ? 'show' : '' }}" id="sidebarPmRoom">
+                                    <ul class="nav nav-sm flex-column">
+                                        @if(Session::get('userHasMenu')->contains('PM Room Inventory'))
+                                            <li class="nav-item">
+                                                <a href="{{ route('pm-room.index') }}" class="nav-link {{ $title == 'Pm Room' ? 'active' : '' }}" data-key="t-analytics"> Inventory </a>
+                                            </li>
+                                        @endif
+                                        @if(Session::get('userHasMenu')->contains('PM Room Outbound'))
+                                            <li class="nav-item">
+                                                <a href="{{ route('pm-room.outbound') }}" class="nav-link {{ $title == 'Pm Room Outbound' ? 'active' : '' }}" data-key="t-analytics"> Outbound </a>
+                                            </li>
+                                        @endif
+                                    </ul>
+                                </div>
+                            </li>
+                        @endif
+
+                        @if(Session::get('userHasMenu', collect())->intersect(['Spare Room Inventory', 'Spare Room Outbound'])->isNotEmpty())
+                            <li class="nav-item">
+                                <a class="nav-link menu-link {{ in_array($title, ['Spare Room', 'Spare Room Outbound']) ? 'active' : '' }}" href="#sidebarSpareRoom" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="sidebarSpareRoom">
+                                    <i class="mdi mdi-notebook-check-outline"></i> <span data-key="t-dashboards">Spare Room</span>
+                                </a>
+                                <div class="collapse menu-dropdown {{ in_array($title, ['Spare Room', 'Spare Room Outbound']) ? 'show' : '' }}" id="sidebarSpareRoom">
+                                    <ul class="nav nav-sm flex-column">
+                                        @if(Session::get('userHasMenu')->contains('Spare Room Inventory'))
+                                            <li class="nav-item">
+                                                <a href="{{ route('spare-room.index') }}" class="nav-link {{ $title == 'Spare Room' ? 'active' : '' }}" data-key="t-analytics"> Inventory </a>
+                                            </li>
+                                        @endif
+                                        @if(Session::get('userHasMenu')->contains('Spare Room Outbound'))
+                                            <li class="nav-item">
+                                                <a href="{{ route('spare-room.outbound') }}" class="nav-link {{ $title == 'Spare Room Outbound' ? 'active' : '' }}" data-key="t-analytics"> Outbound </a>
+                                            </li>
+                                        @endif
+                                    </ul>
+                                </div>
+                            </li>
+                        @endif
                     @endif
 
-                    <li class="menu-title"><span data-key="t-menu">Manajemen Client</span></li>
-                    <li class="nav-item">
-                        <a class="nav-link menu-link {{ $title == 'Vendor' ? 'active' : '' }}" href="{{ route('vendor') }}">
-                            <i class="mdi mdi-truck"></i> <span data-key="t-vendor">Vendor</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link menu-link {{ $title == 'Customer' ? 'active' : '' }}" href="{{ route('customer') }}">
-                            <i class="mdi mdi-account-group"></i> <span data-key="t-customer">Customer</span>
-                        </a>
-                    </li>
+                    @if(Session::get('userHasMenu', collect())->intersect(['Vendor', 'Customer'])->isNotEmpty())
+                        <li class="menu-title"><span data-key="t-menu">Manajemen Client</span></li>
+                        @if(Session::get('userHasMenu')->contains('Vendor'))
+                            <li class="nav-item">
+                                <a class="nav-link menu-link {{ $title == 'Vendor' ? 'active' : '' }}" href="{{ route('vendor') }}">
+                                    <i class="mdi mdi-truck"></i> <span data-key="t-vendor">Vendor</span>
+                                </a>
+                            </li>
+                        @endif
+                        @if(Session::get('userHasMenu')->contains('Customer'))
+                            <li class="nav-item">
+                                <a class="nav-link menu-link {{ $title == 'Customer' ? 'active' : '' }}" href="{{ route('customer') }}">
+                                    <i class="mdi mdi-account-group"></i> <span data-key="t-customer">Customer</span>
+                                </a>
+                            </li>
+                        @endif
+                    @endif
 
-                    <li class="menu-title"><span data-key="t-menu">Manajemen Gudang</span></li>
-                    <li class="nav-item">
-                        <a class="nav-link menu-link {{ $title == 'User' ? 'active' : '' }}" href="{{ route('user.index') }}">
-                            <i class="mdi mdi-account-circle"></i> <span data-key="t-user"> User </span>
-                        </a>
-                    </li>
-{{--                    <li class="nav-item">--}}
-{{--                        <a class="nav-link menu-link {{ $title == 'Warehouse' ? 'active' : '' }}" href="{{ route('storage') }}">--}}
-{{--                            <i class="mdi mdi-database"></i> <span data-key="t-storage">Storage</span>--}}
-{{--                        </a>--}}
-{{--                    </li>--}}
-                    <li class="nav-item">
-                        <a class="nav-link menu-link {{ in_array($title, ['Storage Raw', 'Storage Area', 'Storage Rak', 'Storage Bin']) ? 'active' : '' }}" href="#sidebarStorage" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="sidebarStorage">
-                            <i class="mdi mdi-database"></i> <span data-key="t-dashboards">Storage</span>
-                        </a>
-                        <div class="collapse menu-dropdown {{ in_array($title, ['Storage Raw', 'Storage Area', 'Storage Rak', 'Storage Bin']) ? 'show' : '' }}" id="sidebarStorage">
-                            <ul class="nav nav-sm flex-column">
-                                <li class="nav-item">
-                                    <a href="{{ route('storage.raw') }}" class="nav-link {{ $title == 'Storage Raw' ? 'active' : '' }}" data-key="t-analytics"> Area </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="{{ route('storage.area') }}" class="nav-link {{ $title == 'Storage Area' ? 'active' : '' }}" data-key="t-analytics"> Raw </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="{{ route('storage.rak') }}" class="nav-link {{ $title == 'Storage Rak' ? 'active' : '' }}" data-key="t-analytics"> Rak </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="{{ route('storage.bin') }}" class="nav-link {{ $title == 'Storage Bin' ? 'active' : '' }}" data-key="t-analytics"> Bin </a>
-                                </li>
-                            </ul>
-                        </div>
-                    </li>
-{{--                    <li class="nav-item">--}}
-{{--                        <a class="nav-link menu-link {{ $title == 'Warehouse' ? 'active' : '' }}" href="{{ route('warehouse') }}">--}}
-{{--                            <i class="mdi mdi-warehouse"></i> <span data-key="t-gudang">Warehouse</span>--}}
-{{--                        </a>--}}
-{{--                    </li>--}}
+                    @if(Session::get('userHasMenu', collect())->intersect(['User', 'Storage'])->isNotEmpty())
+                        <li class="menu-title"><span data-key="t-menu">Manajemen Gudang</span></li>
+                        @if(Session::get('userHasMenu')->contains('User'))
+                            <li class="nav-item">
+                                <a class="nav-link menu-link {{ $title == 'User' ? 'active' : '' }}" href="{{ route('user.index') }}">
+                                    <i class="mdi mdi-account-circle"></i> <span data-key="t-user"> User </span>
+                                </a>
+                            </li>
+                        @endif
 
+                        @if(Session::get('userHasMenu')->contains('Storage'))
+                            <li class="nav-item">
+                                <a class="nav-link menu-link {{ in_array($title, ['Storage Raw', 'Storage Area', 'Storage Rak', 'Storage Bin']) ? 'active' : '' }}" href="#sidebarStorage" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="sidebarStorage">
+                                    <i class="mdi mdi-database"></i> <span data-key="t-dashboards">Storage</span>
+                                </a>
+                                <div class="collapse menu-dropdown {{ in_array($title, ['Storage Raw', 'Storage Area', 'Storage Rak', 'Storage Bin']) ? 'show' : '' }}" id="sidebarStorage">
+                                    <ul class="nav nav-sm flex-column">
+                                        <li class="nav-item">
+                                            <a href="{{ route('storage.raw') }}" class="nav-link {{ $title == 'Storage Raw' ? 'active' : '' }}" data-key="t-analytics"> Area </a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a href="{{ route('storage.area') }}" class="nav-link {{ $title == 'Storage Area' ? 'active' : '' }}" data-key="t-analytics"> Raw </a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a href="{{ route('storage.rak') }}" class="nav-link {{ $title == 'Storage Rak' ? 'active' : '' }}" data-key="t-analytics"> Rak </a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a href="{{ route('storage.bin') }}" class="nav-link {{ $title == 'Storage Bin' ? 'active' : '' }}" data-key="t-analytics"> Bin </a>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </li>
+                        @endif
+                    @endif
                 </ul>
             </div>
-            <!-- Sidebar -->
         </div>
 
         <div class="sidebar-background"></div>
