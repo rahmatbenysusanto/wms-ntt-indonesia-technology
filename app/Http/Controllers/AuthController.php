@@ -42,7 +42,7 @@ class AuthController extends Controller
                 ->where('user_has_menu.user_id', $user->id)
                 ->where('menu.type', 'web')
                 ->pluck('menu.name');
-            
+
             Session::put('userHasMenu', $userHasMenu);
 
             return redirect()->route('dashboard');

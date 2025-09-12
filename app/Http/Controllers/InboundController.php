@@ -1352,7 +1352,10 @@ class InboundController extends Controller
                 'search'    => $request->query('search')
             ]);
 
-        return view('mobile.inbound.index', compact('purchaseOrder'));
+        $customer = Customer::all();
+        $products = Product::all();
+
+        return view('mobile.inbound.index', compact('purchaseOrder', 'customer', 'products'));
     }
 
     public function indexDetailMobile(Request $request): View
