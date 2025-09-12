@@ -251,6 +251,9 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
         Route::get('/delete', 'delete')->name('user.delete');
         Route::get('/find', 'find')->name('user.find');
         Route::post('/update', 'update')->name('user.update');
+
+        Route::get('/menu', 'menu')->name('user.menu');
+        Route::post('/menu', 'menuStore')->name('user.menu.store');
     });
 
     // Mobile APP

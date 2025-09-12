@@ -472,8 +472,8 @@
                         </div>
                     </li>
 
-                    <li class="menu-title"><span data-key="t-menu">WAREHOUSE MODULE</span></li>
                     @if(Session::get('userHasMenu', collect())->intersect(['Purchase Order', 'Quality Control', 'Put Away'])->isNotEmpty())
+                        <li class="menu-title"><span data-key="t-menu">WAREHOUSE MODULE</span></li>
                         <li class="nav-item">
                             <a class="nav-link menu-link {{ in_array($title, ['Purchase Order', 'Quality Control', 'Put Away']) ? 'active' : '' }}" href="#sidebarInbound" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="sidebarInbound">
                                 <i class="mdi mdi-package-down"></i> <span data-key="t-dashboards">Inbound</span>

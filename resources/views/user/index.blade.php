@@ -56,6 +56,7 @@
                                     <td>{{ \Carbon\Carbon::parse($user->created_at)->translatedFormat('d F Y H:i') }}</td>
                                     <td>
                                         <div class="d-flex gap-2">
+                                            <a href="{{ route('user.menu', ['id' => $user->id]) }}" class="btn btn-primary btn-sm">Menu</a>
                                             <a class="btn btn-info btn-sm" onclick="editUser('{{ $user->id }}')">Edit</a>
                                             <a class="btn btn-danger btn-sm" onclick="deleteUser('{{ $user->id }}')">Delete</a>
                                         </div>

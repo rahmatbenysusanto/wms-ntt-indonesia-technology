@@ -79,61 +79,70 @@
 
     <div class="container-fluid mt-3">
         <div class="row">
-            <div class="col-6">
-                <a href="{{ route('inbound.index.mobile') }}">
-                    <div class="card custom-card text-center">
-                        <div class="icon-slot">
-                            <img src="{{ asset('assets/mobile/img/inbound.png') }}" alt="Inbound">
+            @if(Session::get('userHasMenu')->contains('Mobile Inbound'))
+                <div class="col-6">
+                    <a href="{{ route('inbound.index.mobile') }}">
+                        <div class="card custom-card text-center">
+                            <div class="icon-slot">
+                                <img src="{{ asset('assets/mobile/img/inbound.png') }}" alt="Inbound">
+                            </div>
+                            <span class="menu-title">Inbound</span>
                         </div>
-                        <span class="menu-title">Inbound</span>
-                    </div>
-                </a>
-            </div>
+                    </a>
+                </div>
+            @endif
 
-            <div class="col-6">
-                <a href="{{ route('outbound.index.mobile') }}">
-                    <div class="card custom-card text-center">
-                        <div class="icon-slot">
-                            <img src="{{ asset('assets/mobile/img/outbound.png') }}" alt="Inbound">
+            @if(Session::get('userHasMenu')->contains('Mobile Outbound'))
+                <div class="col-6">
+                    <a href="{{ route('outbound.index.mobile') }}">
+                        <div class="card custom-card text-center">
+                            <div class="icon-slot">
+                                <img src="{{ asset('assets/mobile/img/outbound.png') }}" alt="Inbound">
+                            </div>
+                            <span class="menu-title">Outbound</span>
                         </div>
-                        <span class="menu-title">Outbound</span>
-                    </div>
-                </a>
-            </div>
+                    </a>
+                </div>
+            @endif
 
-            <div class="col-6">
-                <a href="{{ route('inventory.index.mobile') }}">
-                    <div class="card custom-card text-center">
-                        <div class="icon-slot">
-                            <img src="{{ asset('assets/mobile/img/inventory.png') }}" alt="Inbound">
+            @if(Session::get('userHasMenu')->contains('Mobile Inventory'))
+                <div class="col-6">
+                    <a href="{{ route('inventory.index.mobile') }}">
+                        <div class="card custom-card text-center">
+                            <div class="icon-slot">
+                                <img src="{{ asset('assets/mobile/img/inventory.png') }}" alt="Inbound">
+                            </div>
+                            <span class="menu-title">Inventory</span>
                         </div>
-                        <span class="menu-title">Inventory</span>
-                    </div>
-                </a>
-            </div>
+                    </a>
+                </div>
+            @endif
 
-            <div class="col-6">
-                <a href="{{ route('inventory.aging.mobile') }}">
-                    <div class="card custom-card text-center">
-                        <div class="icon-slot">
-                            <img src="{{ asset('assets/mobile/img/aging.png') }}" alt="Inbound">
+            @if(Session::get('userHasMenu')->contains('Mobile Aging'))
+                <div class="col-6">
+                    <a href="{{ route('inventory.aging.mobile') }}">
+                        <div class="card custom-card text-center">
+                            <div class="icon-slot">
+                                <img src="{{ asset('assets/mobile/img/aging.png') }}" alt="Inbound">
+                            </div>
+                            <span class="menu-title">Aging</span>
                         </div>
-                        <span class="menu-title">Aging</span>
-                    </div>
-                </a>
-            </div>
+                    </a>
+                </div>
+            @endif
 
-            <div class="col-6">
-                <a href="{{ route('gr.index.mobile') }}">
-                    <div class="card custom-card text-center">
-                        <div class="icon-slot">
-                            <img src="{{ asset('assets/mobile/img/gr.png') }}" alt="Inbound">
+            @if(Session::get('userHasMenu')->contains('Mobile General Room'))
+                <div class="col-6">
+                    <a href="{{ route('gr.index.mobile') }}">
+                        <div class="card custom-card text-center">
+                            <div class="icon-slot">
+                                <img src="{{ asset('assets/mobile/img/gr.png') }}" alt="Inbound">
+                            </div>
+                            <span class="menu-title">General Room</span>
                         </div>
-                        <span class="menu-title">General Room</span>
-                    </div>
-                </a>
-            </div>
-
+                    </a>
+                </div>
+            @endif
         </div>
     </div>
 
