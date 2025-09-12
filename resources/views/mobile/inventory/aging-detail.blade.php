@@ -54,7 +54,7 @@
     <div class="row">
         <div class="col-2 d-flex align-items-center">
             <a href="{{ route('inventory.aging.mobile') }}" class="ps-3">
-                <i class="mdi mdi-arrow-left-thin text-white" style="font-size: 32px"></i>
+                <i class="mdi mdi-arrow-left-thin text-white" style="font-size: 32px;"></i>
             </a>
         </div>
         <div class="col-8 d-flex justify-content-center align-items-center">
@@ -101,8 +101,8 @@
             </div>
             <div class="modal-body">
                 <div class="d-flex gap-2 justify-content-center">
-                    <a href="{{ route('inbound.purchase-order-download-pdf', ['id' => '']) }}" class="btn btn-pdf btn-sm">Download PDF</a>
-                    <a href="{{ route('inbound.purchase-order-download-excel', ['id' => '']) }}" class="btn btn-success btn-sm">Download Excel</a>
+                    <a href="{{ route('inventory.aging.detail.pdf', ['type' => $type]) }}" class="btn btn-pdf btn-sm">Download PDF</a>
+                    <a href="{{ route('inventory.aging.detail.excel', ['type' => $type]) }}" class="btn btn-success btn-sm">Download Excel</a>
                 </div>
             </div>
         </div>

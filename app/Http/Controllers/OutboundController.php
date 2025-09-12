@@ -755,4 +755,31 @@ class OutboundController extends Controller
 
         return view('mobile.outbound.sn', compact('request', 'serialNumber', 'outboundId'));
     }
+
+    public function reportDownloadPdf(Request $request): \Illuminate\Http\Response
+    {
+        $outbound = Outbound::with('outboundDetail', 'outboundDetail.outboundDetailSN', 'outboundDetail.inventoryPackageItem', 'outboundDetail.inventoryPackageItem.purchaseOrderDetail', 'customer')
+            ->when($request->query('purcDoc'), function ($query) use ($request) {
+                $query->where('purc_doc', 'LIKE', '%'.$request->query('purcDoc').'%');
+            })->when($request->query('salesDoc'), function ($query) use ($request) {
+                $query->where('sales_docs', 'LIKE', '%'.$request->query('salesDoc').'%');
+            })->when($request->query('client'), function ($query) use ($request) {
+                $query->where('customer_id', $request->query('client'));
+            })
+            ->whereBetween('delivery_date', [$request->query('start'), $request->query('end')])
+            ->where('type', 'outbound')
+            ->get();
+
+        $data = [
+            'outbound'          => $outbound,
+        ];
+
+        $pdf = Pdf::loadView('pdf.outbound-list', $data)->setPaper('a4', 'landscape');
+        return $pdf->stream('Report Outbound.pdf');
+    }
+
+    public function reportDownloadExcel(Request $request)
+    {
+
+    }
 }

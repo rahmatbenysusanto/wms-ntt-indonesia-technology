@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
+use Jenssegers\Agent\Agent;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -1025,7 +1026,8 @@ class InventoryController extends Controller
                 break;
         }
 
-        return view('mobile.inventory.aging-detail', compact('text', 'inventoryDetail'));
+        $type = $request->query('type');
+        return view('mobile.inventory.aging-detail', compact('text', 'inventoryDetail', 'type'));
     }
 
     public function downloadExcel(): StreamedResponse
@@ -1199,8 +1201,13 @@ class InventoryController extends Controller
             'inventoryAging' => $inventoryAging,
         ];
 
-        $pdf = Pdf::loadView('pdf.aging', $data)->setPaper('a4', 'landscape');;
-        return $pdf->stream('Product Aging.pdf');
+        $pdf = Pdf::loadView('pdf.aging', $data)->setPaper('a4', 'landscape');
+        $agent = new Agent();
+        if ($agent->isDesktop()) {
+            return $pdf->stream('Product Aging.pdf');
+        } else {
+            return $pdf->download('Product Aging.pdf');
+        }
     }
 
     public function downloadExcelBox(): StreamedResponse
@@ -1337,5 +1344,135 @@ class InventoryController extends Controller
 
         $pdf = Pdf::loadView('pdf.product-list', $data)->setPaper('a4', 'landscape');;
         return $pdf->stream('Product List.pdf');
+    }
+
+    public function agingDetailPdf(Request $request): \Illuminate\Http\Response
+    {
+        switch ($request->query('type')) {
+            case 1:
+                $start = Carbon::now()->subDays(90)->startOfDay();
+                $end = Carbon::now()->subDays(1)->endOfDay();
+
+                $inventoryDetail = DB::table('inventory_detail')
+                    ->leftJoin('purchase_order_detail', 'inventory_detail.purchase_order_detail_id', '=', 'purchase_order_detail.id')
+                    ->leftJoin('purchase_order', 'purchase_order.id', '=', 'purchase_order_detail.purchase_order_id')
+                    ->whereBetween('inventory_detail.aging_date', [$start, $end])
+                    ->where('inventory_detail.qty', '!=', 0)
+                    ->select([
+                        'purchase_order.purc_doc',
+                        'inventory_detail.sales_doc',
+                        'purchase_order_detail.material',
+                        'purchase_order_detail.po_item_desc',
+                        'purchase_order_detail.prod_hierarchy_desc',
+                        'inventory_detail.aging_date',
+                        DB::raw('SUM(inventory_detail.qty) as qty'),
+                        DB::raw('SUM(inventory_detail.qty * purchase_order_detail.net_order_price) as total')
+                    ])
+                    ->groupBy(
+                        'purchase_order.purc_doc',
+                        'inventory_detail.aging_date',
+                        'inventory_detail.sales_doc',
+                        'purchase_order_detail.material',
+                        'purchase_order_detail.po_item_desc',
+                        'purchase_order_detail.prod_hierarchy_desc'
+                    )
+                    ->get();
+
+                break;
+            case 2:
+                $start = Carbon::now()->subDays(180)->startOfDay();
+                $end = Carbon::now()->subDays(91)->endOfDay();
+
+                $inventoryDetail = DB::table('inventory_detail')
+                    ->leftJoin('purchase_order_detail', 'inventory_detail.purchase_order_detail_id', '=', 'purchase_order_detail.id')
+                    ->leftJoin('purchase_order', 'purchase_order.id', '=', 'purchase_order_detail.purchase_order_id')
+                    ->whereBetween('inventory_detail.aging_date', [$start, $end])
+                    ->where('inventory_detail.qty', '!=', 0)
+                    ->select([
+                        'purchase_order.purc_doc',
+                        'inventory_detail.sales_doc',
+                        'purchase_order_detail.material',
+                        'purchase_order_detail.po_item_desc',
+                        'purchase_order_detail.prod_hierarchy_desc',
+                        'inventory_detail.aging_date',
+                        DB::raw('SUM(inventory_detail.qty) as qty'),
+                        DB::raw('SUM(inventory_detail.qty * purchase_order_detail.net_order_price) as total')
+                    ])
+                    ->groupBy(
+                        'purchase_order.purc_doc',
+                        'inventory_detail.aging_date',
+                        'inventory_detail.sales_doc',
+                        'purchase_order_detail.material',
+                        'purchase_order_detail.po_item_desc',
+                        'purchase_order_detail.prod_hierarchy_desc'
+                    )
+                    ->get();
+
+                break;
+            case 3:
+                $start = Carbon::now()->subDays(365)->startOfDay();
+                $end = Carbon::now()->subDays(181)->endOfDay();
+
+                $inventoryDetail = DB::table('inventory_detail')
+                    ->leftJoin('purchase_order_detail', 'inventory_detail.purchase_order_detail_id', '=', 'purchase_order_detail.id')
+                    ->leftJoin('purchase_order', 'purchase_order.id', '=', 'purchase_order_detail.purchase_order_id')
+                    ->whereBetween('inventory_detail.aging_date', [$start, $end])
+                    ->where('inventory_detail.qty', '!=', 0)
+                    ->select([
+                        'purchase_order.purc_doc',
+                        'inventory_detail.sales_doc',
+                        'purchase_order_detail.material',
+                        'purchase_order_detail.po_item_desc',
+                        'purchase_order_detail.prod_hierarchy_desc',
+                        'inventory_detail.aging_date',
+                        DB::raw('SUM(inventory_detail.qty) as qty'),
+                        DB::raw('SUM(inventory_detail.qty * purchase_order_detail.net_order_price) as total')
+                    ])
+                    ->groupBy(
+                        'purchase_order.purc_doc',
+                        'inventory_detail.sales_doc',
+                        'inventory_detail.aging_date',
+                        'purchase_order_detail.material',
+                        'purchase_order_detail.po_item_desc',
+                        'purchase_order_detail.prod_hierarchy_desc'
+                    )
+                    ->get();
+                break;
+            case 4:
+                $start = Carbon::now()->subDays(365)->startOfDay();
+
+                $inventoryDetail = DB::table('inventory_detail')
+                    ->leftJoin('purchase_order_detail', 'inventory_detail.purchase_order_detail_id', '=', 'purchase_order_detail.id')
+                    ->leftJoin('purchase_order', 'purchase_order.id', '=', 'purchase_order_detail.purchase_order_id')
+                    ->where('inventory_detail.aging_date', '<', $start)
+                    ->where('inventory_detail.qty', '!=', 0)
+                    ->select([
+                        'purchase_order.purc_doc',
+                        'inventory_detail.sales_doc',
+                        'purchase_order_detail.material',
+                        'purchase_order_detail.po_item_desc',
+                        'purchase_order_detail.prod_hierarchy_desc',
+                        'inventory_detail.aging_date',
+                        DB::raw('SUM(inventory_detail.qty) as qty'),
+                        DB::raw('SUM(inventory_detail.qty * purchase_order_detail.net_order_price) as total')
+                    ])
+                    ->groupBy(
+                        'purchase_order.purc_doc',
+                        'inventory_detail.sales_doc',
+                        'inventory_detail.aging_date',
+                        'purchase_order_detail.material',
+                        'purchase_order_detail.po_item_desc',
+                        'purchase_order_detail.prod_hierarchy_desc'
+                    )
+                    ->get();
+                break;
+        }
+
+        $data = [
+            'inventoryDetail' => $inventoryDetail,
+        ];
+
+        $pdf = Pdf::loadView('pdf.aging-detail', $data)->setPaper('a4', 'landscape');;
+        return $pdf->stream('Produk Aging.pdf');
     }
 }

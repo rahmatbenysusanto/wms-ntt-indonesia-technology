@@ -21,11 +21,23 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <h4 class="card-title mb-0">Order List</h4>
                         <div class="d-flex gap-2">
-                            <a href="" class="btn btn-pdf btn-sm">
+                            <a href="{{ route('report.outbound.pdf', [
+                                'purcDoc' => request()->get('purcDoc', null),
+                                'salesDoc' => request()->get('salesDoc', null),
+                                'client' => request()->get('client', null),
+                                'start' => request()->get('start', date('Y-m-01')),
+                                'end' => request()->get('end', date('Y-m-d'))
+                                ]) }}" class="btn btn-pdf btn-sm" target="_blank">
                                 <span class="mdi mdi-file-pdf-box"></span>
                                 Download PDF
                             </a>
-                            <a href="" class="btn btn-success btn-sm">
+                            <a href="{{ route('report.outbound.excel', [
+                                'purcDoc' => request()->get('purcDoc', null),
+                                'salesDoc' => request()->get('salesDoc', null),
+                                'client' => request()->get('client', null),
+                                'start' => request()->get('start', date('Y-m-01')),
+                                'end' => request()->get('end', date('Y-m-d'))
+                                ]) }}" class="btn btn-success btn-sm">
                                 <span class="mdi mdi-file-pdf-box"></span>
                                 Download Excel
                             </a>

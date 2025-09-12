@@ -243,6 +243,8 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
         // Download Report
         Route::get('/download-excel', 'downloadExcel')->name('outbound.download-excel');
         Route::get('/download-pdf', 'downloadPdf')->name('outbound.download-pdf');
+        Route::get('/report/download-pdf', 'reportDownloadPdf')->name('report.outbound.pdf');
+        Route::get('/report/download-excel', 'reportDownloadExcel')->name('report.outbound.excel');
     });
 
     Route::prefix('/user')->controller(UserController::class)->group(function () {
@@ -288,6 +290,9 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
             Route::get('/aging', 'agingMobile')->name('inventory.aging.mobile');
             Route::get('/aging-detail', 'agingDetailMobile')->name('dashboard.mobile.aging.detail');
 
+            // Download Report
+            Route::get('/aging-detail-pdf', 'agingDetailPdf')->name('inventory.aging.detail.pdf');
+            Route::get('/aging-detail-excel', 'agingDetailExcel')->name('inventory.aging.detail.excel');
         });
 
         Route::prefix('/general-room')->controller(GeneralRoomController::class)->group(function () {
