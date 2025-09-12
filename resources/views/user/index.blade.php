@@ -32,7 +32,7 @@
                                     <th>Username</th>
                                     <th>Name</th>
                                     <th>Email</th>
-                                    <th class="text-center">Role</th>
+{{--                                    <th class="text-center">Role</th>--}}
                                     <th>Created Date</th>
                                     <th>Action</th>
                                 </tr>
@@ -44,15 +44,15 @@
                                     <td>{{ $user->username }}</td>
                                     <td>{{ $user->name }}</td>
                                     <td>{{ $user->email }}</td>
-                                    <td class="text-center">
-                                        @if($user->role == 'inbound')
-                                            <span class="badge bg-success-subtle text-success">Inbound</span>
-                                        @elseif($user->role == 'outbound')
-                                            <span class="badge bg-warning-subtle text-warning">Outbound</span>
-                                        @else
-                                            <span class="badge bg-info-subtle text-info">Mobile</span>
-                                        @endif
-                                    </td>
+{{--                                    <td class="text-center">--}}
+{{--                                        @if($user->role == 'inbound')--}}
+{{--                                            <span class="badge bg-success-subtle text-success">Inbound</span>--}}
+{{--                                        @elseif($user->role == 'outbound')--}}
+{{--                                            <span class="badge bg-warning-subtle text-warning">Outbound</span>--}}
+{{--                                        @else--}}
+{{--                                            <span class="badge bg-info-subtle text-info">Mobile</span>--}}
+{{--                                        @endif--}}
+{{--                                    </td>--}}
                                     <td>{{ \Carbon\Carbon::parse($user->created_at)->translatedFormat('d F Y H:i') }}</td>
                                     <td>
                                         <div class="d-flex gap-2">
