@@ -11,6 +11,8 @@
     <link href="{{ asset('assets/css/icons.min.css') }}" rel="stylesheet" type="text/css" />
     <link href="{{ asset('assets/css/app.min.css') }}" rel="stylesheet" type="text/css" />
     <link href="{{ asset('assets/css/custom.min.css') }}" rel="stylesheet" type="text/css" />
+
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <style>
         .mobile-header {
             padding-top: 8px;
@@ -183,11 +185,21 @@
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Customer</label>
-                            <input type="text" class="form-control form-control-sm" name="customer" value="{{ request()->get('customer', null) }}" placeholder="Customer ...">
+                            <select class="form-control form-control-sm" name="customer">
+                                <option value="">-- Select Customer --</option>
+                                @foreach($customer as $item)
+                                    <option {{ request()->get('customer') == $item->name ? 'selected' : '' }}>{{ $item->name }}</option>
+                                @endforeach
+                            </select>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Material</label>
-                            <input type="text" class="form-control form-control-sm" name="material" value="{{ request()->get('material', null) }}" placeholder="Material ...">
+                            <select class="form-control form-control-sm select2" name="material">
+                                <option value="">-- Select Material --</option>
+                                @foreach($products as $item)
+                                    <option {{ request()->get('material') == $item->material ? 'selected' : '' }}>{{ $item->material }}</option>
+                                @endforeach
+                            </select>
                         </div>
                         <div class="d-flex justify-content-end">
                             <button type="submit" class="btn btn-primary btn-sm">Search</button>
@@ -199,5 +211,18 @@
     </div>
 
     @include('mobile.layout.menu')
+
+    <script>
+        $(document).ready(function() {
+            $('#filterModal').on('shown.bs.modal', function () {
+                $('.select2').select2({
+                    dropdownParent: $('#filterModal'),
+                    placeholder: "-- Select Material --",
+                    allowClear: true,
+                    width: '100%'
+                });
+            });
+        });
+    </script>
 </body>
 </html>

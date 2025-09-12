@@ -21,6 +21,7 @@ use App\Models\Outbound;
 use App\Models\OutboundDetail;
 use App\Models\OutboundDetailSN;
 use App\Models\OutboundSerialNumber;
+use App\Models\Product;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderDetail;
 use App\Models\SerialNumber;
@@ -733,7 +734,10 @@ class OutboundController extends Controller
                 'search'    =>  $request->query('search'),
             ]);
 
-        return view('mobile.outbound.index', compact('outbound'));
+        $customer = Customer::all();
+        $products = Product::all();
+
+        return view('mobile.outbound.index', compact('outbound', 'customer', 'products'));
     }
 
     public function indexDetailMobile(Request $request): View

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Customer;
 use App\Models\Inventory;
 use App\Models\InventoryDetail;
 use App\Models\InventoryHistory;
@@ -775,7 +776,10 @@ class InventoryController extends Controller
                 'search'    =>  $request->query('search'),
             ]);
 
-        return view('mobile.inventory.index', compact('inventory'));
+        $customer = Customer::all();
+        $products = Product::all();
+
+        return view('mobile.inventory.index', compact('inventory', 'customer', 'products'));
     }
 
     public function indexDetailMobile(Request $request): View
