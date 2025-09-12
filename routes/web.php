@@ -287,6 +287,7 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
 
             Route::get('/aging', 'agingMobile')->name('inventory.aging.mobile');
             Route::get('/aging-detail', 'agingDetailMobile')->name('dashboard.mobile.aging.detail');
+
         });
 
         Route::prefix('/general-room')->controller(GeneralRoomController::class)->group(function () {

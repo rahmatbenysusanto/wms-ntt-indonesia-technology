@@ -118,8 +118,10 @@
                 <div class="col-8 d-flex justify-content-center align-items-center">
                     <h5 class="mb-0 text-center text-white">Inventory Detail</h5>
                 </div>
-                <div class="col-2">
-
+                <div class="col-2 d-flex align-items-center">
+                    <a class="ps-2" onclick="openDownloadModal()">
+                        <i class="mdi mdi-file-download-outline text-white" style="font-size: 22px;"></i>
+                    </a>
                 </div>
             </div>
         </div>
@@ -182,6 +184,30 @@
             </div>
         </div>
     </div>
+
+    <div id="downloadReportModal" class="modal fade" tabindex="-1" aria-labelledby="myModalLabel" aria-hidden="true" style="display: none;">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="myModalLabel">Download Inventory Detail</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"> </button>
+                </div>
+                <div class="modal-body">
+                    <div class="d-flex gap-2 justify-content-center">
+                        <a href="{{ route('inbound.purchase-order-download-pdf', ['id' => '']) }}" class="btn btn-pdf btn-sm">Download PDF</a>
+                        <a href="{{ route('inbound.purchase-order-download-excel', ['id' => '']) }}" class="btn btn-success btn-sm">Download Excel</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @include('mobile.layout.js')
+    <script>
+        function openDownloadModal() {
+            $('#downloadReportModal').modal('show');
+        }
+    </script>
 
 </body>
 </html>
