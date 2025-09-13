@@ -50,7 +50,12 @@ class GeneralRoomController extends Controller
             ->when($request->query('salesDoc'), function ($query) use ($request) {
                 $query->where('sales_docs', 'LIKE', '%'.$request->query('salesDoc').'%');
             })
-            ->paginate(10);
+            ->paginate(10)
+            ->appends([
+                'purcDoc'   => $request->query('purcDoc'),
+                'salesDoc'  => $request->query('salesDoc'),
+                'client'    => $request->query('client'),
+            ]);
 
         $customers = Customer::all();
 
@@ -85,9 +90,26 @@ class GeneralRoomController extends Controller
         ]);
     }
 
-    public function outbound(): View
+    public function outbound(Request $request): View
     {
-        $generalRoom = Outbound::with('customer')->where('type', 'general room')->latest()->paginate(10);
+        $generalRoom = Outbound::with('customer')
+            ->where('type', 'general room')
+            ->when($request->query('purcDoc'), function ($query) use ($request) {
+                $query->where('purc_doc', 'like', '%' . $request->query('purcDoc') . '%');
+            })
+            ->when($request->query('salesDoc'), function ($query) use ($request) {
+                $query->where('sales_doc', 'like', '%' . $request->query('salesDoc') . '%');
+            })
+            ->when($request->query('client'), function ($query) use ($request) {
+                $query->where('customer_id', $request->query('client'));
+            })
+            ->latest()
+            ->paginate(10)
+            ->appends([
+                'purcDoc'   => $request->query('purcDoc'),
+                'salesDoc'  => $request->query('salesDoc'),
+                'client'    => $request->query('client'),
+            ]);
 
         $customers = Customer::all();
 

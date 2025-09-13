@@ -47,7 +47,12 @@ class PmRoomController extends Controller
             ->when($request->query('salesDoc'), function ($query) use ($request) {
                 $query->where('sales_docs', 'LIKE', '%'.$request->query('salesDoc').'%');
             })
-            ->paginate(10);
+            ->paginate(10)
+            ->appends([
+                'purcDoc'   => $request->query('purcDoc'),
+                'salesDoc'  => $request->query('salesDoc'),
+                'client'    => $request->query('client'),
+            ]);
 
         $customers = Customer::all();
 
@@ -73,12 +78,31 @@ class PmRoomController extends Controller
         return view('pm-room.create-box', compact('title', 'listItem'));
     }
 
-    public function outbound(): View
+    public function outbound(Request $request): View
     {
-        $pmRoom = Outbound::with('customer')->where('type', 'pm room')->latest()->paginate(10);
+        $pmRoom = Outbound::with('customer')
+            ->where('type', 'pm room')
+            ->when($request->query('purcDoc'), function ($query) use ($request) {
+                $query->where('purc_doc', 'like', '%' . $request->query('purcDoc') . '%');
+            })
+            ->when($request->query('salesDoc'), function ($query) use ($request) {
+                $query->where('sales_doc', 'like', '%' . $request->query('salesDoc') . '%');
+            })
+            ->when($request->query('client'), function ($query) use ($request) {
+                $query->where('customer_id', $request->query('client'));
+            })
+            ->latest()
+            ->paginate(10)
+            ->appends([
+                'purcDoc'   => $request->query('purcDoc'),
+                'salesDoc'  => $request->query('salesDoc'),
+                'client'    => $request->query('client'),
+            ]);
+
+        $customers = Customer::all();
 
         $title = "Pm Room Outbound";
-        return view('pm-room.outbound.index', compact('title', 'pmRoom'));
+        return view('pm-room.outbound.index', compact('title', 'pmRoom', 'customers'));
     }
 
     public function create(): View
