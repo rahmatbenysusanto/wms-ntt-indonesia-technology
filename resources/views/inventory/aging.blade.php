@@ -39,7 +39,12 @@
                             </div>
                             <div class="col-2">
                                 <label class="form-label">Material</label>
-                                <input type="text" class="form-control" value="{{ request()->get('material', null) }}" name="material" placeholder="Material">
+                                <select name="material" class="form-control select2">
+                                    <option value="">-- Select Material --</option>
+                                    @foreach($products as $product)
+                                        <option {{ request()->get('material') == $product->material ? 'selected' : '' }}>{{ $product->material }}</option>
+                                    @endforeach
+                                </select>
                             </div>
                             <div class="col-2">
                                 <label class="form-label text-white">-</label>

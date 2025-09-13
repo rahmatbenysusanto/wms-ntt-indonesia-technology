@@ -197,8 +197,10 @@ class InventoryController extends Controller
                 'material'  => $request->query('material'),
             ]);
 
+        $products = Product::all();
+
         $title = 'Inventory Aging';
-        return view('inventory.aging', compact('title', 'inventory'));
+        return view('inventory.aging', compact('title', 'inventory', 'products'));
     }
 
     public function box(Request $request): View
