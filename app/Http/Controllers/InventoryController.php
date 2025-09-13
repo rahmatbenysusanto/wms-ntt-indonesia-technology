@@ -29,8 +29,22 @@ class InventoryController extends Controller
 {
     public function index(Request $request): View
     {
-        $inventory = InventoryDetail::whereNotIn('storage_id', [1,2,3,4])
+        $inventory = InventoryDetail::with('purchaseOrderDetail', 'purchaseOrderDetail.purchaseOrder')
+            ->whereNotIn('storage_id', [1,2,3,4])
             ->where('qty', '!=', 0)
+            ->whereHas('purchaseOrderDetail', function ($query) use ($request) {
+                if ($request->query('material') != null) {
+                    $query->where('material', $request->query('material'));
+                }
+            })
+            ->whereHas('purchaseOrderDetail.purchaseOrder', function ($query) use ($request) {
+                if ($request->query('purcDoc') != null) {
+                    $query->where('purc_doc', $request->query('purcDoc'));
+                }
+            })
+            ->when($request->query('salesDoc'), function ($query) use ($request) {
+                $query->where('sales_doc', $request->query('salesDoc'));
+            })
             ->select([
                 'sales_doc',
                 'purchase_order_detail_id'
@@ -68,8 +82,10 @@ class InventoryController extends Controller
             $inv->product_id = $queryInv[0]->product_id;
         }
 
+        $products = Product::all();
+
         $title = 'Inventory';
-        return view('inventory.index', compact('title', 'inventory'));
+        return view('inventory.index', compact('title', 'inventory', 'products'));
     }
 
     public function indexDetail(Request $request): View
