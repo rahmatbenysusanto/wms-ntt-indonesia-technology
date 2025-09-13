@@ -32,14 +32,30 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class GeneralRoomController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
-        $generalRoom = InventoryPackage::with('purchaseOrder', 'purchaseOrder.customer', 'user')->where('storage_id', 2)
+        $generalRoom = InventoryPackage::with('purchaseOrder', 'purchaseOrder.customer', 'user')
+            ->where('storage_id', 2)
             ->where('qty', '!=', 0)
+            ->whereHas('purchaseOrder', function ($query) use ($request) {
+                if ($request->query('purcDoc') != null) {
+                    $query->where('purc_doc', $request->query('purcDoc'));
+                }
+            })
+            ->whereHas('purchaseOrder', function ($query) use ($request) {
+                if ($request->query('client') != null) {
+                    $query->where('client_id', $request->query('client'));
+                }
+            })
+            ->when($request->query('salesDoc'), function ($query) use ($request) {
+                $query->where('sales_docs', 'LIKE', '%'.$request->query('salesDoc').'%');
+            })
             ->paginate(10);
 
+        $customers = Customer::all();
+
         $title = "General Room";
-        return view('general-room.index', compact('title', 'generalRoom'));
+        return view('general-room.index', compact('title', 'generalRoom', 'customers'));
     }
 
     public function detail(Request $request): View
@@ -73,8 +89,10 @@ class GeneralRoomController extends Controller
     {
         $generalRoom = Outbound::with('customer')->where('type', 'general room')->latest()->paginate(10);
 
+        $customers = Customer::all();
+
         $title = "General Room Outbound";
-        return view('general-room.outbound.index', compact('title', 'generalRoom'));
+        return view('general-room.outbound.index', compact('title', 'generalRoom', 'customers'));
     }
 
     public function create(): View

@@ -29,14 +29,30 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class SpareRoomController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
-        $spareRoom = InventoryPackage::with('purchaseOrder', 'purchaseOrder.customer', 'user')->where('storage_id', 4)
+        $spareRoom = InventoryPackage::with('purchaseOrder', 'purchaseOrder.customer', 'user')
+            ->where('storage_id', 4)
             ->where('qty', '!=', 0)
+            ->whereHas('purchaseOrder', function ($query) use ($request) {
+                if ($request->query('purcDoc') != null) {
+                    $query->where('purc_doc', $request->query('purcDoc'));
+                }
+            })
+            ->whereHas('purchaseOrder', function ($query) use ($request) {
+                if ($request->query('client') != null) {
+                    $query->where('client_id', $request->query('client'));
+                }
+            })
+            ->when($request->query('salesDoc'), function ($query) use ($request) {
+                $query->where('sales_docs', 'LIKE', '%'.$request->query('salesDoc').'%');
+            })
             ->paginate(10);
 
+        $customers = Customer::all();
+
         $title = "Spare Room";
-        return view('spare-room.index', compact('title', 'spareRoom'));
+        return view('spare-room.index', compact('title', 'spareRoom', 'customers'));
     }
 
     public function detail(Request $request): View

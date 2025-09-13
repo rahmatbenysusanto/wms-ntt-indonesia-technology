@@ -29,14 +29,30 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class PmRoomController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
-        $pmRoom = InventoryPackage::with('purchaseOrder', 'purchaseOrder.customer', 'user')->where('storage_id', 3)
+        $pmRoom = InventoryPackage::with('purchaseOrder', 'purchaseOrder.customer', 'user')
+            ->where('storage_id', 3)
             ->where('qty', '!=', 0)
+            ->whereHas('purchaseOrder', function ($query) use ($request) {
+                if ($request->query('purcDoc') != null) {
+                    $query->where('purc_doc', $request->query('purcDoc'));
+                }
+            })
+            ->whereHas('purchaseOrder', function ($query) use ($request) {
+                if ($request->query('client') != null) {
+                    $query->where('client_id', $request->query('client'));
+                }
+            })
+            ->when($request->query('salesDoc'), function ($query) use ($request) {
+                $query->where('sales_docs', 'LIKE', '%'.$request->query('salesDoc').'%');
+            })
             ->paginate(10);
 
+        $customers = Customer::all();
+
         $title = "Pm Room";
-        return view('pm-room.index', compact('title', 'pmRoom'));
+        return view('pm-room.index', compact('title', 'pmRoom', 'customers'));
     }
 
     public function detail(Request $request): View
