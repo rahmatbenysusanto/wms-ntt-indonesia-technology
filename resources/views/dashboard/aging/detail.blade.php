@@ -18,7 +18,13 @@
         <div class="col-12">
             <div class="card">
                 <div class="card-header">
-                    <h4 class="card-title mb-0">Aging Detail {{ $text }}</h4>
+                    <div class="d-flex justify-content-between">
+                        <h4 class="card-title mb-0">Aging Detail {{ $text }}</h4>
+                        <div class="d-flex gap-2">
+                            <a href="" class="btn btn-pdf btn-sm">Download Report PDF</a>
+                            <a href="" class="btn btn-success btn-sm">Download Report Excel</a>
+                        </div>
+                    </div>
                 </div>
                 <div class="card-header">
                     <form action="{{ url()->current() }}" method="GET">

@@ -403,12 +403,16 @@ class DashboardController extends Controller
             ->when($request->query('customer'), function ($q) use ($request) {
                 $q->where('customer_id', $request->query('customer'));
             })
+            ->when($request->query('number'), function ($q) use ($request) {
+                $q->where('delivery_note_number', $request->query('number'));
+            })
             ->latest()
             ->paginate(10)
             ->appends([
                 'purcDoc'   => $request->query('purcDoc'),
                 'salesDoc'  => $request->query('salesDoc'),
                 'customer'  => $request->query('customer'),
+                'number'    => $request->query('number'),
             ]);
 
         foreach ($outbound as $item) {
