@@ -18,8 +18,11 @@
         <div class="col-12">
             <div class="card">
                 <div class="card-header">
-                    <div class="d-flex justify-content-end gap-2">
-                        <a href="{{ route('inbound.purchase-order-upload') }}" class="btn btn-info">Upload PO Excel</a>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="card-title mb-0">List Quality Control</h4>
+                        <div class="d-flex gap-2">
+                            <a href="{{ route('inbound.purchase-order-upload') }}" class="btn btn-info">Upload PO Excel</a>
+                        </div>
                     </div>
                 </div>
                 <div class="card-header">

@@ -568,7 +568,23 @@ class InboundController extends Controller
 
     public function putAway(Request $request): View
     {
-        $putAway = ProductPackage::with('purchaseOrder', 'purchaseOrder.customer')->latest()->paginate(10);
+        $putAway = ProductPackage::with('productPackageItem', 'purchaseOrder', 'purchaseOrder.customer', 'purchaseOrder.purchaseOrderDetail')
+            ->whereHas('purchaseOrder', function ($query) use ($request) {
+                if ($request->query('purcDoc') != null) {
+                    $query->where('purc_doc', $request->query('purcDoc'));
+                }
+            })
+            ->whereHas('purchaseOrder.purchaseOrderDetail', function ($query) use ($request) {
+                if ($request->query('salesDoc') != null) {
+                    $query->where('sales_doc', $request->query('salesDoc'));
+                }
+            })
+            ->when($request->query('status'), function ($query) use ($request) {
+                $status = $request->query('status') == 'Put Away' ? 'open' : 'done';
+                $query->where('status', $status);
+            })
+            ->latest()
+            ->paginate(10);
 
         foreach ($putAway as $product) {
             $productPackageItemParent = ProductPackageItem::with('product')->where('product_package_id', $product->id)->where('is_parent', 1)->first();

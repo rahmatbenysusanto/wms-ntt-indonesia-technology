@@ -32,8 +32,12 @@
                                 <input type="text" class="form-control" value="{{ request()->get('salesDoc', null) }}" name="salesDoc" placeholder="Sales Doc ...">
                             </div>
                             <div class="col-2">
-                                <label class="form-label">Parent Material</label>
-                                <input type="text" class="form-control" value="{{ request()->get('material', null) }}" name="material" placeholder="Parent Material ...">
+                                <label class="form-label">Status Put Away</label>
+                                <select name="status" class="form-control">
+                                    <option value="">-- Select Status --</option>
+                                    <option {{ request()->get('status') == 'Put Away' ? 'selected' : '' }}>Put Away</option>
+                                    <option {{ request()->get('status') == 'Done' ? 'selected' : '' }}>Done</option>
+                                </select>
                             </div>
                             <div class="col-2">
                                 <label class="form-label text-white">-</label>
