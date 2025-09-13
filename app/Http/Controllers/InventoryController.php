@@ -256,8 +256,10 @@ class InventoryController extends Controller
     {
         $cycleCount = InventoryHistory::with('purchaseOrder', 'purchaseOrderDetail', 'user', 'inventoryPackageItem.inventoryPackage', 'inventoryPackageItem.inventoryPackage.storage')->latest()->paginate(10);
 
+        $products = Product::all();
+
         $title = 'Cycle Count';
-        return view('inventory.cycle-count', compact('title', 'cycleCount'));
+        return view('inventory.cycle-count', compact('title', 'cycleCount', 'products'));
     }
 
     public function cycleCountDetail(Request $request): View

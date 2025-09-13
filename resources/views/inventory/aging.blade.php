@@ -163,3 +163,15 @@
         </div>
     </div>
 @endsection
+
+@section('js')
+    <script>
+        $(document).ready(function() {
+            $('.select2').select2({
+                placeholder: "-- Select Material --",
+                allowClear: true,
+                width: '100%'
+            });
+        });
+    </script>
+@endsection
