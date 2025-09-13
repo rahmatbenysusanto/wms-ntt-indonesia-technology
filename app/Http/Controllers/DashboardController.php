@@ -8,6 +8,7 @@ use App\Models\Inventory;
 use App\Models\InventoryDetail;
 use App\Models\Outbound;
 use App\Models\OutboundDetail;
+use App\Models\Product;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderDetail;
 use Carbon\Carbon;
@@ -38,7 +39,7 @@ class DashboardController extends Controller
     public function dashboardPo(Request $request): View
     {
         $listPO = PurchaseOrder::with('customer')
-            ->whereIn('status', ['process', 'done', 'close'])
+            ->whereIn('status', ['process', 'done', 'close', 'open'])
             ->when($request->query('purcDoc'), function ($query) use ($request) {
                 $query->where('purc_doc', 'LIKE', '%' . $request->query('purcDoc') . '%');
             })
@@ -63,8 +64,10 @@ class DashboardController extends Controller
                 ->sum('outbound_detail.qty');
         }
 
+        $customer = Customer::all();
+
         $title = 'Dashboard PO';
-        return view('dashboard.po.index', compact('title', 'listPO'));
+        return view('dashboard.po.index', compact('title', 'listPO', 'customer'));
     }
 
     public function dashboardDetail(Request $request): View
@@ -208,6 +211,15 @@ class DashboardController extends Controller
                     ->leftJoin('purchase_order', 'purchase_order.id', '=', 'purchase_order_detail.purchase_order_id')
                     ->whereBetween('inventory_detail.aging_date', [$start, $end])
                     ->where('inventory_detail.qty', '!=', 0)
+                    ->when($request->query('purcDoc'), function ($query) use ($request) {
+                        $query->where('purchase_order.purc_doc', $request->query('purcDoc'));
+                    })
+                    ->when($request->query('salesDoc'), function ($query) use ($request) {
+                        $query->where('inventory_detail.sales_doc', $request->query('salesDoc'));
+                    })
+                    ->when($request->query('material'), function ($query) use ($request) {
+                        $query->where('purchase_order_detail.material', $request->query('material'));
+                    })
                     ->select([
                         'purchase_order.purc_doc',
                         'inventory_detail.sales_doc',
@@ -228,7 +240,10 @@ class DashboardController extends Controller
                     )
                     ->paginate(10)
                     ->appends([
-                        'type' => $request->query('type')
+                        'type'      => $request->query('type'),
+                        'purcDoc'   => $request->query('purcDoc'),
+                        'salesDoc'  => $request->query('salesDoc'),
+                        'material'  => $request->query('material'),
                     ]);
 
                 break;
@@ -242,6 +257,15 @@ class DashboardController extends Controller
                     ->leftJoin('purchase_order', 'purchase_order.id', '=', 'purchase_order_detail.purchase_order_id')
                     ->whereBetween('inventory_detail.aging_date', [$start, $end])
                     ->where('inventory_detail.qty', '!=', 0)
+                    ->when($request->query('purcDoc'), function ($query) use ($request) {
+                        $query->where('purchase_order.purc_doc', $request->query('purcDoc'));
+                    })
+                    ->when($request->query('salesDoc'), function ($query) use ($request) {
+                        $query->where('inventory_detail.sales_doc', $request->query('salesDoc'));
+                    })
+                    ->when($request->query('material'), function ($query) use ($request) {
+                        $query->where('purchase_order_detail.material', $request->query('material'));
+                    })
                     ->select([
                         'purchase_order.purc_doc',
                         'inventory_detail.sales_doc',
@@ -262,7 +286,10 @@ class DashboardController extends Controller
                     )
                     ->paginate(10)
                     ->appends([
-                        'type' => $request->query('type')
+                        'type'      => $request->query('type'),
+                        'purcDoc'   => $request->query('purcDoc'),
+                        'salesDoc'  => $request->query('salesDoc'),
+                        'material'  => $request->query('material'),
                     ]);
 
                 break;
@@ -276,6 +303,15 @@ class DashboardController extends Controller
                     ->leftJoin('purchase_order', 'purchase_order.id', '=', 'purchase_order_detail.purchase_order_id')
                     ->whereBetween('inventory_detail.aging_date', [$start, $end])
                     ->where('inventory_detail.qty', '!=', 0)
+                    ->when($request->query('purcDoc'), function ($query) use ($request) {
+                        $query->where('purchase_order.purc_doc', $request->query('purcDoc'));
+                    })
+                    ->when($request->query('salesDoc'), function ($query) use ($request) {
+                        $query->where('inventory_detail.sales_doc', $request->query('salesDoc'));
+                    })
+                    ->when($request->query('material'), function ($query) use ($request) {
+                        $query->where('purchase_order_detail.material', $request->query('material'));
+                    })
                     ->select([
                         'purchase_order.purc_doc',
                         'inventory_detail.sales_doc',
@@ -296,7 +332,10 @@ class DashboardController extends Controller
                     )
                     ->paginate(10)
                     ->appends([
-                        'type' => $request->query('type')
+                        'type'      => $request->query('type'),
+                        'purcDoc'   => $request->query('purcDoc'),
+                        'salesDoc'  => $request->query('salesDoc'),
+                        'material'  => $request->query('material'),
                     ]);
                 break;
             case 4:
@@ -308,6 +347,15 @@ class DashboardController extends Controller
                     ->leftJoin('purchase_order', 'purchase_order.id', '=', 'purchase_order_detail.purchase_order_id')
                     ->where('inventory_detail.aging_date', '<', $start)
                     ->where('inventory_detail.qty', '!=', 0)
+                    ->when($request->query('purcDoc'), function ($query) use ($request) {
+                        $query->where('purchase_order.purc_doc', $request->query('purcDoc'));
+                    })
+                    ->when($request->query('salesDoc'), function ($query) use ($request) {
+                        $query->where('inventory_detail.sales_doc', $request->query('salesDoc'));
+                    })
+                    ->when($request->query('material'), function ($query) use ($request) {
+                        $query->where('purchase_order_detail.material', $request->query('material'));
+                    })
                     ->select([
                         'purchase_order.purc_doc',
                         'inventory_detail.sales_doc',
@@ -328,13 +376,18 @@ class DashboardController extends Controller
                     )
                     ->paginate(10)
                     ->appends([
-                        'type' => $request->query('type')
+                        'type'      => $request->query('type'),
+                        'purcDoc'   => $request->query('purcDoc'),
+                        'salesDoc'  => $request->query('salesDoc'),
+                        'material'  => $request->query('material'),
                     ]);
                 break;
         }
 
+        $material = Product::all();
+
         $title = 'Dashboard Aging';
-        return view('dashboard.aging.detail', compact('title', 'text', 'inventoryDetail'));
+        return view('dashboard.aging.detail', compact('title', 'text', 'inventoryDetail', 'material'));
     }
 
     public function dashboardOutbound(Request $request): View

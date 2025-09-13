@@ -20,6 +20,36 @@
                 <div class="card-header">
                     <h4 class="card-title mb-0">Aging Detail {{ $text }}</h4>
                 </div>
+                <div class="card-header">
+                    <form action="{{ url()->current() }}" method="GET">
+                        <div class="row">
+                            <div class="col-2">
+                                <label class="form-label">Purc Doc</label>
+                                <input type="text" class="form-control" name="purcDoc" value="{{ request()->get('purcDoc') }}" placeholder="Purc Doc ...">
+                            </div>
+                            <div class="col-2">
+                                <label class="form-label">Sales Doc</label>
+                                <input type="text" class="form-control" name="salesDoc" value="{{ request()->get('salesDoc') }}" placeholder="Sales Doc ...">
+                            </div>
+                            <div class="col-2">
+                                <label class="form-label">Material</label>
+                                <select class="form-control select2" name="material">
+                                    <option value="">-- Select Material --</option>
+                                    @foreach($material as $item)
+                                        <option {{ request()->get('material') == $item->material ? 'selected' : '' }}>{{ $item->material }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-2">
+                                <label class="form-label text-white">-</label>
+                                <div class="d-flex gap-2">
+                                    <button type="submit" class="btn btn-primary">Search</button>
+                                    <a href="{{ url()->current() }}" class="btn btn-danger">Clear</a>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
                 <div class="card-body">
                     <div class="table-responsive">
                         <table class="table table-striped align-middle">
@@ -95,6 +125,12 @@
 
 @section('js')
     <script>
-
+        $(document).ready(function() {
+            $('.select2').select2({
+                placeholder: "-- Select Material --",
+                allowClear: true,
+                width: '100%'
+            });
+        });
     </script>
 @endsection

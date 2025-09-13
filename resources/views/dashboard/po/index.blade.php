@@ -31,7 +31,12 @@
                             <div class="col-2">
                                 <div>
                                     <label class="form-label">Client</label>
-                                    <input type="text" class="form-control" name="client" value="{{ request()->get('client') }}" placeholder="Client ...">
+                                    <select class="form-control" name="client">
+                                        <option value="">-- Select Client --</option>
+                                        @foreach($customer as $item)
+                                            <option {{ request()->get('client') == $item->name ? 'selected' : '' }} >{{ $item->name }}</option>
+                                        @endforeach
+                                    </select>
                                 </div>
                             </div>
                             <div class="col-2">
@@ -85,6 +90,40 @@
                             @endforeach
                         </tbody>
                     </table>
+                    <div class="d-flex justify-content-end mt-2">
+                        @if ($listPO->hasPages())
+                            <ul class="pagination">
+                                @if ($listPO->onFirstPage())
+                                    <li class="disabled"><span>&laquo; Previous</span></li>
+                                @else
+                                    <li><a href="{{ $listPO->previousPageUrl() }}&per_page={{ request('per_page', 10) }}" rel="prev">&laquo; Previous</a></li>
+                                @endif
+
+                                @foreach ($listPO->links()->elements as $element)
+                                    @if (is_string($element))
+                                        <li class="disabled"><span>{{ $element }}</span></li>
+                                    @endif
+
+                                    @if (is_array($element))
+                                        @foreach ($element as $page => $url)
+                                            @if ($page == $listPO->currentPage())
+                                                <li class="active"><span>{{ $page }}</span></li>
+                                            @else
+                                                <li><a href="{{ $url }}&per_page={{ request('per_page', 10) }}">{{ $page }}</a></li>
+                                            @endif
+                                        @endforeach
+                                    @endif
+                                @endforeach
+
+                                @if ($listPO->hasMorePages())
+                                    <li><a href="{{ $listPO->nextPageUrl() }}&per_page={{ request('per_page', 10) }}" rel="next">Next &raquo;</a></li>
+                                @else
+                                    <li class="disabled"><span>Next &raquo;</span></li>
+                                @endif
+                            </ul>
+                        @endif
+
+                    </div>
                 </div>
             </div>
         </div>
