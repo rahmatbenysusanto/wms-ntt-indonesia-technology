@@ -66,8 +66,8 @@
                                     <th>SLoc Desc</th>
                                     <th>Valuation</th>
                                     <th class="text-center">PO Itm Qty</th>
-                                    <th>Net Order Price</th>
-                                    <th>Currency</th>
+                                    <th>Price (USD)</th>
+                                    <th>Price (IDR)</th>
                                     <th class="text-center">QTY QC</th>
                                 </tr>
                             </thead>
@@ -87,8 +87,8 @@
                                         <td>{{ $product->sloc_desc }}</td>
                                         <td>{{ $product->valuation }}</td>
                                         <td class="text-center fw-bold">{{ number_format($product->po_item_qty) }}</td>
-                                        <td>{{ $product->net_order_price }}</td>
-                                        <td>{{ $product->currency }}</td>
+                                        <td>${{ number_format($product->net_order_price) }}</td>
+                                        <td>Rp{{ number_format($product->price_idr) }}</td>
                                         <td class="text-center fw-bold">{{ number_format($product->qty_qc) }}</td>
                                     </tr>
                                 @endforeach

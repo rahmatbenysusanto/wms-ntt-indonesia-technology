@@ -318,7 +318,7 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Currency</label>
-                        <input type="text" class="form-control" value="${product.currency ?? ''}" onchange="changeValueProduct('currency', this.value)">
+                        <input type="text" class="form-control" value="${product.currency ?? ''}" onchange="changeValueProduct('currency', this.value)" readonly>
                     </div>
                 </div>
                 <div class="col-12 mb-1">
@@ -417,7 +417,15 @@
                             editProducts: JSON.parse(localStorage.getItem('editProducts')),
                         },
                         success: (res) => {
-
+                            if (res.status) {
+                                Swal.fire({
+                                    title: 'Success!',
+                                    text: 'Request Edit Purchase Order Success',
+                                    icon: 'success',
+                                }).then((e) => {
+                                    window.location.href = '{{ route('inbound.edit-purchase-order') }}';
+                                });
+                            }
                         }
                     });
 

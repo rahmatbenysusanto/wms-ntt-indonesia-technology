@@ -1291,15 +1291,41 @@ class InboundController extends Controller
             $detail = PurchaseOrderEditReq::find($request->get('id'));
 
             if ($detail->type == 'delete') {
-                // Delete Purchase Order Detail
                 PurchaseOrderDetail::where('id', $detail->id)->delete();
             } else {
-                // Edit Purchase Order Detail
                 $data = json_decode($detail->details, true);
-                unset($data['note']);
+                unset($data['note'], $data['created_at'], $data['updated_at']);
 
-                PurchaseOrderDetail::where('id', $detail->id)
-                    ->update($data);
+                if (!empty($data['price_date'])) {
+                    $data['price_date'] = Carbon::parse($data['price_date'])->format('Y-m-d H:i:s');
+                }
+
+                PurchaseOrderDetail::where('id', $data['id'])->update($data);
+                $purchaseOrderDetail = PurchaseOrderDetail::find($data['id']);
+
+                $dateForRate = Carbon::parse($purchaseOrderDetail->price_date)->format('Y-m-d');
+
+                $rate = Cache::remember("fx2:USD:IDR:{$dateForRate}", 86400, function () use ($dateForRate) {
+                    $resp = Http::get("https://api.frankfurter.dev/v1/{$dateForRate}", [
+                        'base' => 'USD', 'symbols' => 'IDR'
+                    ]);
+
+                    if ($resp->failed()) {
+                        $resp = Http::get('https://api.frankfurter.dev/v1/latest', [
+                            'base' => 'USD', 'symbols' => 'IDR'
+                        ]);
+                    }
+
+                    $json = $resp->json() ?? [];
+                    return (float)($json['rates']['IDR'] ?? 0);  // <-- simpan FLOAT, bukan array
+                });
+
+                $usd = (float)($data['net_order_price'] ?? $purchaseOrderDetail->net_order_price);
+                $priceIdr = $rate > 0 ? $usd * $rate : 0.0;
+
+                $purchaseOrderDetail->update([
+                    'price_idr' => $priceIdr,
+                ]);
             }
 
             $query = PurchaseOrderDetail::where('purchase_order_id', $detail->purchase_order_id);

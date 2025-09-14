@@ -80,6 +80,14 @@
     <script>
         localStorage.clear();
 
+        function excelDateToJSDate(serial) {
+            const utc_days  = Math.floor(serial - 25569); // 25569 = serial utk 1970-01-01
+            const utc_value = utc_days * 86400; // detik
+            const date_info = new Date(utc_value * 1000);
+
+            return date_info.toISOString().split("T")[0];
+        }
+
         document.getElementById('uploadBtn').addEventListener('click', function () {
             const fileInput = document.getElementById('excelFile');
             const file = fileInput.files[0];
@@ -117,7 +125,7 @@
                     po_item_qty: parseInt(row["PO Itm Qty"]),
                     net_order_price: row["Net Price"] ?? 0,
                     currency: row["Crcy"] ?? "",
-                    date: '{{ date('Y-m-d') }}'
+                    date: excelDateToJSDate(row["Created On"])
                 }));
 
                 viewListData(filteredData);
