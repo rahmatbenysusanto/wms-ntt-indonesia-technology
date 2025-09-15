@@ -1061,8 +1061,9 @@ class InventoryController extends Controller
         $sheet->setCellValue('D1', 'PO Item Desc');
         $sheet->setCellValue('E1', 'Prod Hierarchy Desc');
         $sheet->setCellValue('F1', 'Stock');
-        $sheet->setCellValue('G1', 'Nominal');
-        $sheet->setCellValue('H1', 'Serial Number');
+        $sheet->setCellValue('G1', 'Nominal USD');
+        $sheet->setCellValue('H1', 'Nominal IDR');
+        $sheet->setCellValue('I1', 'Serial Number');
 
         $inventoryDetail = DB::table('inventory_detail')
             ->leftJoin('purchase_order_detail', 'purchase_order_detail.id', '=', 'inventory_detail.purchase_order_detail_id')
@@ -1078,6 +1079,7 @@ class InventoryController extends Controller
                 'purchase_order_detail.prod_hierarchy_desc',
                 DB::raw('SUM(inventory_detail.qty) as qty'),
                 DB::raw('SUM(inventory_detail.qty * purchase_order_detail.net_order_price) as nominal'),
+                DB::raw('SUM(inventory_detail.qty * purchase_order_detail.price_idr) as nominalIDR'),
             ])
             ->groupBy([
                 'purchase_order.purc_doc',
@@ -1107,6 +1109,7 @@ class InventoryController extends Controller
             $sheet->setCellValue('E' . $column, $detail->prod_hierarchy_desc);
             $sheet->setCellValue('F' . $column, $detail->qty);
             $sheet->setCellValue('G' . $column, $detail->nominal);
+            $sheet->setCellValue('H' . $column, $detail->nominalIDR);
 
             foreach ($serialNumber as $index => $serial) {
                 if ($index != 0) {
@@ -1117,8 +1120,9 @@ class InventoryController extends Controller
                     $sheet->setCellValue('E' . $column, '');
                     $sheet->setCellValue('F' . $column, '');
                     $sheet->setCellValue('G' . $column, '');
+                    $sheet->setCellValue('H' . $column, '');
                 }
-                $sheet->setCellValue('H' . $column, $serial->serial_number);
+                $sheet->setCellValue('I' . $column, $serial->serial_number);
                 $column++;
             }
         }
