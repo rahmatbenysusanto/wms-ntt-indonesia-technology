@@ -35,6 +35,8 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
 
         Route::get('/dashboard-aging', 'dashboardAging')->name('dashboard.aging');
         Route::get('/dashboard-aging-detail', 'dashboardAgingDetail')->name('dashboard.aging.detail');
+        Route::get('/dashboard-aging-download-pdf', 'dashboardAgingDownloadPDF')->name('dashboard.aging.download.pdf');
+        Route::get('/dashboard-aging-download-excel', 'dashboardAgingDownloadExcel')->name('dashboard.aging.download.excel');
 
         Route::get('/dashboard-outbound', 'dashboardOutbound')->name('dashboard.outbound');
         Route::get('/dashboard-outbound-detail', 'dashboardOutboundDetail')->name('dashboard.outbound.detail');

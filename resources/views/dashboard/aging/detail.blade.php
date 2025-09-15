@@ -21,8 +21,8 @@
                     <div class="d-flex justify-content-between">
                         <h4 class="card-title mb-0">Aging Detail {{ $text }}</h4>
                         <div class="d-flex gap-2">
-                            <a href="" class="btn btn-pdf btn-sm">Download Report PDF</a>
-                            <a href="" class="btn btn-success btn-sm">Download Report Excel</a>
+                            <a href="{{ route('dashboard.aging.download.pdf', ['type' => request()->get('type')]) }}" class="btn btn-pdf btn-sm" target="_blank">Download Report PDF</a>
+                            <a href="{{ route('dashboard.aging.download.excel', ['type' => request()->get('type')]) }}" class="btn btn-success btn-sm">Download Report Excel</a>
                         </div>
                     </div>
                 </div>

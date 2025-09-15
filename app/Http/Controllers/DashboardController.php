@@ -11,10 +11,14 @@ use App\Models\OutboundDetail;
 use App\Models\Product;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderDetail;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class DashboardController extends Controller
 {
@@ -439,6 +443,142 @@ class DashboardController extends Controller
 
         $title = 'Dashboard Outbound';
         return view('dashboard.outbound.detail', compact('title', 'outbound', 'outboundDetail'));
+    }
+
+    public function dashboardAgingDownloadPDF(Request $request): \Illuminate\Http\Response
+    {
+        switch ($request->query('type')) {
+            case 1:
+                $productAging = InventoryDetail::with('inventoryPackageItem', 'inventoryPackageItem.inventoryPackageItemSN', 'purchaseOrderDetail', 'purchaseOrderDetail.purchaseOrder')
+                    ->where('qty', '!=', 0)
+                    ->whereHas('inventoryPackageItem.inventoryPackageItemSN', function ($query) {
+                        $query->where('qty', '!=', 0);
+                    })
+                    ->whereBetween('aging_date', [Carbon::now()->subDays(90)->startOfDay(), Carbon::now()->subDays(0)->endOfDay()])
+                    ->get();
+                break;
+            case 2:
+                $productAging = InventoryDetail::with('inventoryPackageItem', 'inventoryPackageItem.inventoryPackageItemSN', 'purchaseOrderDetail', 'purchaseOrderDetail.purchaseOrder')
+                    ->where('qty', '!=', 0)
+                    ->whereHas('inventoryPackageItem.inventoryPackageItemSN', function ($query) {
+                        $query->where('qty', '!=', 0);
+                    })
+                    ->whereBetween('inventory_detail.aging_date', [Carbon::now()->subDays(180)->startOfDay(), Carbon::now()->subDays(91)->endOfDay()])
+                    ->get();
+                break;
+            case 3:
+                $productAging = InventoryDetail::with('inventoryPackageItem', 'inventoryPackageItem.inventoryPackageItemSN', 'purchaseOrderDetail', 'purchaseOrderDetail.purchaseOrder')
+                    ->where('qty', '!=', 0)
+                    ->whereHas('inventoryPackageItem.inventoryPackageItemSN', function ($query) {
+                        $query->where('qty', '!=', 0);
+                    })
+                    ->whereBetween('inventory_detail.aging_date', [Carbon::now()->subDays(365)->startOfDay(), Carbon::now()->subDays(181)->endOfDay()])
+                    ->get();
+                break;
+            case 4:
+                $productAging = InventoryDetail::with('inventoryPackageItem', 'inventoryPackageItem.inventoryPackageItemSN', 'purchaseOrderDetail', 'purchaseOrderDetail.purchaseOrder')
+                    ->where('qty', '!=', 0)
+                    ->whereHas('inventoryPackageItem.inventoryPackageItemSN', function ($query) {
+                        $query->where('qty', '!=', 0);
+                    })
+                    ->where('inventory_detail.aging_date', '<', Carbon::now()->subDays(365)->startOfDay())
+                    ->get();
+                break;
+        }
+
+        $data = [
+            'productAging' => $productAging,
+        ];
+
+        $pdf = Pdf::loadView('pdf.dashboard-aging', $data)->setPaper('a4', 'landscape');;
+        return $pdf->stream('Report Dashboard Aging.pdf');
+    }
+
+    public function dashboardAgingDownloadExcel(Request $request)
+    {
+        switch ($request->query('type')) {
+            case 1:
+                $productAging = InventoryDetail::with('inventoryPackageItem', 'inventoryPackageItem.inventoryPackageItemSN', 'purchaseOrderDetail', 'purchaseOrderDetail.purchaseOrder')
+                    ->where('qty', '!=', 0)
+                    ->whereHas('inventoryPackageItem.inventoryPackageItemSN', function ($query) {
+                        $query->where('qty', '!=', 0);
+                    })
+                    ->whereBetween('aging_date', [Carbon::now()->subDays(90)->startOfDay(), Carbon::now()->subDays(0)->endOfDay()])
+                    ->get();
+                break;
+            case 2:
+                $productAging = InventoryDetail::with('inventoryPackageItem', 'inventoryPackageItem.inventoryPackageItemSN', 'purchaseOrderDetail', 'purchaseOrderDetail.purchaseOrder')
+                    ->where('qty', '!=', 0)
+                    ->whereHas('inventoryPackageItem.inventoryPackageItemSN', function ($query) {
+                        $query->where('qty', '!=', 0);
+                    })
+                    ->whereBetween('inventory_detail.aging_date', [Carbon::now()->subDays(180)->startOfDay(), Carbon::now()->subDays(91)->endOfDay()])
+                    ->get();
+                break;
+            case 3:
+                $productAging = InventoryDetail::with('inventoryPackageItem', 'inventoryPackageItem.inventoryPackageItemSN', 'purchaseOrderDetail', 'purchaseOrderDetail.purchaseOrder')
+                    ->where('qty', '!=', 0)
+                    ->whereHas('inventoryPackageItem.inventoryPackageItemSN', function ($query) {
+                        $query->where('qty', '!=', 0);
+                    })
+                    ->whereBetween('inventory_detail.aging_date', [Carbon::now()->subDays(365)->startOfDay(), Carbon::now()->subDays(181)->endOfDay()])
+                    ->get();
+                break;
+            case 4:
+                $productAging = InventoryDetail::with('inventoryPackageItem', 'inventoryPackageItem.inventoryPackageItemSN', 'purchaseOrderDetail', 'purchaseOrderDetail.purchaseOrder')
+                    ->where('qty', '!=', 0)
+                    ->whereHas('inventoryPackageItem.inventoryPackageItemSN', function ($query) {
+                        $query->where('qty', '!=', 0);
+                    })
+                    ->where('inventory_detail.aging_date', '<', Carbon::now()->subDays(365)->startOfDay())
+                    ->get();
+                break;
+        }
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+
+        $sheet->setCellValue('A1', 'Purc Doc');
+        $sheet->setCellValue('B1', 'Sales Doc');
+        $sheet->setCellValue('C1', 'Material');
+        $sheet->setCellValue('D1', 'PO Item Desc');
+        $sheet->setCellValue('E1', 'Prod Hierarchy Desc');
+        $sheet->setCellValue('F1', 'Stock');
+        $sheet->setCellValue('G1', 'Nominal USD');
+        $sheet->setCellValue('H1', 'Nominal IDR');
+        $sheet->setCellValue('I1', 'Aging Date');
+        $sheet->setCellValue('J1', 'Serial Number');
+
+        $column = 2;
+        foreach ($productAging as $product) {
+            $sheet->setCellValue("A" . $column, $product->purchaseOrderDetail->purchaseOrder->purc_doc);
+            $sheet->setCellValue("B" . $column, $product->purchaseOrderDetail->sales_doc);
+            $sheet->setCellValue("C" . $column, $product->purchaseOrderDetail->material);
+            $sheet->setCellValue("D" . $column, $product->purchaseOrderDetail->po_item_desc);
+            $sheet->setCellValue("E" . $column, $product->purchaseOrderDetail->prod_hierarchy_desc);
+            $sheet->setCellValue("F" . $column, $product->qty);
+            $sheet->setCellValue("G" . $column, $product->purchaseOrderDetail->net_order_price * $product->qty);
+            $sheet->setCellValue("H" . $column, $product->purchaseOrderDetail->price_idr * $product->qty);
+            $sheet->setCellValue("I" . $column, $product->aging_date);
+
+            foreach ($product->inventoryPackageItem->inventoryPackageItemSN as $serialNumber) {
+                $sheet->setCellValue("J" . $column, $serialNumber->serial_number);
+                $column++;
+            }
+        }
+
+        $writer = new Xlsx($spreadsheet);
+
+        $response = new StreamedResponse(function() use ($writer) {
+            $writer->save('php://output');
+        });
+
+        $fileName = 'Report Dashboard Aging.xlsx';
+        $response->headers->set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        $response->headers->set('Content-Disposition', "attachment;filename=\"$fileName\"");
+        $response->headers->set('Cache-Control','max-age=0');
+
+        return $response;
     }
 
     // Mobile APP
