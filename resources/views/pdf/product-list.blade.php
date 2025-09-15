@@ -75,10 +75,9 @@
                     <th style="width: 8%;">Purc Doc</th>
                     <th style="width: 8%;">Sales Doc</th>
                     <th>Material</th>
-                    <th>PO Item Desc</th>
-                    <th>Prod Hierarchy Desc</th>
                     <th style="width: 7%; text-align: center;">Stock</th>
-                    <th style="width: 10%;">Nominal</th>
+                    <th style="width: 10%;">Nominal USD</th>
+                    <th style="width: 10%;">Nominal IDR</th>
                     <th style="width: 10%;">Serial Number</th>
                 </tr>
             </thead>
@@ -88,11 +87,14 @@
                         <td style="text-align: center;">{{ $loop->iteration }}</td>
                         <td>{{ $detail->purc_doc }}</td>
                         <td>{{ $detail->sales_doc }}</td>
-                        <td>{{ $detail->material }}</td>
-                        <td>{{ $detail->po_item_desc }}</td>
-                        <td>{{ $detail->prod_hierarchy_desc }}</td>
+                        <td>
+                            <div><b>{{ $detail->material }}</b></div>
+                            <div>{{ $detail->po_item_desc }}</div>
+                            <div><b>{{ $detail->prod_hierarchy_desc }}</b></div>
+                        </td>
                         <td style="text-align: center;">{{ number_format($detail->stock) }}</td>
-                        <td>$ {{ number_format($detail->nominal) }}</td>
+                        <td>${{ number_format($detail->nominal) }}</td>
+                        <td>Rp{{ number_format($detail->nominalIDR) }}</td>
                         <td>
                             @foreach($detail->serialNumber as $serialNumber)
                                 <div>{{ $serialNumber->serial_number }}</div>

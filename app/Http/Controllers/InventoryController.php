@@ -1336,6 +1336,7 @@ class InventoryController extends Controller
                 'purchase_order_detail.prod_hierarchy_desc',
                 DB::raw('SUM(inventory_detail.qty) as stock'),
                 DB::raw('SUM(inventory_detail.qty * purchase_order_detail.net_order_price) as nominal'),
+                DB::raw('SUM(inventory_detail.qty * purchase_order_detail.price_idr) as nominalIDR'),
             ])
             ->groupBy([
                 'purchase_order.purc_doc',
