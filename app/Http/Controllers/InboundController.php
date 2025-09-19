@@ -81,64 +81,119 @@ class InboundController extends Controller
         try {
             DB::beginTransaction();
 
-            foreach ($request->post('purchaseOrder') as $item) {
-                // Check apakah nomor PO sudah ada
-                $checkPO = PurchaseOrder::where('purc_doc', $item['purc_doc'])->first();
+            // 1) Mapping & normalisasi DI AWAL
+            $rows = collect($request->post('purchaseOrder', []))
+                ->map(function ($r) {
+                    // pastikan key ada & tipe aman
+                    return [
+                        'purc_doc'        => trim((string)($r['purc_doc'] ?? '')),
+                        'sales_doc'       => $r['sales_doc'] ?? null,
+                        'item'            => trim((string)($r['item'] ?? '')),
+                        'material'        => trim((string)($r['material'] ?? '')),
+                        'po_item_desc'    => trim((string)($r['po_item_desc'] ?? '')),
+                        'prod_hierarchy_desc' => $r['prod_hierarchy_desc'] ?? null,
+                        'acc_ass_cat'     => $r['acc_ass_cat'] ?? null,
+                        'vendor_name'     => trim((string)($r['vendor_name'] ?? '')),
+                        'customer_name'   => isset($r['customer_name']) ? trim((string)$r['customer_name']) : null,
+                        'stor_loc'        => $r['stor_loc'] ?? null,
+                        'sloc_desc'       => $r['sloc_desc'] ?? null,
+                        'valuation'       => $r['valuation'] ?? null,
+                        'po_item_qty'     => (float)($r['po_item_qty'] ?? 0),
+                        'net_order_price' => (float)($r['net_order_price'] ?? 0),
+                        'currency'        => trim((string)($r['currency'] ?? 'IDR')),
+                        'date'            => $r['date'] ?? null,
+                    ];
+                })
+                ->filter(fn ($r) => $r['purc_doc'] !== '' && $r['item'] !== '');
 
-                if ($checkPO) {
-                    $checkPoDetail = PurchaseOrderDetail::where('purchase_order_id', $checkPO->id)
+            if ($rows->isEmpty()) {
+                DB::commit();
+                return response()->json(['status' => true], 201);
+            }
+
+            // 2) Kelompokkan lebih dulu berdasarkan customer_name
+            $groups = $rows->groupBy(fn ($r) => $r['customer_name'] ?? '__NO_CUSTOMER__');
+
+            // Cache sederhana agar hemat query
+            $vendorCache   = [];
+            $customerCache = [];
+            $poCache       = [];
+
+            $resolveVendor = function (string $name) use (&$vendorCache) {
+                if ($name === '') return null;
+                if (isset($vendorCache[$name])) return $vendorCache[$name];
+                $vendor = Vendor::firstOrCreate(['name' => $name]);
+                return $vendorCache[$name] = $vendor;
+            };
+
+            $resolveCustomer = function (?string $name) use (&$customerCache) {
+                if (!$name) return null; // biarkan null kalau tidak ada customer
+                if (isset($customerCache[$name])) return $customerCache[$name];
+                $customer = Customer::firstOrCreate(['name' => $name]);
+                return $customerCache[$name] = $customer;
+            };
+
+            foreach ($groups as $customerKey => $itemsByCustomer) {
+                $customerName = $customerKey === '__NO_CUSTOMER__' ? null : $customerKey;
+                $customer     = $resolveCustomer($customerName);
+
+                foreach ($itemsByCustomer as $item) {
+                    // --- Ambil/Buat PO (cache per purc_doc) ---
+                    $purcDoc = $item['purc_doc'];
+                    if (!isset($poCache[$purcDoc])) {
+                        // Cek PO ada?
+                        $checkPO = PurchaseOrder::where('purc_doc', $purcDoc)->lockForUpdate()->first();
+
+                        if ($checkPO) {
+                            $poCache[$purcDoc] = $checkPO;
+                        } else {
+                            // Buat vendor lebih dulu
+                            $vendor = $resolveVendor($item['vendor_name']);
+
+                            // NOTE:
+                            // Jika skema kamu mewajibkan purchase_orders.customer_id, kita isi dengan customer pertama
+                            // di grup ini. Jika tidak wajib, kamu bisa set null.
+                            $purchaseOrder = PurchaseOrder::create([
+                                'purc_doc'      => $purcDoc,
+                                'vendor_id'     => $vendor?->id,
+                                'customer_id'   => $customer?->id, // jika nantinya multi-customer per PO, kamu bisa jadikan nullable
+                                'sales_doc_qty' => 0,
+                                'material_qty'  => 0,
+                                'item_qty'      => 0,
+                                'status'        => 'new',
+                                'created_by'    => Auth::id() ?? 1,
+                            ]);
+                            $poCache[$purcDoc] = $purchaseOrder;
+                        }
+                    }
+
+                    /** @var \App\Models\PurchaseOrder $po */
+                    $po = $poCache[$purcDoc];
+
+                    // --- Cek detail item sudah ada? ---
+                    $existsDetail = PurchaseOrderDetail::where('purchase_order_id', $po->id)
                         ->where('item', $item['item'])
                         ->first();
-                    if ($checkPoDetail) {
-                        continue;
-                    }
-                    $this->storePurchaseOrderDetail($checkPO, $item);
-                } else {
-                    // PO belum ada, buat PO terlebih dahulu
-                    $checkVendor = Vendor::where('name', $item['vendor_name'])->first();
-                    if ($checkVendor) {
-                        $vendor = Vendor::find($checkVendor->id);
-                    } else {
-                        $vendor = Vendor::create([
-                            'name' => $item['vendor_name'],
-                        ]);
+
+                    if ($existsDetail) {
+                        continue; // skip jika sudah ada
                     }
 
-                    $checkCustomer = Customer::where('name', $item['customer_name'])->first();
-                    if ($checkCustomer) {
-                        $customer = Customer::find($checkCustomer->id);
-                    } else {
-                        $customer = Customer::create([
-                            'name' => $item['customer_name'],
-                        ]);
-                    }
+                    // Opsional: sisipkan customer_id ke payload detail (jika storePurchaseOrderDetail butuh)
+                    $item['__resolved_customer_id'] = $customer?->id;
 
-                    $purchaseOrder = PurchaseOrder::create([
-                        'purc_doc'          => $item['purc_doc'],
-                        'vendor_id'         => $vendor->id,
-                        'customer_id'       => $customer->id,
-                        'sales_doc_qty'     => 0,
-                        'material_qty'      => 0,
-                        'item_qty'          => 0,
-                        'status'            => 'new',
-                        'created_by'        => Auth::id() ?? 1
-                    ]);
-
-                    $this->storePurchaseOrderDetail($purchaseOrder, $item);
+                    // Simpan detail
+                    $this->storePurchaseOrderDetail($po, $item);
                 }
             }
 
             DB::commit();
-            return response()->json([
-                'status' => true
-            ], 201);
-        } catch (\Exception $err) {
+            return response()->json(['status' => true], 201);
+
+        } catch (\Throwable $err) {
             DB::rollBack();
-            Log::error($err->getMessage());
-            Log::error($err->getLine());
-            return response()->json([
-                'status' => 'error',
-            ], 400);
+            Log::error($err->getMessage(), ['line' => $err->getLine(), 'trace' => $err->getTraceAsString()]);
+            return response()->json(['status' => 'error'], 400);
         }
     }
 
@@ -183,6 +238,7 @@ class InboundController extends Controller
 
         $rawPrice   = (float)($item['net_order_price'] ?? 0);
         $rawCurr    = strtoupper($item['currency'] ?? '');
+        Log::info($item['currency']);
 
         if ($rawPrice > 0 && $usdToIDR > 0) {
             if ($rawCurr === 'USD') {
