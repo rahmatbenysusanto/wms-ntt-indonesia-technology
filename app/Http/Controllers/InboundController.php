@@ -212,48 +212,42 @@ class InboundController extends Controller
 
         $formattedDate = !empty($item['date']) ? Carbon::createFromFormat('Y-m-d', $item['date'])->format('Y-m-d') : Carbon::now()->format('Y-m-d');
 
-        $fxKey = "fx:USD:IDR:{$formattedDate}";
-        $fx = Cache::remember($fxKey, 86400, function () use ($formattedDate) {
-            $resp = Http::retry(3, 200)->timeout(10)->get("https://api.frankfurter.dev/v1/{$formattedDate}", [
-                'base'    => 'USD',
-                'symbols' => 'IDR',
-            ]);
+        $checkCurrencyDate = DB::table('currency')
+            ->where('date', $formattedDate)
+            ->first();
 
-            if ($resp->failed()) {
-                $resp = Http::retry(2, 300)->timeout(10)->get('https://api.frankfurter.dev/v1/latest', [
+        if ($checkCurrencyDate === null) {
+            $client = new Client(['base_uri' => 'https://api.frankfurter.app/']);
+
+            $res = $client->get($formattedDate, [
+                'query' => [
                     'base'    => 'USD',
                     'symbols' => 'IDR',
-                ]);
+                ]
+            ]);
+
+            $payload = json_decode((string) $res->getBody(), true);
+
+            if (!isset($payload['rates']['IDR'])) {
+                throw new \RuntimeException('Rate USD→IDR tidak ditemukan dari Frankfurter');
             }
 
-            $json = $resp->json() ?? [];
-            return [
-                'date' => $json['date'] ?? $formattedDate,
-                'rate' => (float)($json['rates']['IDR'] ?? 0.0),
-            ];
-        });
+            $usdToIdr = (float) $payload['rates']['IDR'];
 
-        $apiDate  = $fx['date'];
-        $usdToIDR = $fx['rate'];
-
-        $rawPrice   = (float)($item['net_order_price'] ?? 0);
-        $rawCurr    = strtoupper($item['currency'] ?? '');
-        Log::info($item['currency']);
-
-        if ($rawPrice > 0 && $usdToIDR > 0) {
-            if ($rawCurr === 'USD') {
-                $netOrderPrice = round($rawPrice, 2);
-                $currency      = 'USD';
-                $priceIDR      = (int) round($rawPrice * $usdToIDR);
-            } else {
-                $netOrderPrice = round($rawPrice / $usdToIDR, 2);
-                $currency      = 'IDR';
-                $priceIDR      = (int) round($rawPrice);
-            }
+            DB::table('currency')->insert([
+                'price' => $usdToIdr,
+                'date'  => $formattedDate,
+            ]);
         } else {
-            $netOrderPrice = 0.0;
-            $currency      = $rawCurr ?: '';
-            $priceIDR      = 0;
+            $usdToIdr = (float) $checkCurrencyDate->price;
+        }
+
+        if (($item['currency'] ?? 'IDR') === 'IDR') {
+            $netOrderPrice = (float) $item['net_order_price'] / $usdToIdr;
+            $priceIDR      = (float) $item['net_order_price'];
+        } else {
+            $netOrderPrice = (float) $item['net_order_price'];
+            $priceIDR      = (float) $item['net_order_price'] * $usdToIdr;
         }
 
         PurchaseOrderDetail::create([
@@ -274,9 +268,9 @@ class InboundController extends Controller
             'valuation'             => $item['valuation'] ?? null,
             'po_item_qty'           => $item['po_item_qty'] ?? null,
             'net_order_price'       => $netOrderPrice,
-            'currency'              => $currency,
+            'currency'              => 'USD',
             'price_idr'             => $priceIDR,
-            'price_date'            => $apiDate,
+            'price_date'            => $formattedDate,
         ]);
 
         $query        = PurchaseOrderDetail::where('purchase_order_id', $checkPO->id);
