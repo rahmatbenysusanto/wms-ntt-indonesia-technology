@@ -37,7 +37,7 @@
                     <div class="text-center mt-sm-5 mb-4 text-white-50">
                         <div>
                             <a href="#" class="d-inline-block auth-logo">
-                                <img src="{{ asset('assets/images/trans-solusindo.png') }}" alt="" height="100">
+                                <img src="{{ asset('assets/images/maximaz-logo.png') }}" alt="" height="60">
                             </a>
                         </div>
                     </div>
@@ -52,7 +52,7 @@
                         <div class="card-body p-4">
                             <div class="text-center mt-2">
                                 <h5 class="text-primary">Login Page</h5>
-                                <p class="text-muted">WMS - Trans Solusindo</p>
+                                <p class="text-muted">Maximaz WMS - Trans Kargo Solusindo</p>
                             </div>
                             <div class="p-2 mt-4">
                                 <form action="{{ route('auth.login') }}" method="POST">
@@ -71,7 +71,7 @@
                                     </div>
 
                                     <div class="mt-4">
-                                        <button class="btn btn-success w-100" type="submit">Login</button>
+                                        <button class="btn btn-primary w-100" type="submit">Login</button>
                                     </div>
                                 </form>
                             </div>
@@ -94,7 +94,7 @@
                 <div class="col-lg-12">
                     <div class="text-center">
                         <p class="mb-0 text-muted">&copy;
-                            <script>document.write(new Date().getFullYear())</script> Trans Kargo Solusindo.
+                            <script>document.write(new Date().getFullYear())</script> Maximaz. Development By Trans Kargo Solusindo.
                         </p>
                     </div>
                 </div>

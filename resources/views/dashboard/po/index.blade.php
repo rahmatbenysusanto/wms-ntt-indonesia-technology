@@ -30,9 +30,9 @@
                             </div>
                             <div class="col-2">
                                 <div>
-                                    <label class="form-label">Client</label>
-                                    <select class="form-control" name="client">
-                                        <option value="">-- Select Client --</option>
+                                    <label class="form-label">Customer</label>
+                                    <select class="form-control select2Customer" name="client">
+                                        <option value="">-- Select Customer --</option>
                                         @foreach($customer as $item)
                                             <option {{ request()->get('client') == $item->name ? 'selected' : '' }} >{{ $item->name }}</option>
                                         @endforeach
@@ -128,4 +128,14 @@
             </div>
         </div>
     </div>
+@endsection
+
+@section('js')
+    <script>
+        $('.select2Customer').select2({
+            placeholder: "-- Select Customer --",
+            allowClear: true,
+            width: '100%'
+        });
+    </script>
 @endsection

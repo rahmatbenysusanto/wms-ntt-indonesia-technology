@@ -36,7 +36,7 @@
                             </div>
                             <div class="col-2">
                                 <label class="form-label">Customer</label>
-                                <select class="form-control" name="customer">
+                                <select class="form-control select2Customer" name="customer">
                                     <option value="">-- Select Customer --</option>
                                     @foreach($customers as $customer)
                                         <option value="{{ $customer->id }}" {{ request()->get('customer') == $customer->id ? 'selected' : '' }}>{{ $customer->name }}</option>
@@ -147,4 +147,14 @@
             </div>
         </div>
     </div>
+@endsection
+
+@section('js')
+    <script>
+        $('.select2Customer').select2({
+            placeholder: "-- Select Customer --",
+            allowClear: true,
+            width: '100%'
+        });
+    </script>
 @endsection
