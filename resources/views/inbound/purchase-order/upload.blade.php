@@ -76,100 +76,332 @@
 @endsection
 
 @section('js')
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    {{-- SweetAlert2 (pastikan ada) --}}
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
+
+    {{-- Penting: JANGAN pakai defer, biar XLSX siap sebelum dipakai --}}
+    <script src="{{ asset('assets/js/xlsx.full.min.js') }}"></script>
+
     <script>
-        localStorage.clear();
+        /* ================= Storage helper (sessionStorage) ================= */
+        const STORAGE_KEY = 'purchaseOrder';
+        const SS = {
+            set(key, val) { try { sessionStorage.setItem(key, JSON.stringify(val)); } catch(e){ console.error('sessionStorage.set', e); } },
+            get(key) { try { const s = sessionStorage.getItem(key); return s ? JSON.parse(s) : null; } catch(e){ console.error('sessionStorage.get', e); return null; } },
+            remove(key) { try { sessionStorage.removeItem(key); } catch(_){} }
+        };
+        SS.remove(STORAGE_KEY); // clear di awal halaman
 
-        function excelDateToJSDate(serial) {
-            const utc_days  = Math.floor(serial - 25569); // 25569 = serial utk 1970-01-01
-            const utc_value = utc_days * 86400; // detik
-            const date_info = new Date(utc_value * 1000);
-
-            return date_info.toISOString().split("T")[0];
-        }
-
-        document.getElementById('uploadBtn').addEventListener('click', function () {
-            const fileInput = document.getElementById('excelFile');
-            const file = fileInput.files[0];
-
-            if (!file) {
-                alert("Silakan pilih file Excel terlebih dahulu.");
+        /* ================= Modal helpers ================= */
+        function showBusyModal(msg = 'Membaca & menyiapkan file…') {
+            if (window.Swal && Swal.isVisible()) {
+                Swal.update({
+                    title: msg,
+                    html: `
+                        <div class="d-flex align-items-center gap-2">
+                          <div class="spinner-border" role="status" aria-hidden="true"></div>
+                          <span class="small text-muted">Mohon tunggu…</span>
+                        </div>
+                    `,
+                    showConfirmButton: false
+                });
                 return;
             }
+            Swal.fire({
+                title: msg,
+                html: `
+                    <div class="d-flex align-items-center gap-2">
+                      <div class="spinner-border" role="status" aria-hidden="true"></div>
+                      <span class="small text-muted">Mohon tunggu…</span>
+                    </div>
+                `,
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                showConfirmButton: false
+            });
+        }
+
+        function showProgressModal(title) {
+            if (window.Swal && Swal.isVisible()) {
+                Swal.update({
+                    title,
+                    html: `
+                        <div id="parseText" class="text-start small mb-2">Starting…</div>
+                        <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" style="height:12px">
+                          <div id="parseBar" class="progress-bar progress-bar-striped progress-bar-animated" style="width:0%"></div>
+                        </div>
+                    `,
+                    showConfirmButton: false
+                });
+            } else {
+                Swal.fire({
+                    title,
+                    html: `
+                        <div id="parseText" class="text-start small mb-2">Starting…</div>
+                        <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" style="height:12px">
+                          <div id="parseBar" class="progress-bar progress-bar-striped progress-bar-animated" style="width:0%"></div>
+                        </div>
+                    `,
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    showConfirmButton: false,
+                    didOpen: () => Swal.showLoading(),
+                });
+            }
+        }
+        function upgradeToProgressModal(title, total){
+            showProgressModal(title);
+            const txt = document.getElementById('parseText');
+            if (txt) txt.textContent = `Processed 0/${total} rows (0%)`;
+        }
+        function updateProgressModal(done, total) {
+            const pct = total ? Math.floor((done/total)*100) : 0;
+            const bar = document.getElementById('parseBar');
+            const txt = document.getElementById('parseText');
+            if (bar) { bar.style.width = pct+'%'; bar.setAttribute('aria-valuenow', pct); bar.textContent = pct+'%'; }
+            if (txt) txt.textContent = `Processed ${done}/${total} rows (${pct}%)`;
+        }
+        function closeProgressModal(){ if (window.Swal && Swal.isVisible()) Swal.close(); }
+        const nextFrame = () => new Promise(r => requestAnimationFrame(r)); // repaint-friendly
+
+        /* ================= Table render ================= */
+        const PREVIEW_LIMIT = 0; // 0 = tampilkan semua
+        function renderTable(rows) {
+            const tbody = document.getElementById("dataUploadFile");
+            const frag = document.createDocumentFragment();
+            let n = 1;
+            const limit = PREVIEW_LIMIT ? Math.min(PREVIEW_LIMIT, rows.length) : rows.length;
+            for (let i=0; i<limit; i++) {
+                const r = rows[i];
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${n++}</td>
+                    <td>${r.purc_doc ?? ''}</td>
+                    <td>${r.sales_doc ?? ''}</td>
+                    <td>${r.item ?? ''}</td>
+                    <td>${r.material ?? ''}</td>
+                    <td>${r.po_item_desc ?? ''}</td>
+                    <td>${r.prod_hierarchy_desc ?? ''}</td>
+                    <td>${r.acc_ass_cat ?? ''}</td>
+                    <td>${r.vendor_name ?? ''}</td>
+                    <td>${r.customer_name ?? ''}</td>
+                    <td>${r.stor_loc ?? ''}</td>
+                    <td>${r.sloc_desc ?? ''}</td>
+                    <td>${r.valuation ?? ''}</td>
+                    <td>${r.po_item_qty ?? ''}</td>
+                    <td>${r.net_order_price ?? ''}</td>
+                    <td>${r.currency ?? ''}</td>`;
+                frag.appendChild(tr);
+            }
+            tbody.innerHTML = '';
+            tbody.appendChild(frag);
+        }
+
+        /* ================= Utils ================= */
+        function toNumber(val){
+            if (val == null) return 0;
+            if (typeof val === 'number') return val;
+            if (typeof val === 'string') {
+                const n = parseFloat(val.replace(/\./g,'').replace(/,/g,'.'));
+                return isNaN(n) ? 0 : n;
+            }
+            return 0;
+        }
+        function excelDateToISO(v){
+            if (typeof v==='number'){
+                const d=new Date((Math.floor(v-25569)*86400)*1000);
+                return d.toISOString().split('T')[0];
+            }
+            if (typeof v==='string' && v.trim()!==''){
+                const d=new Date(v); if(!isNaN(d)) return d.toISOString().split('T')[0];
+                const m=v.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);
+                if (m){ const dd=new Date(+m[3], +m[2]-1, +m[1]); if(!isNaN(dd)) return dd.toISOString().split('T')[0]; }
+            }
+            return '';
+        }
+
+        /* ================= Upload & Parse (client-side) ================= */
+        document.getElementById('uploadBtn').addEventListener('click', async function (evt) {
+            evt.preventDefault();
+            const fileInput = document.getElementById('excelFile');
+            const file = fileInput.files[0];
+            if (!file) { Swal.fire('File belum dipilih','Silakan pilih file Excel terlebih dahulu.','warning'); return; }
+
+            showBusyModal('Membaca & menyiapkan file…');
+            await nextFrame(); await nextFrame();
 
             const reader = new FileReader();
-            reader.onload = function (e) {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, { type: 'array' });
+            reader.onerror = (e) => {
+                console.error('FileReader error', e);
+                closeProgressModal();
+                Swal.fire('Gagal', 'Tidak bisa membaca file. Coba ulangi.', 'error');
+            };
+            reader.onload = async (e) => {
+                try {
+                    await nextFrame();
 
-                // Ambil sheet pertama
-                const firstSheetName = workbook.SheetNames[0];
-                const worksheet = workbook.Sheets[firstSheetName];
+                    const wb = XLSX.read(new Uint8Array(e.target.result), { type:'array' });
+                    const ws = wb.Sheets[wb.SheetNames[0]];
 
-                // Ubah ke JSON
-                const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+                    const json = XLSX.utils.sheet_to_json(ws, {
+                        defval: "", raw: true, blankrows: false
+                    });
 
-                const filteredData = jsonData.map((row) => ({
-                    purc_doc: row["Pur. Doc."],
-                    sales_doc: row["Sales Doc"],
-                    item: row["Item"],
-                    material: row["Material"] = row["Material"].replace(/\./g, ""),
-                    po_item_desc: row["PO Item Desc"],
-                    prod_hierarchy_desc: row["Prod Hierarchy Desc"],
-                    acc_ass_cat: row["Acc Ass Cat"],
-                    vendor_name: row["Vendor name"],
-                    customer_name: row["Customer name"],
-                    stor_loc: row["Stor Loc"],
-                    sloc_desc: row["SLoc Desc"],
-                    valuation: row["Valuation"],
-                    po_item_qty: parseInt(row["PO Itm Qty"]),
-                    net_order_price: row["Net Price"] ?? 0,
-                    currency: row["Crcy"] ?? "",
-                    date: excelDateToJSDate(row["Created On"])
-                }));
+                    // normalisasi header + alias
+                    const norm = s => String(s || "").trim().replace(/\s+/g,' ').replace(/\.$/,'').toLowerCase();
+                    const aliases = {
+                        "pur. doc.": ["pur. doc.", "pur. doc", "pur doc", "purchase doc", "purch doc"],
+                        "sales doc": ["sales doc", "sales document"],
+                        "item": ["item", "itm"],
+                        "material": ["material", "material no", "material number"],
+                        "po item desc": ["po item desc", "po item description", "description"],
+                        "prod hierarchy desc": ["prod hierarchy desc", "product hierarchy desc"],
+                        "acc ass cat": ["acc ass cat", "account assignment cat", "account assignment"],
+                        "vendor name": ["vendor name", "vendor", "supp name", "supplier name"],
+                        "customer name": ["customer name", "customer", "sold-to name"],
+                        "stor loc": ["stor loc", "storage loc", "storage location", "sloc"],
+                        "sloc desc": ["sloc desc", "storage location desc"],
+                        "valuation": ["valuation"],
+                        "po itm qty": ["po itm qty", "po item qty", "quantity", "qty"],
+                        "net price": ["net price", "net order price", "price"],
+                        "crcy": ["crcy", "currency"],
+                        "created on": ["created on", "creation date", "date"]
+                    };
+                    const pickHeader = (key) => {
+                        const list = aliases[key] || [key];
+                        for (const cand of list) {
+                            for (const real in (json[0] || {})) {
+                                if (norm(real) === norm(cand)) return real;
+                            }
+                        }
+                        return null;
+                    };
+                    const H = {
+                        purc_doc:      pickHeader("pur. doc."),
+                        sales_doc:     pickHeader("sales doc"),
+                        item:          pickHeader("item"),
+                        material:      pickHeader("material"),
+                        po_item_desc:  pickHeader("po item desc"),
+                        prod_hier:     pickHeader("prod hierarchy desc"),
+                        acc_ass_cat:   pickHeader("acc ass cat"),
+                        vendor_name:   pickHeader("vendor name"),
+                        customer_name: pickHeader("customer name"),
+                        stor_loc:      pickHeader("stor loc"),
+                        sloc_desc:     pickHeader("sloc desc"),
+                        valuation:     pickHeader("valuation"),
+                        po_itm_qty:    pickHeader("po itm qty"),
+                        net_price:     pickHeader("net price"),
+                        crcy:          pickHeader("crcy"),
+                        created_on:    pickHeader("created on")
+                    };
 
-                viewListData(filteredData);
+                    const hasAny = (row, keys) => keys.some(k => {
+                        const h = H[k]; if (!h) return false;
+                        return String(row[h] ?? "").trim() !== "";
+                    });
 
-                localStorage.setItem('purchaseOrder', JSON.stringify(filteredData));
+                    const dataRows = json.filter(r =>
+                        hasAny(r, ["purc_doc","sales_doc","item","material","po_item_desc"])
+                    );
+                    const total = dataRows.length;
+
+                    upgradeToProgressModal('Parsing Excel', total);
+
+                    const poCache = [];
+                    const CHUNK = 1000;
+                    const STEP_UPDATE = 200;
+                    let done = 0;
+
+                    for (let i = 0; i < dataRows.length; i++) {
+                        const r = dataRows[i];
+                        const get = (h) => (h && r[h] != null) ? r[h] : "";
+                        poCache.push({
+                            purc_doc: get(H.purc_doc),
+                            sales_doc: get(H.sales_doc),
+                            item: get(H.item),
+                            material: String(get(H.material)).replace(/\./g, ""),
+                            po_item_desc: get(H.po_item_desc),
+                            prod_hierarchy_desc: get(H.prod_hier),
+                            acc_ass_cat: get(H.acc_ass_cat),
+                            vendor_name: get(H.vendor_name),
+                            customer_name: get(H.customer_name),
+                            stor_loc: get(H.stor_loc),
+                            sloc_desc: get(H.sloc_desc),
+                            valuation: get(H.valuation),
+                            po_item_qty: parseInt((() => {
+                                const v = get(H.po_itm_qty); return typeof v === "number" ? v : toNumber(v);
+                            })()) || 0,
+                            net_order_price: (() => {
+                                const v = get(H.net_price); return typeof v === "number" ? v : toNumber(v);
+                            })(),
+                            currency: get(H.crcy),
+                            date: (() => { const v = get(H.created_on); return excelDateToISO(v); })()
+                        });
+
+                        done++;
+                        if (done % STEP_UPDATE === 0) updateProgressModal(done, total);
+                        if (done % CHUNK === 0) await nextFrame();
+                    }
+                    updateProgressModal(total, total);
+
+                    SS.set(STORAGE_KEY, poCache);
+                    renderTable(poCache);
+                    closeProgressModal();
+
+                } catch (err) {
+                    console.error(err);
+                    closeProgressModal();
+                    Swal.fire('Gagal', 'Parsing gagal. Pastikan format Excel benar.', 'error');
+                }
             };
 
             reader.readAsArrayBuffer(file);
         });
 
-        function viewListData(filteredData) {
-            const tbody = document.getElementById("dataUploadFile");
-            let html = "";
-            let number = 1;
-
-            filteredData.forEach(row => {
-                html += `
-                    <tr>
-                        <td>${number++}</td>
-                        <td>${row.purc_doc}</td>
-                        <td>${row.sales_doc}</td>
-                        <td>${row.item}</td>
-                        <td>${row.material}</td>
-                        <td>${row.po_item_desc}</td>
-                        <td>${row.prod_hierarchy_desc}</td>
-                        <td>${row.acc_ass_cat}</td>
-                        <td>${row.vendor_name}</td>
-                        <td>${row.customer_name}</td>
-                        <td>${row.stor_loc}</td>
-                        <td>${row.sloc_desc}</td>
-                        <td>${row.valuation}</td>
-                        <td>${row.po_item_qty}</td>
-                        <td>${row.net_order_price}</td>
-                        <td>${row.currency}</td>
-                    </tr>
-                `;
+        /* ================= Import: kirim per-batch dari sessionStorage ================= */
+        async function sendBatchAjax(batch) {
+            const res = await fetch(`{{ route('inbound.purchase-order-upload-process') }}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                body: JSON.stringify({ purchaseOrder: batch })
             });
-
-            tbody.innerHTML = html;
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            return res.json();
         }
-    </script>
 
-    <script>
-        function processImport() {
+        // ====== Loading state untuk button Import (id="processImport") ======
+        function setImportBusy(busy) {
+            const btn = document.getElementById('processImport');
+            if (!btn) return;
+            if (busy) {
+                btn._origHTML = btn.innerHTML;
+                btn.classList.add('disabled');
+                btn.setAttribute('aria-disabled','true');
+                btn.innerHTML = `<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Memproses…`;
+            } else {
+                if (btn._origHTML) btn.innerHTML = btn._origHTML;
+                btn.classList.remove('disabled');
+                btn.removeAttribute('aria-disabled');
+            }
+        }
+        function setBatchText(batchNow, batchTotal, sent, total) {
+            const txt = document.getElementById('parseText');
+            if (!txt) return;
+            txt.innerHTML = `
+                <div class="d-flex justify-content-between">
+                    <span>Batch: <strong>${batchNow}/${batchTotal}</strong></span>
+                    <span>Rows: <strong>${sent}/${total}</strong></span>
+                </div>
+            `;
+        }
+
+        // ====== Event tombol Import (ID = processImport) ======
+        document.getElementById('processImport')?.addEventListener('click', async function(e){
+            e.preventDefault();
+
+            const allData = SS.get(STORAGE_KEY) || [];
+            if (!allData.length) { Swal.fire('Tidak ada data','Silakan upload & parse file terlebih dahulu.','info'); return; }
+
             Swal.fire({
                 title: "Are you sure?",
                 text: "Import Purchase Order",
@@ -182,74 +414,54 @@
                 confirmButtonText: "Yes, Import it!",
                 buttonsStyling: false,
                 showCloseButton: true
-            }).then(function(t) {
-                if (t.value) {
-                    const allData = JSON.parse(localStorage.getItem('purchaseOrder')) ?? [];
-                    const batchSize = 100;
-                    const totalBatches = Math.ceil(allData.length / batchSize);
-                    let currentBatch = 0;
+            }).then(async (t)=>{
+                if (!t.value) return;
 
-                    async function sendNextBatch() {
-                        if (currentBatch >= totalBatches) {
-                            Swal.fire({
-                                title: 'Success!',
-                                text: 'Import Purchase Order successfully!',
-                                icon: 'success',
-                                confirmButtonText: 'OK',
-                                customClass: {
-                                    confirmButton: "btn btn-primary w-xs mt-2"
-                                },
-                                buttonsStyling: false
-                            }).then(() => {
-                                window.location.href = '{{ route('inbound.purchase-order') }}';
-                            });
-                            return;
-                        }
+                const total = allData.length;
+                const batchSize = 1000;
+                const totalBatches = Math.ceil(total / batchSize);
+                let sent = 0;
 
-                        const batchData = allData.slice(currentBatch * batchSize, (currentBatch + 1) * batchSize);
+                setImportBusy(true);
+                showProgressModal('Importing to Server');
+                updateProgressModal(0, total);
+                setBatchText(0, totalBatches, 0, total);
 
-                        Swal.fire({
-                            title: `Processing batch ${currentBatch + 1} of ${totalBatches}`,
-                            html: 'Please wait...',
-                            allowOutsideClick: false,
-                            allowEscapeKey: false,
-                            didOpen: () => {
-                                Swal.showLoading();
-                            }
-                        });
+                const startedAt = Date.now();
 
-                        try {
-                            await $.ajax({
-                                url: '{{ route('inbound.purchase-order-upload-process') }}',
-                                method: 'POST',
-                                contentType: 'application/json',
-                                data: JSON.stringify({
-                                    _token: '{{ csrf_token() }}',
-                                    purchaseOrder: batchData
-                                })
-                            });
-
-                            currentBatch++;
-                            await sendNextBatch();
-
-                        } catch (error) {
-                            Swal.fire({
-                                title: 'Error!',
-                                text: `Batch ${currentBatch + 1} failed to import. Please try again.`,
-                                icon: 'error',
-                                confirmButtonText: 'OK',
-                                customClass: {
-                                    confirmButton: "btn btn-danger w-xs mt-2"
-                                },
-                                buttonsStyling: false
-                            });
-                        }
+                try {
+                    for (let i=0, b=1; i<total; i+=batchSize, b++) {
+                        const batch = allData.slice(i, i+batchSize);
+                        setBatchText(b, totalBatches, sent, total);
+                        await sendBatchAjax(batch);
+                        sent += batch.length;
+                        updateProgressModal(sent, total);
+                        setBatchText(b, totalBatches, sent, total);
+                        await nextFrame(); // smooth UI
                     }
 
-                    sendNextBatch();
+                    const durSec = Math.max(1, Math.round((Date.now() - startedAt)/1000));
+                    closeProgressModal();
+                    Swal.fire({
+                        title: 'Success!',
+                        html: `Import Purchase Order successfully!<br><small class="text-muted">Duration: ${durSec}s</small>`,
+                        icon: 'success',
+                        confirmButtonText: 'OK',
+                        customClass: { confirmButton: "btn btn-primary w-xs mt-2" },
+                        buttonsStyling: false
+                    }).then(()=>{
+                        SS.remove(STORAGE_KEY);
+                        window.location.href = '{{ route('inbound.purchase-order') }}';
+                    });
+
+                } catch (err) {
+                    console.error(err);
+                    closeProgressModal();
+                    Swal.fire('Error','Import gagal pada salah satu batch.','error');
+                } finally {
+                    setImportBusy(false);
                 }
             });
-        }
+        });
     </script>
-
 @endsection

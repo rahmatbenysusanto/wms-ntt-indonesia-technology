@@ -633,6 +633,7 @@ class InboundController extends Controller
                 $status = $request->query('status') == 'Put Away' ? 'open' : 'done';
                 $query->where('status', $status);
             })
+            ->where('qty_item', '!=', 0)
             ->latest()
             ->paginate(10);
 
