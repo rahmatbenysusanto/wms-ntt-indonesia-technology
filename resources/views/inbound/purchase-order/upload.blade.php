@@ -76,7 +76,7 @@
 @endsection
 
 @section('js')
-    {{-- SweetAlert2 (pastikan ada) --}}
+    {{-- Pastikan Swal ada --}}
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
 
     {{-- Penting: JANGAN pakai defer, biar XLSX siap sebelum dipakai --}}
@@ -95,6 +95,7 @@
         /* ================= Modal helpers ================= */
         function showBusyModal(msg = 'Membaca & menyiapkan file…') {
             if (window.Swal && Swal.isVisible()) {
+                // kalau sudah ada swal terbuka, update saja
                 Swal.update({
                     title: msg,
                     html: `
@@ -150,7 +151,7 @@
             }
         }
         function upgradeToProgressModal(title, total){
-            showProgressModal(title);
+            showProgressModal(title); // pastikan struktur bar ada
             const txt = document.getElementById('parseText');
             if (txt) txt.textContent = `Processed 0/${total} rows (0%)`;
         }
@@ -164,8 +165,10 @@
         function closeProgressModal(){ if (window.Swal && Swal.isVisible()) Swal.close(); }
         const nextFrame = () => new Promise(r => requestAnimationFrame(r)); // repaint-friendly
 
+        /* ================= Konfigurasi preview (0 = tampilkan semua) ================= */
+        const PREVIEW_LIMIT = 0;
+
         /* ================= Table render ================= */
-        const PREVIEW_LIMIT = 0; // 0 = tampilkan semua
         function renderTable(rows) {
             const tbody = document.getElementById("dataUploadFile");
             const frag = document.createDocumentFragment();
@@ -219,17 +222,43 @@
             }
             return '';
         }
+        function mapRowByIndex(row, idx) {
+            const materialRaw = row[idx['Material']];
+            return {
+                purc_doc: row[idx['Pur. Doc.']],
+                sales_doc: row[idx['Sales Doc']],
+                item: row[idx['Item']],
+                material: String(materialRaw ?? '').replace(/\./g,''),
+                po_item_desc: row[idx['PO Item Desc']],
+                prod_hierarchy_desc: row[idx['Prod Hierarchy Desc']],
+                acc_ass_cat: row[idx['Acc Ass Cat']],
+                vendor_name: row[idx['Vendor name']],
+                customer_name: row[idx['Customer name']],
+                stor_loc: row[idx['Stor Loc']],
+                sloc_desc: row[idx['SLoc Desc']],
+                valuation: row[idx['Valuation']],
+                po_item_qty: parseInt(toNumber(row[idx['PO Itm Qty']])) || 0,
+                net_order_price: toNumber(row[idx['Net Price']]),
+                currency: row[idx['Crcy']],
+                date: excelDateToISO(row[idx['Created On']])
+            };
+        }
 
-        /* ================= Upload & Parse (client-side) ================= */
+        /* ================= Upload / Parse flow (2 tahap modal) ================= */
+        SS.remove(STORAGE_KEY);
+
         document.getElementById('uploadBtn').addEventListener('click', async function (evt) {
-            evt.preventDefault();
+            evt.preventDefault(); // kalau tombolnya <a>, cegah navigasi
             const fileInput = document.getElementById('excelFile');
             const file = fileInput.files[0];
             if (!file) { Swal.fire('File belum dipilih','Silakan pilih file Excel terlebih dahulu.','warning'); return; }
 
+            // Tahap 1: Tampilkan spinner, lalu beri waktu browser untuk render
             showBusyModal('Membaca & menyiapkan file…');
-            await nextFrame(); await nextFrame();
+            await nextFrame();           // 1 frame
+            await nextFrame();           // +1 frame (beberapa browser butuh 2 frame utk render modal)
 
+            // Mulai baca file (asinkron, tidak menghambat render spinner)
             const reader = new FileReader();
             reader.onerror = (e) => {
                 console.error('FileReader error', e);
@@ -238,16 +267,21 @@
             };
             reader.onload = async (e) => {
                 try {
+                    // beri napas 1 frame biar spinner terlihat
                     await nextFrame();
 
+                    // Parse workbook
                     const wb = XLSX.read(new Uint8Array(e.target.result), { type:'array' });
                     const ws = wb.Sheets[wb.SheetNames[0]];
 
+                    // === 1) Baca sebagai JSON baris-objek (stabil), JANGAN 2D-array
                     const json = XLSX.utils.sheet_to_json(ws, {
-                        defval: "", raw: true, blankrows: false
+                        defval: "",   // kosong jadi string kosong (bukan undefined)
+                        raw: true,    // angka/tanggal tetap mentah, kita olah sendiri
+                        blankrows: false
                     });
 
-                    // normalisasi header + alias
+                    // === 2) Helper: normalisasi & ambil kolom (toleran variasi header)
                     const norm = s => String(s || "").trim().replace(/\s+/g,' ').replace(/\.$/,'').toLowerCase();
                     const aliases = {
                         "pur. doc.": ["pur. doc.", "pur. doc", "pur doc", "purchase doc", "purch doc"],
@@ -267,15 +301,19 @@
                         "crcy": ["crcy", "currency"],
                         "created on": ["created on", "creation date", "date"]
                     };
+                    // buat peta dari header normalisasi -> header asli yang ada di file
+                    const headerSet = new Set(Object.keys(json[0] || {}).map(norm));
                     const pickHeader = (key) => {
                         const list = aliases[key] || [key];
                         for (const cand of list) {
+                            // coba cocokkan langsung
                             for (const real in (json[0] || {})) {
-                                if (norm(real) === norm(cand)) return real;
+                                if (norm(real) === norm(cand)) return real; // kembalikan nama kolom asli
                             }
                         }
                         return null;
                     };
+
                     const H = {
                         purc_doc:      pickHeader("pur. doc."),
                         sales_doc:     pickHeader("sales doc"),
@@ -295,6 +333,7 @@
                         created_on:    pickHeader("created on")
                     };
 
+                    // === 3) Baris valid = minimal ada isi di salah satu kolom KUNCI
                     const hasAny = (row, keys) => keys.some(k => {
                         const h = H[k]; if (!h) return false;
                         return String(row[h] ?? "").trim() !== "";
@@ -303,10 +342,13 @@
                     const dataRows = json.filter(r =>
                         hasAny(r, ["purc_doc","sales_doc","item","material","po_item_desc"])
                     );
+
                     const total = dataRows.length;
 
+                    // === 4) Ubah modal menjadi progress bar
                     upgradeToProgressModal('Parsing Excel', total);
 
+                    // === 5) Map + progress (chunked)
                     const poCache = [];
                     const CHUNK = 1000;
                     const STEP_UPDATE = 200;
@@ -315,6 +357,7 @@
                     for (let i = 0; i < dataRows.length; i++) {
                         const r = dataRows[i];
                         const get = (h) => (h && r[h] != null) ? r[h] : "";
+
                         poCache.push({
                             purc_doc: get(H.purc_doc),
                             sales_doc: get(H.sales_doc),
@@ -329,13 +372,20 @@
                             sloc_desc: get(H.sloc_desc),
                             valuation: get(H.valuation),
                             po_item_qty: parseInt((() => {
-                                const v = get(H.po_itm_qty); return typeof v === "number" ? v : toNumber(v);
+                                const v = get(H.po_itm_qty);
+                                if (typeof v === "number") return v;
+                                return toNumber(v);
                             })()) || 0,
                             net_order_price: (() => {
-                                const v = get(H.net_price); return typeof v === "number" ? v : toNumber(v);
+                                const v = get(H.net_price);
+                                if (typeof v === "number") return v;
+                                return toNumber(v);
                             })(),
                             currency: get(H.crcy),
-                            date: (() => { const v = get(H.created_on); return excelDateToISO(v); })()
+                            date: (() => {
+                                const v = get(H.created_on);
+                                return excelDateToISO(v);
+                            })()
                         });
 
                         done++;
@@ -344,6 +394,7 @@
                     }
                     updateProgressModal(total, total);
 
+                    // === 6) Simpan SEKALI ke sessionStorage + render
                     SS.set(STORAGE_KEY, poCache);
                     renderTable(poCache);
                     closeProgressModal();
@@ -355,6 +406,7 @@
                 }
             };
 
+            // Mulai benar-benar membaca file SETELAH spinner tampil & dirender
             reader.readAsArrayBuffer(file);
         });
 
@@ -369,39 +421,7 @@
             return res.json();
         }
 
-        // ====== Loading state untuk button Import (id="processImport") ======
-        function setImportBusy(busy) {
-            const btn = document.getElementById('processImport');
-            if (!btn) return;
-            if (busy) {
-                btn._origHTML = btn.innerHTML;
-                btn.classList.add('disabled');
-                btn.setAttribute('aria-disabled','true');
-                btn.innerHTML = `<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Memproses…`;
-            } else {
-                if (btn._origHTML) btn.innerHTML = btn._origHTML;
-                btn.classList.remove('disabled');
-                btn.removeAttribute('aria-disabled');
-            }
-        }
-        function setBatchText(batchNow, batchTotal, sent, total) {
-            const txt = document.getElementById('parseText');
-            if (!txt) return;
-            txt.innerHTML = `
-                <div class="d-flex justify-content-between">
-                    <span>Batch: <strong>${batchNow}/${batchTotal}</strong></span>
-                    <span>Rows: <strong>${sent}/${total}</strong></span>
-                </div>
-            `;
-        }
-
-        // ====== Event tombol Import (ID = processImport) ======
-        document.getElementById('processImport')?.addEventListener('click', async function(e){
-            e.preventDefault();
-
-            const allData = SS.get(STORAGE_KEY) || [];
-            if (!allData.length) { Swal.fire('Tidak ada data','Silakan upload & parse file terlebih dahulu.','info'); return; }
-
+        window.processImport = function () {
             Swal.fire({
                 title: "Are you sure?",
                 text: "Import Purchase Order",
@@ -417,34 +437,28 @@
             }).then(async (t)=>{
                 if (!t.value) return;
 
+                const allData = SS.get(STORAGE_KEY) || [];
+                if (!allData.length) { Swal.fire('Tidak ada data','Silakan upload & parse file terlebih dahulu.','info'); return; }
+
                 const total = allData.length;
                 const batchSize = 1000;
-                const totalBatches = Math.ceil(total / batchSize);
                 let sent = 0;
 
-                setImportBusy(true);
                 showProgressModal('Importing to Server');
                 updateProgressModal(0, total);
-                setBatchText(0, totalBatches, 0, total);
-
-                const startedAt = Date.now();
 
                 try {
-                    for (let i=0, b=1; i<total; i+=batchSize, b++) {
+                    for (let i=0; i<total; i+=batchSize) {
                         const batch = allData.slice(i, i+batchSize);
-                        setBatchText(b, totalBatches, sent, total);
                         await sendBatchAjax(batch);
                         sent += batch.length;
                         updateProgressModal(sent, total);
-                        setBatchText(b, totalBatches, sent, total);
-                        await nextFrame(); // smooth UI
+                        await nextFrame();
                     }
-
-                    const durSec = Math.max(1, Math.round((Date.now() - startedAt)/1000));
                     closeProgressModal();
                     Swal.fire({
                         title: 'Success!',
-                        html: `Import Purchase Order successfully!<br><small class="text-muted">Duration: ${durSec}s</small>`,
+                        text: 'Import Purchase Order successfully!',
                         icon: 'success',
                         confirmButtonText: 'OK',
                         customClass: { confirmButton: "btn btn-primary w-xs mt-2" },
@@ -453,15 +467,13 @@
                         SS.remove(STORAGE_KEY);
                         window.location.href = '{{ route('inbound.purchase-order') }}';
                     });
-
                 } catch (err) {
                     console.error(err);
                     closeProgressModal();
                     Swal.fire('Error','Import gagal pada salah satu batch.','error');
-                } finally {
-                    setImportBusy(false);
                 }
             });
-        });
+        };
     </script>
 @endsection
+
