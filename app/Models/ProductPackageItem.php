@@ -28,6 +28,6 @@ class ProductPackageItem extends Model
 
     public function productPackageItemSn(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
-        return $this->hasMany(ProductPackageItemSn::class, 'product_package_item_id');
+        return $this->hasMany(ProductPackageItemSN::class, 'product_package_item_id');
     }
 }
