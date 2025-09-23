@@ -189,18 +189,37 @@
                         </div>
                     </div>
 
-                    <table class="table table-striped align-middle">
-                        <thead>
-                            <tr>
-                                <th>#</th>
-                                <th>Serial Number</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody id="listSerialNumber">
+                    <div class="row">
+                        <div class="col-6">
+                            <h5>List Serial Number Available</h5>
+                            <table class="table table-striped align-middle">
+                                <thead>
+                                <tr>
+                                    <th>Serial Number</th>
+                                    <th>Action</th>
+                                </tr>
+                                </thead>
+                                <tbody id="listSerialNumberAvailableCCW">
 
-                        </tbody>
-                    </table>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="col-6">
+                            <h5>List Serial Number SO</h5>
+                            <table class="table table-striped align-middle">
+                                <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Serial Number</th>
+                                    <th>Action</th>
+                                </tr>
+                                </thead>
+                                <tbody id="listSerialNumber">
+
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
 
                     <input type="hidden" id="detailSN_index">
                     <input type="hidden" id="detailSN_index_sales_doc">
@@ -346,8 +365,18 @@
                     salesDoc: [],
                     listSalesDoc: [],
                     purchaseOrderDetailId: null,
-                    putAwayStep: 1
+                    putAwayStep: 1,
+                    snAvailable: []
                 }));
+
+                filteredData.forEach((data) => {
+                    data.serialNumber.forEach((sn) => {
+                        data.snAvailable.push({
+                            serialNumber: sn,
+                            status: true
+                        })
+                    });
+                });
 
                 localStorage.setItem('ccw', JSON.stringify(filteredData));
                 compareSAPCCW();
@@ -550,6 +579,14 @@
         function hapusSalesDoc(index, indexSalesDoc, idPoDetail) {
             const sap = JSON.parse(localStorage.getItem('sap')) ?? [];
             const compare = JSON.parse(localStorage.getItem('compare')) ?? [];
+            const ccw = JSON.parse(localStorage.getItem('ccw')) ?? [];
+
+            // Kembalikan Serial Number
+            const serialNumber = compare[index].salesDoc[indexSalesDoc].serialNumber;
+            serialNumber.forEach((item) => {
+                const change = ccw[index].snAvailable.find((sn) =>sn.serialNumber === item);
+                change.status = true;
+            });
 
             // Hapus Sales Doc didata CCW
             const findCcwData = compare[index].salesDoc[indexSalesDoc];
@@ -562,6 +599,7 @@
 
             localStorage.setItem('sap', JSON.stringify(sap));
             localStorage.setItem('compare', JSON.stringify(compare));
+            localStorage.setItem('ccw', JSON.stringify(ccw));
 
             viewCompareSAPCCW();
         }
@@ -680,7 +718,7 @@
                     <tr>
                         <td>${number}</td>
                         <td><input type="text" class="form-control" value="${item}" onchange="changeSerialNumber(${index}, ${indexSalesDoc}, ${indexDetail}, this.value)" placeholder="N/A"></td>
-                        <td><a class="btn btn-danger btn-sm" onclick="deleteSerialNumber(${index}, ${indexSalesDoc}, ${indexDetail})">Delete</a></td>
+                        <td><a class="btn btn-danger btn-sm" onclick="deleteSerialNumber(${index}, ${indexSalesDoc}, ${indexDetail}, '${item}')">Delete</a></td>
                     </tr>
                 `;
 
@@ -689,6 +727,27 @@
 
             document.getElementById('detailSN_qty_scan_serial_number').innerText = serialNumber.length;
             document.getElementById('listSerialNumber').innerHTML = html;
+
+            // View SN Available
+            const ccw = JSON.parse(localStorage.getItem('ccw'));
+            const data = ccw[index];
+
+            let htmlSN = '';
+            (data.snAvailable).forEach((item) => {
+                let button = '';
+                if (item.status === true) {
+                    button = `<a class="btn btn-primary btn-sm" onclick="selectSnAvailable('${item.serialNumber}')">Select SN</a>`;
+                }
+
+                htmlSN += `
+                    <tr>
+                        <td>${item.serialNumber}</td>
+                        <td>${button}</td>
+                    </tr>
+                `;
+            });
+
+            document.getElementById('listSerialNumberAvailableCCW').innerHTML = htmlSN;
         }
 
         function addManualSN() {
@@ -716,7 +775,7 @@
             viewSerialNumber(index, indexSalesDoc);
         }
 
-        function deleteSerialNumber(index, indexSalesDoc, indexDetail) {
+        function deleteSerialNumber(index, indexSalesDoc, indexDetail, sn) {
             const compare = JSON.parse(localStorage.getItem('compare')) ?? [];
             const serialNumber = JSON.parse(localStorage.getItem('serialNumber')) ?? [];
 
@@ -726,6 +785,17 @@
 
             localStorage.setItem('compare', JSON.stringify(compare));
             localStorage.setItem('serialNumber', JSON.stringify(serialNumber));
+
+            const ccw = JSON.parse(localStorage.getItem('ccw'));
+            const data = ccw[index];
+
+            (data.snAvailable).forEach((item) => {
+                if (item.serialNumber === sn) {
+                    item.status = true;
+                }
+            });
+
+            localStorage.setItem('ccw', JSON.stringify(ccw));
 
             viewSerialNumber(index, indexSalesDoc);
         }
@@ -948,6 +1018,66 @@
                 .catch(error => {
                     console.error('❌ Upload gagal:', error);
                 });
+        }
+
+        function selectSnAvailable(value) {
+            const index = document.getElementById('detailSN_index').value;
+            const indexSalesDoc = document.getElementById('detailSN_index_sales_doc').value;
+
+            const compare = JSON.parse(localStorage.getItem('compare')) ?? [];
+            let serialNumber = JSON.parse(localStorage.getItem('serialNumber')) ?? [];
+
+            if (serialNumber.length === parseInt(compare[index].salesDoc[indexSalesDoc].qty)) {
+                Swal.fire({
+                    title: 'Warning!',
+                    text: 'qty serial number exceeds qty product',
+                    icon: 'error'
+                });
+                return true;
+            }
+
+            const checkSN = serialNumber.find((item) => item === value);
+            if (checkSN != null) {
+                document.getElementById('scanSerialNumberErrorMessage').innerText = "Serial number is already in the list";
+                document.getElementById('scanSerialNumberError').style.display = "block";
+
+                setTimeout(() => {
+                    document.getElementById('scanSerialNumberError').style.display = "none";
+                }, 3000);
+
+                const sound = new Audio("{{ asset('assets/sound/error.mp3') }}");
+                sound.play();
+
+                document.getElementById('scanSerialNumber').value = "";
+                document.getElementById('scanSerialNumber').focus();
+
+                return true;
+            }
+
+            serialNumber.push(value);
+            compare[index].salesDoc[indexSalesDoc].serialNumber = serialNumber;
+
+            localStorage.setItem('compare', JSON.stringify(compare));
+            localStorage.setItem('serialNumber', JSON.stringify(serialNumber));
+
+            const sound = new Audio("{{ asset('assets/sound/scan.mp3') }}");
+            sound.play();
+
+            const ccw = JSON.parse(localStorage.getItem('ccw'));
+            const data = ccw[index];
+
+            (data.snAvailable).forEach((item) => {
+                if (item.serialNumber === value) {
+                    item.status = false;
+                }
+            });
+
+            localStorage.setItem('ccw', JSON.stringify(ccw));
+
+            viewSerialNumber(index, indexSalesDoc);
+            document.getElementById('scanSerialNumber').value = "";
+            document.getElementById('scanSerialNumber').focus();
+            viewCompareSAPCCW();
         }
 
         document.getElementById('scanSerialNumber').addEventListener('keydown', function(e) {
