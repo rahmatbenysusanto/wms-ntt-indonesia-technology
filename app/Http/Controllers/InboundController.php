@@ -915,29 +915,29 @@ class InboundController extends Controller
             $grouped = [];
             $parents = [];
 
-            foreach ($compare as $item) {
-                foreach ($item['salesDoc'] as $so) {
-                    if ($so['manual'] == true) {
-                        $product = Product::where('material', $so['sap']['material'])->first();
-                        if ($product == null) {
+            foreach ($compare as $i => $item) {
+                foreach ($item['salesDoc'] as $j => $so) {
+                    if ($so['manual'] === true || $so['manual'] === 'true') {
+                        $product = Product::where('material', $so['sap']['material'] ?? null)->first();
+                        if ($product === null) {
                             $product = Product::create([
-                                'material'              => $so['sap']['material'],
-                                'po_item_desc'          => $so['sap']['poItemDesc'],
-                                'prod_hierarchy_desc'   => '-'
+                                'material'            => $so['sap']['material'] ?? null,
+                                'po_item_desc'        => $so['sap']['poItemDesc'] ?? null,
+                                'prod_hierarchy_desc' => '-',
                             ]);
                         }
-                        $produkId = $product->id;
 
                         $createSO = PurchaseOrderDetail::create([
                             'purchase_order_id' => $request->post('purchaseOrderId'),
-                            'produk_id'         => $produkId,
+                            'product_id'        => $product->id,
                             'status'            => 'new',
-                            'sales_doc'         => $so['salesDoc'],
+                            'sales_doc'         => $so['salesDoc'] ?? null,
                             'item'              => 0,
-                            'material'          => $so['sap']['material'],
-                            'po_item_desc'      => $so['sap']['poItemDesc'],
+                            'material'          => $so['sap']['material'] ?? null,
+                            'po_item_desc'      => $so['sap']['poItemDesc'] ?? null,
                         ]);
-                        $so['id'] = $createSO->id;
+
+                        $compare[$i]['salesDoc'][$j]['id'] = $createSO->id;
                     }
                 }
             }

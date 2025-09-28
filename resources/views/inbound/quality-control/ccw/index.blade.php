@@ -191,13 +191,16 @@
 
                     <div class="row">
                         <div class="col-6">
-                            <h5>List Serial Number Available</h5>
+                            <div class="d-flex justify-content-between">
+                                <h5>List Serial Number Available</h5>
+                                <a class="btn btn-danger btn-sm" onclick="pilihSemuaSN()">Pilih Semua SN</a>
+                            </div>
                             <table class="table table-striped align-middle">
                                 <thead>
-                                <tr>
-                                    <th>Serial Number</th>
-                                    <th>Action</th>
-                                </tr>
+                                    <tr>
+                                        <th>Serial Number</th>
+                                        <th>Action</th>
+                                    </tr>
                                 </thead>
                                 <tbody id="listSerialNumberAvailableCCW">
 
@@ -223,6 +226,7 @@
 
                     <input type="hidden" id="detailSN_index">
                     <input type="hidden" id="detailSN_index_sales_doc">
+                    <input type="hidden" id="detailSN_ccw_index">
                 </div>
             </div>
         </div>
@@ -819,6 +823,7 @@
                 `;
             });
 
+            document.getElementById('detailSN_ccw_index').value = index;
             document.getElementById('listSerialNumberAvailableCCW').innerHTML = htmlSN;
         }
 
@@ -1291,6 +1296,18 @@
                 }
             }
         });
+
+        function pilihSemuaSN() {
+            const ccw = JSON.parse(localStorage.getItem('ccw')) ?? [];
+            const indexCCW = document.getElementById('detailSN_ccw_index').value;
+
+            const serialNumber = ccw[indexCCW].snAvailable;
+            serialNumber.forEach((item) => {
+                if (item.status === true) {
+                    selectSnAvailable(item.serialNumber);
+                }
+            });
+        }
 
         // Manual Sales Doc
         function manualSalesDoc(index) {
