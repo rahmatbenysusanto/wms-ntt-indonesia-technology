@@ -916,6 +916,33 @@ class InboundController extends Controller
             $parents = [];
 
             foreach ($compare as $item) {
+                foreach ($item['salesDoc'] as $so) {
+                    if ($so['manual'] == true) {
+                        $product = Product::where('material', $so['sap']['material'])->first();
+                        if ($product == null) {
+                            $product = Product::create([
+                                'material'              => $so['sap']['material'],
+                                'po_item_desc'          => $so['sap']['poItemDesc'],
+                                'prod_hierarchy_desc'   => '-'
+                            ]);
+                        }
+                        $produkId = $product->id;
+
+                        $createSO = PurchaseOrderDetail::create([
+                            'purchase_order_id' => $request->post('purchaseOrderId'),
+                            'produk_id'         => $produkId,
+                            'status'            => 'new',
+                            'sales_doc'         => $so['salesDoc'],
+                            'item'              => 0,
+                            'material'          => $so['sap']['material'],
+                            'po_item_desc'      => $so['sap']['poItemDesc'],
+                        ]);
+                        $so['id'] = $createSO->id;
+                    }
+                }
+            }
+
+            foreach ($compare as $item) {
                 if (preg_match('/^\d+\.0$/', $item['lineNumber'])) {
                     $key = explode('.', $item['lineNumber'])[0];
                     $parents[$key] = [

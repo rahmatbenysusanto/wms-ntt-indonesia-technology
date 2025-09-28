@@ -306,6 +306,61 @@
             </div>
         </div>
     </div>
+
+    <div id="manualSalesDocModal" class="modal fade" tabindex="-1" aria-labelledby="myModalLabel" aria-hidden="true" style="display: none;">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="myModalLabel">Manual Sales Doc</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"> </button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-12">
+                            <table>
+                                <tr>
+                                    <td class="fw-bold">Line Number</td>
+                                    <td class="fw-bold ps-2">:</td>
+                                    <td class="ps-1" id="salesDocManual_line_number"></td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">Item Name</td>
+                                    <td class="fw-bold ps-2">:</td>
+                                    <td class="ps-1" id="salesDocManual_item_name"></td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">Item Desc</td>
+                                    <td class="fw-bold ps-2">:</td>
+                                    <td class="ps-1" id="salesDocManual_item_desc"></td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">QTY</td>
+                                    <td class="fw-bold ps-2">:</td>
+                                    <td class="ps-1" id="salesDocManual_qty"></td>
+                                </tr>
+                            </table>
+                        </div>
+
+                        <input type="hidden" id="salesDocManual_compareIndex">
+
+                        <div class="col-6">
+                            <div class="mb-3 mt-4">
+                                <label class="form-label">Sales Doc</label>
+                                <input type="text" class="form-control" placeholder="Sales Doc ..." id="salesDocManual">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">QTY</label>
+                                <input type="text" class="form-control" placeholder="Sales Doc ..." id="salesDocManualQTY">
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-end">
+                            <a class="btn btn-primary" onclick="addSalesDocManualProcess()">Add Sales Doc Manual</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 @endsection
 
 @section('js')
@@ -329,7 +384,8 @@
                     poItemDesc: item.po_item_desc,
                     prodHierarchyDesc: item.prod_hierarchy_desc,
                     qty: item.po_item_qty,
-                    select: 0
+                    select: 0,
+                    manual:false
                 });
             });
 
@@ -357,7 +413,7 @@
 
                 const filteredData = jsonData.map((row) => ({
                     lineNumber: row['Line Number'],
-                    itemName: row['Item Name'],
+                    itemName: row['Item Name'].replace(/\./g, ""),
                     itemDesc: row['Item Description'],
                     serialNumber: row['Serial Numbers'].split("\r\n").filter(Boolean) ?? [],
                     qty: parseInt(row['Quantity Ordered']),
@@ -472,7 +528,9 @@
                         <td>${item.itemDesc}</td>
                         <td class="text-center fw-bold">${item.qty}</td>
                         <td><div class="d-flex flex-column gap-2">${htmlSalesDoc}</div></td>
-                        <td>${parseInt(item.qty) !== parseInt(item.qtyAdd) ? `<a class="btn btn-info btn-sm" onclick="pilihSalesDoc('${index}')">Pilih Sales Doc</a>` : ``} </td>
+                        <td>
+                            ${(parseInt(item.qty) === parseInt(item.qtyAdd) ? `` : `<div class="d-flex gap-2"><a class="btn btn-info btn-sm" onclick="pilihSalesDoc('${index}')">Pilih Sales Doc</a> <a class="btn btn-warning btn-sm" onclick="manualSalesDoc('${index}')">Manual Sales Doc</a></div>`)}
+                        </td>
                     </tr>
                 `;
 
@@ -596,6 +654,20 @@
             // Kembalikan QTY data SAP
             const sapFind = sap.find(i => parseInt(i.id) === parseInt(idPoDetail));
             sapFind.select = 0;
+
+            // Temukan item SAP berdasarkan idPoDetail
+            const sapIndex = sap.findIndex(i => parseInt(i.id) === parseInt(idPoDetail));
+            if (sapIndex !== -1) {
+                const item = sap[sapIndex];
+
+                if (item.manual === true) {
+                    // Jika manual, hapus dari SAP
+                    sap.splice(sapIndex, 1);
+                } else {
+                    // Jika bukan manual, cukup reset select ke 0
+                    item.select = 0;
+                }
+            }
 
             localStorage.setItem('sap', JSON.stringify(sap));
             localStorage.setItem('compare', JSON.stringify(compare));
@@ -880,7 +952,9 @@
                 qty: findSAP.qty,
                 serialNumber: [],
                 qtyDirect: 0,
-                snDirect: []
+                snDirect: [],
+                manual: findSAP.manual,
+                sap: findSAP
             });
             compare[index].qtyAdd += findSAP.qty;
             findSAP.select = 1;
@@ -892,7 +966,9 @@
                 $('#listSalesDocModal').modal('hide');
             }
 
-            document.getElementById(`btn-sales-doc-${index}-${id}-${indexDetail}`).style.display = 'none';
+            if (indexDetail !== null) {
+                document.getElementById(`btn-sales-doc-${index}-${id}-${indexDetail}`).style.display = 'none';
+            }
             viewCompareSAPCCW();
         }
 
@@ -1215,6 +1291,51 @@
                 }
             }
         });
+
+        // Manual Sales Doc
+        function manualSalesDoc(index) {
+            const compare = JSON.parse(localStorage.getItem('compare')) ?? [];
+            const findCompare = compare[index];
+            localStorage.setItem('salesDocManual', JSON.stringify(findCompare));
+
+            document.getElementById('salesDocManual_line_number').innerText = findCompare.lineNumber;
+            document.getElementById('salesDocManual_item_name').innerText = findCompare.itemName;
+            document.getElementById('salesDocManual_item_desc').innerText = findCompare.itemDesc;
+            document.getElementById('salesDocManual_qty').innerText = findCompare.qty;
+            document.getElementById('salesDocManual_compareIndex').value = index;
+
+            $('#manualSalesDocModal').modal('show');
+        }
+
+        function addSalesDocManualProcess() {
+            const sap = JSON.parse(localStorage.getItem('sap')) ?? [];
+            const compare = JSON.parse(localStorage.getItem('compare')) ?? [];
+            const salesDocManual = JSON.parse(localStorage.getItem('salesDocManual')) ?? [];
+
+            // Tambahkan data ke PO SAP
+            const id = new Date().toISOString().replace(/[-:TZ.]/g, '').slice(0,14);
+
+            sap.push({
+                id: id,
+                item: '',
+                material: salesDocManual.itemName,
+                poItemDesc: salesDocManual.itemDesc,
+                prodHierarchyDesc: '',
+                qty: parseInt(document.getElementById('salesDocManualQTY').value),
+                salesDoc: document.getElementById('salesDocManual').value,
+                select: 1,
+                manual: true
+            });
+            localStorage.setItem('sap', JSON.stringify(sap));
+
+            // Pilih Sales Doc
+            const index = parseInt(document.getElementById('salesDocManual_compareIndex').value);
+            pilihSalesDocProcess(index, id, null);
+
+            document.getElementById('salesDocManualQTY').value = '';
+            document.getElementById('salesDocManual').value = '';
+            $('#manualSalesDocModal').modal('hide');
+        }
     </script>
 @endsection
 
