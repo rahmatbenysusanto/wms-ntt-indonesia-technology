@@ -370,109 +370,126 @@
 @section('js')
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
+    <script src="https://unpkg.com/dexie@4/dist/dexie.js"></script>
     <script>
-        localStorage.clear();
+        // ================================
+        // Dexie (IndexedDB) KV Helpers
+        // ================================
+        const db = new Dexie('qc-offline');
+        db.version(1).stores({ kv: 'key' });
 
-        loadProductPurchaseOrder();
-        viewPoSAP();
-        function loadProductPurchaseOrder() {
+        const storage = {
+            async getJSON(key, fallback = null) {
+                const row = await db.kv.get(key);
+                return row?.value ?? fallback;
+            },
+            async setJSON(key, value) { await db.kv.put({ key, value }); },
+            async remove(key) { await db.kv.delete(key); },
+            async clear() { await db.kv.clear(); }
+        };
+        const toInt = (v) => parseInt(v ?? 0, 10);
+
+        // ================================
+        // Init Page
+        // ================================
+        (async function initPage(){
+            await storage.clear();
+            await loadProductPurchaseOrder();
+            await viewPoSAP();
+        })();
+
+        // ================================
+        // Load PO -> sap
+        // ================================
+        async function loadProductPurchaseOrder() {
             const data = @json($purcDocDetail);
-            const products = [];
-
-            data.forEach((item) => {
-                products.push({
-                    id: item.id,
-                    salesDoc: item.sales_doc,
-                    item: item.item,
-                    material: item.material,
-                    poItemDesc: item.po_item_desc,
-                    prodHierarchyDesc: item.prod_hierarchy_desc,
-                    qty: item.po_item_qty,
-                    select: 0,
-                    manual:false
-                });
-            });
-
-            localStorage.setItem('sap', JSON.stringify(products));
+            const products = (data || []).map((item) => ({
+                id: item.id,
+                salesDoc: item.sales_doc,
+                item: item.item,
+                material: item.material,
+                poItemDesc: item.po_item_desc,
+                prodHierarchyDesc: item.prod_hierarchy_desc,
+                qty: item.po_item_qty,
+                select: 0,
+                manual: false
+            }));
+            await storage.setJSON('sap', products);
         }
 
-        function uploadFileCCW() {
+        // ================================
+        // Upload CCW Excel -> ccw
+        // ================================
+        async function uploadFileCCW() {
             const fileInput = document.getElementById('fileUpload');
-            const file = fileInput.files[0];
-
-            if (!file) {
-                alert("Silakan pilih file Excel terlebih dahulu.");
-                return;
-            }
+            const file = fileInput?.files?.[0];
+            if (!file) return alert('Silakan pilih file Excel terlebih dahulu.');
 
             const reader = new FileReader();
-            reader.onload = function (e) {
+            reader.onload = async (e) => {
                 const data = new Uint8Array(e.target.result);
                 const workbook = XLSX.read(data, { type: 'array' });
-
                 const firstSheetName = workbook.SheetNames[1];
                 const worksheet = workbook.Sheets[firstSheetName];
+                const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
 
-                const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
-
-                const filteredData = jsonData.map((row) => ({
-                    lineNumber: row['Line Number'],
-                    itemName: row['Item Name'].replace(/\./g, ""),
-                    itemDesc: row['Item Description'],
-                    serialNumber: row['Serial Numbers'].split("\r\n").filter(Boolean) ?? [],
-                    qty: parseInt(row['Quantity Ordered']),
-                    qtyAdd: 0,
-                    salesDoc: [],
-                    listSalesDoc: [],
-                    purchaseOrderDetailId: null,
-                    putAwayStep: 1,
-                    snAvailable: []
-                }));
-
-                filteredData.forEach((data) => {
-                    data.serialNumber.forEach((sn) => {
-                        data.snAvailable.push({
-                            serialNumber: sn,
-                            status: true
-                        })
-                    });
+                const filteredData = jsonData.map((row) => {
+                    const snList = (row['Serial Numbers'] || '').split('\r\n').filter(Boolean);
+                    const itemName = (row['Item Name'] || '').replace(/\./g, '');
+                    const qty = toInt(row['Quantity Ordered']);
+                    return {
+                        lineNumber: row['Line Number'],
+                        itemName,
+                        itemDesc: row['Item Description'],
+                        serialNumber: snList,
+                        qty,
+                        qtyAdd: 0,
+                        salesDoc: [],
+                        listSalesDoc: [],
+                        purchaseOrderDetailId: null,
+                        putAwayStep: 1,
+                        snAvailable: snList.map(sn => ({ serialNumber: sn, status: true }))
+                    };
                 });
 
-                localStorage.setItem('ccw', JSON.stringify(filteredData));
-                compareSAPCCW();
+                await storage.setJSON('ccw', filteredData);
+                await compareSAPCCW();
             };
-
             reader.readAsArrayBuffer(file);
         }
 
-        function compareSAPCCW() {
-            const sap = JSON.parse(localStorage.getItem('sap')) ?? [];
-            const ccw = JSON.parse(localStorage.getItem('ccw')) ?? [];
+        // ================================
+        // Match SAP vs CCW -> compare
+        // ================================
+        async function compareSAPCCW() {
+            const sap = await storage.getJSON('sap', []);
+            const ccw = await storage.getJSON('ccw', []);
 
             ccw.forEach((item) => {
                 const findSAP = sap.filter(i => i.material === item.itemName);
-                const findSAPQTY = findSAP.filter(i => parseInt(i.qty) === parseInt(item.qty));
+                const findSAPQTY = findSAP.filter(i => toInt(i.qty) === toInt(item.qty));
 
                 if (findSAPQTY.length === 1) {
+                    const s = findSAPQTY[0];
                     item.salesDoc.push({
-                        id: findSAPQTY[0].id,
-                        salesDoc: findSAPQTY[0].salesDoc,
-                        qty: findSAPQTY[0].qty,
+                        id: s.id,
+                        salesDoc: s.salesDoc,
+                        qty: s.qty,
                         serialNumber: item.serialNumber,
                         qtyDirect: 0,
                         snDirect: []
                     });
-                    item.qtyAdd = findSAPQTY[0].qty;
-                    findSAPQTY[0].select = 1;
-                    item.purchaseOrderDetailId = findSAPQTY[0].id;
+                    item.qtyAdd = s.qty;
+                    s.select = 1;
+                    item.purchaseOrderDetailId = s.id;
                 } else {
                     item.listSalesDoc = findSAP;
                 }
             });
 
-            localStorage.setItem('compare', JSON.stringify(ccw));
-            localStorage.setItem('sap', JSON.stringify(sap));
-            viewCompareSAPCCW();
+            await storage.setJSON('compare', ccw);
+            await storage.setJSON('sap', sap);
+            await viewCompareSAPCCW();
         }
 
         function isParentFormat(value) {
@@ -481,8 +498,11 @@
             return parts.length === 2 && parts[1] === '0';
         }
 
-        function viewCompareSAPCCW() {
-            const compare = JSON.parse(localStorage.getItem('compare')) ?? [];
+        // ================================
+        // View Compare Table
+        // ================================
+        async function viewCompareSAPCCW() {
+            const compare = await storage.getJSON('compare', []);
             let html = '';
             let number = 1;
 
@@ -493,51 +513,46 @@
             }
 
             compare.forEach((item, index) => {
-                const isEmptySalesDoc = parseInt(item.qty) !== parseInt(item.qtyAdd);
+                const isEmptySalesDoc = toInt(item.qty) !== toInt(item.qtyAdd);
 
-                // View List Sales Doc
+                // SalesDoc chips/buttons
                 let htmlSalesDoc = '';
-                (item.salesDoc).forEach((sales, indexSalesDoc) => {
+                (item.salesDoc || []).forEach((sales, indexSalesDoc) => {
+                    const done = (toInt(sales.serialNumber.length) + toInt(sales.snDirect.length)) === toInt(sales.qty);
                     htmlSalesDoc += `
-                        <div class="d-flex gap-2 align-items-center">
-                            <p class="mb-0" style="min-width: 140px;">${sales.salesDoc} <b>(QTY : ${sales.qty})</b></p>
-                            ${item.putAwayStep === 0 ? `<a class="btn btn-dark btn-sm" onclick="directOutboundSerialNumber(${index}, ${indexSalesDoc})">SN Direct Outbound</a>` : ''}
-                            <a class="btn ${(parseInt(sales.serialNumber.length) + parseInt(sales.snDirect.length ?? [])) === parseInt(sales.qty) ? 'btn-success' : 'btn-secondary'} btn-sm" onclick="detailSerialNumber(${index}, ${indexSalesDoc})">Serial Number</a>
-                            <a class="btn btn-danger btn-sm" onclick="hapusSalesDoc(${index}, ${indexSalesDoc}, ${sales.id})">Hapus</a>
-                        </div>
-                    `;
+          <div class="d-flex gap-2 align-items-center">
+            <p class="mb-0" style="min-width: 140px;">${sales.salesDoc} <b>(QTY : ${sales.qty})</b></p>
+            ${toInt(item.putAwayStep) === 0 ? `<a class="btn btn-dark btn-sm" onclick="directOutboundSerialNumber(${index}, ${indexSalesDoc})">SN Direct Outbound</a>` : ''}
+            <a class="btn ${done ? 'btn-success' : 'btn-secondary'} btn-sm" onclick="detailSerialNumber(${index}, ${indexSalesDoc})">Serial Number</a>
+            <a class="btn btn-danger btn-sm" onclick="hapusSalesDoc(${index}, ${indexSalesDoc}, ${sales.id})">Hapus</a>
+          </div>`;
                 });
 
-                // Check Parent
-                let statusParent = isParentFormat(item.lineNumber);
-                let putAwayStep = `
-                        <div class="form-check form-switch form-switch-md">
-                          <input
-                            class="form-check-input"
-                            type="checkbox"
-                            role="switch"
-                            ${parseInt(item.putAwayStep) === 1 ? 'checked' : ''}
-                            onchange="handlePutAwayStepChange(this, ${index})"
-                          >
-                        </div>
-                    `;
+                const statusParent = isParentFormat(item.lineNumber);
+                const putAwayStep = `
+        <div class="form-check form-switch form-switch-md">
+          <input class="form-check-input" type="checkbox" role="switch"
+            ${toInt(item.putAwayStep) === 1 ? 'checked' : ''}
+            onchange="handlePutAwayStepChange(this, ${index})">
+        </div>`;
 
                 html += `
-                    <tr class="${isEmptySalesDoc ? 'table-danger' : ''}">
-                        <td>${number}</td>
-                        <td>${statusParent ? '<span class="badge bg-danger-subtle text-danger">Parent</span>' : '<span class="badge bg-secondary-subtle text-secondary">Child</span>'}</td>
-                        <td>${putAwayStep}</td>
-                        <td>${item.lineNumber}</td>
-                        <td>${item.itemName}</td>
-                        <td>${item.itemDesc}</td>
-                        <td class="text-center fw-bold">${item.qty}</td>
-                        <td><div class="d-flex flex-column gap-2">${htmlSalesDoc}</div></td>
-                        <td>
-                            ${(parseInt(item.qty) === parseInt(item.qtyAdd) ? `` : `<div class="d-flex gap-2"><a class="btn btn-info btn-sm" onclick="pilihSalesDoc('${index}')">Pilih Sales Doc</a> <a class="btn btn-warning btn-sm" onclick="manualSalesDoc('${index}')">Manual Sales Doc</a></div>`)}
-                        </td>
-                    </tr>
-                `;
-
+        <tr class="${isEmptySalesDoc ? 'table-danger' : ''}">
+          <td>${number}</td>
+          <td>${statusParent ? '<span class="badge bg-danger-subtle text-danger">Parent</span>' : '<span class="badge bg-secondary-subtle text-secondary">Child</span>'}</td>
+          <td>${putAwayStep}</td>
+          <td>${item.lineNumber}</td>
+          <td>${item.itemName}</td>
+          <td>${item.itemDesc}</td>
+          <td class="text-center fw-bold">${item.qty}</td>
+          <td><div class="d-flex flex-column gap-2">${htmlSalesDoc}</div></td>
+          <td>${(toInt(item.qty) === toInt(item.qtyAdd)) ? '' : `
+            <div class="d-flex gap-2">
+              <a class="btn btn-info btn-sm" onclick="pilihSalesDoc('${index}')">Pilih Sales Doc</a>
+              <a class="btn btn-warning btn-sm" onclick="manualSalesDoc('${index}')">Manual Sales Doc</a>
+            </div>`}
+          </td>
+        </tr>`;
                 number++;
             });
 
@@ -545,11 +560,14 @@
             const table = new DataTable('#tableListProduct');
             table.page(currentPage).draw('page');
 
-            viewPoSAP();
+            await viewPoSAP();
         }
 
-        function directOutboundSerialNumber(index, indexSalesDoc) {
-            const compare = JSON.parse(localStorage.getItem('compare')) ?? [];
+        // ================================
+        // Direct Outbound SN (modal)
+        // ================================
+        async function directOutboundSerialNumber(index, indexSalesDoc) {
+            const compare = await storage.getJSON('compare', []);
             const product = compare[index];
 
             document.getElementById('detail_Direct_material').innerText = product.itemName;
@@ -558,131 +576,116 @@
             document.getElementById('detail_Direct_index').value = index;
             document.getElementById('detail_Direct_indexSalesDoc').value = indexSalesDoc;
 
-            viewSerialNumberDirectOutbound(index, indexSalesDoc);
+            await viewSerialNumberDirectOutbound(index, indexSalesDoc);
 
             $('#serialNumberDirectOutboundModal').modal('show');
-
-            setTimeout(() => {
-                document.getElementById('scanSerialNumberDirect').focus();
-            }, 500);
+            setTimeout(() => document.getElementById('scanSerialNumberDirect').focus(), 500);
         }
 
-        function viewSerialNumberDirectOutbound(index, indexSalesDoc) {
-            const compare = JSON.parse(localStorage.getItem('compare')) ?? [];
-            const serialNumber = compare[index].salesDoc[indexSalesDoc].snDirect;
+        async function viewSerialNumberDirectOutbound(index, indexSalesDoc) {
+            const compare = await storage.getJSON('compare', []);
+            const serialNumber = compare[index].salesDoc[indexSalesDoc].snDirect || [];
             let html = '';
 
             serialNumber.forEach((item, indexSN) => {
                 html += `
-                    <tr>
-                        <td>${indexSN + 1}</td>
-                        <td><input type="text" class="form-control" value="${item}" onchange="changeSNDirect(${indexSN}, this.value)" placeholder="N/A"></td>
-                        <td><a class="btn btn-danger btn-sm">Delete</a></td>
-                    </tr>
-                `;
+        <tr>
+          <td>${indexSN + 1}</td>
+          <td><input type="text" class="form-control" value="${item}" onchange="changeSNDirect(${indexSN}, this.value)" placeholder="N/A"></td>
+          <td><a class="btn btn-danger btn-sm">Delete</a></td>
+        </tr>`;
             });
 
             document.getElementById('detail_Direct_qty_scan_serial_number').innerText = serialNumber.length;
             document.getElementById('listDetailSerialNumberDirect').innerHTML = html;
         }
 
-        function addSerialNumberManualDirect() {
+        async function addSerialNumberManualDirect() {
             const index = document.getElementById('detail_Direct_index').value;
             const indexSalesDoc = document.getElementById('detail_Direct_indexSalesDoc').value;
-            const compare = JSON.parse(localStorage.getItem('compare')) ?? [];
+            const compare = await storage.getJSON('compare', []);
             const serialNumber = compare[index].salesDoc[indexSalesDoc].snDirect;
 
-            if ((compare[index].salesDoc[indexSalesDoc].snDirect.length + compare[index].salesDoc[indexSalesDoc].serialNumber.length) === compare[index].salesDoc[indexSalesDoc].qty) {
-                document.getElementById('scanSerialNumberDirectErrorMessage').innerText = "Serial number exceeds item quantity";
-                document.getElementById('scanSerialNumberDirectError').style.display = "block";
-
-                setTimeout(() => {
-                    document.getElementById('scanSerialNumberDirectError').style.display = "none";
-                }, 3000);
-
-                const sound = new Audio("{{ asset('assets/sound/error.mp3') }}");
-                sound.play();
-
-                document.getElementById('scanSerialNumberDirect').value = "";
+            if ((serialNumber.length + compare[index].salesDoc[indexSalesDoc].serialNumber.length) === compare[index].salesDoc[indexSalesDoc].qty) {
+                document.getElementById('scanSerialNumberDirectErrorMessage').innerText = 'Serial number exceeds item quantity';
+                document.getElementById('scanSerialNumberDirectError').style.display = 'block';
+                setTimeout(() => { document.getElementById('scanSerialNumberDirectError').style.display = 'none'; }, 3000);
+                new Audio("{{ asset('assets/sound/error.mp3') }}").play();
+                document.getElementById('scanSerialNumberDirect').value = '';
                 document.getElementById('scanSerialNumberDirect').focus();
-
                 return true;
             }
 
-            serialNumber.push("");
+            serialNumber.push('');
             compare[index].salesDoc[indexSalesDoc].qtyDirect = serialNumber.length;
 
-            localStorage.setItem('compare', JSON.stringify(compare));
-            viewSerialNumberDirectOutbound(index, indexSalesDoc);
+            await storage.setJSON('compare', compare);
+            await viewSerialNumberDirectOutbound(index, indexSalesDoc);
         }
 
-        function changeSNDirect(indexSN, value) {
+        async function changeSNDirect(indexSN, value) {
             const index = document.getElementById('detail_Direct_index').value;
             const indexSalesDoc = document.getElementById('detail_Direct_indexSalesDoc').value;
-            const compare = JSON.parse(localStorage.getItem('compare')) ?? [];
+            const compare = await storage.getJSON('compare', []);
             const serialNumber = compare[index].salesDoc[indexSalesDoc].snDirect;
 
             serialNumber[indexSN] = value;
             compare[index].salesDoc[indexSalesDoc].qtyDirect = serialNumber.length;
 
-            localStorage.setItem('compare', JSON.stringify(compare));
-            viewSerialNumberDirectOutbound(index, indexSalesDoc);
+            await storage.setJSON('compare', compare);
+            await viewSerialNumberDirectOutbound(index, indexSalesDoc);
         }
 
-        function handlePutAwayStepChange(checkbox, index) {
-            const compare = JSON.parse(localStorage.getItem('compare')) ?? [];
-
+        // ================================
+        // PutAway Toggle
+        // ================================
+        async function handlePutAwayStepChange(checkbox, index) {
+            const compare = await storage.getJSON('compare', []);
             compare[index].putAwayStep = checkbox.checked ? 1 : 0;
-
-            localStorage.setItem('compare', JSON.stringify(compare));
-            viewCompareSAPCCW();
+            await storage.setJSON('compare', compare);
+            await viewCompareSAPCCW();
         }
 
-        function hapusSalesDoc(index, indexSalesDoc, idPoDetail) {
-            const sap = JSON.parse(localStorage.getItem('sap')) ?? [];
-            const compare = JSON.parse(localStorage.getItem('compare')) ?? [];
-            const ccw = JSON.parse(localStorage.getItem('ccw')) ?? [];
+        // ================================
+        // Hapus SalesDoc
+        // ================================
+        async function hapusSalesDoc(index, indexSalesDoc, idPoDetail) {
+            const sap = await storage.getJSON('sap', []);
+            const compare = await storage.getJSON('compare', []);
+            const ccw = await storage.getJSON('ccw', []);
 
-            // Kembalikan Serial Number
-            const serialNumber = compare[index].salesDoc[indexSalesDoc].serialNumber;
-            serialNumber.forEach((item) => {
-                const change = ccw[index].snAvailable.find((sn) =>sn.serialNumber === item);
-                change.status = true;
+            // Kembalikan SN ke available
+            const serialNumber = compare[index].salesDoc[indexSalesDoc].serialNumber || [];
+            serialNumber.forEach((sn) => {
+                const change = ccw[index].snAvailable.find((s) => s.serialNumber === sn);
+                if (change) change.status = true;
             });
 
-            // Hapus Sales Doc didata CCW
+            // Hapus dari compare
             const findCcwData = compare[index].salesDoc[indexSalesDoc];
             compare[index].salesDoc.splice(indexSalesDoc, 1);
-            compare[index].qtyAdd = parseInt(compare[index].qtyAdd) - parseInt(findCcwData.qty);
+            compare[index].qtyAdd = toInt(compare[index].qtyAdd) - toInt(findCcwData.qty);
 
-            // Kembalikan QTY data SAP
-            const sapFind = sap.find(i => parseInt(i.id) === parseInt(idPoDetail));
-            sapFind.select = 0;
-
-            // Temukan item SAP berdasarkan idPoDetail
-            const sapIndex = sap.findIndex(i => parseInt(i.id) === parseInt(idPoDetail));
+            // Reset SAP
+            const sapIndex = sap.findIndex(i => toInt(i.id) === toInt(idPoDetail));
             if (sapIndex !== -1) {
                 const item = sap[sapIndex];
-
-                if (item.manual === true) {
-                    // Jika manual, hapus dari SAP
-                    sap.splice(sapIndex, 1);
-                } else {
-                    // Jika bukan manual, cukup reset select ke 0
-                    item.select = 0;
-                }
+                if (item.manual === true) sap.splice(sapIndex, 1); else item.select = 0;
             }
 
-            localStorage.setItem('sap', JSON.stringify(sap));
-            localStorage.setItem('compare', JSON.stringify(compare));
-            localStorage.setItem('ccw', JSON.stringify(ccw));
+            await storage.setJSON('sap', sap);
+            await storage.setJSON('compare', compare);
+            await storage.setJSON('ccw', ccw);
 
-            viewCompareSAPCCW();
+            await viewCompareSAPCCW();
         }
 
-        function viewPoSAP() {
-            const sap = JSON.parse(localStorage.getItem('sap')) ?? [];
-            const sapFilter = sap.filter(i => parseInt(i.select) === 0);
+        // ================================
+        // View PO SAP (select = 0)
+        // ================================
+        async function viewPoSAP() {
+            const sap = await storage.getJSON('sap', []);
+            const sapFilter = sap.filter(i => toInt(i.select) === 0);
 
             let currentPage = 0;
             if ($.fn.DataTable.isDataTable('#tableListPoSAP')) {
@@ -692,20 +695,17 @@
 
             let html = '';
             let number = 1;
-
             sapFilter.forEach((item) => {
                 html += `
-                    <tr>
-                        <td>${number}</td>
-                        <td>${item.salesDoc}</td>
-                        <td>${item.item}</td>
-                        <td>${item.material}</td>
-                        <td>${item.poItemDesc}</td>
-                        <td>${item.prodHierarchyDesc}</td>
-                        <td class="text-center fw-bold">${item.qty}</td>
-                    </tr>
-                `;
-
+        <tr>
+          <td>${number}</td>
+          <td>${item.salesDoc}</td>
+          <td>${item.item}</td>
+          <td>${item.material}</td>
+          <td>${item.poItemDesc}</td>
+          <td>${item.prodHierarchyDesc}</td>
+          <td class="text-center fw-bold">${item.qty}</td>
+        </tr>`;
                 number++;
             });
 
@@ -714,210 +714,169 @@
             table.page(currentPage).draw('page');
         }
 
-        function detailSerialNumber(index, indexSalesDoc) {
-            const compare = JSON.parse(localStorage.getItem('compare')) ?? [];
+        // ================================
+        // Detail SN Modal (compare -> serialNumber temp)
+        // ================================
+        async function detailSerialNumber(index, indexSalesDoc) {
+            const compare = await storage.getJSON('compare', []);
             const salesDoc = compare[index].salesDoc[indexSalesDoc];
 
             document.getElementById('detailSN_lineNumber').innerText = compare[index].lineNumber;
             document.getElementById('detailSN_itemName').innerText = compare[index].itemName;
             document.getElementById('detailSN_itemDesc').innerText = compare[index].itemDesc;
-            document.getElementById('detailSN_qty').innerText = compare[index].salesDoc[indexSalesDoc].qty;
-            document.getElementById('detailSN_sales_doc').innerText = compare[index].salesDoc[indexSalesDoc].salesDoc;
+            document.getElementById('detailSN_qty').innerText = salesDoc.qty;
+            document.getElementById('detailSN_sales_doc').innerText = salesDoc.salesDoc;
             document.getElementById('detailSN_index').value = index;
             document.getElementById('detailSN_index_sales_doc').value = indexSalesDoc;
 
-            localStorage.setItem('serialNumber', JSON.stringify(salesDoc.serialNumber));
-            viewSerialNumber(index, indexSalesDoc);
+            await storage.setJSON('serialNumber', salesDoc.serialNumber);
+            await viewSerialNumber(index, indexSalesDoc);
 
             $('#detailSerialNumberModal').modal('show');
-
-            setTimeout(() => {
-                document.getElementById('scanSerialNumber').focus();
-            }, 500);
+            setTimeout(() => document.getElementById('scanSerialNumber').focus(), 500);
         }
 
-        function uploadSerialNumber() {
+        // Upload Excel SN
+        async function uploadSerialNumber() {
             const fileInput = document.getElementById('uploadFileSerialNumber');
-            const file = fileInput.files[0];
-
-            if (!file) {
-                alert("Silakan pilih file Excel terlebih dahulu.");
-                return;
-            }
+            const file = fileInput?.files?.[0];
+            if (!file) return alert('Silakan pilih file Excel terlebih dahulu.');
 
             const reader = new FileReader();
-            reader.onload = function (e) {
+            reader.onload = async (e) => {
                 const data = new Uint8Array(e.target.result);
                 const workbook = XLSX.read(data, { type: 'array' });
-
                 const firstSheetName = workbook.SheetNames[0];
                 const worksheet = workbook.Sheets[firstSheetName];
-
-                const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
-
-                const serialNumber = jsonData.map((row) => ({
-                    serialNumber: row['Serial Number']
-                }));
+                const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
+                const serialNumber = jsonData.map((row) => row['Serial Number']);
 
                 const index = document.getElementById('detailSN_index').value;
                 const indexSalesDoc = document.getElementById('detailSN_index_sales_doc').value;
-                const compare = JSON.parse(localStorage.getItem('compare')) ?? [];
+                const compare = await storage.getJSON('compare', []);
 
-                if (serialNumber.length === parseInt(compare[index].salesDoc[indexSalesDoc].qty)) {
-                    Swal.fire({
-                        title: 'Warning!',
-                        text: 'Jumlah Serial Number tidak boleh lebih dari QTY',
-                        icon: 'warning'
-                    });
+                if (serialNumber.length === toInt(compare[index].salesDoc[indexSalesDoc].qty)) {
+                    Swal.fire({ title: 'Warning!', text: 'Jumlah Serial Number tidak boleh lebih dari QTY', icon: 'warning' });
                     return true;
                 }
 
                 compare[index].salesDoc[indexSalesDoc].serialNumber = serialNumber;
+                await storage.setJSON('compare', compare);
+                await storage.setJSON('serialNumber', serialNumber);
+                fileInput.value = '';
 
-                localStorage.setItem('compare', JSON.stringify(compare));
-                localStorage.setItem('serialNumber', JSON.stringify(serialNumber));
-                fileInput.value = "";
-
-                viewSerialNumber(index, indexSalesDoc);
+                await viewSerialNumber(index, indexSalesDoc);
             };
-
             reader.readAsArrayBuffer(file);
         }
 
-        function viewSerialNumber(index, indexSalesDoc) {
-            const serialNumber = JSON.parse(localStorage.getItem('serialNumber')) ?? [];
+        async function viewSerialNumber(index, indexSalesDoc) {
+            const serialNumber = await storage.getJSON('serialNumber', []);
             let html = '';
             let number = 1;
 
-            (serialNumber).forEach((item, indexDetail) => {
+            (serialNumber || []).forEach((item, indexDetail) => {
                 html += `
-                    <tr>
-                        <td>${number}</td>
-                        <td><input type="text" class="form-control" value="${item}" onchange="changeSerialNumber(${index}, ${indexSalesDoc}, ${indexDetail}, this.value)" placeholder="N/A"></td>
-                        <td><a class="btn btn-danger btn-sm" onclick="deleteSerialNumber(${index}, ${indexSalesDoc}, ${indexDetail}, '${item}')">Delete</a></td>
-                    </tr>
-                `;
-
+        <tr>
+          <td>${number}</td>
+          <td><input type="text" class="form-control" value="${item}" onchange="changeSerialNumber(${index}, ${indexSalesDoc}, ${indexDetail}, this.value)" placeholder="N/A"></td>
+          <td><a class="btn btn-danger btn-sm" onclick="deleteSerialNumber(${index}, ${indexSalesDoc}, ${indexDetail}, '${item}')">Delete</a></td>
+        </tr>`;
                 number++;
             });
 
             document.getElementById('detailSN_qty_scan_serial_number').innerText = serialNumber.length;
             document.getElementById('listSerialNumber').innerHTML = html;
 
-            // View SN Available
-            const ccw = JSON.parse(localStorage.getItem('ccw'));
+            // SN Available dari CCW
+            const ccw = await storage.getJSON('ccw', []);
             const data = ccw[index];
 
             let htmlSN = '';
-            (data.snAvailable).forEach((item) => {
-                let button = '';
-                if (item.status === true) {
-                    button = `<a class="btn btn-primary btn-sm" onclick="selectSnAvailable('${item.serialNumber}')">Select SN</a>`;
-                }
-
-                htmlSN += `
-                    <tr>
-                        <td>${item.serialNumber}</td>
-                        <td>${button}</td>
-                    </tr>
-                `;
+            (data.snAvailable || []).forEach((i) => {
+                const btn = i.status ? `<a class="btn btn-primary btn-sm" onclick="selectSnAvailable('${i.serialNumber}')">Select SN</a>` : '';
+                htmlSN += `<tr><td>${i.serialNumber}</td><td>${btn}</td></tr>`;
             });
 
             document.getElementById('detailSN_ccw_index').value = index;
             document.getElementById('listSerialNumberAvailableCCW').innerHTML = htmlSN;
         }
 
-        function addManualSN() {
+        async function addManualSN() {
             const index = document.getElementById('detailSN_index').value;
             const indexSalesDoc = document.getElementById('detailSN_index_sales_doc').value;
 
-            const compare = JSON.parse(localStorage.getItem('compare')) ?? [];
-            let serialNumber = JSON.parse(localStorage.getItem('serialNumber')) ?? [];
+            const compare = await storage.getJSON('compare', []);
+            let serialNumber = await storage.getJSON('serialNumber', []);
 
-            if (serialNumber.length === parseInt(compare[index].salesDoc[indexSalesDoc].qty)) {
-                Swal.fire({
-                    title: 'Warning!',
-                    text: 'Jumlah Serial Number tidak boleh lebih dari QTY',
-                    icon: 'warning'
-                });
+            if (serialNumber.length === toInt(compare[index].salesDoc[indexSalesDoc].qty)) {
+                Swal.fire({ title: 'Warning!', text: 'Jumlah Serial Number tidak boleh lebih dari QTY', icon: 'warning' });
                 return true;
             }
 
-            serialNumber.push("");
+            serialNumber.push('');
             compare[index].salesDoc[indexSalesDoc].serialNumber = serialNumber;
+            await storage.setJSON('compare', compare);
+            await storage.setJSON('serialNumber', serialNumber);
 
-            localStorage.setItem('compare', JSON.stringify(compare));
-            localStorage.setItem('serialNumber', JSON.stringify(serialNumber));
-
-            viewSerialNumber(index, indexSalesDoc);
+            await viewSerialNumber(index, indexSalesDoc);
         }
 
-        function deleteSerialNumber(index, indexSalesDoc, indexDetail, sn) {
-            const compare = JSON.parse(localStorage.getItem('compare')) ?? [];
-            const serialNumber = JSON.parse(localStorage.getItem('serialNumber')) ?? [];
+        async function deleteSerialNumber(index, indexSalesDoc, indexDetail, sn) {
+            const compare = await storage.getJSON('compare', []);
+            const serialNumber = await storage.getJSON('serialNumber', []);
 
             serialNumber.splice(indexDetail, 1);
-
             compare[index].salesDoc[indexSalesDoc].serialNumber = serialNumber;
 
-            localStorage.setItem('compare', JSON.stringify(compare));
-            localStorage.setItem('serialNumber', JSON.stringify(serialNumber));
+            await storage.setJSON('compare', compare);
+            await storage.setJSON('serialNumber', serialNumber);
 
-            const ccw = JSON.parse(localStorage.getItem('ccw'));
+            const ccw = await storage.getJSON('ccw', []);
             const data = ccw[index];
+            (data.snAvailable || []).forEach((item) => { if (item.serialNumber === sn) item.status = true; });
+            await storage.setJSON('ccw', ccw);
 
-            (data.snAvailable).forEach((item) => {
-                if (item.serialNumber === sn) {
-                    item.status = true;
-                }
-            });
-
-            localStorage.setItem('ccw', JSON.stringify(ccw));
-
-            viewSerialNumber(index, indexSalesDoc);
+            await viewSerialNumber(index, indexSalesDoc);
         }
 
-        function changeSerialNumber(index, indexSalesDoc, indexDetail, value) {
-            const compare = JSON.parse(localStorage.getItem('compare')) ?? [];
-            const serialNumber = JSON.parse(localStorage.getItem('serialNumber')) ?? [];
+        async function changeSerialNumber(index, indexSalesDoc, indexDetail, value) {
+            const compare = await storage.getJSON('compare', []);
+            const serialNumber = await storage.getJSON('serialNumber', []);
 
             serialNumber[indexDetail] = value;
-
             compare[index].salesDoc[indexSalesDoc].serialNumber = serialNumber;
 
-            localStorage.setItem('compare', JSON.stringify(compare));
-            localStorage.setItem('serialNumber', JSON.stringify(serialNumber));
+            await storage.setJSON('compare', compare);
+            await storage.setJSON('serialNumber', serialNumber);
 
-            viewSerialNumber(index, indexSalesDoc);
+            await viewSerialNumber(index, indexSalesDoc);
         }
 
-        function pilihSalesDoc(index) {
-            const sap = JSON.parse(localStorage.getItem('sap')) ?? [];
-            const compare = JSON.parse(localStorage.getItem('compare')) ?? [];
+        // ================================
+        // Pilih SalesDoc dari SAP
+        // ================================
+        async function pilihSalesDoc(index) {
+            const sap = await storage.getJSON('sap', []);
+            const compare = await storage.getJSON('compare', []);
             const compareFind = compare[index];
 
-            const sapFilter = sap.filter(item => {
-                return (
-                    item.material === compareFind.itemName && item.select === 0
-                );
-            });
+            const sapFilter = sap.filter(item => (item.material === compareFind.itemName && item.select === 0));
 
             let html = '';
             let number = 1;
-
             sapFilter.forEach((item, indexDetail) => {
                 html += `
-                    <tr>
-                        <td>${number}</td>
-                        <td>${item.salesDoc}</td>
-                        <td>${item.item}</td>
-                        <td>${item.material}</td>
-                        <td>${item.poItemDesc}</td>
-                        <td>${item.prodHierarchyDesc}</td>
-                        <td>${item.qty}</td>
-                        <td><a class="btn btn-info btn-sm" id="btn-sales-doc-${index}-${item.id}-${indexDetail}" onclick="pilihSalesDocProcess('${index}', '${item.id}', ${indexDetail})">Pilih Sales Doc</a></td>
-                    </tr>
-                `;
+        <tr>
+          <td>${number}</td>
+          <td>${item.salesDoc}</td>
+          <td>${item.item}</td>
+          <td>${item.material}</td>
+          <td>${item.poItemDesc}</td>
+          <td>${item.prodHierarchyDesc}</td>
+          <td>${item.qty}</td>
+          <td><a class="btn btn-info btn-sm" id="btn-sales-doc-${index}-${item.id}-${indexDetail}" onclick="pilihSalesDocProcess('${index}', '${item.id}', ${indexDetail})">Pilih Sales Doc</a></td>
+        </tr>`;
                 number++;
             });
 
@@ -926,28 +885,17 @@
             }
 
             document.getElementById('listSalesDoc').innerHTML = html;
-
-            // Re-inisialisasi DataTable
-            $('#salesDocTable').DataTable({
-                pageLength: 10,
-            });
-
-            // Tampilkan modal
+            $('#salesDocTable').DataTable({ pageLength: 10 });
             $('#listSalesDocModal').modal('show');
         }
 
-        function pilihSalesDocProcess(index, id, indexDetail) {
-            const sap = JSON.parse(localStorage.getItem('sap')) ?? [];
-            const findSAP = sap.find(i => parseInt(i.id) === parseInt(id));
-            const compare = JSON.parse(localStorage.getItem('compare')) ?? [];
+        async function pilihSalesDocProcess(index, id, indexDetail) {
+            const sap = await storage.getJSON('sap', []);
+            const compare = await storage.getJSON('compare', []);
+            const findSAP = sap.find(i => toInt(i.id) === toInt(id));
 
-            if (parseInt(compare[index].qtyAdd + findSAP.qty) > parseInt(compare[index].qty)) {
-                Swal.fire({
-                    title: 'Warning!',
-                    text: 'QTY melebihi ketentuan PO',
-                    icon: 'warning'
-                });
-
+            if (toInt(compare[index].qtyAdd + findSAP.qty) > toInt(compare[index].qty)) {
+                Swal.fire({ title: 'Warning!', text: 'QTY melebihi ketentuan PO', icon: 'warning' });
                 return true;
             }
 
@@ -964,117 +912,70 @@
             compare[index].qtyAdd += findSAP.qty;
             findSAP.select = 1;
 
-            localStorage.setItem('sap', JSON.stringify(sap));
-            localStorage.setItem('compare', JSON.stringify(compare));
+            await storage.setJSON('sap', sap);
+            await storage.setJSON('compare', compare);
 
-            if (parseInt(compare[index].qtyAdd) === parseInt(compare[index].qty)) {
-                $('#listSalesDocModal').modal('hide');
-            }
-
+            if (toInt(compare[index].qtyAdd) === toInt(compare[index].qty)) $('#listSalesDocModal').modal('hide');
             if (indexDetail !== null) {
-                document.getElementById(`btn-sales-doc-${index}-${id}-${indexDetail}`).style.display = 'none';
+                const el = document.getElementById(`btn-sales-doc-${index}-${id}-${indexDetail}`);
+                if (el) el.style.display = 'none';
             }
-            viewCompareSAPCCW();
+            await viewCompareSAPCCW();
         }
 
-        function processQualityControl() {
+        // ================================
+        // Proses QC (upload JSON + store)
+        // ================================
+        async function processQualityControl() {
             Swal.fire({
-                title: "Are you sure?",
-                text: "Process Quality Control",
-                icon: "warning",
-                showCancelButton: true,
-                customClass: {
-                    confirmButton: "btn btn-primary w-xs me-2 mt-2",
-                    cancelButton: "btn btn-danger w-xs mt-2"
-                },
-                confirmButtonText: "Yes, Process it!",
-                buttonsStyling: false,
-                showCloseButton: true
-            }).then(function(t) {
-                if (t.value) {
+                title: 'Are you sure?', text: 'Process Quality Control', icon: 'warning', showCancelButton: true,
+                customClass: { confirmButton: 'btn btn-primary w-xs me-2 mt-2', cancelButton: 'btn btn-danger w-xs mt-2' },
+                confirmButtonText: 'Yes, Process it!', buttonsStyling: false, showCloseButton: true
+            }).then(async function(t) {
+                if (!t.value) return;
 
-                    // Validation Serial Number n/a
-                    const compare = JSON.parse(localStorage.getItem('compare')) ?? [];
-                    compare.forEach((item) => {
-                        item.salesDoc.forEach((salesDoc) => {
-                            if ((salesDoc.serialNumber.length + salesDoc.snDirect.length) !== salesDoc.qty) {
-                                const sisaQTY = (salesDoc.serialNumber.length + salesDoc.snDirect.length) - salesDoc.qty;
-                                for (let i = 0; i < sisaQTY; i++) {
-                                    salesDoc.serialNumber.push('N/A');
+                // Validation Serial Number n/a / qty
+                const compare = await storage.getJSON('compare', []);
+                for (const item of compare) {
+                    for (const salesDoc of (item.salesDoc || [])) {
+                        if ((salesDoc.serialNumber.length + salesDoc.snDirect.length) !== salesDoc.qty) {
+                            const sisaQTY = (salesDoc.serialNumber.length + salesDoc.snDirect.length) - salesDoc.qty;
+                            for (let i = 0; i < sisaQTY; i++) salesDoc.serialNumber.push('N/A');
+                        }
+                    }
+                    if (toInt(item.qty) !== toInt(item.qtyAdd)) {
+                        Swal.fire({ title: 'Warning!', text: 'There are unprocessed CCW items', icon: 'warning' });
+                        return true;
+                    }
+                }
+                await storage.setJSON('compare', compare);
+
+                // Upload JSON dahulu
+                await sendLocalStorageAsJsonFileToBackend({
+                    key: 'compare', filename: 'compare.json', uploadUrl: '{{ route('inbound.quality-control.upload.ccw') }}',
+                    onSuccess: async (fileName) => {
+                        $.ajax({
+                            url: '{{ route('inbound.quality-control-process-ccw-store') }}', method: 'POST',
+                            data: { _token: '{{ csrf_token() }}', fileName: JSON.stringify(await storage.getJSON('fileName')), purchaseOrderId: '{{ request()->get('id') }}' },
+                            success: (res) => {
+                                if (res.status) {
+                                    Swal.fire({ title: 'Success!', text: 'Quality Control successfully!', icon: 'success', confirmButtonText: 'OK', customClass: { confirmButton: 'btn btn-primary w-xs mt-2' }, buttonsStyling: false })
+                                        .then(() => { window.location.href = '{{ route('inbound.quality-control') }}'; });
+                                } else {
+                                    Swal.fire({ title: 'Error!', text: 'Quality Control Failed!', icon: 'error', confirmButtonText: 'OK', customClass: { confirmButton: 'btn btn-primary w-xs mt-2' }, buttonsStyling: false });
                                 }
                             }
                         });
-
-                        if (parseInt(item.qty) !== parseInt(item.qtyAdd)) {
-                            Swal.fire({
-                               title: 'Warning!',
-                               text: 'There are unprocessed CCW items',
-                               icon: 'warning',
-                            });
-
-                            return true;
-                        }
-                    });
-                    localStorage.setItem('compare', JSON.stringify(compare));
-
-                    // Kirim File JSON ke Backend Terlebih dahulu
-                    sendLocalStorageAsJsonFileToBackend({
-                        key: 'compare',
-                        filename: 'compare.json',
-                        uploadUrl: '{{ route('inbound.quality-control.upload.ccw') }}',
-                        onSuccess: (fileName) => {
-                            // Baru jalankan AJAX setelah upload selesai
-
-                            $.ajax({
-                                url: '{{ route('inbound.quality-control-process-ccw-store') }}',
-                                method: 'POST',
-                                data: {
-                                    _token: '{{ csrf_token() }}',
-                                    fileName: JSON.parse(localStorage.getItem('fileName')),
-                                    purchaseOrderId: '{{ request()->get('id') }}'
-                                },
-                                success: (res) => {
-                                    if (res.status) {
-                                        Swal.fire({
-                                            title: 'Success!',
-                                            text: 'Quality Control successfully!',
-                                            icon: 'success',
-                                            confirmButtonText: 'OK',
-                                            customClass: {
-                                                confirmButton: "btn btn-primary w-xs mt-2"
-                                            },
-                                            buttonsStyling: false
-                                        }).then(() => {
-                                            window.location.href = '{{ route('inbound.quality-control') }}';
-                                        });
-                                    } else {
-                                        Swal.fire({
-                                            title: 'Error!',
-                                            text: 'Quality Control Failed!',
-                                            icon: 'error',
-                                            confirmButtonText: 'OK',
-                                            customClass: {
-                                                confirmButton: "btn btn-primary w-xs mt-2"
-                                            },
-                                            buttonsStyling: false
-                                        });
-                                    }
-                                }
-                            });
-                        }
-                    });
-
-                }
+                    }
+                });
             });
         }
 
-        function sendLocalStorageAsJsonFileToBackend({ key = 'compare', filename = 'compare.json', uploadUrl, onSuccess }) {
-            const rawData = localStorage.getItem(key);
-            if (!rawData) {
-                console.error(`❌ Tidak ada data di localStorage untuk key "${key}"`);
-                return;
-            }
+        async function sendLocalStorageAsJsonFileToBackend({ key = 'compare', filename = 'compare.json', uploadUrl, onSuccess }) {
+            const rawObj = await storage.getJSON(key, null);
+            if (!rawObj) { console.error(`❌ Tidak ada data untuk key "${key}"`); return; }
 
+            const rawData = JSON.stringify(rawObj);
             const blob = new Blob([rawData], { type: 'application/json' });
             const file = new File([blob], filename, { type: 'application/json' });
 
@@ -1082,238 +983,169 @@
             formData.append('json_file', file);
             formData.append('_token', '{{ csrf_token() }}');
 
-            fetch(uploadUrl, {
-                method: 'POST',
-                body: formData
-            })
-                .then(response => response.json())
-                .then(result => {
-                    console.log('✅ Upload selesai:', result);
-
-                    localStorage.setItem('fileName', JSON.stringify(result.fileName));
-
-                    if (typeof onSuccess === 'function') {
-                        onSuccess(filename);
-                    }
+            return fetch(uploadUrl, { method: 'POST', body: formData })
+                .then(r => r.json())
+                .then(async (result) => {
+                    await storage.setJSON('fileName', result.fileName);
+                    if (typeof onSuccess === 'function') onSuccess(filename);
                 })
-                .catch(error => {
-                    console.error('❌ Upload gagal:', error);
-                });
+                .catch(err => console.error('❌ Upload gagal:', err));
         }
 
-        function selectSnAvailable(value) {
+        // ================================
+        // Pilih SN Available (CCW)
+        // ================================
+        async function selectSnAvailable(value) {
             const index = document.getElementById('detailSN_index').value;
             const indexSalesDoc = document.getElementById('detailSN_index_sales_doc').value;
 
-            const compare = JSON.parse(localStorage.getItem('compare')) ?? [];
-            let serialNumber = JSON.parse(localStorage.getItem('serialNumber')) ?? [];
+            const compare = await storage.getJSON('compare', []);
+            let serialNumber = await storage.getJSON('serialNumber', []);
 
-            if (serialNumber.length === parseInt(compare[index].salesDoc[indexSalesDoc].qty)) {
-                Swal.fire({
-                    title: 'Warning!',
-                    text: 'qty serial number exceeds qty product',
-                    icon: 'error'
-                });
+            if (serialNumber.length === toInt(compare[index].salesDoc[indexSalesDoc].qty)) {
+                Swal.fire({ title: 'Warning!', text: 'qty serial number exceeds qty product', icon: 'error' });
                 return true;
             }
 
-            const checkSN = serialNumber.find((item) => item === value);
-            if (checkSN != null) {
-                document.getElementById('scanSerialNumberErrorMessage').innerText = "Serial number is already in the list";
-                document.getElementById('scanSerialNumberError').style.display = "block";
-
-                setTimeout(() => {
-                    document.getElementById('scanSerialNumberError').style.display = "none";
-                }, 3000);
-
-                const sound = new Audio("{{ asset('assets/sound/error.mp3') }}");
-                sound.play();
-
-                document.getElementById('scanSerialNumber').value = "";
-                document.getElementById('scanSerialNumber').focus();
-
+            const exists = serialNumber.find((i) => i === value);
+            if (exists != null) {
+                document.getElementById('scanSerialNumberErrorMessage').innerText = 'Serial number is already in the list';
+                document.getElementById('scanSerialNumberError').style.display = 'block';
+                setTimeout(() => { document.getElementById('scanSerialNumberError').style.display = 'none'; }, 3000);
+                new Audio("{{ asset('assets/sound/error.mp3') }}").play();
+                const input = document.getElementById('scanSerialNumber');
+                if (input) { input.value = ''; input.focus(); }
                 return true;
             }
 
             serialNumber.push(value);
             compare[index].salesDoc[indexSalesDoc].serialNumber = serialNumber;
 
-            localStorage.setItem('compare', JSON.stringify(compare));
-            localStorage.setItem('serialNumber', JSON.stringify(serialNumber));
+            await storage.setJSON('compare', compare);
+            await storage.setJSON('serialNumber', serialNumber);
 
-            const sound = new Audio("{{ asset('assets/sound/scan.mp3') }}");
-            sound.play();
+            new Audio("{{ asset('assets/sound/scan.mp3') }}").play();
 
-            const ccw = JSON.parse(localStorage.getItem('ccw'));
+            const ccw = await storage.getJSON('ccw', []);
             const data = ccw[index];
+            (data.snAvailable || []).forEach((item) => { if (item.serialNumber === value) item.status = false; });
+            await storage.setJSON('ccw', ccw);
 
-            (data.snAvailable).forEach((item) => {
-                if (item.serialNumber === value) {
-                    item.status = false;
-                }
-            });
-
-            localStorage.setItem('ccw', JSON.stringify(ccw));
-
-            viewSerialNumber(index, indexSalesDoc);
-            document.getElementById('scanSerialNumber').value = "";
-            document.getElementById('scanSerialNumber').focus();
-            viewCompareSAPCCW();
+            await viewSerialNumber(index, indexSalesDoc);
+            const input = document.getElementById('scanSerialNumber');
+            if (input) { input.value = ''; input.focus(); }
+            await viewCompareSAPCCW();
         }
 
-        document.getElementById('scanSerialNumber').addEventListener('keydown', function(e) {
-            if (e.key === "Enter") {
-                e.preventDefault();
-                const value = this.value.trim();
-                if (value !== "") {
-                    const index = document.getElementById('detailSN_index').value;
-                    const indexSalesDoc = document.getElementById('detailSN_index_sales_doc').value;
+        // ================================
+        // Scanner Enter Listeners (SN & SN Direct)
+        // ================================
+        document.getElementById('scanSerialNumber')?.addEventListener('keydown', async function(e) {
+            if (e.key !== 'Enter') return; e.preventDefault();
+            const value = this.value.trim();
 
-                    const compare = JSON.parse(localStorage.getItem('compare')) ?? [];
-                    let serialNumber = JSON.parse(localStorage.getItem('serialNumber')) ?? [];
-
-                    if (serialNumber.length === parseInt(compare[index].salesDoc[indexSalesDoc].qty)) {
-                        Swal.fire({
-                            title: 'Warning!',
-                            text: 'qty serial number exceeds qty product',
-                            icon: 'error'
-                        });
-                        return true;
-                    }
-
-                    const checkSN = serialNumber.find((item) => item === value);
-                    if (checkSN != null) {
-                        document.getElementById('scanSerialNumberErrorMessage').innerText = "Serial number is already in the list";
-                        document.getElementById('scanSerialNumberError').style.display = "block";
-
-                        setTimeout(() => {
-                            document.getElementById('scanSerialNumberError').style.display = "none";
-                        }, 3000);
-
-                        const sound = new Audio("{{ asset('assets/sound/error.mp3') }}");
-                        sound.play();
-
-                        document.getElementById('scanSerialNumber').value = "";
-                        document.getElementById('scanSerialNumber').focus();
-
-                        return true;
-                    }
-
-                    serialNumber.push(value);
-                    compare[index].salesDoc[indexSalesDoc].serialNumber = serialNumber;
-
-                    localStorage.setItem('compare', JSON.stringify(compare));
-                    localStorage.setItem('serialNumber', JSON.stringify(serialNumber));
-
-                    const sound = new Audio("{{ asset('assets/sound/scan.mp3') }}");
-                    sound.play();
-
-                    viewSerialNumber(index, indexSalesDoc);
-                    document.getElementById('scanSerialNumber').value = "";
-                    document.getElementById('scanSerialNumber').focus();
-                    viewCompareSAPCCW();
-                } else {
-                    document.getElementById('scanSerialNumberErrorMessage').innerText = "Serial number cannot be empty";
-                    document.getElementById('scanSerialNumberError').style.display = "block";
-
-                    setTimeout(() => {
-                        document.getElementById('scanSerialNumberError').style.display = "none";
-                    }, 3000);
-
-                    const sound = new Audio("{{ asset('assets/sound/error.mp3') }}");
-                    sound.play();
-
-                    document.getElementById('scanSerialNumber').value = "";
-                    document.getElementById('scanSerialNumber').focus();
-                }
+            if (!value) {
+                document.getElementById('scanSerialNumberErrorMessage').innerText = 'Serial number cannot be empty';
+                document.getElementById('scanSerialNumberError').style.display = 'block';
+                setTimeout(() => { document.getElementById('scanSerialNumberError').style.display = 'none'; }, 3000);
+                new Audio("{{ asset('assets/sound/error.mp3') }}").play();
+                this.value = ''; this.focus();
+                return;
             }
+
+            const index = document.getElementById('detailSN_index').value;
+            const indexSalesDoc = document.getElementById('detailSN_index_sales_doc').value;
+            const compare = await storage.getJSON('compare', []);
+            let serialNumber = await storage.getJSON('serialNumber', []);
+
+            if (serialNumber.length === toInt(compare[index].salesDoc[indexSalesDoc].qty)) {
+                Swal.fire({ title: 'Warning!', text: 'qty serial number exceeds qty product', icon: 'error' });
+                return true;
+            }
+
+            const exists = serialNumber.find((i) => i === value);
+            if (exists != null) {
+                document.getElementById('scanSerialNumberErrorMessage').innerText = 'Serial number is already in the list';
+                document.getElementById('scanSerialNumberError').style.display = 'block';
+                setTimeout(() => { document.getElementById('scanSerialNumberError').style.display = 'none'; }, 3000);
+                new Audio("{{ asset('assets/sound/error.mp3') }}").play();
+                this.value = ''; this.focus();
+                return true;
+            }
+
+            serialNumber.push(value);
+            compare[index].salesDoc[indexSalesDoc].serialNumber = serialNumber;
+
+            await storage.setJSON('compare', compare);
+            await storage.setJSON('serialNumber', serialNumber);
+
+            new Audio("{{ asset('assets/sound/scan.mp3') }}").play();
+            await viewSerialNumber(index, indexSalesDoc);
+            this.value = ''; this.focus();
+            await viewCompareSAPCCW();
         });
 
-        document.getElementById('scanSerialNumberDirect').addEventListener('keydown', function(e) {
-            if (e.key === "Enter") {
-                e.preventDefault();
-                const value = this.value.trim();
-                if (value !== "") {
-                    const index = document.getElementById('detail_Direct_index').value;
-                    const indexSalesDoc = document.getElementById('detail_Direct_indexSalesDoc').value;
-                    const compare = JSON.parse(localStorage.getItem('compare')) ?? [];
-                    const serialNumber = compare[index].salesDoc[indexSalesDoc].snDirect;
-
-                    const checkSN = serialNumber.find((item) => item === value);
-                    if (checkSN != null) {
-                        document.getElementById('scanSerialNumberDirectErrorMessage').innerText = "Serial number is already in the list";
-                        document.getElementById('scanSerialNumberDirectError').style.display = "block";
-
-                        setTimeout(() => {
-                            document.getElementById('scanSerialNumberDirectError').style.display = "none";
-                        }, 3000);
-
-                        const sound = new Audio("{{ asset('assets/sound/error.mp3') }}");
-                        sound.play();
-
-                        document.getElementById('scanSerialNumberDirect').value = "";
-                        document.getElementById('scanSerialNumberDirect').focus();
-
-                        return true;
-                    }
-
-                    const checkQTY = compare[index].salesDoc[indexSalesDoc].snDirect.length + compare[index].salesDoc[indexSalesDoc].serialNumber.length;
-                    if (checkQTY === parseInt(compare[index].salesDoc[indexSalesDoc].qty)) {
-                        Swal.fire({
-                            title: 'Warning!',
-                            text: 'qty serial number exceeds qty product',
-                            icon: 'error'
-                        });
-
-                        return true;
-                    }
-
-                    serialNumber.push(value);
-                    compare[index].salesDoc[indexSalesDoc].qtyDirect = serialNumber.length;
-
-                    localStorage.setItem('compare', JSON.stringify(compare));
-                    viewSerialNumberDirectOutbound(index, indexSalesDoc);
-
-                    const sound = new Audio("{{ asset('assets/sound/scan.mp3') }}");
-                    sound.play();
-
-                    document.getElementById('scanSerialNumberDirect').value = "";
-                    document.getElementById('scanSerialNumberDirect').focus();
-                    viewCompareSAPCCW();
-                } else {
-                    document.getElementById('scanSerialNumberDirectErrorMessage').innerText = "Serial number cannot be empty";
-                    document.getElementById('scanSerialNumberDirectError').style.display = "block";
-
-                    setTimeout(() => {
-                        document.getElementById('scanSerialNumberDirectError').style.display = "none";
-                    }, 3000);
-
-                    const sound = new Audio("{{ asset('assets/sound/error.mp3') }}");
-                    sound.play();
-
-                    document.getElementById('scanSerialNumberDirect').value = "";
-                    document.getElementById('scanSerialNumberDirect').focus();
-                }
+        document.getElementById('scanSerialNumberDirect')?.addEventListener('keydown', async function(e) {
+            if (e.key !== 'Enter') return; e.preventDefault();
+            const value = this.value.trim();
+            if (!value) {
+                document.getElementById('scanSerialNumberDirectErrorMessage').innerText = 'Serial number cannot be empty';
+                document.getElementById('scanSerialNumberDirectError').style.display = 'block';
+                setTimeout(() => { document.getElementById('scanSerialNumberDirectError').style.display = 'none'; }, 3000);
+                new Audio("{{ asset('assets/sound/error.mp3') }}").play();
+                this.value = ''; this.focus();
+                return;
             }
+
+            const index = document.getElementById('detail_Direct_index').value;
+            const indexSalesDoc = document.getElementById('detail_Direct_indexSalesDoc').value;
+            const compare = await storage.getJSON('compare', []);
+            const serialNumber = compare[index].salesDoc[indexSalesDoc].snDirect;
+
+            const exists = serialNumber.find((i) => i === value);
+            if (exists != null) {
+                document.getElementById('scanSerialNumberDirectErrorMessage').innerText = 'Serial number is already in the list';
+                document.getElementById('scanSerialNumberDirectError').style.display = 'block';
+                setTimeout(() => { document.getElementById('scanSerialNumberDirectError').style.display = 'none'; }, 3000);
+                new Audio("{{ asset('assets/sound/error.mp3') }}").play();
+                this.value = ''; this.focus();
+                return true;
+            }
+
+            const checkQTY = serialNumber.length + compare[index].salesDoc[indexSalesDoc].serialNumber.length;
+            if (checkQTY === toInt(compare[index].salesDoc[indexSalesDoc].qty)) {
+                Swal.fire({ title: 'Warning!', text: 'qty serial number exceeds qty product', icon: 'error' });
+                return true;
+            }
+
+            serialNumber.push(value);
+            compare[index].salesDoc[indexSalesDoc].qtyDirect = serialNumber.length;
+
+            await storage.setJSON('compare', compare);
+            await viewSerialNumberDirectOutbound(index, indexSalesDoc);
+
+            new Audio("{{ asset('assets/sound/scan.mp3') }}").play();
+            this.value = ''; this.focus();
+            await viewCompareSAPCCW();
         });
 
-        function pilihSemuaSN() {
-            const ccw = JSON.parse(localStorage.getItem('ccw')) ?? [];
+        // ================================
+        // Pilih semua SN available
+        // ================================
+        async function pilihSemuaSN() {
+            const ccw = await storage.getJSON('ccw', []);
             const indexCCW = document.getElementById('detailSN_ccw_index').value;
-
-            const serialNumber = ccw[indexCCW].snAvailable;
-            serialNumber.forEach((item) => {
-                if (item.status === true) {
-                    selectSnAvailable(item.serialNumber);
-                }
-            });
+            const list = (ccw[indexCCW]?.snAvailable || []);
+            for (const item of list) { if (item.status === true) await selectSnAvailable(item.serialNumber); }
         }
 
-        // Manual Sales Doc
-        function manualSalesDoc(index) {
-            const compare = JSON.parse(localStorage.getItem('compare')) ?? [];
+        // ================================
+        // Manual Sales Doc (Modal)
+        // ================================
+        async function manualSalesDoc(index) {
+            const compare = await storage.getJSON('compare', []);
             const findCompare = compare[index];
-            localStorage.setItem('salesDocManual', JSON.stringify(findCompare));
+            await storage.setJSON('salesDocManual', findCompare);
 
             document.getElementById('salesDocManual_line_number').innerText = findCompare.lineNumber;
             document.getElementById('salesDocManual_item_name').innerText = findCompare.itemName;
@@ -1324,30 +1156,30 @@
             $('#manualSalesDocModal').modal('show');
         }
 
-        function addSalesDocManualProcess() {
-            const sap = JSON.parse(localStorage.getItem('sap')) ?? [];
-            const compare = JSON.parse(localStorage.getItem('compare')) ?? [];
-            const salesDocManual = JSON.parse(localStorage.getItem('salesDocManual')) ?? [];
+        async function addSalesDocManualProcess() {
+            const sap = await storage.getJSON('sap', []);
+            const compare = await storage.getJSON('compare', []);
+            const salesDocManual = await storage.getJSON('salesDocManual', {});
 
-            // Tambahkan data ke PO SAP
+            // simple unique id (YYYYMMDDHHMMSS)
             const id = new Date().toISOString().replace(/[-:TZ.]/g, '').slice(0,14);
 
             sap.push({
-                id: id,
+                id,
                 item: '',
                 material: salesDocManual.itemName,
                 poItemDesc: salesDocManual.itemDesc,
                 prodHierarchyDesc: '',
-                qty: parseInt(document.getElementById('salesDocManualQTY').value),
+                qty: toInt(document.getElementById('salesDocManualQTY').value),
                 salesDoc: document.getElementById('salesDocManual').value,
                 select: 1,
                 manual: true
             });
-            localStorage.setItem('sap', JSON.stringify(sap));
+            await storage.setJSON('sap', sap);
 
-            // Pilih Sales Doc
-            const index = parseInt(document.getElementById('salesDocManual_compareIndex').value);
-            pilihSalesDocProcess(index, id, null);
+            // pilih otomatis
+            const index = toInt(document.getElementById('salesDocManual_compareIndex').value);
+            await pilihSalesDocProcess(index, id, null);
 
             document.getElementById('salesDocManualQTY').value = '';
             document.getElementById('salesDocManual').value = '';
