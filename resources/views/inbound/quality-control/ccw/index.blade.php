@@ -38,7 +38,10 @@
                 <div class="card-header">
                     <div class="d-flex justify-content-between align-items-center">
                         <h4 class="card-title mb-0">Purchase Order CCW</h4>
-                        <a class="btn btn-primary" onclick="processQualityControl()">Process Quality Control</a>
+                        <div class="d-flex gap-2">
+                            <a class="btn btn-warning" onclick="saveDraft()">Save Draft CCW</a>
+                            <a class="btn btn-primary" onclick="processQualityControl()">Process Quality Control</a>
+                        </div>
                     </div>
                 </div>
                 <div class="card-body">
@@ -371,6 +374,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
     <script src="https://unpkg.com/dexie@4/dist/dexie.js"></script>
+    <script src="https://unpkg.com/dexie@4/dist/dexie.js"></script>
     <script>
         // ================================
         // Dexie (IndexedDB) KV Helpers
@@ -390,11 +394,17 @@
         const toInt = (v) => parseInt(v ?? 0, 10);
 
         // ================================
-        // Init Page
+        // Init Page (with Draft support)
         // ================================
         (async function initPage(){
             await storage.clear();
-            await loadProductPurchaseOrder();
+
+            // Try load draft first; if none, load from Blade data
+            const hasDraft = await loadDraftIfAny();
+            if (!hasDraft) {
+                await loadProductPurchaseOrder();
+            }
+
             await viewPoSAP();
         })();
 
@@ -1185,6 +1195,93 @@
             document.getElementById('salesDocManual').value = '';
             $('#manualSalesDocModal').modal('hide');
         }
+
+        // ================================
+        // Draft: Save & Load (Laravel API)
+        // ================================
+        const PURCHASE_ORDER_ID = '{{ request()->get('id') }}';
+        const DRAFT_ROUTE_SAVE = '{{ route('inbound.qc.draft.save') }}';   // POST
+        const DRAFT_ROUTE_LOAD = '{{ route('inbound.qc.draft.load') }}';   // GET ?purchaseOrderId=
+
+        // Call this on a button: <button id="saveDraftBtn" onclick="saveDraft()">Save Draft</button>
+        async function saveDraft() {
+            try {
+                const [sap, ccw, compare] = await Promise.all([
+                    storage.getJSON('sap', []),
+                    storage.getJSON('ccw', []),
+                    storage.getJSON('compare', [])
+                ]);
+
+                const payload = {
+                    purchaseOrderId: PURCHASE_ORDER_ID,
+                    sap, ccw, compare
+                };
+
+                const res = await fetch(DRAFT_ROUTE_SAVE, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!res.ok) throw new Error(await res.text());
+                const out = await res.json().catch(() => ({}));
+
+                // Optional: toast
+                if (window.Swal) {
+                    Swal.fire({ title: 'Draft saved', text: out.message || 'Draft berhasil disimpan', icon: 'success' });
+                } else {
+                    console.log('Draft saved');
+                }
+            } catch (err) {
+                console.error('Save draft error', err);
+                if (window.Swal) Swal.fire({ title: 'Error', text: 'Gagal menyimpan draft', icon: 'error' });
+            }
+        }
+
+        // Dipanggil saat initPage: kembalikan true kalau ada draft
+        async function loadDraftIfAny() {
+            try {
+                const url = `${DRAFT_ROUTE_LOAD}?purchaseOrderId=${encodeURIComponent(PURCHASE_ORDER_ID)}`;
+                const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+                if (!res.ok) return false; // 404/empty -> no draft
+
+                const data = await res.json(); // { sap:[], ccw:[], compare:[], updated_at?: string }
+                const hasAny = (data && (data.sap?.length || data.ccw?.length || data.compare?.length));
+                if (!hasAny) return false;
+
+                if (data.sap) await storage.setJSON('sap', data.sap);
+                if (data.ccw) await storage.setJSON('ccw', data.ccw);
+                if (data.compare) await storage.setJSON('compare', data.compare);
+
+                // Render UI from draft
+                await viewCompareSAPCCW();
+                await viewPoSAP();
+
+                return true;
+            } catch (err) {
+                console.warn('Load draft error or no draft', err);
+                return false;
+            }
+        }
+
+        // ================================
+        // Optional: Autosave Draft (every 60s if there is any data)
+        // ================================
+        let autosaveTimer = setInterval(async () => {
+            try {
+                const [sap, ccw, compare] = await Promise.all([
+                    storage.getJSON('sap', []),
+                    storage.getJSON('ccw', []),
+                    storage.getJSON('compare', [])
+                ]);
+                const hasData = (sap?.length || ccw?.length || compare?.length);
+                if (hasData) await saveDraft();
+            } catch (_) {}
+        }, 60000);
+
     </script>
 @endsection
 

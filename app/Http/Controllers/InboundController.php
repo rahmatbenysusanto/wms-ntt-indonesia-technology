@@ -1652,6 +1652,42 @@ class InboundController extends Controller
         $pdf = Pdf::loadView('pdf.inbound', $data)->setPaper('a4', 'landscape');;
         return $pdf->download('Purchase Order '.$purchaseOrder->purc_doc.'.pdf');
     }
+
+    public function ccwDraftSave(Request $request)
+    {
+        try {
+            DB::beginTransaction();
+
+            $sap = $request->input('sap', []);
+            $ccw = $request->input('ccw', []);
+            $compare = $request->input('compare', []);
+
+            PurchaseOrder::where('id', $request->input('purchaseOrderId'))
+                ->update([
+                    'sap'       => json_encode($sap, JSON_UNESCAPED_UNICODE),
+                    'ccw'       => json_encode($ccw, JSON_UNESCAPED_UNICODE),
+                    'compare'   => json_encode($compare, JSON_UNESCAPED_UNICODE),
+                ]);
+
+            DB::commit();
+
+            return response()->json(['ok' => true, 'message' => 'saved']);
+        } catch (\Exception $err) {
+            DB::rollBack();
+        }
+    }
+
+    public function ccwDraftLoad(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $data = PurchaseOrder::where('id', $request->input('purchaseOrderId'))->first();
+
+        return response()->json([
+            'sap'           => json_decode($data->sap ?? '[]', true),
+            'ccw'           => json_decode($data->ccw ?? '[]', true),
+            'compare'       => json_decode($data->compare ?? '[]', true),
+            'updated_at'    => $data->updated_at,
+        ]);
+    }
 }
 
 

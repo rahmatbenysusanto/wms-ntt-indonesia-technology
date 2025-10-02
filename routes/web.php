@@ -112,6 +112,10 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
             Route::get('/process-ccw', 'qualityControlProcessCcw')->name('inbound.quality-control-process-ccw');
             Route::post('/process-ccw', 'qualityControlStoreProcessCcw')->name('inbound.quality-control-process-ccw-store');
             Route::post('/upload-ccw', 'uploadFileCCW')->name('inbound.quality-control.upload.ccw');
+
+            // CCW DRAFT
+            Route::post('/ccw/draft', 'ccwDraftSave')->name('inbound.qc.draft.save');
+            Route::get('/ccw/draft', 'ccwDraftLoad')->name('inbound.qc.draft.load');
         });
 
         Route::prefix('/put-away')->group(function () {
