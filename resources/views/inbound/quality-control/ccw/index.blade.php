@@ -487,7 +487,8 @@
                         qty: s.qty,
                         serialNumber: item.serialNumber,
                         qtyDirect: 0,
-                        snDirect: []
+                        snDirect: [],
+                        manual: false
                     });
                     item.qtyAdd = s.qty;
                     s.select = 1;
@@ -966,7 +967,11 @@
                     onSuccess: async (fileName) => {
                         $.ajax({
                             url: '{{ route('inbound.quality-control-process-ccw-store') }}', method: 'POST',
-                            data: { _token: '{{ csrf_token() }}', fileName: JSON.stringify(await storage.getJSON('fileName')), purchaseOrderId: '{{ request()->get('id') }}' },
+                            data: {
+                                _token: '{{ csrf_token() }}',
+                                fileName: await storage.getJSON('fileName'),
+                                purchaseOrderId: '{{ request()->get('id') }}'
+                            },
                             success: (res) => {
                                 if (res.status) {
                                     Swal.fire({ title: 'Success!', text: 'Quality Control successfully!', icon: 'success', confirmButtonText: 'OK', customClass: { confirmButton: 'btn btn-primary w-xs mt-2' }, buttonsStyling: false })
@@ -1270,17 +1275,19 @@
         // ================================
         // Optional: Autosave Draft (every 60s if there is any data)
         // ================================
-        let autosaveTimer = setInterval(async () => {
-            try {
-                const [sap, ccw, compare] = await Promise.all([
-                    storage.getJSON('sap', []),
-                    storage.getJSON('ccw', []),
-                    storage.getJSON('compare', [])
-                ]);
-                const hasData = (sap?.length || ccw?.length || compare?.length);
-                if (hasData) await saveDraft();
-            } catch (_) {}
-        }, 60000);
+        // let autosaveTimer = setInterval(async () => {
+        //     try {
+        //         const [sap, ccw, compare] = await Promise.all([
+        //             storage.getJSON('sap', []),
+        //             storage.getJSON('ccw', []),
+        //             storage.getJSON('compare', [])
+        //         ]);
+        //         const hasData = (sap?.length || ccw?.length || compare?.length);
+        //         if (hasData) {
+        //             await saveDraft();
+        //         }
+        //     } catch (_) {}
+        // }, 60000);
 
     </script>
 @endsection
