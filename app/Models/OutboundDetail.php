@@ -25,6 +25,6 @@ class OutboundDetail extends Model
 
     public function outboundDetailSn(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
-        return $this->hasMany(OutboundDetailSn::class, 'outbound_detail_id');
+        return $this->hasMany(OutboundDetailSN::class, 'outbound_detail_id');
     }
 }
