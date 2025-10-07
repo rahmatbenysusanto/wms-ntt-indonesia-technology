@@ -123,9 +123,13 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"> </button>
                 </div>
                 <div class="modal-body">
+                    <input type="hidden" id="idModal">
                     <div class="row">
                         <div class="col-6">
-                            <h4 class="card-title mb-2">Data Serial Number</h4>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h4 class="card-title mb-2">Data Serial Number</h4>
+                                <a class="btn btn-danger btn-sm" onclick="pilihSemuaSN()">Pilih Semua SN</a>
+                            </div>
                             <table class="table table-striped align-middle">
                                 <thead>
                                     <tr>
@@ -358,6 +362,7 @@
 
             document.getElementById('listDataOutboundSN').innerHTML = serialNumber;
             document.getElementById('listDataSN').innerHTML = dataSN;
+            document.getElementById('idModal').value = index;
             $('#serialNumberModal').modal('show');
         }
 
@@ -417,6 +422,23 @@
 
             document.getElementById('listDataOutboundSN').innerHTML = serialNumber;
             document.getElementById('listDataSN').innerHTML = dataSN;
+        }
+
+        function pilihSemuaSN() {
+            const index = document.getElementById('idModal').value;
+            const products = JSON.parse(localStorage.getItem('salesDocProduct')) ?? [];
+            const product = products[index];
+
+            (product.dataSN).forEach((item) => {
+                item.select = 1;
+                const sudahAda = product.serialNumber.some(sn => sn.serialNumber === item.serialNumber);
+                if (!sudahAda) {
+                    product.serialNumber.push(item);
+                }
+            });
+
+            localStorage.setItem('salesDocProduct', JSON.stringify(products));
+            viewSerialNumberReload(index);
         }
 
         function createOrder() {

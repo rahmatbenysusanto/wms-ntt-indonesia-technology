@@ -110,7 +110,35 @@
                     <tr>
                         <td>Date</td>
                         <td>:</td>
-                        <td>{{ \Carbon\Carbon::parse($outbound->delivery_date)->translatedFormat('d F Y H:i') }}</td>
+                        <td>{{ \Carbon\Carbon::parse($outbound->delivery_date)->translatedFormat('d F Y') }}</td>
+                    </tr>
+                    <tr>
+                        <td>SO</td>
+                        <td>:</td>
+                        <td>
+                            @php
+                                $so = [];
+                            @endphp
+
+                            @foreach($outboundDetail as $detail)
+                                @php
+                                    $value = $detail->inventoryPackageItem->purchaseOrderDetail->sales_doc ?? '';
+                                    $numericValue = preg_replace('/\D/', '', $value);
+
+                                    if (strlen($numericValue) === 8) {
+                                        $so[] = $numericValue;
+                                    }
+                                @endphp
+                            @endforeach
+
+                            @php
+                                $so = array_unique($so);
+                            @endphp
+
+                            @foreach($so as $item)
+                                {{ $item . ' ' }}
+                            @endforeach
+                        </td>
                     </tr>
                 </table>
             </div>
@@ -136,10 +164,10 @@
                 <tr>
                     <td style="text-align: center">{{ $number++ }}</td>
                     <td>
+                        <div>{{ $detail->inventoryPackageItem->purchaseOrderDetail->material }}</div>
                         <div>{{ $detail->inventoryPackageItem->purchaseOrderDetail->sales_doc }}</div>
                     </td>
                     <td>
-                        <div><b>{{ $detail->inventoryPackageItem->purchaseOrderDetail->material }}</b></div>
                         <div>{{ $detail->inventoryPackageItem->purchaseOrderDetail->po_item_desc }}</div>
                         <div>{{ $detail->inventoryPackageItem->purchaseOrderDetail->prod_hierarchy_desc }}</div>
                         @if($detail->inventoryPackageItem->inventoryPackage->storage->id == 1)

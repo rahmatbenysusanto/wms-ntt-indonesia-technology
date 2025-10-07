@@ -21,87 +21,95 @@
         <div class="col-xxl-12">
             <div class="row">
                 <div class="col-xl-3">
-                    <div class="card card-animate">
-                        <div class="card-body">
-                            <div class="d-flex align-items-center">
-                                <div class="avatar-sm flex-shrink-0">
+                    <a href="{{ route('inbound.purchase-order') }}">
+                        <div class="card card-animate">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar-sm flex-shrink-0">
                                     <span class="avatar-title bg-primary rounded-2 fs-2">
                                         <i data-feather="briefcase"></i>
                                     </span>
-                                </div>
-                                <div class="flex-grow-1 overflow-hidden ms-3">
-                                    <p class="text-uppercase fw-medium text-muted text-truncate mb-3">Total Purchase Order</p>
-                                    <div class="d-flex align-items-center mb-3">
-                                        <h4 class="fs-4 flex-grow-1 mb-0"><span class="counter-value" data-target="{{ $totalPurcDoc }}">0</span></h4>
                                     </div>
-                                    <p class="text-muted text-truncate mb-0">Data di bulan {{ date('F Y') }}</p>
+                                    <div class="flex-grow-1 overflow-hidden ms-3">
+                                        <p class="text-uppercase fw-medium text-muted text-truncate mb-3">Total Purchase Order</p>
+                                        <div class="d-flex align-items-center mb-3">
+                                            <h4 class="fs-4 flex-grow-1 mb-0"><span class="counter-value" data-target="{{ $totalPurcDoc }}">0</span></h4>
+                                        </div>
+                                        <p class="text-muted text-truncate mb-0">Data di bulan {{ date('F Y') }}</p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    </a>
                 </div>
 
                 <div class="col-xl-3">
-                    <div class="card card-animate">
-                        <div class="card-body">
-                            <div class="d-flex align-items-center">
-                                <div class="avatar-sm flex-shrink-0">
+                    <a href="{{ route('inbound.purchase-order') }}">
+                        <div class="card card-animate">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar-sm flex-shrink-0">
                                     <span class="avatar-title bg-warning rounded-2 fs-2">
                                         <i data-feather="award"></i>
                                     </span>
-                                </div>
-                                <div class="flex-grow-1 ms-3">
-                                    <p class="text-uppercase fw-medium text-muted mb-3">Total Sales Doc</p>
-                                    <div class="d-flex align-items-center mb-3">
-                                        <h4 class="fs-4 flex-grow-1 mb-0"><span class="counter-value" data-target="{{ $totalSalesDoc }}">0</span></h4>
                                     </div>
-                                    <p class="text-muted text-truncate mb-0">Data di bulan {{ date('F Y') }}</p>
+                                    <div class="flex-grow-1 ms-3">
+                                        <p class="text-uppercase fw-medium text-muted mb-3">Total Sales Doc</p>
+                                        <div class="d-flex align-items-center mb-3">
+                                            <h4 class="fs-4 flex-grow-1 mb-0"><span class="counter-value" data-target="{{ $totalSalesDoc }}">0</span></h4>
+                                        </div>
+                                        <p class="text-muted text-truncate mb-0">Data di bulan {{ date('F Y') }}</p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    </a>
                 </div>
 
                 <div class="col-xl-3">
-                    <div class="card card-animate">
-                        <div class="card-body">
-                            <div class="d-flex align-items-center">
-                                <div class="avatar-sm flex-shrink-0">
+                    <a href="{{ route('inventory.index') }}">
+                        <div class="card card-animate">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar-sm flex-shrink-0">
                                     <span class="avatar-title bg-info rounded-2 fs-2">
                                         <i data-feather="clock"></i>
                                     </span>
-                                </div>
-                                <div class="flex-grow-1 overflow-hidden ms-3">
-                                    <p class="text-uppercase fw-medium text-muted text-truncate mb-3">Total Stock Product</p>
-                                    <div class="d-flex align-items-center mb-3">
-                                        <h4 class="fs-4 flex-grow-1 mb-0"><span class="counter-value" data-target="{{ $totalStock }}">0</span></h4>
                                     </div>
-                                    <p class="text-muted text-truncate mb-0">Data Stock Inventory</p>
+                                    <div class="flex-grow-1 overflow-hidden ms-3">
+                                        <p class="text-uppercase fw-medium text-muted text-truncate mb-3">Total Stock Product</p>
+                                        <div class="d-flex align-items-center mb-3">
+                                            <h4 class="fs-4 flex-grow-1 mb-0"><span class="counter-value" data-target="{{ $totalStock }}">0</span></h4>
+                                        </div>
+                                        <p class="text-muted text-truncate mb-0">Data Stock Inventory</p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    </a>
                 </div>
 
                 <div class="col-xl-3">
-                    <div class="card card-animate">
-                        <div class="card-body">
-                            <div class="d-flex align-items-center">
-                                <div class="avatar-sm flex-shrink-0">
+                    <a href="{{ route('inventory.box') }}">
+                        <div class="card card-animate">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar-sm flex-shrink-0">
                                     <span class="avatar-title bg-info rounded-2 fs-2">
                                         <i data-feather="clock"></i>
                                     </span>
-                                </div>
-                                <div class="flex-grow-1 overflow-hidden ms-3">
-                                    <p class="text-uppercase fw-medium text-muted text-truncate mb-3">Total Box</p>
-                                    <div class="d-flex align-items-center mb-3">
-                                        <h4 class="fs-4 flex-grow-1 mb-0"><span class="counter-value" data-target="{{ $stockGR }}">0</span></h4>
                                     </div>
-                                    <p class="text-muted text-truncate mb-0">Data Total Box</p>
+                                    <div class="flex-grow-1 overflow-hidden ms-3">
+                                        <p class="text-uppercase fw-medium text-muted text-truncate mb-3">Total Box</p>
+                                        <div class="d-flex align-items-center mb-3">
+                                            <h4 class="fs-4 flex-grow-1 mb-0"><span class="counter-value" data-target="{{ $stockGR }}">0</span></h4>
+                                        </div>
+                                        <p class="text-muted text-truncate mb-0">Data Total Box</p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    </a>
                 </div>
             </div>
         </div><!-- end col -->
