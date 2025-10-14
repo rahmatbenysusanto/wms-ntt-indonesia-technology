@@ -36,15 +36,6 @@ class AuthController extends Controller
             Auth::login($user);
             Session::put('user', $user);
 
-            // User Has Menu
-            $userHasMenu = DB::table('user_has_menu')
-                ->leftJoin('menu', 'user_has_menu.menu_id', '=', 'menu.id')
-                ->where('user_has_menu.user_id', $user->id)
-                ->where('menu.type', 'web')
-                ->pluck('menu.name');
-
-            Session::put('userHasMenu', $userHasMenu);
-
             return redirect()->route('dashboard');
         }
 
