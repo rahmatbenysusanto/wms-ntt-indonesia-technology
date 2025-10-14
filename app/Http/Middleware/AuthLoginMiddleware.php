@@ -26,7 +26,6 @@ class AuthLoginMiddleware
         $userHasMenu = DB::table('user_has_menu')
             ->leftJoin('menu', 'user_has_menu.menu_id', '=', 'menu.id')
             ->where('user_has_menu.user_id', Auth::id())
-            ->where('menu.type', 'web')
             ->pluck('menu.name');
 
         Session::put('userHasMenu', $userHasMenu);
