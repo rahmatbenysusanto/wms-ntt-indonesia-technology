@@ -37,8 +37,8 @@
                         @foreach($storage as $index => $item)
                             <tr>
                                 <td>{{ $storage->firstItem() + $index }}</td>
-                                <td>{{ $item->area }}</td>
                                 <td>{{ $item->raw }}</td>
+                                <td>{{ $item->area }}</td>
                                 <td>
                                     <a class="btn btn-danger btn-sm" onclick="deleteStorage(`{{ $item->id }}`)">Delete</a>
                                 </td>

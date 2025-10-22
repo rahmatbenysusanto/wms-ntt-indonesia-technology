@@ -120,6 +120,7 @@ class StorageController extends Controller
             ->whereNotNull('area')
             ->where('deleted_at', null)
             ->whereNotIn('id', [1, 2, 3, 4])
+            ->whereNull('deleted_at')
             ->paginate(10);
 
         $raw = Storage::whereNull('area')
