@@ -179,7 +179,7 @@
                     let html = '<option value="">-- Select Rak --</option>';
 
                     data.forEach((item) => {
-                        html += `<option value="${item.id}">${item.rak}</option>`;
+                        html += `<option value="${item.rak}">${item.rak}</option>`;
                     });
 
                     document.getElementById('formBin_rak').innerHTML = html;
