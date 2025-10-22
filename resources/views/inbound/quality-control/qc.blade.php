@@ -842,8 +842,6 @@
             const reader = new FileReader();
 
             reader.onload = function (e) {
-                localStorage.setItem('serialNumber', JSON.stringify([]));
-
                 const data = new Uint8Array(e.target.result);
                 const workbook = XLSX.read(data, { type: 'array' });
 
@@ -851,12 +849,12 @@
                 const worksheet = workbook.Sheets[firstSheetName];
 
                 const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+                const serialNumber = [];
+                jsonData.forEach((row) => {
+                    serialNumber.push(row["Serial Number"]);
+                });
 
-                const filteredData = jsonData.map((row) => ({
-                    serialNumber: row["Serial Number"],
-                }));
-
-                localStorage.setItem('serialNumber', JSON.stringify(filteredData));
+                localStorage.setItem('serialNumber', JSON.stringify(serialNumber));
                 viewSerialNumber();
             };
 
