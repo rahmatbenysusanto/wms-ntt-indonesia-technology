@@ -53,7 +53,7 @@
 <div class="mobile-header">
     <div class="row">
         <div class="col-2 d-flex align-items-center">
-            <a href="{{ route('inventory.aging.mobile') }}" class="ps-3">
+            <a href="{{ route('dashboard.mobile.aging.detail', ['type' => request()->get('type')]) }}" class="ps-3">
                 <i class="mdi mdi-arrow-left-thin text-white" style="font-size: 32px;"></i>
             </a>
         </div>
@@ -72,20 +72,57 @@
     <div class="row">
         <div class="col-12">
             @foreach($inventoryDetail as $detail)
-                <a href="{{ route('dashboard.mobile.aging.detail.list',['type' => request()->get('type'), 'po' => $detail->purc_doc]) }}">
-                    <div class="card inventory-card mb-2">
-                        <div class="card-body p-2">
-                            <div class="d-flex justify-content-between align-items-center mb-1">
-                                <div>
-                                    <div class="fw-bold">{{ $detail->purc_doc }}</div>
-                                    <small class="text-muted">{{ $detail->customer_name }}</small>
-                                </div>
+                <div class="card inventory-card mb-2">
+                    <div class="card-body p-2">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <div>
+                                <div class="fw-bold">{{ $detail->purc_doc }}</div>
+                                <small class="text-muted">SO#: {{ $detail->sales_doc }}</small>
                             </div>
-                            <div class="info-row">{{ $detail->vendor_name }}</div>
+                            <span class="badge bg-primary">{{ number_format($detail->qty) }}</span>
                         </div>
+                        <div class="info-row"><b>Nominal:</b> $ {{ number_format($detail->total) }}</div>
+                        <div class="info-row"><b>Material:</b> {{ $detail->material }}</div>
+                        <div class="info-row">{{ $detail->po_item_desc }}</div>
+                        <div class="info-row">{{ $detail->prod_hierarchy_desc }}</div>
                     </div>
-                </a>
+                </div>
             @endforeach
+
+            <div class="d-flex justify-content-end mt-2">
+                @if ($inventoryDetail->hasPages())
+                    <ul class="pagination">
+                        @if ($inventoryDetail->onFirstPage())
+                            <li class="disabled"><span>&laquo; Previous</span></li>
+                        @else
+                            <li><a href="{{ $inventoryDetail->previousPageUrl() }}&per_page={{ request('per_page', 10) }}" rel="prev">&laquo; Previous</a></li>
+                        @endif
+
+                        @foreach ($inventoryDetail->links()->elements as $element)
+                            @if (is_string($element))
+                                <li class="disabled"><span>{{ $element }}</span></li>
+                            @endif
+
+                            @if (is_array($element))
+                                @foreach ($element as $page => $url)
+                                    @if ($page == $inventoryDetail->currentPage())
+                                        <li class="active"><span>{{ $page }}</span></li>
+                                    @else
+                                        <li><a href="{{ $url }}&per_page={{ request('per_page', 10) }}">{{ $page }}</a></li>
+                                    @endif
+                                @endforeach
+                            @endif
+                        @endforeach
+
+                        @if ($inventoryDetail->hasMorePages())
+                            <li><a href="{{ $inventoryDetail->nextPageUrl() }}&per_page={{ request('per_page', 10) }}" rel="next">Next &raquo;</a></li>
+                        @else
+                            <li class="disabled"><span>Next &raquo;</span></li>
+                        @endif
+                    </ul>
+                @endif
+
+            </div>
         </div>
     </div>
 </div>

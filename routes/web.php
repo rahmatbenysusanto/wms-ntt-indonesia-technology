@@ -295,6 +295,7 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
 
             Route::get('/aging', 'agingMobile')->name('inventory.aging.mobile');
             Route::get('/aging-detail', 'agingDetailMobile')->name('dashboard.mobile.aging.detail');
+            Route::get('/aging-detail-list', 'agingDetailListMobile')->name('dashboard.mobile.aging.detail.list');
 
             // Download Report
             Route::get('/aging-detail-pdf', 'agingDetailPdf')->name('inventory.aging.detail.pdf');

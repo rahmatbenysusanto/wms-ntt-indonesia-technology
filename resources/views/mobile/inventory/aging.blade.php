@@ -46,6 +46,11 @@
             }
         }
 
+        .btn-white {
+            background-color: transparent !important;
+            border: none;
+            box-shadow: none;
+        }
     </style>
 </head>
 <body>
@@ -83,28 +88,28 @@
                             <td>1 - 90 Day</td>
                             <td>$ {{ number_format($agingType1->total, 2) }}</td>
                             <td class="text-center fw-bold">
-                                <a href="{{ route('dashboard.mobile.aging.detail', ['type' => 1]) }}" class="text-black">{{ number_format($agingType1->qty) }}</a>
+                                <a href="{{ route('dashboard.mobile.aging.detail', ['type' => 1]) }}" class="btn btn-white w-100 text-black">{{ number_format($agingType1->qty) }}</a>
                             </td>
                         </tr>
                         <tr>
                             <td>91 - 180 Day</td>
                             <td>$ {{ number_format($agingType2->total, 2) }}</td>
                             <td class="text-center fw-bold">
-                                <a href="{{ route('dashboard.mobile.aging.detail', ['type' => 2]) }}" class="text-black">{{ number_format($agingType2->qty) }}</a>
+                                <a href="{{ route('dashboard.mobile.aging.detail', ['type' => 2]) }}" class="btn btn-white w-100 text-black">{{ number_format($agingType2->qty) }}</a>
                             </td>
                         </tr>
                         <tr>
                             <td>181 - 365 Day</td>
                             <td>$ {{ number_format($agingType3->total, 2) }}</td>
                             <td class="text-center fw-bold">
-                                <a href="{{ route('dashboard.mobile.aging.detail', ['type' => 3]) }}" class="text-black">{{ number_format($agingType3->qty) }}</a>
+                                <a href="{{ route('dashboard.mobile.aging.detail', ['type' => 3]) }}" class="btn btn-white w-100 text-black">{{ number_format($agingType3->qty) }}</a>
                             </td>
                         </tr>
                         <tr>
                             <td>> 365 Day</td>
                             <td>$ {{ number_format($agingType4->total, 2) }}</td>
                             <td class="text-center fw-bold">
-                                <a href="{{ route('dashboard.mobile.aging.detail', ['type' => 4]) }}" class="text-black">{{ number_format($agingType4->qty) }}</a>
+                                <a href="{{ route('dashboard.mobile.aging.detail', ['type' => 4]) }}" class="btn btn-white w-100 text-black">{{ number_format($agingType4->qty) }}</a>
                             </td>
                         </tr>
                         </tbody>

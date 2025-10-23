@@ -919,26 +919,20 @@ class InventoryController extends Controller
                 $inventoryDetail = DB::table('inventory_detail')
                     ->leftJoin('purchase_order_detail', 'inventory_detail.purchase_order_detail_id', '=', 'purchase_order_detail.id')
                     ->leftJoin('purchase_order', 'purchase_order.id', '=', 'purchase_order_detail.purchase_order_id')
+                    ->leftJoin('customer', 'customer.id', '=', 'purchase_order.customer_id')
+                    ->leftJoin('vendor', 'vendor.id', '=', 'purchase_order.vendor_id')
                     ->whereBetween('inventory_detail.aging_date', [$start, $end])
                     ->where('inventory_detail.qty', '!=', 0)
                     ->select([
                         'purchase_order.purc_doc',
-                        'inventory_detail.sales_doc',
-                        'purchase_order_detail.material',
-                        'purchase_order_detail.po_item_desc',
-                        'purchase_order_detail.prod_hierarchy_desc',
-                        'inventory_detail.aging_date',
-                        DB::raw('SUM(inventory_detail.qty) as qty'),
-                        DB::raw('SUM(inventory_detail.qty * purchase_order_detail.net_order_price) as total')
+                        'customer.name AS customer_name',
+                        'vendor.name AS vendor_name',
                     ])
-                    ->groupBy(
+                    ->groupBy([
                         'purchase_order.purc_doc',
-                        'inventory_detail.aging_date',
-                        'inventory_detail.sales_doc',
-                        'purchase_order_detail.material',
-                        'purchase_order_detail.po_item_desc',
-                        'purchase_order_detail.prod_hierarchy_desc'
-                    )
+                        'customer.name',
+                        'vendor.name',
+                    ])
                     ->paginate(10)
                     ->appends([
                         'type' => $request->query('type')
@@ -954,25 +948,20 @@ class InventoryController extends Controller
                     ->leftJoin('purchase_order_detail', 'inventory_detail.purchase_order_detail_id', '=', 'purchase_order_detail.id')
                     ->leftJoin('purchase_order', 'purchase_order.id', '=', 'purchase_order_detail.purchase_order_id')
                     ->whereBetween('inventory_detail.aging_date', [$start, $end])
+                    ->leftJoin('customer', 'customer.id', '=', 'purchase_order.customer_id')
+                    ->leftJoin('vendor', 'vendor.id', '=', 'purchase_order.vendor_id')
+                    ->whereBetween('inventory_detail.aging_date', [$start, $end])
                     ->where('inventory_detail.qty', '!=', 0)
                     ->select([
                         'purchase_order.purc_doc',
-                        'inventory_detail.sales_doc',
-                        'purchase_order_detail.material',
-                        'purchase_order_detail.po_item_desc',
-                        'purchase_order_detail.prod_hierarchy_desc',
-                        'inventory_detail.aging_date',
-                        DB::raw('SUM(inventory_detail.qty) as qty'),
-                        DB::raw('SUM(inventory_detail.qty * purchase_order_detail.net_order_price) as total')
+                        'customer.name AS customer_name',
+                        'vendor.name AS vendor_name',
                     ])
-                    ->groupBy(
+                    ->groupBy([
                         'purchase_order.purc_doc',
-                        'inventory_detail.aging_date',
-                        'inventory_detail.sales_doc',
-                        'purchase_order_detail.material',
-                        'purchase_order_detail.po_item_desc',
-                        'purchase_order_detail.prod_hierarchy_desc'
-                    )
+                        'customer.name',
+                        'vendor.name',
+                    ])
                     ->paginate(10)
                     ->appends([
                         'type' => $request->query('type')
@@ -988,25 +977,20 @@ class InventoryController extends Controller
                     ->leftJoin('purchase_order_detail', 'inventory_detail.purchase_order_detail_id', '=', 'purchase_order_detail.id')
                     ->leftJoin('purchase_order', 'purchase_order.id', '=', 'purchase_order_detail.purchase_order_id')
                     ->whereBetween('inventory_detail.aging_date', [$start, $end])
+                    ->leftJoin('customer', 'customer.id', '=', 'purchase_order.customer_id')
+                    ->leftJoin('vendor', 'vendor.id', '=', 'purchase_order.vendor_id')
+                    ->whereBetween('inventory_detail.aging_date', [$start, $end])
                     ->where('inventory_detail.qty', '!=', 0)
                     ->select([
                         'purchase_order.purc_doc',
-                        'inventory_detail.sales_doc',
-                        'purchase_order_detail.material',
-                        'purchase_order_detail.po_item_desc',
-                        'purchase_order_detail.prod_hierarchy_desc',
-                        'inventory_detail.aging_date',
-                        DB::raw('SUM(inventory_detail.qty) as qty'),
-                        DB::raw('SUM(inventory_detail.qty * purchase_order_detail.net_order_price) as total')
+                        'customer.name AS customer_name',
+                        'vendor.name AS vendor_name',
                     ])
-                    ->groupBy(
+                    ->groupBy([
                         'purchase_order.purc_doc',
-                        'inventory_detail.sales_doc',
-                        'inventory_detail.aging_date',
-                        'purchase_order_detail.material',
-                        'purchase_order_detail.po_item_desc',
-                        'purchase_order_detail.prod_hierarchy_desc'
-                    )
+                        'customer.name',
+                        'vendor.name',
+                    ])
                     ->paginate(10)
                     ->appends([
                         'type' => $request->query('type')
@@ -1020,7 +1004,117 @@ class InventoryController extends Controller
                     ->leftJoin('purchase_order_detail', 'inventory_detail.purchase_order_detail_id', '=', 'purchase_order_detail.id')
                     ->leftJoin('purchase_order', 'purchase_order.id', '=', 'purchase_order_detail.purchase_order_id')
                     ->where('inventory_detail.aging_date', '<', $start)
+                    ->leftJoin('customer', 'customer.id', '=', 'purchase_order.customer_id')
+                    ->leftJoin('vendor', 'vendor.id', '=', 'purchase_order.vendor_id')
+                    ->whereBetween('inventory_detail.aging_date', [$start, $end])
                     ->where('inventory_detail.qty', '!=', 0)
+                    ->select([
+                        'purchase_order.purc_doc',
+                        'customer.name AS customer_name',
+                        'vendor.name AS vendor_name',
+                    ])
+                    ->groupBy([
+                        'purchase_order.purc_doc',
+                        'customer.name',
+                        'vendor.name',
+                    ])
+                    ->paginate(10)
+                    ->appends([
+                        'type' => $request->query('type')
+                    ]);
+                break;
+        }
+
+        $type = $request->query('type');
+        return view('mobile.inventory.aging-detail', compact('text', 'inventoryDetail', 'type'));
+    }
+
+    public function agingDetailListMobile(Request $request): View
+    {
+        switch ($request->query('type')) {
+            case 1:
+                $text = '1 - 90 Day';
+                $start = Carbon::now()->subDays(90)->startOfDay();
+                $end = Carbon::now()->subDays(1)->endOfDay();
+
+                $inventoryDetail = DB::table('inventory_detail')
+                    ->leftJoin('purchase_order_detail', 'inventory_detail.purchase_order_detail_id', '=', 'purchase_order_detail.id')
+                    ->leftJoin('purchase_order', 'purchase_order.id', '=', 'purchase_order_detail.purchase_order_id')
+                    ->whereBetween('inventory_detail.aging_date', [$start, $end])
+                    ->where('inventory_detail.qty', '!=', 0)
+                    ->where('purchase_order.purc_doc', $request->query('po'))
+                    ->select([
+                        'purchase_order.purc_doc',
+                        'inventory_detail.sales_doc',
+                        'purchase_order_detail.material',
+                        'purchase_order_detail.po_item_desc',
+                        'purchase_order_detail.prod_hierarchy_desc',
+                        'inventory_detail.aging_date',
+                        DB::raw('SUM(inventory_detail.qty) as qty'),
+                        DB::raw('SUM(inventory_detail.qty * purchase_order_detail.net_order_price) as total')
+                    ])
+                    ->groupBy(
+                        'purchase_order.purc_doc',
+                        'inventory_detail.aging_date',
+                        'inventory_detail.sales_doc',
+                        'purchase_order_detail.material',
+                        'purchase_order_detail.po_item_desc',
+                        'purchase_order_detail.prod_hierarchy_desc'
+                    )
+                    ->paginate(10)
+                    ->appends([
+                        'type'  => $request->query('type'),
+                        'po'    => $request->query('po')
+                    ]);
+
+                break;
+            case 2:
+                $text = '91 - 180 Day';
+                $start = Carbon::now()->subDays(180)->startOfDay();
+                $end = Carbon::now()->subDays(91)->endOfDay();
+
+                $inventoryDetail = DB::table('inventory_detail')
+                    ->leftJoin('purchase_order_detail', 'inventory_detail.purchase_order_detail_id', '=', 'purchase_order_detail.id')
+                    ->leftJoin('purchase_order', 'purchase_order.id', '=', 'purchase_order_detail.purchase_order_id')
+                    ->whereBetween('inventory_detail.aging_date', [$start, $end])
+                    ->where('inventory_detail.qty', '!=', 0)
+                    ->where('purchase_order.purc_doc', $request->query('po'))
+                    ->select([
+                        'purchase_order.purc_doc',
+                        'inventory_detail.sales_doc',
+                        'purchase_order_detail.material',
+                        'purchase_order_detail.po_item_desc',
+                        'purchase_order_detail.prod_hierarchy_desc',
+                        'inventory_detail.aging_date',
+                        DB::raw('SUM(inventory_detail.qty) as qty'),
+                        DB::raw('SUM(inventory_detail.qty * purchase_order_detail.net_order_price) as total')
+                    ])
+                    ->groupBy(
+                        'purchase_order.purc_doc',
+                        'inventory_detail.aging_date',
+                        'inventory_detail.sales_doc',
+                        'purchase_order_detail.material',
+                        'purchase_order_detail.po_item_desc',
+                        'purchase_order_detail.prod_hierarchy_desc'
+                    )
+                    ->paginate(10)
+                    ->appends([
+                        'type'  => $request->query('type'),
+                        'po'    => $request->query('po')
+                    ]);
+
+                break;
+            case 3:
+                $text = '181 - 365 Day';
+                $start = Carbon::now()->subDays(365)->startOfDay();
+                $end = Carbon::now()->subDays(181)->endOfDay();
+
+                $inventoryDetail = DB::table('inventory_detail')
+                    ->leftJoin('purchase_order_detail', 'inventory_detail.purchase_order_detail_id', '=', 'purchase_order_detail.id')
+                    ->leftJoin('purchase_order', 'purchase_order.id', '=', 'purchase_order_detail.purchase_order_id')
+                    ->whereBetween('inventory_detail.aging_date', [$start, $end])
+                    ->where('inventory_detail.qty', '!=', 0)
+                    ->where('purchase_order.purc_doc', $request->query('po'))
                     ->select([
                         'purchase_order.purc_doc',
                         'inventory_detail.sales_doc',
@@ -1041,13 +1135,48 @@ class InventoryController extends Controller
                     )
                     ->paginate(10)
                     ->appends([
-                        'type' => $request->query('type')
+                        'type'  => $request->query('type'),
+                        'po'    => $request->query('po')
+                    ]);
+                break;
+            case 4:
+                $text = '> 365 Day';
+                $start = Carbon::now()->subDays(365)->startOfDay();
+
+                $inventoryDetail = DB::table('inventory_detail')
+                    ->leftJoin('purchase_order_detail', 'inventory_detail.purchase_order_detail_id', '=', 'purchase_order_detail.id')
+                    ->leftJoin('purchase_order', 'purchase_order.id', '=', 'purchase_order_detail.purchase_order_id')
+                    ->where('inventory_detail.aging_date', '<', $start)
+                    ->where('inventory_detail.qty', '!=', 0)
+                    ->where('purchase_order.purc_doc', $request->query('po'))
+                    ->select([
+                        'purchase_order.purc_doc',
+                        'inventory_detail.sales_doc',
+                        'purchase_order_detail.material',
+                        'purchase_order_detail.po_item_desc',
+                        'purchase_order_detail.prod_hierarchy_desc',
+                        'inventory_detail.aging_date',
+                        DB::raw('SUM(inventory_detail.qty) as qty'),
+                        DB::raw('SUM(inventory_detail.qty * purchase_order_detail.net_order_price) as total')
+                    ])
+                    ->groupBy(
+                        'purchase_order.purc_doc',
+                        'inventory_detail.sales_doc',
+                        'inventory_detail.aging_date',
+                        'purchase_order_detail.material',
+                        'purchase_order_detail.po_item_desc',
+                        'purchase_order_detail.prod_hierarchy_desc'
+                    )
+                    ->paginate(10)
+                    ->appends([
+                        'type'  => $request->query('type'),
+                        'po'    => $request->query('po')
                     ]);
                 break;
         }
 
         $type = $request->query('type');
-        return view('mobile.inventory.aging-detail', compact('text', 'inventoryDetail', 'type'));
+        return view('mobile.inventory.aging-detail-list', compact('text', 'inventoryDetail', 'type'));
     }
 
     public function downloadExcel(): StreamedResponse
