@@ -683,16 +683,10 @@ class InboundController extends Controller
             ])->where('product_package_id', $request->query('id'))
             ->get();
 
-        $storageRaw = Storage::where('raw', '!=', '-')
-            ->where('area', null)
-            ->where('rak', null)
-            ->where('bin', null)
-            ->whereNotIn('id', [1,2,3,4])
-            ->whereNull('deleted_at')
-            ->get();
+        $storage = Storage::whereNotNull('raw')->whereNotNull('area')->whereNotNull('rak')->whereNotNull('bin')->whereNull('deleted_at')->get();
 
         $title = 'Put Away';
-        return view('inbound.put-away.process', compact('title', 'products', 'storageRaw'));
+        return view('inbound.put-away.process', compact('title', 'products', 'storage'));
     }
 
     public function putAwayEdit(Request $request): View
@@ -768,7 +762,7 @@ class InboundController extends Controller
 
                 $inventoryPackage = InventoryPackage::create([
                     'purchase_order_id'     => $productPackage->purchase_order_id,
-                    'storage_id'            => $request->post('bin'),
+                    'storage_id'            => $box['location'],
                     'number'                => $putAwayNumber.'-'.$numberBox,
                     'reff_number'           => $numberBox.' of '.$totalBox,
                     'qty_item'              => 0,
@@ -798,7 +792,7 @@ class InboundController extends Controller
                     InventoryDetail::create([
                         'inventory_id'              => $inventoryId,
                         'purchase_order_detail_id'  => $parent['purchaseOrderDetailId'],
-                        'storage_id'                => $request->post('bin'),
+                        'storage_id'                => $box['location'],
                         'inventory_package_item_id' => $inventoryPackageItem->id,
                         'sales_doc'                 => $parent['salesDoc'],
                         'qty'                       => $parent['qtySelect'],
@@ -841,7 +835,7 @@ class InboundController extends Controller
                     InventoryDetail::create([
                         'inventory_id'              => $inventoryId,
                         'purchase_order_detail_id'  => $child['purchaseOrderDetailId'],
-                        'storage_id'                => $request->post('bin'),
+                        'storage_id'                => $box['location'],
                         'inventory_package_item_id' => $inventoryPackageItem->id,
                         'sales_doc'                 => $child['salesDoc'],
                         'qty'                       => $child['qtySelect'],

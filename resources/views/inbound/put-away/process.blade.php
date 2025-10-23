@@ -50,45 +50,6 @@
         <div class="col-12">
             <div class="card">
                 <div class="card-header">
-                    <h4 class="card-title mb-0">Storage Location</h4>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-3">
-                            <label class="form-label">Area</label>
-                            <select class="form-control" onchange="changeRaw(this.value)" id="raw">
-                                <option value="">-- Select Area --</option>
-                                @foreach($storageRaw as $raw)
-                                    <option value="{{ $raw->raw }}">{{ $raw->raw }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="col-3">
-                            <label class="form-label">Raw</label>
-                            <select class="form-control" id="area" onchange="changeArea(this.value)">
-
-                            </select>
-                        </div>
-                        <div class="col-3">
-                            <label class="form-label">Rak</label>
-                            <select class="form-control" id="rak" onchange="changeRak(this.value)">
-
-                            </select>
-                        </div>
-                        <div class="col-3">
-                            <label class="form-label">Bin</label>
-                            <select class="form-control" id="bin" name="bin">
-
-                            </select>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
                     <div class="d-flex justify-content-between align-items-center">
                         <h4 class="card-title mb-0">Set Box Product</h4>
                         <a class="btn btn-info btn-sm" onclick="addBox()">Add Box</a>
@@ -105,6 +66,7 @@
                                 <th>Material</th>
                                 <th class="text-center">QTY</th>
                                 <th>Serial Number</th>
+                                <th>Location</th>
                                 <th>Action</th>
                             </tr>
                         </thead>
@@ -297,55 +259,6 @@
             </div>
         </div>
     </div>
-
-    <!-- Set Location Modals -->
-    <div id="setLocationModal" class="modal fade" tabindex="-1" aria-labelledby="myModalLabel" aria-hidden="true" style="display: none;">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="myModalLabel">Set Location Item</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"> </button>
-                </div>
-                <div class="modal-body">
-                    <form action="{{ route('inbound.put-away.store') }}" method="POST">
-                        @csrf
-                        <input type="hidden" name="id" id="setLocationId">
-                        <input type="hidden" name="number" value="{{ request()->get('number') }}">
-                        <div class="mb-3">
-                            <label class="form-label">Raw</label>
-                            <select class="form-control" onchange="changeRaw(this.value)" id="raw">
-                                <option value="">-- Select Raw --</option>
-                                @foreach($storageRaw as $raw)
-                                    <option value="{{ $raw->raw }}">{{ $raw->raw }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Area</label>
-                            <select class="form-control" id="area" onchange="changeArea(this.value)">
-
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Rak</label>
-                            <select class="form-control" id="rak" onchange="changeRak(this.value)">
-
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Bin</label>
-                            <select class="form-control" id="bin" name="bin">
-
-                            </select>
-                        </div>
-                        <div class="d-flex justify-content-end">
-                            <button type="submit" class="btn btn-primary">Set Location</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
 @endsection
 
 @section('js')
@@ -387,6 +300,20 @@
 
             localStorage.setItem('master', JSON.stringify(listProduct));
             viewProductMaster();
+
+            const dataLocation = @json($storage);
+            const location = [];
+
+            dataLocation.forEach((loc) => {
+                location.push({
+                    id: loc.id,
+                    raw: loc.raw,
+                    area: loc.area,
+                    rak: loc.rak,
+                    bin: loc.bin,
+                });
+            });
+            localStorage.setItem('location', JSON.stringify(location));
         }
 
         function getSerialNumber(type, id, detail) {
@@ -522,6 +449,7 @@
 
             box.push({
                 boxNumber: box.length + 1,
+                location: null,
                 parent: parent,
                 child: child
             });
@@ -544,6 +472,13 @@
                         colorBtn = 'success';
                     }
 
+                    // Location
+                    const location = JSON.parse(localStorage.getItem('location')) ?? [];
+                    let htmlLocation = '<option value="">-- Choose Location --</option>';
+                    location.forEach((loc) => {
+                        htmlLocation += `<option value="${loc.id}" ${item.location === loc.id ? 'selected' : ''}>${loc.raw} | ${loc.area} | ${loc.rak} | ${loc.bin}</option>`;
+                    });
+
                     html += `
                         <tr>
                             <td class="text-center fw-bold">${item.boxNumber}</td>
@@ -553,6 +488,11 @@
                             <td>${parent.material}</td>
                             <td class="text-center fw-bold">${parent.qtySelect}</td>
                             <td><a class="btn btn-${colorBtn} btn-sm" onclick="serialNumber('parent', '${index}', '${indexParent}', '${parent.indexMaster}')">Serial Number</a></td>
+                            <td>
+                                <select class="form-control" onchange="changeLocation(${index}, this.value)">
+                                    ${htmlLocation}
+                                </select>
+                            </td>
                             <td><a class="btn btn-danger btn-sm" onclick="deleteBox(${index})">Delete</a></td>
                         </tr>
                     `;
@@ -580,6 +520,15 @@
             });
 
             document.getElementById('listBox').innerHTML = html;
+        }
+
+        function changeLocation(index, value) {
+            const box = JSON.parse(localStorage.getItem('box')) ?? [];
+
+            box[index].location = parseInt(value);
+
+            localStorage.setItem('box', JSON.stringify(box));
+            viewListBox();
         }
 
         function serialNumber(type, index, indexDetail, indexMaster) {
@@ -1007,6 +956,15 @@
 
                     box.forEach(item => {
                         updateSerialNumbers([item.parent, item.child]);
+
+                        if (item.location === null || item.location === '') {
+                            Swal.fire({
+                                title: 'Warning!',
+                                text: 'Location cannot be empty',
+                                icon: 'warning'
+                            });
+                            return true;
+                        }
                     });
 
                     // Validation Storage Location
@@ -1028,7 +986,6 @@
                         data: {
                             _token: '{{ csrf_token() }}',
                             box: box,
-                            bin: document.getElementById('bin').value,
                             productPackageId: '{{ request()->get('id') }}'
                         },
                         success: (res) => {
