@@ -478,6 +478,7 @@ class InventoryController extends Controller
             ->where('rak', null)
             ->where('bin', null)
             ->whereNotIn('id', [1,2,3,4])
+            ->whereNull('deleted_at')
             ->get();
 
         $title = 'Inventory Box';
