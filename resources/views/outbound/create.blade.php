@@ -179,30 +179,65 @@
         }
         async function kvDelete(key) { return db.kv.delete(key); }
 
-        // ====================== Utils ======================
-        function safeParseJSON(val, fallback = []) {
-            if (val == null) return fallback;
-            if (Array.isArray(val)) return val;
-            if (typeof val === 'object') return val;
-            try { return JSON.parse(val); } catch (_) { return fallback; }
+        // ====================== Helpers ======================
+        // Normalisasi sales_docs agar SELALU array of string
+        function normalizeSalesDocs(raw) {
+            if (raw == null) return []; // null/undefined
+            if (Array.isArray(raw)) return raw.filter(v => v != null && v !== '').map(String);
+
+            // jika object biasa → coba ambil values
+            if (typeof raw === 'object') {
+                try {
+                    return Object.values(raw).filter(v => v != null && v !== '').map(String);
+                } catch { return []; }
+            }
+
+            // jika number/boolean → jadikan array dgn 1 elemen string
+            if (typeof raw === 'number' || typeof raw === 'boolean') {
+                return [String(raw)];
+            }
+
+            // sekarang pasti string
+            let s = String(raw).trim();
+            if (!s) return [];
+
+            // kalau string tampak seperti JSON array → parse aman
+            if ((s.startsWith('[') && s.endsWith(']')) || (s.startsWith('"') && s.endsWith('"'))) {
+                try {
+                    const parsed = JSON.parse(s);
+                    if (Array.isArray(parsed)) return parsed.filter(v => v != null && v !== '').map(String);
+                    return [String(parsed)];
+                } catch {
+                    // lanjut ke pola lain
+                }
+            }
+
+            // kalau string mengandung koma → split
+            if (s.includes(',')) {
+                return s.split(',').map(x => x.trim()).filter(v => v).map(String);
+            }
+
+            // fallback: satu string saja
+            return [s];
         }
 
         function reinitSalesDocTable() {
             const $tbl = $('#tabelSalesDoc');
-            if ($.fn.DataTable.isDataTable($tbl)) {
+            if ($.fn.DataTable && $.fn.DataTable.isDataTable($tbl)) {
                 $tbl.DataTable().destroy();
             }
-            $tbl.DataTable({
-                pageLength: 10,
-                responsive: true,
-                autoWidth: false
-            });
+            if ($.fn.DataTable) {
+                $tbl.DataTable({
+                    pageLength: 10,
+                    responsive: true,
+                    autoWidth: false
+                });
+            }
         }
 
         // ====================== Boot ======================
         $(document).ready(async function () {
-            // JANGAN pakai localStorage.clear() lagi
-            // Jangan init DataTable di sini; kita init setelah data dirender
+            // simpan data server ke IndexedDB
             try {
                 const salesDocServer = @json($salesDoc);
                 await kvSet('salesDoc', salesDocServer);
@@ -219,34 +254,40 @@
             let number = 1;
 
             salesDoc.forEach((item) => {
-                const docs = safeParseJSON(item.sales_docs, []);
+                const docs = normalizeSalesDocs(item?.sales_docs);
                 let salesDocHtml = '';
-                (docs || []).forEach((detail) => {
+                docs.forEach((detail) => {
                     salesDocHtml += `<div>${detail}</div>`;
                 });
 
-                let storage = `${item.storage.raw} - ${item.storage.area} - ${item.storage.rak} - ${item.storage.bin}`;
-                if (parseInt(item.storage?.id) === 1) storage = 'Cross Docking';
+                let storage = '';
+                if (item?.storage) {
+                    storage = `${item.storage.raw ?? ''} - ${item.storage.area ?? ''} - ${item.storage.rak ?? ''} - ${item.storage.bin ?? ''}`;
+                    if (parseInt(item.storage.id) === 1) storage = 'Cross Docking';
+                }
 
                 html += `
                     <tr>
                         <td>${number}</td>
                         <td>${salesDocHtml}</td>
                         <td>
-                            ${parseInt(item.storage?.id) === 1 ? '<div><span class="badge bg-danger"> Cross Docking </span></div>' : ''}
-                            <div><b>Purc Doc: </b>${item.purchase_order?.purc_doc ?? ''}</div>
-                            <div>${item.number ?? ''}</div>
-                            <div><b>Box: </b>${item.reff_number ?? ''}</div>
+                            ${parseInt(item?.storage?.id) === 1 ? '<div><span class="badge bg-danger"> Cross Docking </span></div>' : ''}
+                            <div><b>Purc Doc: </b>${item?.purchase_order?.purc_doc ?? ''}</div>
+                            <div>${item?.number ?? ''}</div>
+                            <div><b>Box: </b>${item?.reff_number ?? ''}</div>
                             <div><b>Loc: </b>${storage}</div>
                         </td>
-                        <td>${item.qty ?? 0}</td>
-                        <td><a class="btn btn-info btn-sm" onclick="pilihSalesDoc(${item.id})">Pilih</a></td>
+                        <td>${item?.qty ?? 0}</td>
+                        <td><a class="btn btn-info btn-sm" onclick="pilihSalesDoc(${item?.id ?? 'null'})">Pilih</a></td>
                     </tr>
                 `;
                 number++;
             });
 
-            document.getElementById('listSalesDoc').innerHTML = html;
+            const tbody = document.getElementById('listSalesDoc');
+            if (tbody) tbody.innerHTML = html;
+
+            // sinkronkan DataTables
             reinitSalesDocTable();
         }
 
@@ -261,8 +302,8 @@
                         const products = [];
                         (res?.data?.inventory_package_item ?? []).forEach((product) => {
                             const dataSN = [];
-                            (product.inventory_package_item_sn ?? []).forEach((sn) => {
-                                if (parseInt(sn.qty) !== 0) {
+                            (product?.inventory_package_item_sn ?? []).forEach((sn) => {
+                                if (parseInt(sn?.qty) !== 0) {
                                     dataSN.push({
                                         id: sn.id,
                                         serialNumber: sn.serial_number,
@@ -274,17 +315,17 @@
                             products.push({
                                 inventoryPackageId: product.inventory_package_id,
                                 inventoryPackageItemId: product.id,
-                                purchaseOrderId: product.purchase_order_detail?.purchase_order_id,
-                                purchaseOrderDetailId: product.purchase_order_detail_id,
-                                isParent: product.is_parent,
-                                directOutbound: product.direct_outbound,
-                                qty: product.qty,
+                                purchaseOrderId: product?.purchase_order_detail?.purchase_order_id,
+                                purchaseOrderDetailId: product?.purchase_order_detail_id,
+                                isParent: product?.is_parent,
+                                directOutbound: product?.direct_outbound,
+                                qty: product?.qty,
                                 qtySelect: 0,
-                                productId: product.product_id,
-                                material: product.purchase_order_detail?.material,
-                                poItemDesc: product.purchase_order_detail?.po_item_desc,
-                                prodHierarchyDesc: product.purchase_order_detail?.prod_hierarchy_desc,
-                                salesDoc: product.purchase_order_detail?.sales_doc,
+                                productId: product?.product_id,
+                                material: product?.purchase_order_detail?.material,
+                                poItemDesc: product?.purchase_order_detail?.po_item_desc,
+                                prodHierarchyDesc: product?.purchase_order_detail?.prod_hierarchy_desc,
+                                salesDoc: product?.purchase_order_detail?.sales_doc,
                                 purcDoc: res?.data?.purchase_order?.purc_doc,
                                 dataSN: dataSN,
                                 serialNumber: [],
@@ -312,28 +353,28 @@
             let html = '';
 
             products.forEach((item, index) => {
-                if (parseInt(item.disable) === 0) {
+                if (parseInt(item?.disable) === 0) {
                     html += `
                         <tr>
                             <td>
-                                ${ parseInt(item.directOutbound) === 1 ? '<div><span class="badge bg-danger"> Cross Docking </span></div>' : '' }
-                                <div>${item.material ?? ''}</div>
-                                <div>${item.poItemDesc ?? ''}</div>
-                                <div>${item.prodHierarchyDesc ?? ''}</div>
+                                ${ parseInt(item?.directOutbound) === 1 ? '<div><span class="badge bg-danger"> Cross Docking </span></div>' : '' }
+                                <div>${item?.material ?? ''}</div>
+                                <div>${item?.poItemDesc ?? ''}</div>
+                                <div>${item?.prodHierarchyDesc ?? ''}</div>
                             </td>
                             <td class="text-center">
-                                ${parseInt(item.isParent) === 1
+                                ${parseInt(item?.isParent) === 1
                         ? '<span class="badge bg-danger-subtle text-danger">Parent</span>'
                         : '<span class="badge bg-secondary-subtle text-secondary">Child</span>'}
                             </td>
                             <td>
-                                <div><b>PA: </b>${item.number ?? ''}</div>
-                                <div><b>Box: </b>${item.reffNumber ?? ''}</div>
-                                <div><b>Loc: </b>${item.loc ?? ''}</div>
+                                <div><b>PA: </b>${item?.number ?? ''}</div>
+                                <div><b>Box: </b>${item?.reffNumber ?? ''}</div>
+                                <div><b>Loc: </b>${item?.loc ?? ''}</div>
                             </td>
-                            <td>${item.salesDoc ?? ''}</td>
-                            <td class="text-center fw-bold">${item.qty ?? 0}</td>
-                            <td><input type="number" class="form-control" onchange="changeQtySelect(${index}, this.value)" value="${item.qtySelect ?? 0}"></td>
+                            <td>${item?.salesDoc ?? ''}</td>
+                            <td class="text-center fw-bold">${item?.qty ?? 0}</td>
+                            <td><input type="number" class="form-control" onchange="changeQtySelect(${index}, this.value)" value="${item?.qtySelect ?? 0}"></td>
                             <td><a class="btn btn-info btn-sm" onclick="openSerialNumberModal(${index})">Serial Number</a></td>
                             <td><a class="btn btn-danger btn-sm" onclick="deleteProduct(${index})">Delete</a></td>
                         </tr>
@@ -358,7 +399,7 @@
             if (!products[index]) return;
 
             const newVal = parseInt(value || 0);
-            if (newVal > parseInt(products[index].qty || 0)) {
+            if (newVal > parseInt(products[index]?.qty || 0)) {
                 Swal.fire({ title: 'Warning!', text: 'QTY outbound melebihi qty diinventory', icon: 'warning' });
                 await viewProductOutbound();
                 return;
@@ -375,21 +416,21 @@
             if (!product) return;
 
             let dataSN = '';
-            (product.dataSN ?? []).forEach((item, indexSN) => {
-                const canPick = parseInt(item.select) === 0;
+            (product?.dataSN ?? []).forEach((item, indexSN) => {
+                const canPick = parseInt(item?.select) === 0;
                 dataSN += `
                     <tr>
-                        <td>${item.serialNumber}</td>
+                        <td>${item?.serialNumber ?? ''}</td>
                         <td>${ canPick ? `<a class="btn btn-info btn-sm" onclick="pilihSN(${index}, ${indexSN})">Pilih SN</a>` : ''}</td>
                     </tr>
                 `;
             });
 
             let serialNumber = '';
-            (product.serialNumber ?? []).forEach((item, indexSN) => {
+            (product?.serialNumber ?? []).forEach((item, indexSN) => {
                 serialNumber += `
                     <tr>
-                        <td>${item.serialNumber}</td>
+                        <td>${item?.serialNumber ?? ''}</td>
                         <td><a class="btn btn-info btn-sm" onclick="deleteSN(${index}, ${indexSN})">Delete</a></td>
                     </tr>
                 `;
@@ -403,7 +444,6 @@
             const idModal = document.getElementById('idModal');
             if (idModal) idModal.value = index;
 
-            // Tampilkan modal (Bootstrap 4/5 jQuery)
             if (typeof $ !== 'undefined' && $('#serialNumberModal').modal) {
                 $('#serialNumberModal').modal('show');
             }
@@ -430,7 +470,7 @@
             const findSN = product.serialNumber?.[indexSN];
             if (!findSN) return;
 
-            const findDataSN = (product.dataSN ?? []).find(item => parseInt(item.id) === parseInt(findSN.id));
+            const findDataSN = (product.dataSN ?? []).find(item => parseInt(item?.id) === parseInt(findSN?.id));
             if (findDataSN) findDataSN.select = 0;
             product.serialNumber.splice(indexSN, 1);
 
@@ -444,21 +484,21 @@
             if (!product) return;
 
             let dataSN = '';
-            (product.dataSN ?? []).forEach((item, indexSN) => {
-                const canPick = parseInt(item.select) === 0;
+            (product?.dataSN ?? []).forEach((item, indexSN) => {
+                const canPick = parseInt(item?.select) === 0;
                 dataSN += `
                     <tr>
-                        <td>${item.serialNumber}</td>
+                        <td>${item?.serialNumber ?? ''}</td>
                         <td>${ canPick ? `<a class="btn btn-info btn-sm" onclick="pilihSN(${index}, ${indexSN})">Pilih SN</a>` : ''}</td>
                     </tr>
                 `;
             });
 
             let serialNumber = '';
-            (product.serialNumber ?? []).forEach((item, indexSN) => {
+            (product?.serialNumber ?? []).forEach((item, indexSN) => {
                 serialNumber += `
                     <tr>
-                        <td>${item.serialNumber}</td>
+                        <td>${item?.serialNumber ?? ''}</td>
                         <td><a class="btn btn-info btn-sm" onclick="deleteSN(${index}, ${indexSN})">Delete</a></td>
                     </tr>
                 `;
@@ -479,7 +519,7 @@
             if (!product) return;
 
             product.serialNumber = product.serialNumber || [];
-            (product.dataSN ?? []).forEach((item) => {
+            (product?.dataSN ?? []).forEach((item) => {
                 item.select = 1;
                 const exists = product.serialNumber.some(sn => sn.serialNumber === item.serialNumber);
                 if (!exists) product.serialNumber.push(item);
@@ -507,8 +547,8 @@
 
             const products = await kvGet('salesDocProduct', []) ?? [];
             for (const product of products) {
-                const q = parseInt(product.qtySelect || 0);
-                if (q !== 0 && q !== parseInt((product.serialNumber || []).length)) {
+                const q = parseInt(product?.qtySelect || 0);
+                if (q !== 0 && q !== parseInt((product?.serialNumber || []).length)) {
                     await Swal.fire({
                         title: 'Warning!',
                         text: 'Select serial number as many as QTY Out',
@@ -543,3 +583,4 @@
         };
     </script>
 @endsection
+
