@@ -967,18 +967,6 @@
                         }
                     });
 
-                    // Validation Storage Location
-                    const storage = document.getElementById('bin').value;
-                    if (storage === null) {
-                        Swal.fire({
-                            title: 'Warning!',
-                            text: 'Storage must be filled',
-                            icon: 'warning'
-                        });
-
-                        return true;
-                    }
-
                     // Insert ke Database
                     $.ajax({
                         url: '{{ route('inbound.put-away.store') }}',
