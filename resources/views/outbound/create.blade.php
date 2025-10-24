@@ -221,7 +221,9 @@
             salesDoc.forEach((item) => {
                 const docs = safeParseJSON(item.sales_docs, []);
                 let salesDocHtml = '';
-                docs.forEach((detail) => { salesDocHtml += `<div>${detail}</div>`; });
+                (docs || []).forEach((detail) => {
+                    salesDocHtml += `<div>${detail}</div>`;
+                });
 
                 let storage = `${item.storage.raw} - ${item.storage.area} - ${item.storage.rak} - ${item.storage.bin}`;
                 if (parseInt(item.storage?.id) === 1) storage = 'Cross Docking';
