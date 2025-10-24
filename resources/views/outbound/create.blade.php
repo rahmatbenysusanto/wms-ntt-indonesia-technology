@@ -512,17 +512,23 @@
 
         window.pilihSemuaSN = async function pilihSemuaSN() {
             const index = document.getElementById('idModal')?.value;
-            if (index == null) return;
+            if (index == null) {
+                return;
+            }
 
             const products = await kvGet('salesDocProduct', []) ?? [];
             const product = products[index];
-            if (!product) return;
+            if (!product) {
+                return;
+            }
 
-            product.serialNumber = product.serialNumber || [];
+            product.serialNumber = [];
             (product?.dataSN ?? []).forEach((item) => {
                 item.select = 1;
-                const exists = product.serialNumber.some(sn => sn.serialNumber === item.serialNumber);
-                if (!exists) product.serialNumber.push(item);
+                const exists = product.serialNumber.some(sn => parseInt(sn.id) === parseInt(item.id));
+                if (!exists) {
+                    product.serialNumber.push(item);
+                }
             });
 
             await kvSet('salesDocProduct', products);
