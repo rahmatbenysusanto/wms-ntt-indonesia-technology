@@ -164,135 +164,174 @@
 @endsection
 
 @section('js')
+    <!-- Dexie (IndexedDB) -->
+    <script src="https://unpkg.com/dexie@3/dist/dexie.min.js"></script>
+
     <script>
-        localStorage.clear();
+        // ====================== IndexedDB (Dexie) ======================
+        const db = new Dexie('OutboundDB');
+        db.version(1).stores({ kv: 'key' }); // simple key-value store
 
-        $(document).ready(function () {
-            $('#tabelSalesDoc').DataTable();
-        });
+        async function kvSet(key, value) { return db.kv.put({ key, value }); }
+        async function kvGet(key, fallback = null) {
+            const row = await db.kv.get(key);
+            return row ? row.value : fallback;
+        }
+        async function kvDelete(key) { return db.kv.delete(key); }
 
-        loadSalesDoc();
-        function loadSalesDoc() {
-            const salesDoc = @json($salesDoc);
-
-            localStorage.setItem('salesDoc', JSON.stringify(salesDoc));
-            viewSalesDoc();
+        // ====================== Utils ======================
+        function safeParseJSON(val, fallback = []) {
+            if (val == null) return fallback;
+            if (Array.isArray(val)) return val;
+            if (typeof val === 'object') return val;
+            try { return JSON.parse(val); } catch (_) { return fallback; }
         }
 
-        function viewSalesDoc() {
-            const salesDoc = JSON.parse(localStorage.getItem('salesDoc')) ?? [];
+        function reinitSalesDocTable() {
+            const $tbl = $('#tabelSalesDoc');
+            if ($.fn.DataTable.isDataTable($tbl)) {
+                $tbl.DataTable().destroy();
+            }
+            $tbl.DataTable({
+                pageLength: 10,
+                responsive: true,
+                autoWidth: false
+            });
+        }
+
+        // ====================== Boot ======================
+        $(document).ready(async function () {
+            // JANGAN pakai localStorage.clear() lagi
+            // Jangan init DataTable di sini; kita init setelah data dirender
+            try {
+                const salesDocServer = @json($salesDoc);
+                await kvSet('salesDoc', salesDocServer);
+            } catch (e) {
+                console.error('Gagal simpan salesDoc ke IndexedDB:', e);
+            }
+            await viewSalesDoc(); // render awal
+        });
+
+        // ====================== VIEW: SalesDoc ======================
+        async function viewSalesDoc() {
+            const salesDoc = await kvGet('salesDoc', []) ?? [];
             let html = '';
             let number = 1;
 
             salesDoc.forEach((item) => {
-                let salesDoc = '';
-                (JSON.parse(item.sales_docs) ?? []).forEach((detail) => {
-                    salesDoc += `<div>${detail}</div>`;
-                });
+                const docs = safeParseJSON(item.sales_docs, []);
+                let salesDocHtml = '';
+                docs.forEach((detail) => { salesDocHtml += `<div>${detail}</div>`; });
 
                 let storage = `${item.storage.raw} - ${item.storage.area} - ${item.storage.rak} - ${item.storage.bin}`;
-                if (item.storage.id === 1) {
-                    storage = 'Cross Docking';
-                }
+                if (parseInt(item.storage?.id) === 1) storage = 'Cross Docking';
 
                 html += `
                     <tr>
                         <td>${number}</td>
-                        <td>${salesDoc}</td>
+                        <td>${salesDocHtml}</td>
                         <td>
-                            ${item.storage.id === 1 ? '<div><span class="badge bg-danger"> Cross Docking </span></div>' : ''}
-                            <div><b>Purc Doc: </b>${item.purchase_order.purc_doc}</div>
-                            <div>${item.number}</div>
-                            <div><b>Box: </b>${item.reff_number}</div>
+                            ${parseInt(item.storage?.id) === 1 ? '<div><span class="badge bg-danger"> Cross Docking </span></div>' : ''}
+                            <div><b>Purc Doc: </b>${item.purchase_order?.purc_doc ?? ''}</div>
+                            <div>${item.number ?? ''}</div>
+                            <div><b>Box: </b>${item.reff_number ?? ''}</div>
                             <div><b>Loc: </b>${storage}</div>
                         </td>
-                        <td>${item.qty}</td>
+                        <td>${item.qty ?? 0}</td>
                         <td><a class="btn btn-info btn-sm" onclick="pilihSalesDoc(${item.id})">Pilih</a></td>
                     </tr>
                 `;
-
                 number++;
             });
 
             document.getElementById('listSalesDoc').innerHTML = html;
+            reinitSalesDocTable();
         }
 
-        function pilihSalesDoc(id) {
+        // ====================== ACTIONS: Products & SN ======================
+        window.pilihSalesDoc = function pilihSalesDoc(id) {
             $.ajax({
                 url: '{{ route('outbound.sales-doc') }}',
                 method: 'GET',
-                data: {
-                    id: id
+                data: { id },
+                success: async (res) => {
+                    try {
+                        const products = [];
+                        (res?.data?.inventory_package_item ?? []).forEach((product) => {
+                            const dataSN = [];
+                            (product.inventory_package_item_sn ?? []).forEach((sn) => {
+                                if (parseInt(sn.qty) !== 0) {
+                                    dataSN.push({
+                                        id: sn.id,
+                                        serialNumber: sn.serial_number,
+                                        select: 0
+                                    });
+                                }
+                            });
+
+                            products.push({
+                                inventoryPackageId: product.inventory_package_id,
+                                inventoryPackageItemId: product.id,
+                                purchaseOrderId: product.purchase_order_detail?.purchase_order_id,
+                                purchaseOrderDetailId: product.purchase_order_detail_id,
+                                isParent: product.is_parent,
+                                directOutbound: product.direct_outbound,
+                                qty: product.qty,
+                                qtySelect: 0,
+                                productId: product.product_id,
+                                material: product.purchase_order_detail?.material,
+                                poItemDesc: product.purchase_order_detail?.po_item_desc,
+                                prodHierarchyDesc: product.purchase_order_detail?.prod_hierarchy_desc,
+                                salesDoc: product.purchase_order_detail?.sales_doc,
+                                purcDoc: res?.data?.purchase_order?.purc_doc,
+                                dataSN: dataSN,
+                                serialNumber: [],
+                                number: res?.data?.number,
+                                reffNumber: res?.data?.reff_number,
+                                loc: `${res?.data?.storage?.raw ?? ''}-${res?.data?.storage?.area ?? ''}-${res?.data?.storage?.rak ?? ''}-${res?.data?.storage?.bin ?? ''}`,
+                                storageId: res?.data?.storage?.id,
+                                disable: 0
+                            });
+                        });
+
+                        await kvSet('salesDocProduct', products);
+                        await viewProductOutbound();
+                    } catch (e) {
+                        console.error('Gagal proses pilihSalesDoc:', e);
+                        Swal.fire({ title: 'Error', text: 'Gagal memproses data', icon: 'error' });
+                    }
                 },
-                success: (res => {
-                    const products = [];
-
-                    (res.data.inventory_package_item).forEach((product) => {
-                        const dataSN = [];
-                        (product.inventory_package_item_sn).forEach((item) => {
-                            if (item.qty !== 0) {
-                                dataSN.push({
-                                    id: item.id,
-                                    serialNumber: item.serial_number,
-                                    select: 0
-                                });
-                            }
-                        });
-
-                        products.push({
-                            inventoryPackageId: product.inventory_package_id,
-                            inventoryPackageItemId: product.id,
-                            purchaseOrderId: product.purchase_order_detail.purchase_order_id,
-                            purchaseOrderDetailId: product.purchase_order_detail_id,
-                            isParent: product.is_parent,
-                            directOutbound: product.direct_outbound,
-                            qty: product.qty,
-                            qtySelect: 0,
-                            productId: product.product_id,
-                            material: product.purchase_order_detail.material,
-                            poItemDesc: product.purchase_order_detail.po_item_desc,
-                            prodHierarchyDesc: product.purchase_order_detail.prod_hierarchy_desc,
-                            salesDoc: product.purchase_order_detail.sales_doc,
-                            purcDoc: res.data.purchase_order.purc_doc,
-                            dataSN: dataSN,
-                            serialNumber: [],
-                            number: res.data.number,
-                            reffNumber: res.data.reff_number,
-                            loc: res.data.storage.raw+'-'+res.data.storage.area+'-'+res.data.storage.rak+'-'+res.data.storage.bin,
-                            storageId: res.data.storage.id,
-                            disable: 0
-                        });
-                    });
-
-                    localStorage.setItem('salesDocProduct', JSON.stringify(products));
-                    viewProductOutbound();
-                })
+                error: () => Swal.fire({ title: 'Error', text: 'Request gagal', icon: 'error' })
             });
-        }
+        };
 
-        function viewProductOutbound() {
-            const products = JSON.parse(localStorage.getItem('salesDocProduct')) ?? [];
+        async function viewProductOutbound() {
+            const products = await kvGet('salesDocProduct', []) ?? [];
             let html = '';
 
             products.forEach((item, index) => {
-                if (item.disable === 0) {
+                if (parseInt(item.disable) === 0) {
                     html += `
                         <tr>
                             <td>
-                                ${ item.directOutbound === 1 ? '<div><span class="badge bg-danger"> Cross Docking </span></div>' : '' }
-                                <div>${item.material}</div>
-                                <div>${item.poItemDesc}</div>
-                                <div>${item.prodHierarchyDesc}</div>
+                                ${ parseInt(item.directOutbound) === 1 ? '<div><span class="badge bg-danger"> Cross Docking </span></div>' : '' }
+                                <div>${item.material ?? ''}</div>
+                                <div>${item.poItemDesc ?? ''}</div>
+                                <div>${item.prodHierarchyDesc ?? ''}</div>
                             </td>
-                            <td class="text-center">${item.isParent === 1 ? '<span class="badge bg-danger-subtle text-danger">Parent</span>' : '<span class="badge bg-secondary-subtle text-secondary">Child</span>'}</td>
+                            <td class="text-center">
+                                ${parseInt(item.isParent) === 1
+                        ? '<span class="badge bg-danger-subtle text-danger">Parent</span>'
+                        : '<span class="badge bg-secondary-subtle text-secondary">Child</span>'}
+                            </td>
                             <td>
-                                <div><b>PA: </b>${item.number}</div>
-                                <div><b>Box: </b>${item.reffNumber}</div>
-                                <div><b>Loc: </b>${item.loc}</div>
+                                <div><b>PA: </b>${item.number ?? ''}</div>
+                                <div><b>Box: </b>${item.reffNumber ?? ''}</div>
+                                <div><b>Loc: </b>${item.loc ?? ''}</div>
                             </td>
-                            <td>${item.salesDoc}</td>
-                            <td class="text-center fw-bold">${item.qty}</td>
-                            <td><input type="number" class="form-control" onchange="changeQtySelect(${index}, this.value)" value="${item.qtySelect}"></td>
+                            <td>${item.salesDoc ?? ''}</td>
+                            <td class="text-center fw-bold">${item.qty ?? 0}</td>
+                            <td><input type="number" class="form-control" onchange="changeQtySelect(${index}, this.value)" value="${item.qtySelect ?? 0}"></td>
                             <td><a class="btn btn-info btn-sm" onclick="openSerialNumberModal(${index})">Serial Number</a></td>
                             <td><a class="btn btn-danger btn-sm" onclick="deleteProduct(${index})">Delete</a></td>
                         </tr>
@@ -300,58 +339,52 @@
                 }
             });
 
-            document.getElementById('listProductOutbound').innerHTML = html;
+            const el = document.getElementById('listProductOutbound');
+            if (el) el.innerHTML = html;
         }
 
-        function deleteProduct(index) {
-            const products = JSON.parse(localStorage.getItem('salesDocProduct')) ?? [];
-
+        window.deleteProduct = async function deleteProduct(index) {
+            const products = await kvGet('salesDocProduct', []) ?? [];
+            if (!products[index]) return;
             products[index].disable = 1;
+            await kvSet('salesDocProduct', products);
+            await viewProductOutbound();
+        };
 
-            localStorage.setItem('salesDocProduct', JSON.stringify(products));
-            viewProductOutbound();
-        }
+        window.changeQtySelect = async function changeQtySelect(index, value) {
+            const products = await kvGet('salesDocProduct', []) ?? [];
+            if (!products[index]) return;
 
-        function changeQtySelect(index, value) {
-            const products = JSON.parse(localStorage.getItem('salesDocProduct')) ?? [];
-
-            if (parseInt(value) > products[index].qty) {
-                Swal.fire({
-                    title: 'Warning!',
-                    text: 'QTY outbound melebihi qty diinventory',
-                    icon: 'warning',
-                });
-                viewProductOutbound();
-                return true;
+            const newVal = parseInt(value || 0);
+            if (newVal > parseInt(products[index].qty || 0)) {
+                Swal.fire({ title: 'Warning!', text: 'QTY outbound melebihi qty diinventory', icon: 'warning' });
+                await viewProductOutbound();
+                return;
             }
 
-            products[index].qtySelect = parseInt(value);
+            products[index].qtySelect = newVal;
+            await kvSet('salesDocProduct', products);
+            await viewProductOutbound();
+        };
 
-            localStorage.setItem('salesDocProduct', JSON.stringify(products));
-            viewProductOutbound();
-        }
-
-        function openSerialNumberModal(index) {
-            const products = JSON.parse(localStorage.getItem('salesDocProduct')) ?? [];
+        window.openSerialNumberModal = async function openSerialNumberModal(index) {
+            const products = await kvGet('salesDocProduct', []) ?? [];
             const product = products[index];
+            if (!product) return;
 
             let dataSN = '';
-            (product.dataSN).forEach((item, indexSN) => {
-                let button = '';
-                if (item.select === 0) {
-                    button = `<a class="btn btn-info btn-sm" onclick="pilihSN(${index}, ${indexSN})">Pilih SN</a>`;
-                }
-
+            (product.dataSN ?? []).forEach((item, indexSN) => {
+                const canPick = parseInt(item.select) === 0;
                 dataSN += `
                     <tr>
                         <td>${item.serialNumber}</td>
-                        <td>${button}</td>
+                        <td>${ canPick ? `<a class="btn btn-info btn-sm" onclick="pilihSN(${index}, ${indexSN})">Pilih SN</a>` : ''}</td>
                     </tr>
                 `;
             });
 
             let serialNumber = '';
-            (product.serialNumber).forEach((item, indexSN) => {
+            (product.serialNumber ?? []).forEach((item, indexSN) => {
                 serialNumber += `
                     <tr>
                         <td>${item.serialNumber}</td>
@@ -360,58 +393,67 @@
                 `;
             });
 
-            document.getElementById('listDataOutboundSN').innerHTML = serialNumber;
-            document.getElementById('listDataSN').innerHTML = dataSN;
-            document.getElementById('idModal').value = index;
-            $('#serialNumberModal').modal('show');
-        }
+            const elSel = document.getElementById('listDataOutboundSN');
+            const elAvail = document.getElementById('listDataSN');
+            if (elSel) elSel.innerHTML = serialNumber;
+            if (elAvail) elAvail.innerHTML = dataSN;
 
-        function pilihSN(index, indexSN) {
-            const products = JSON.parse(localStorage.getItem('salesDocProduct')) ?? [];
+            const idModal = document.getElementById('idModal');
+            if (idModal) idModal.value = index;
+
+            // Tampilkan modal (Bootstrap 4/5 jQuery)
+            if (typeof $ !== 'undefined' && $('#serialNumberModal').modal) {
+                $('#serialNumberModal').modal('show');
+            }
+        };
+
+        window.pilihSN = async function pilihSN(index, indexSN) {
+            const products = await kvGet('salesDocProduct', []) ?? [];
             const product = products[index];
+            if (!product) return;
 
             product.dataSN[indexSN].select = 1;
+            product.serialNumber = product.serialNumber || [];
             product.serialNumber.push(product.dataSN[indexSN]);
 
-            localStorage.setItem('salesDocProduct', JSON.stringify(products));
-            viewSerialNumberReload(index);
-        }
+            await kvSet('salesDocProduct', products);
+            await viewSerialNumberReload(index);
+        };
 
-        function deleteSN(index, indexSN) {
-            const products = JSON.parse(localStorage.getItem('salesDocProduct')) ?? [];
+        window.deleteSN = async function deleteSN(index, indexSN) {
+            const products = await kvGet('salesDocProduct', []) ?? [];
             const product = products[index];
+            if (!product) return;
 
-            const findSN = product.serialNumber[indexSN];
-            const findDataSN = product.dataSN.find(item => parseInt(item.id) === parseInt(findSN.id));
+            const findSN = product.serialNumber?.[indexSN];
+            if (!findSN) return;
 
-            findDataSN.select = 0;
+            const findDataSN = (product.dataSN ?? []).find(item => parseInt(item.id) === parseInt(findSN.id));
+            if (findDataSN) findDataSN.select = 0;
             product.serialNumber.splice(indexSN, 1);
 
-            localStorage.setItem('salesDocProduct', JSON.stringify(products));
-            viewSerialNumberReload(index);
-        }
+            await kvSet('salesDocProduct', products);
+            await viewSerialNumberReload(index);
+        };
 
-        function viewSerialNumberReload(index) {
-            const products = JSON.parse(localStorage.getItem('salesDocProduct')) ?? [];
+        async function viewSerialNumberReload(index) {
+            const products = await kvGet('salesDocProduct', []) ?? [];
             const product = products[index];
+            if (!product) return;
 
             let dataSN = '';
-            (product.dataSN).forEach((item, indexSN) => {
-                let button = '';
-                if (item.select === 0) {
-                    button = `<a class="btn btn-info btn-sm" onclick="pilihSN(${index}, ${indexSN})">Pilih SN</a>`;
-                }
-
+            (product.dataSN ?? []).forEach((item, indexSN) => {
+                const canPick = parseInt(item.select) === 0;
                 dataSN += `
                     <tr>
                         <td>${item.serialNumber}</td>
-                        <td>${button}</td>
+                        <td>${ canPick ? `<a class="btn btn-info btn-sm" onclick="pilihSN(${index}, ${indexSN})">Pilih SN</a>` : ''}</td>
                     </tr>
                 `;
             });
 
             let serialNumber = '';
-            (product.serialNumber).forEach((item, indexSN) => {
+            (product.serialNumber ?? []).forEach((item, indexSN) => {
                 serialNumber += `
                     <tr>
                         <td>${item.serialNumber}</td>
@@ -420,29 +462,33 @@
                 `;
             });
 
-            document.getElementById('listDataOutboundSN').innerHTML = serialNumber;
-            document.getElementById('listDataSN').innerHTML = dataSN;
+            const elSel = document.getElementById('listDataOutboundSN');
+            const elAvail = document.getElementById('listDataSN');
+            if (elSel) elSel.innerHTML = serialNumber;
+            if (elAvail) elAvail.innerHTML = dataSN;
         }
 
-        function pilihSemuaSN() {
-            const index = document.getElementById('idModal').value;
-            const products = JSON.parse(localStorage.getItem('salesDocProduct')) ?? [];
-            const product = products[index];
+        window.pilihSemuaSN = async function pilihSemuaSN() {
+            const index = document.getElementById('idModal')?.value;
+            if (index == null) return;
 
-            (product.dataSN).forEach((item) => {
+            const products = await kvGet('salesDocProduct', []) ?? [];
+            const product = products[index];
+            if (!product) return;
+
+            product.serialNumber = product.serialNumber || [];
+            (product.dataSN ?? []).forEach((item) => {
                 item.select = 1;
-                const sudahAda = product.serialNumber.some(sn => sn.serialNumber === item.serialNumber);
-                if (!sudahAda) {
-                    product.serialNumber.push(item);
-                }
+                const exists = product.serialNumber.some(sn => sn.serialNumber === item.serialNumber);
+                if (!exists) product.serialNumber.push(item);
             });
 
-            localStorage.setItem('salesDocProduct', JSON.stringify(products));
-            viewSerialNumberReload(index);
-        }
+            await kvSet('salesDocProduct', products);
+            await viewSerialNumberReload(index);
+        };
 
-        function createOrder() {
-            Swal.fire({
+        window.createOrder = async function createOrder() {
+            const t = await Swal.fire({
                 title: "Are you sure?",
                 text: "Create Order",
                 icon: "warning",
@@ -454,58 +500,44 @@
                 confirmButtonText: "Yes, Create it!",
                 buttonsStyling: false,
                 showCloseButton: true
-            }).then(function(t) {
-                if (t.value) {
-
-                    // Validation QTY
-                    const products = JSON.parse(localStorage.getItem('salesDocProduct')) ?? [];
-                    products.forEach((product) => {
-                        if (parseInt(product.qtySelect) !== 0) {
-                            if (parseInt(product.qtySelect) !== product.serialNumber.length) {
-                                Swal.fire({
-                                    title: 'Warning!',
-                                    text: 'Select serial number as many as QTY Out',
-                                    icon: "warning",
-                                });
-
-                                return true;
-                            }
-                        }
-                    });
-
-                    // Create Order Process
-                    $.ajax({
-                        url: '{{ route('outbound.store') }}',
-                        method: 'POST',
-                        data: {
-                            _token: '{{ csrf_token() }}',
-                            products: products,
-                            delivLocation: document.getElementById('delivLocation').value,
-                            customerId: document.getElementById('customerId').value,
-                            deliveryDest: document.getElementById('deliveryDest').value,
-                            deliveryDate: document.getElementById('deliveryDate').value ?? '',
-                            deliveryNoteNumber: document.getElementById('deliveryNoteNumber').value ?? '',
-                        },
-                        success: (res) => {
-                            if (res.status) {
-                                Swal.fire({
-                                    title: 'Success',
-                                    text: 'Create Order Successfully',
-                                    icon: 'success'
-                                }).then((e) => {
-                                    window.location.href = '{{ route('outbound.index') }}';
-                                });
-                            } else {
-                                Swal.fire({
-                                    title: 'Error',
-                                    text: 'Create Order Failed',
-                                    icon: 'error'
-                                });
-                            }
-                        }
-                    });
-                }
             });
-        }
+            if (!t.value) return;
+
+            const products = await kvGet('salesDocProduct', []) ?? [];
+            for (const product of products) {
+                const q = parseInt(product.qtySelect || 0);
+                if (q !== 0 && q !== parseInt((product.serialNumber || []).length)) {
+                    await Swal.fire({
+                        title: 'Warning!',
+                        text: 'Select serial number as many as QTY Out',
+                        icon: "warning",
+                    });
+                    return;
+                }
+            }
+
+            $.ajax({
+                url: '{{ route('outbound.store') }}',
+                method: 'POST',
+                data: {
+                    _token: '{{ csrf_token() }}',
+                    products: products,
+                    delivLocation: document.getElementById('delivLocation')?.value,
+                    customerId: document.getElementById('customerId')?.value,
+                    deliveryDest: document.getElementById('deliveryDest')?.value,
+                    deliveryDate: document.getElementById('deliveryDate')?.value ?? '',
+                    deliveryNoteNumber: document.getElementById('deliveryNoteNumber')?.value ?? '',
+                },
+                success: async (res) => {
+                    if (res?.status) {
+                        await Swal.fire({ title: 'Success', text: 'Create Order Successfully', icon: 'success' });
+                        window.location.href = '{{ route('outbound.index') }}';
+                    } else {
+                        Swal.fire({ title: 'Error', text: 'Create Order Failed', icon: 'error' });
+                    }
+                },
+                error: () => Swal.fire({ title: 'Error', text: 'Request gagal', icon: 'error' })
+            });
+        };
     </script>
 @endsection
