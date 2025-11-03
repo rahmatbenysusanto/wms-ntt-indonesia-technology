@@ -123,7 +123,7 @@
                     <a href="{{ route('inventory.aging.mobile') }}">
                         <div class="card custom-card text-center">
                             <div class="icon-slot">
-                                <img src="{{ asset('assets/mobile/img/aging.png') }}" alt="Inbound">
+                                <img src="{{ asset('assets/mobile/img/aging2.png') }}" alt="Inbound">
                             </div>
                             <span class="menu-title">Aging</span>
                         </div>

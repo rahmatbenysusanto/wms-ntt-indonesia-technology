@@ -96,7 +96,9 @@ class OutboundController extends Controller
 
     public function getItemBySalesDoc(Request $request): \Illuminate\Http\JsonResponse
     {
-        $products = InventoryPackage::with('storage', 'inventoryPackageItem', 'inventoryPackageItem.inventoryPackageItemSn', 'inventoryPackageItem.purchaseOrderDetail', 'purchaseOrder')->where('id', $request->get('id'))->first();
+        $products = InventoryPackage::with('storage', 'inventoryPackageItem', 'inventoryPackageItem.purchaseOrderDetail','inventoryPackageItem.inventoryPackageItemSn', 'inventoryPackageItem.purchaseOrderDetail', 'purchaseOrder')
+            ->where('id', $request->get('id'))
+            ->first();
 
         return response()->json([
             'data' => $products

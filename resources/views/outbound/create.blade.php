@@ -96,6 +96,7 @@
                         <thead>
                             <tr>
                                 <th>Material</th>
+                                <th>Item</th>
                                 <th class="text-center">Type</th>
                                 <th>Box</th>
                                 <th>Sales Doc</th>
@@ -333,7 +334,8 @@
                                 reffNumber: res?.data?.reff_number,
                                 loc: `${res?.data?.storage?.raw ?? ''}-${res?.data?.storage?.area ?? ''}-${res?.data?.storage?.rak ?? ''}-${res?.data?.storage?.bin ?? ''}`,
                                 storageId: res?.data?.storage?.id,
-                                disable: 0
+                                disable: 0,
+                                item: product.purchase_order_detail.item
                             });
                         });
 
@@ -362,6 +364,7 @@
                                 <div>${item?.poItemDesc ?? ''}</div>
                                 <div>${item?.prodHierarchyDesc ?? ''}</div>
                             </td>
+                            <td>${item.item}</td>
                             <td class="text-center">
                                 ${parseInt(item?.isParent) === 1
                         ? '<span class="badge bg-danger-subtle text-danger">Parent</span>'
@@ -383,7 +386,9 @@
             });
 
             const el = document.getElementById('listProductOutbound');
-            if (el) el.innerHTML = html;
+            if (el) {
+                el.innerHTML = html;
+            }
         }
 
         window.deleteProduct = async function deleteProduct(index) {
@@ -506,8 +511,12 @@
 
             const elSel = document.getElementById('listDataOutboundSN');
             const elAvail = document.getElementById('listDataSN');
-            if (elSel) elSel.innerHTML = serialNumber;
-            if (elAvail) elAvail.innerHTML = dataSN;
+            if (elSel) {
+                elSel.innerHTML = serialNumber;
+            }
+            if (elAvail) {
+                elAvail.innerHTML = dataSN;
+            }
         }
 
         window.pilihSemuaSN = async function pilihSemuaSN() {
