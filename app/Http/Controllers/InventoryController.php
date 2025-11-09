@@ -1630,4 +1630,15 @@ class InventoryController extends Controller
         $pdf = Pdf::loadView('pdf.aging-detail', $data)->setPaper('a4', 'landscape');;
         return $pdf->stream('Produk Aging.pdf');
     }
+
+    public function indexMovementMobile(Request $request): View
+    {
+        $inventory = InventoryHistory::with('purchaseOrder', 'purchaseOrderDetail')
+            ->paginate(10);
+
+        $customer = Customer::all();
+        $products = Product::all();
+
+        return view('mobile.inventory.movement', compact('customer', 'products', 'inventory'));
+    }
 }

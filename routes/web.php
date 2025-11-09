@@ -42,6 +42,10 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
         Route::get('/dashboard-outbound-detail', 'dashboardOutboundDetail')->name('dashboard.outbound.detail');
     });
 
+    Route::prefix('/customer/dashboard')->controller(\App\Http\Controllers\DashboardCustomerController::class)->group(function () {
+        Route::get('/', 'index')->name('customer.dashboard');
+    });
+
     Route::prefix('/customer')->controller(CustomerController::class)->group(function () {
         Route::get('/', 'index')->name('customer');
         Route::post('/', 'store')->name('customer.store');
@@ -300,6 +304,10 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
             // Download Report
             Route::get('/aging-detail-pdf', 'agingDetailPdf')->name('inventory.aging.detail.pdf');
             Route::get('/aging-detail-excel', 'agingDetailExcel')->name('inventory.aging.detail.excel');
+        });
+
+        Route::prefix('/inventory-movement')->controller(InventoryController::class)->group(function () {
+            Route::get('/', 'indexMovementMobile')->name('inventory.index.movement.mobile');
         });
 
         Route::prefix('/general-room')->controller(GeneralRoomController::class)->group(function () {

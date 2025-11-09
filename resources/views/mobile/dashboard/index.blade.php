@@ -118,6 +118,19 @@
                 </div>
             @endif
 
+            @if(Session::get('userHasMenu')->contains('Mobile Inventory'))
+                <div class="col-6">
+                    <a href="{{ route('inventory.index.movement.mobile') }}">
+                        <div class="card custom-card text-center">
+                            <div class="icon-slot">
+                                <img src="{{ asset('assets/mobile/img/inventory-movement.png') }}" alt="Inbound">
+                            </div>
+                            <span class="menu-title">Inventory Movement</span>
+                        </div>
+                    </a>
+                </div>
+            @endif
+
             @if(Session::get('userHasMenu')->contains('Mobile Aging'))
                 <div class="col-6">
                     <a href="{{ route('inventory.aging.mobile') }}">
