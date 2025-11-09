@@ -61,6 +61,7 @@ class InventoryController extends Controller
                 ->where('inventory_detail.purchase_order_detail_id', $inv->purchase_order_detail_id)
                 ->select([
                     'purchase_order.purc_doc',
+                    'purchase_order_detail.item',
                     'purchase_order_detail.material',
                     'purchase_order_detail.po_item_desc',
                     'purchase_order_detail.prod_hierarchy_desc',

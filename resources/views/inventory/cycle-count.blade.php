@@ -75,6 +75,7 @@
                                 <th>#</th>
                                 <th>Purc Doc</th>
                                 <th>Sales Doc</th>
+                                <th>Item</th>
                                 <th>Material</th>
                                 <th class="text-center">QTY</th>
                                 <th>Storage Loc</th>
@@ -96,6 +97,7 @@
                                     @endif
                                 </td>
                                 <td>{{ $item->purchaseOrderDetail->sales_doc }}</td>
+                                <td>{{ $item->purchaseOrderDetail->item }}</td>
                                 <td>
                                     <div class="fw-bold">{{ $item->purchaseOrderDetail->material }}</div>
                                     <div>{{ $item->purchaseOrderDetail->po_item_desc }}</div>

@@ -44,6 +44,7 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
 
     Route::prefix('/customer/dashboard')->controller(\App\Http\Controllers\DashboardCustomerController::class)->group(function () {
         Route::get('/', 'index')->name('customer.dashboard');
+        Route::get('/card-json', 'cardJson')->name('customer.card.json');
     });
 
     Route::prefix('/customer')->controller(CustomerController::class)->group(function () {

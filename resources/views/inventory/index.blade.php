@@ -64,6 +64,7 @@
                                     <th>#</th>
                                     <th>Purc Doc</th>
                                     <th>Sales Doc</th>
+                                    <th class="text-center">Item</th>
                                     <th>Material</th>
                                     <th>PO Item Desc</th>
                                     <th class="text-center">Stock</th>
@@ -76,6 +77,7 @@
                                         <td>{{ $inventory->firstItem() + $index }}</td>
                                         <td>{{ $item->purc_doc }}</td>
                                         <td>{{ $item->sales_doc }}</td>
+                                        <td class="text-center">{{ $item->purchaseOrderDetail->item }}</td>
                                         <td>{{ $item->material }}</td>
                                         <td>{{ $item->po_item_desc }}</td>
                                         <td class="text-center fw-bold">{{ number_format($item->qty) }}</td>

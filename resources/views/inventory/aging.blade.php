@@ -65,8 +65,8 @@
                                 <th>Purc Doc</th>
                                 <th>Sales Doc</th>
                                 <th>Box</th>
+                                <th>Item</th>
                                 <th>Material</th>
-                                <th>PO Item Desc</th>
                                 <th class="text-center">Stock</th>
                                 <th>Storage Loc</th>
                                 <th>Date In WH</th>
@@ -83,8 +83,11 @@
                                     <td>
                                         <div>{{ $item->inventoryPackageItem->inventoryPackage->number }}</div>
                                     </td>
-                                    <td>{{ $item->purchaseOrderDetail->material }}</td>
-                                    <td>{{ $item->purchaseOrderDetail->po_item_desc }}</td>
+                                    <td>{{ $item->purchaseOrderDetail->item }}</td>
+                                    <td>
+                                        <div class="fw-bold">{{ $item->purchaseOrderDetail->material }}</div>
+                                        <div>{{ $item->purchaseOrderDetail->po_item_desc }}</div>
+                                    </td>
                                     <td class="text-center fw-bold">{{ number_format($item->qty) }}</td>
                                     <td>
                                         @if($item->storage->raw == '-')
