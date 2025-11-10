@@ -151,11 +151,11 @@
         <table class="tbl">
             <thead>
                 <tr>
-                    <th style="width:5%; text-align: center">No</th>
-                    <th style="width:17%;">Product</th>
-                    <th style="width: 55%">Description</th>
-                    <th style="width:10%; text-align: center">QTY</th>
-                    <th style="width:15%;">Serial Number</th>
+                    <th style="width: 5%; text-align: center;">No</th>
+                    <th style="width: 20%;">Product</th>
+                    <th style="width: 55%;">Description</th>
+                    <th style="width: 8%; text-align: center;">QTY</th>
+                    <th style="width: 17%;">Serial Number</th>
                 </tr>
             </thead>
             <tbody>

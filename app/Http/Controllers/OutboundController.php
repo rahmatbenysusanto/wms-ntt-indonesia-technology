@@ -602,7 +602,7 @@ class OutboundController extends Controller
             'outboundDetail'    => $outboundDetail,
         ];
 
-        $pdf = Pdf::loadView('pdf.outbound', $data);
+        $pdf = Pdf::loadView('pdf.outbound', $data)->setPaper('A4', 'landscape');
         return $pdf->stream('outbound '.$outbound->delivery_note_number.'.pdf');
     }
 

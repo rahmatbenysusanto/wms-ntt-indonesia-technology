@@ -41,7 +41,7 @@
 
         .tbl th,
         .tbl td {
-            border: 1px solid #000;
+            /*border: 1px solid #000;*/
             padding: 6px;
             vertical-align: top;
             word-wrap: break-word;
@@ -81,51 +81,97 @@
         <table class="tbl">
             <thead>
                 <tr>
-                    <th style="width: 5%; text-align: center;">#</th>
-                    <th>Delivery Note Number</th>
-                    <th>Delivery Date</th>
-                    <th>Purc Doc</th>
-                    <th>Sales Doc</th>
-                    <th>Material</th>
-                    <th style="width: 5%; text-align: center;">QTY</th>
-                    <th>Customer</th>
-                    <th style="width: 7%; text-align: center;">Type</th>
-                    <th>Deliv Dest</th>
-                    <th>Deliv Loc</th>
-                    <th>Serial Number</th>
+                    <th style="width: 3%;">#</th>
+                    <th style="width: 15%;">Delivery Data</th>
+                    <th style="width: 5%;">SO</th>
+                    <th style="width: 20%;">Material</th>
+                    <th style="width: 10%;">Serial Number</th>
+                    <th style="width: 15%;">Customer</th>
+                    <th style="width: 5%;">Type</th>
+                    <th style="width: 10%;">Deliv Dest</th>
+                    <th style="width: 10%;">Deliv Loc</th>
                 </tr>
             </thead>
             <tbody>
-                @foreach($outbound as $item)
+            @foreach($outbound as $index => $item)
+
+                @foreach($item->outboundDetail as $detailIndex => $detail)
                     <tr>
-                        <td>{{ $loop->iteration }}</td>
-                        <td>{{ $item->delivery_note_number }}</td>
-                        <td>{{ $item->delivery_date }}</td>
-                        <td>{{ $item->purc_doc }}</td>
+                        @if($detailIndex === 0)
+                            <td>{{ $index + 1 }}</td>
+                            <td>
+                                <div><b>Deli Note Number : </b>{{ $item->delivery_note_number }}</div>
+                                <div><b>Deli Date : </b>{{ \Carbon\Carbon::parse($item->delivery_date)->translatedFormat('d F Y') }}</div>
+                                <div><b>PO : </b>{{ $item->purc_doc }}</div>
+                            </td>
+                            <td>
+                                @foreach(json_decode($item->sales_docs) as $salesDoc)
+                                    <div>{{ $salesDoc }}</div>
+                                @endforeach
+                            </td>
+                        @else
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                        @endif
+
                         <td>
-                            @foreach(json_decode($item->sales_docs) as $salesDoc)
-                                <div>{{ $salesDoc }}</div>
-                            @endforeach
+                            <b>{{ $detail->inventoryPackageItem->purchaseOrderDetail->material }}</b><br>
+                            {{ $detail->inventoryPackageItem->purchaseOrderDetail->po_item_desc }}<br>
+                            {{ $detail->inventoryPackageItem->purchaseOrderDetail->prod_hierarchy_desc }}
                         </td>
                         <td>
-                            @foreach($item->outboundDetail as $outboundDetail)
-                                <div>
-                                    <div><b>{{ $outboundDetail->inventoryPackageItem->purchaseOrderDetail->material }}</b></div>
-                                    <div>{{ $outboundDetail->inventoryPackageItem->purchaseOrderDetail->po_item_desc }}</div>
-                                    <div>{{ $outboundDetail->inventoryPackageItem->purchaseOrderDetail->prod_hierarchy_desc }}</div>
-                                </div>
-                                <br>
+                            @foreach($detail->outboundDetailSN as $serialNumber)
+                                <div>{{ $serialNumber->serial_number }}</div>
                             @endforeach
                         </td>
-                        <td>
-                            @foreach($item->outboundDetail as $outboundDetail)
-                                <div>{{ $outboundDetail->qty }}</div>
-                            @endforeach
-                        </td>
-                        <td>{{ $item->customer->name }}</td>
-                        <td>{{ $item->type }}</td>
+
+                        @if($detailIndex === 0)
+                            <td>{{ $item->customer->name }}</td>
+                            <td>{{ $item->type }}</td>
+                            <td>{{ $item->deliv_dest }}</td>
+                            <td>{{ $item->deliv_loc }}</td>
+                        @else
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                        @endif
                     </tr>
                 @endforeach
+
+            @endforeach
+
+{{--                @foreach($outbound as $item)--}}
+{{--                    <tr>--}}
+{{--                        <td>{{ $loop->iteration }}</td>--}}
+{{--                        <td>{{ $item->delivery_note_number }}</td>--}}
+{{--                        <td>{{ $item->delivery_date }}</td>--}}
+{{--                        <td>{{ $item->purc_doc }}</td>--}}
+{{--                        <td>--}}
+{{--                            @foreach(json_decode($item->sales_docs) as $salesDoc)--}}
+{{--                                <div>{{ $salesDoc }}</div>--}}
+{{--                            @endforeach--}}
+{{--                        </td>--}}
+{{--                        <td>--}}
+{{--                            @foreach($item->outboundDetail as $outboundDetail)--}}
+{{--                                <div>--}}
+{{--                                    <div><b>{{ $outboundDetail->inventoryPackageItem->purchaseOrderDetail->material }}</b></div>--}}
+{{--                                    <div>{{ $outboundDetail->inventoryPackageItem->purchaseOrderDetail->po_item_desc }}</div>--}}
+{{--                                    <div>{{ $outboundDetail->inventoryPackageItem->purchaseOrderDetail->prod_hierarchy_desc }}</div>--}}
+{{--                                </div>--}}
+{{--                                <br>--}}
+{{--                            @endforeach--}}
+{{--                        </td>--}}
+{{--                        <td>--}}
+{{--                            @foreach($item->outboundDetail as $outboundDetail)--}}
+{{--                                <div>{{ $outboundDetail->qty }}</div>--}}
+{{--                            @endforeach--}}
+{{--                        </td>--}}
+{{--                        <td>{{ $item->customer->name }}</td>--}}
+{{--                        <td>{{ $item->type }}</td>--}}
+{{--                    </tr>--}}
+{{--                @endforeach--}}
             </tbody>
         </table>
     </section>
