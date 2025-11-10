@@ -24,20 +24,10 @@ class DashboardController extends Controller
 {
     public function index(): View
     {
-        $totalPurcDoc = DB::table('purchase_order')->whereBetween('created_at', [date('Y-m-01'), date('Y-m-d')])->count();
-        $totalSalesDoc = DB::table('purchase_order_detail')->whereBetween('created_at', [date('Y-m-01'), date('Y-m-d')])->groupBy('sales_doc')->count();
-        $totalStock = DB::table('inventory')->where('type', 'inv')->sum('stock');
-        $stockGR = DB::table('inventory_package')->whereNotIn('storage_id', [1,2,3,4])->where('qty', '!=', 0)->count();
-
-        $listPO = [];
-
-        $totalPO = 0;
-        $totalQtyPO = 0;
-        $totalOutbound = 0;
-        $totalQtyOutbound = 0;
+        $customer = Customer::all();
 
         $title = 'Dashboard';
-        return view('dashboard.index', compact('title', 'totalPurcDoc', 'totalSalesDoc', 'listPO', 'totalStock', 'stockGR', 'totalPO', 'totalQtyPO', 'totalOutbound', 'totalQtyOutbound'));
+        return view('dashboard-customer.index', compact('title', 'customer'));
     }
 
     public function dashboardPo(Request $request): View
