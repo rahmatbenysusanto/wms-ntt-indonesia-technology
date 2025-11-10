@@ -127,7 +127,7 @@
                         <td style="text-align: center;">{{ number_format($detail->qty_qc) }}</td>
                         <td>
                             @foreach($detail->serialNumber as $serialNumber)
-                                <div>{{ $serialNumber->serial_number }}</div>
+                                <div>{{ $serialNumber }}</div>
                             @endforeach
                         </td>
                     </tr>

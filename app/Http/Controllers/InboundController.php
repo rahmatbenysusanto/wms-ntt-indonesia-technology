@@ -406,8 +406,6 @@ class InboundController extends Controller
         try {
             DB::beginTransaction();
 
-            Log::info(json_encode($request->all()));
-
             $purchaseOrder = PurchaseOrder::find($request->post('purchaseOrderId'));
 
             foreach ($request->post('qualityControl') as $products) {
@@ -1630,13 +1628,28 @@ class InboundController extends Controller
         $purchaseOrderDetail = PurchaseOrderDetail::where('purchase_order_id', $request->query('id'))->get();
 
         foreach ($purchaseOrderDetail as $detail) {
-            $detail->serialNumber = DB::table('product_package_item')
+            $serials = DB::table('product_package_item')
                 ->leftJoin('product_package_item_sn', 'product_package_item_sn.product_package_item_id', '=', 'product_package_item.id')
                 ->where('product_package_item.purchase_order_detail_id', $detail->id)
-                ->select([
-                    'product_package_item_sn.serial_number'
-                ])
-                ->get();
+                ->pluck('product_package_item_sn.serial_number')
+                ->filter()
+                ->values();
+
+            $found = $serials->count();
+            $qtyQc = $detail->qty_qc ?? 0;
+
+            if ($found < $qtyQc) {
+                $missing = $qtyQc - $found;
+                for ($i = 0; $i < $missing; $i++) {
+                    $serials->push("N/A");
+                }
+            }
+
+            if ($found === 0 && $qtyQc > 0) {
+                $serials = collect(array_fill(0, $qtyQc, "N/A"));
+            }
+
+            $detail->serialNumber = $serials;
         }
 
         $data = [
@@ -1645,7 +1658,7 @@ class InboundController extends Controller
         ];
 
         $pdf = Pdf::loadView('pdf.inbound', $data)->setPaper('a4', 'landscape');;
-        return $pdf->download('Purchase Order '.$purchaseOrder->purc_doc.'.pdf');
+        return $pdf->stream('Purchase Order '.$purchaseOrder->purc_doc.'.pdf');
     }
 
     public function ccwDraftSave(Request $request)
