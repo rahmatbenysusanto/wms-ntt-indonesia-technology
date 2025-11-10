@@ -42,7 +42,7 @@
                                 <select name="material" class="form-control select2">
                                     <option value="">-- Select Material --</option>
                                     @foreach($products as $product)
-                                        <option {{ request()->get('material') == $product->material ? 'selected' : '' }}>{{ $product->material }}</option>
+                                        <option value="{{ $product->id }}" {{ request()->get('material') == $product->id ? 'selected' : '' }}>{{ $product->material }}</option>
                                     @endforeach
                                 </select>
                             </div>
@@ -50,13 +50,13 @@
                                 <label class="form-label">Type</label>
                                 <select class="form-control" name="type">
                                     <option value="">-- Select Type --</option>
-                                    <option value="inbound">Inbound</option>
-                                    <option value="outbound">Outbound</option>
+                                    <option value="inbound" {{ request()->get('type') == 'inbound' ? 'selected' : '' }}>Inbound</option>
+                                    <option value="outbound" {{ request()->get('type') == 'outbound' ? 'selected' : '' }}>Outbound</option>
                                 </select>
                             </div>
                             <div class="col-2">
                                 <label class="form-label">Date</label>
-                                <input type="date" class="form-control" name="date" value="{{ request()->get('date') }}">
+                                <input type="date" class="form-control" name="date" value="{{ request()->get('date', date('Y-m-d')) }}">
                             </div>
                             <div class="col-2">
                                 <label class="form-label text-white">-</label>

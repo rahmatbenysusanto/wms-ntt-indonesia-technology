@@ -253,9 +253,29 @@ class InventoryController extends Controller
         return view('inventory.detail', compact('title', 'inventoryDetail'));
     }
 
-    public function cycleCount(): View
+    public function cycleCount(Request $request): View
     {
-        $cycleCount = InventoryHistory::with('purchaseOrder', 'purchaseOrderDetail', 'user', 'inventoryPackageItem.inventoryPackage', 'inventoryPackageItem.inventoryPackage.storage')->latest()->paginate(10);
+        $cycleCount = InventoryHistory::with('purchaseOrder', 'purchaseOrderDetail', 'user', 'inventoryPackageItem.inventoryPackage', 'inventoryPackageItem.inventoryPackage.storage')
+            ->whereHas('purchaseOrder', function ($purchaseOrder) use ($request) {
+                if ($request->query('purcDoc')) {
+                    $purchaseOrder->where('purc_doc', $request->query('purcDoc'));
+                }
+            })
+            ->whereHas('purchaseOrderDetail', function ($purchaseOrderDetail) use ($request) {
+                if ($request->query('purcDoc')) {
+                    $purchaseOrderDetail->where('sales_doc', $request->query('salesDoc'));
+                }
+
+                if ($request->query('material')) {
+                    $purchaseOrderDetail->where('product_id', $request->query('material'));
+                }
+            })
+            ->when($request->query('type'), function ($q) use ($request) {
+                $q->where('type',  $request->query('type'));
+            })
+            ->whereDate('created_at', $request->query('date', date('Y-m-d')))
+            ->latest()
+            ->paginate(10);
 
         $products = Product::all();
 
