@@ -210,7 +210,7 @@
                         <select class="form-control form-control-sm" name="customer">
                             <option value="">-- Select Customer --</option>
                             @foreach($customer as $item)
-                                <option {{ request()->get('customer') == $item->name ? 'selected' : '' }}>{{ $item->name }}</option>
+                                <option value="{{ $item->id }}" {{ request()->get('customer') == $item->id ? 'selected' : '' }}>{{ $item->name }}</option>
                             @endforeach
                         </select>
                     </div>

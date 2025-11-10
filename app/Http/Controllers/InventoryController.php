@@ -1663,7 +1663,30 @@ class InventoryController extends Controller
 
     public function indexMovementMobile(Request $request): View
     {
-        $inventory = InventoryHistory::with('purchaseOrder', 'purchaseOrderDetail')->paginate(10);
+        $inventory = InventoryHistory::with('purchaseOrder', 'purchaseOrderDetail')
+            ->whereHas('purchaseOrder', function ($purchaseOrder) use ($request) {
+                if ($request->query('purcDoc')) {
+                    $purchaseOrder->where('purc_doc', $request->query('purcDoc'));
+                }
+
+                if ($request->query('customer')) {
+                    $purchaseOrder->where('customer_id', $request->query('customer'));
+                }
+            })
+            ->whereHas('purchaseOrderDetail', function ($purchaseOrderDetail) use ($request) {
+                if ($request->query('purcDoc')) {
+                    $purchaseOrderDetail->where('sales_doc', $request->query('salesDoc'));
+                }
+
+                if ($request->query('material')) {
+                    $purchaseOrderDetail->where('product_id', $request->query('material'));
+                }
+            })
+            ->when($request->query('type'), function ($q) use ($request) {
+                $q->where('type',  $request->query('type'));
+            })
+            ->latest()
+            ->paginate(10);
 
         $customer = Customer::all();
         $products = Product::all();
