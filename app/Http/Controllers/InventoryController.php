@@ -275,7 +275,14 @@ class InventoryController extends Controller
             })
             ->whereDate('created_at', $request->query('date', date('Y-m-d')))
             ->latest()
-            ->paginate(10);
+            ->paginate(10)
+            ->appends([
+                'purcDoc'  => $request->query('purcDoc'),
+                'salesDoc' => $request->query('salesDoc'),
+                'material' => $request->query('material'),
+                'type'     => $request->query('type'),
+                'date'     => $request->query('date', date('Y-m-d'))
+            ]);
 
         $products = Product::all();
 
