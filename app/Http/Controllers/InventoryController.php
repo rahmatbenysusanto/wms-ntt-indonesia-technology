@@ -1663,12 +1663,18 @@ class InventoryController extends Controller
 
     public function indexMovementMobile(Request $request): View
     {
-        $inventory = InventoryHistory::with('purchaseOrder', 'purchaseOrderDetail')
-            ->paginate(10);
+        $inventory = InventoryHistory::with('purchaseOrder', 'purchaseOrderDetail')->paginate(10);
 
         $customer = Customer::all();
         $products = Product::all();
 
         return view('mobile.inventory.movement', compact('customer', 'products', 'inventory'));
+    }
+
+    public function indexDetailMovementMobile(Request $request): View
+    {
+        $cycleCount = InventoryHistory::with('purchaseOrder', 'purchaseOrderDetail', 'user', 'outbound', 'inventoryPackageItem.inventoryPackage', 'inventoryPackageItem.inventoryPackage.storage')->where('id', $request->query('id'))->first();
+
+        return view('mobile.inventory.movement-detail', compact('cycleCount'));
     }
 }

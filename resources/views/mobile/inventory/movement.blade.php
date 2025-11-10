@@ -107,7 +107,7 @@
     <div class="row">
         <div class="col-12">
             @foreach($inventory as $index => $inv)
-                <a href="{{ route('inventory.indexDetail.mobile', ['po' => $inv->purc_doc, 'so' => $inv->sales_doc, 'id' => $inv->product_id]) }}">
+                <a href="{{ route('inventory.indexDetail.mobile', ['id' => $inv->id]) }}">
                     <div class="card inventory-card mb-2">
                         <div class="card-body p-2">
                             <div class="d-flex justify-content-between align-items-center mb-1">

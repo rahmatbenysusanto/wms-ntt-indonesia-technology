@@ -309,6 +309,7 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
 
         Route::prefix('/inventory-movement')->controller(InventoryController::class)->group(function () {
             Route::get('/', 'indexMovementMobile')->name('inventory.index.movement.mobile');
+            Route::get('/detail', 'indexDetailMovementMobile')->name('inventory.indexDetail.mobile');
         });
 
         Route::prefix('/general-room')->controller(GeneralRoomController::class)->group(function () {
