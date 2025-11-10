@@ -31,16 +31,16 @@
                                 <span class="mdi mdi-file-pdf-box"></span>
                                 Download PDF
                             </a>
-                            <a href="{{ route('report.outbound.excel', [
-                                'purcDoc' => request()->get('purcDoc', null),
-                                'salesDoc' => request()->get('salesDoc', null),
-                                'client' => request()->get('client', null),
-                                'start' => request()->get('start', date('Y-m-01')),
-                                'end' => request()->get('end', date('Y-m-d'))
-                                ]) }}" class="btn btn-success btn-sm">
-                                <span class="mdi mdi-file-pdf-box"></span>
-                                Download Excel
-                            </a>
+{{--                            <a href="{{ route('report.outbound.excel', [--}}
+{{--                                'purcDoc' => request()->get('purcDoc', null),--}}
+{{--                                'salesDoc' => request()->get('salesDoc', null),--}}
+{{--                                'client' => request()->get('client', null),--}}
+{{--                                'start' => request()->get('start', date('Y-m-01')),--}}
+{{--                                'end' => request()->get('end', date('Y-m-d'))--}}
+{{--                                ]) }}" class="btn btn-success btn-sm">--}}
+{{--                                <span class="mdi mdi-file-pdf-box"></span>--}}
+{{--                                Download Excel--}}
+{{--                            </a>--}}
                             <a href="{{ route('outbound.return') }}" class="btn btn-info btn-sm">Return Order</a>
                             <a href="{{ route('outbound.create') }}" class="btn btn-primary btn-sm">Create Order</a>
                         </div>
