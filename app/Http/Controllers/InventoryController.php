@@ -839,14 +839,16 @@ class InventoryController extends Controller
         $productId = $request->query('id');
 
         $product = Product::find($productId);
-        $purchaseOrderDetail = PurchaseOrderDetail::where('sales_doc', $salesDoc)->where('product_id', $productId)->first();
+        $purchaseOrderDetailArray = PurchaseOrderDetail::where('sales_doc', $salesDoc)->where('product_id', $productId)->pluck('id');
 
         $inventoryPackageItem = InventoryPackageItem::with('inventoryPackage')
-            ->where('purchase_order_detail_id', $purchaseOrderDetail->id)
+            ->whereIn('purchase_order_detail_id', $purchaseOrderDetailArray)
             ->whereHas('inventoryPackage', function ($query) {
                 $query->whereNotIn('storage_id', [1,2,3,4]);
             })
             ->sum('qty');
+
+        $purchaseOrderDetail = PurchaseOrderDetail::where('sales_doc', $salesDoc)->where('product_id', $productId)->first();
 
         $inventoryNominal = $inventoryPackageItem * $purchaseOrderDetail->net_order_price;
 
@@ -876,7 +878,7 @@ class InventoryController extends Controller
             ->whereNotIn('inventory_package.storage_id', [1,2,3,4])
             ->where('inventory_package_item.qty', '!=', 0)
             ->where('inventory_package_item_sn.qty', '!=', 0)
-            ->where('inventory_package_item.purchase_order_detail_id', $purchaseOrderDetail->id)
+            ->whereIn('inventory_package_item.purchase_order_detail_id', $purchaseOrderDetailArray)
             ->select([
                 'serial_number',
             ])
