@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Customer;
+use App\Models\Outbound;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderDetail;
 use Illuminate\Http\Request;
@@ -172,11 +173,45 @@ class DashboardCustomerController extends Controller
         return response()->json($series);
     }
 
-    public function outbound(): View
+    public function outbound(Request $request): View
     {
         $customer = Customer::all();
 
+        $outbound = Outbound::with('customer', 'user')
+            ->where('type', 'outbound')
+            ->when($request->query('purcDoc'), function ($q) use ($request) {
+                $q->where('purc_doc', $request->query('purcDoc'));
+            })
+            ->when($request->query('salesDoc'), function ($q) use ($request) {
+                $q->where('sales_doc', 'LIKE', '%'.$request->query('salesDoc').'%');
+            })
+            ->when($request->query('customer'), function ($q) use ($request) {
+                $q->where('customer_id', $request->query('customer'));
+            })
+            ->when($request->query('number'), function ($q) use ($request) {
+                $q->where('delivery_note_number', $request->query('number'));
+            })
+            ->latest()
+            ->paginate(10)
+            ->appends([
+                'purcDoc'   => $request->query('purcDoc'),
+                'salesDoc'  => $request->query('salesDoc'),
+                'customer'  => $request->query('customer'),
+                'number'    => $request->query('number'),
+            ]);
+
+        foreach ($outbound as $item) {
+            $item->price = DB::table('outbound_detail')
+                ->leftJoin('inventory_package_item', 'inventory_package_item.id', '=', 'outbound_detail.inventory_package_item_id')
+                ->leftJoin('purchase_order_detail', 'purchase_order_detail.id', '=', 'inventory_package_item.purchase_order_detail_id')
+                ->where('outbound_detail.outbound_id', $item->id)
+                ->select([
+                    DB::raw('SUM(outbound_detail.qty * purchase_order_detail.net_order_price) as price'),
+                ])
+                ->value('price');
+        }
+
         $title = 'Dashboard Customer';
-        return view('dashboard-customer.outbound', compact('title', 'customer'));
+        return view('dashboard-customer.outbound', compact('title', 'customer', 'outbound'));
     }
 }
