@@ -53,6 +53,7 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
 
         Route::get('/aging', 'aging')->name('customer.aging');
         Route::get('/aging/chart/qty', 'agingChartQty')->name('customer.aging.chart.qty');
+        Route::get('/aging/chart/price', 'agingChartPrice')->name('customer.aging.chart.price');
     });
 
     Route::prefix('/customer')->controller(CustomerController::class)->group(function () {
