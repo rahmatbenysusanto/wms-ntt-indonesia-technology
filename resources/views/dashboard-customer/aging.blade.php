@@ -70,19 +70,19 @@
                             <div class="row">
                                 <div class="col-3">
                                     <h5 class="text-center">1 - 90 Day</h5>
-                                    <h5 class="text-center fw-bold">0</h5>
+                                    <h5 class="text-center fw-bold" id="aging-price-1">0</h5>
                                 </div>
                                 <div class="col-3">
                                     <h5 class="text-center">91 - 180 Day</h5>
-                                    <h5 class="text-center fw-bold">0</h5>
+                                    <h5 class="text-center fw-bold" id="aging-price-2">0</h5>
                                 </div>
                                 <div class="col-3">
                                     <h5 class="text-center">181 - 365 Day</h5>
-                                    <h5 class="text-center fw-bold">0</h5>
+                                    <h5 class="text-center fw-bold" id="aging-price-3">0</h5>
                                 </div>
                                 <div class="col-3">
                                     <h5 class="text-center"> > 365 Day</h5>
-                                    <h5 class="text-center fw-bold">0</h5>
+                                    <h5 class="text-center fw-bold" id="aging-price-4">0</h5>
                                 </div>
                             </div>
                         </div>
@@ -124,6 +124,13 @@
                 }
                 return clean;
             });
+        }
+
+        function formatUSD(value) {
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD'
+            }).format(value);
         }
 
         $.ajax({
@@ -174,6 +181,11 @@
                         optionsAgingPrice
                     ).render();
                 }
+
+                document.getElementById('aging-price-1').innerText = formatUSD(res[0]);
+                document.getElementById('aging-price-2').innerText = formatUSD(res[1]);
+                document.getElementById('aging-price-3').innerText = formatUSD(res[2]);
+                document.getElementById('aging-price-4').innerText = formatUSD(res[3]);
             }
         });
     </script>
