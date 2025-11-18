@@ -138,8 +138,15 @@
             </div>
 
             <div class="row">
-                <div class="col-6">
-
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h4 class="card-title text-center mb-0"> ~ Monthly Stock Flow – Inbound vs Outbound ~ </h4>
+                        </div>
+                        <div class="card-body">
+                            <div id="chartStockFlow" data-colors='["--vz-primary", "--vz-success"]' class="apex-charts" dir="ltr"></div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -177,5 +184,82 @@
 
             loadDataCard();
         }
+
+        $.ajax({
+            url: '{{ route('customer.monthly.stock') }}',
+            method: 'GET',
+            success: (res) => {
+                const labels = res.data.map(i => i.date_key + "-01");
+                // contoh: 2025-01-01 → VALID datetime
+
+                const inbound = res.data.map(i => i.inbound);
+                const outbound = res.data.map(i => i.outbound);
+
+                function getChartColorsArray(id) {
+                    const el = document.getElementById(id);
+                    if (!el) return null;
+
+                    let colors = el.getAttribute("data-colors");
+                    colors = JSON.parse(colors);
+
+                    return colors.map((value) => {
+                        const clean = value.replace(" ", "");
+                        if (!clean.includes(",")) {
+                            return getComputedStyle(document.documentElement)
+                                .getPropertyValue(clean) || clean;
+                        }
+                        const parts = clean.split(",");
+                        if (parts.length === 2) {
+                            const color = getComputedStyle(document.documentElement)
+                                .getPropertyValue(parts[0]);
+                            return `rgba(${color},${parts[1]})`;
+                        }
+                        return clean;
+                    });
+                }
+
+                const chartColors = getChartColorsArray("chartStockFlow");
+
+                const options = {
+                    series: [
+                        {name: "Inbound", type: "column", data: inbound},
+                        {name: "Outbound", type: "line", data: outbound}
+                    ],
+                    chart: {
+                        height: 500,
+                        type: "line",
+                        toolbar: {show: false}
+                    },
+                    stroke: {width: [0, 4]},
+                    plotOptions: {
+                        bar: {
+                            columnWidth: '35%',
+                            borderRadius: 4
+                        }
+                    },
+                    title: {
+                        text: res.data[res.data.length - 1].label, // contoh: "Nov 25"
+                        style: {fontWeight: 600, fontSize: "16px"}
+                    },
+                    dataLabels: {
+                        enabled: true,
+                        enabledOnSeries: [1]
+                    },
+                    labels: labels,
+                    xaxis: {type: "datetime"},
+                    yaxis: [
+                        {title: {text: "Inbound"}},
+                        {opposite: true, title: {text: "Outbound"}}
+                    ],
+                    colors: chartColors
+                };
+
+                new ApexCharts(
+                    document.querySelector("#chartStockFlow"),
+                    options
+                ).render();
+            }
+        });
+
     </script>
 @endsection

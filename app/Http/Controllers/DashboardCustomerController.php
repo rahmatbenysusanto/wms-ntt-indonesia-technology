@@ -22,6 +22,48 @@ class DashboardCustomerController extends Controller
         return view('dashboard-customer.index', compact('title', 'customer'));
     }
 
+    public function monthlyStock(): JsonResponse
+    {
+        $start = now()->subMonths(11)->startOfMonth();
+        $end   = now()->endOfMonth();
+
+        $inbound = DB::table('purchase_order')
+            ->selectRaw('DATE_FORMAT(created_at, "%Y-%m") as ym, SUM(item_qty) as total')
+            ->whereBetween('created_at', [$start, $end])
+            ->groupBy('ym')
+            ->pluck('total', 'ym')
+            ->toArray();
+
+        $outbound = DB::table('outbound')
+            ->selectRaw('DATE_FORMAT(created_at, "%Y-%m") as ym, SUM(qty) as total')
+            ->whereBetween('created_at', [$start, $end])
+            ->groupBy('ym')
+            ->pluck('total', 'ym')
+            ->toArray();
+
+        $data = [];
+        $cursor = $start->copy();
+
+        for ($i = 0; $i < 12; $i++) {
+            $ym = $cursor->format('Y-m');
+
+            $data[] = [
+                'label'    => $cursor->format('M y'),
+                'date_key' => $ym,
+                'inbound'  => $inbound[$ym] ?? 0,
+                'outbound' => $outbound[$ym] ?? 0,
+            ];
+
+            $cursor->addMonth();
+        }
+
+        return response()->json([
+            'start' => $start->format('Y-m-d'),
+            'end'   => $end->format('Y-m-d'),
+            'data'  => $data
+        ]);
+    }
+
     public function cardJson(Request $request): JsonResponse
     {
         $totalPO = PurchaseOrder::whereIn('status', ['new', 'open'])
