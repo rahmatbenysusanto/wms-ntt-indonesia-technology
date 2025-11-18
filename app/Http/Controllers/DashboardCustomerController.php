@@ -106,6 +106,7 @@ class DashboardCustomerController extends Controller
     public function agingChartQty(): JsonResponse
     {
         $aging = DB::table('inventory_detail')
+            ->whereNotIn('storage_id', [1,2,3,4])
             ->selectRaw("
                 SUM(CASE WHEN DATEDIFF(CURDATE(), aging_date) BETWEEN 0 AND 90 THEN qty ELSE 0 END) AS day_1_90,
                 SUM(CASE WHEN DATEDIFF(CURDATE(), aging_date) BETWEEN 91 AND 180 THEN qty ELSE 0 END) AS day_91_180,
@@ -127,6 +128,7 @@ class DashboardCustomerController extends Controller
     public function agingChartPrice(): JsonResponse
     {
         $aging = DB::table('inventory_detail')
+            ->whereNotIn('storage_id', [1,2,3,4])
             ->leftJoin('purchase_order_detail', 'purchase_order_detail.id', '=', 'inventory_detail.purchase_order_detail_id')
             ->selectRaw("
                 SUM(
