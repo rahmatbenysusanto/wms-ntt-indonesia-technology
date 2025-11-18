@@ -8,10 +8,10 @@
                 <div class="row">
                     <div class="col-9">
                         <div class="d-flex gap-2">
-                            <a class="btn btn-info">Main Dashboard</a>
-                            <a class="btn btn-dark">Inbound</a>
-                            <a class="btn btn-dark">Aging</a>
-                            <a class="btn btn-dark">Outbound</a>
+                            <a href="{{ route('customer.dashboard') }}" class="btn btn-info">Main Dashboard</a>
+                            <a href="{{ route('customer.inbound') }}" class="btn btn-dark">Inbound</a>
+                            <a href="{{ route('customer.aging') }}" class="btn btn-dark">Aging</a>
+                            <a href="{{ route('customer.outbound') }}" class="btn btn-dark">Outbound</a>
                         </div>
                     </div>
                     <div class="col-3">

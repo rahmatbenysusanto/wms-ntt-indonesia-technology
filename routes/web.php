@@ -45,6 +45,11 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
     Route::prefix('/customer/dashboard')->controller(\App\Http\Controllers\DashboardCustomerController::class)->group(function () {
         Route::get('/', 'index')->name('customer.dashboard');
         Route::get('/card-json', 'cardJson')->name('customer.card.json');
+
+        Route::get('/inbound', 'inbound')->name('customer.inbound');
+        Route::get('/inbound/detail', 'inboundDetail')->name('customer.inbound.detail');
+        Route::get('/outbound', 'outbound')->name('customer.outbound');
+        Route::get('/aging', 'aging')->name('customer.aging');
     });
 
     Route::prefix('/customer')->controller(CustomerController::class)->group(function () {

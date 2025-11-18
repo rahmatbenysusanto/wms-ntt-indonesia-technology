@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Customer;
 use App\Models\PurchaseOrder;
+use App\Models\PurchaseOrderDetail;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
@@ -71,5 +72,40 @@ class DashboardCustomerController extends Controller
                 'totalPrice'    => $totalPrice,
             ]
         ]);
+    }
+
+    public function inbound(Request $request): View
+    {
+        $customer = Customer::all();
+
+        $purchaseOrder = PurchaseOrder::with('customer:id,name', 'vendor:id,name', 'user:id,name')->paginate(10);
+
+        $title = 'Dashboard Customer';
+        return view('dashboard-customer.inbound', compact('title', 'customer', 'purchaseOrder'));
+    }
+
+    public function inboundDetail(Request $request): View
+    {
+        $purchaseOrder = PurchaseOrder::with('customer:id,name', 'vendor:id,name', 'user:id,name')->where('id', $request->query('id'))->first();
+        $purchaseOrderDetail = PurchaseOrderDetail::where('purchase_order_id', $request->query('id'))->get();
+
+        $title = 'Dashboard Customer';
+        return view('dashboard-customer.inbound-detail', compact('title', 'purchaseOrder', 'purchaseOrderDetail'));
+    }
+
+    public function aging(): View
+    {
+        $customer = Customer::all();
+
+        $title = 'Dashboard Customer';
+        return view('dashboard-customer.aging', compact('title', 'customer'));
+    }
+
+    public function outbound(): View
+    {
+        $customer = Customer::all();
+
+        $title = 'Dashboard Customer';
+        return view('dashboard-customer.outbound', compact('title', 'customer'));
     }
 }
