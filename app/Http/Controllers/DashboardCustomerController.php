@@ -6,6 +6,7 @@ use App\Models\Customer;
 use App\Models\Outbound;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderDetail;
+use App\Models\Storage;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
@@ -171,6 +172,60 @@ class DashboardCustomerController extends Controller
 
 
         return response()->json($series);
+    }
+
+    public function agingChartTable(): JsonResponse
+    {
+        $storage = Storage::whereNotNull('raw')->whereNotNull('area')->whereNotNull('rak')->whereNotNull('bin')->whereNull('deleted_at')->get();
+
+        foreach ($storage as $item) {
+            $aging = DB::table('inventory_detail')
+                ->leftJoin('purchase_order_detail', 'purchase_order_detail.id', '=', 'inventory_detail.purchase_order_detail_id')
+                ->where('inventory_detail.storage_id', $item->id)
+                ->selectRaw("
+                SUM(
+                    CASE
+                        WHEN DATEDIFF(CURDATE(), inventory_detail.aging_date) BETWEEN 0 AND 90
+                            THEN inventory_detail.qty * COALESCE(purchase_order_detail.net_order_price, 0)
+                        ELSE 0
+                    END
+                ) AS day_1_90,
+
+                SUM(
+                    CASE
+                        WHEN DATEDIFF(CURDATE(), inventory_detail.aging_date) BETWEEN 91 AND 180
+                            THEN inventory_detail.qty * COALESCE(purchase_order_detail.net_order_price, 0)
+                        ELSE 0
+                    END
+                ) AS day_91_180,
+
+                SUM(
+                    CASE
+                        WHEN DATEDIFF(CURDATE(), inventory_detail.aging_date) BETWEEN 181 AND 365
+                            THEN inventory_detail.qty * COALESCE(purchase_order_detail.net_order_price, 0)
+                        ELSE 0
+                    END
+                ) AS day_181_365,
+
+                SUM(
+                    CASE
+                        WHEN DATEDIFF(CURDATE(), inventory_detail.aging_date) > 365
+                            THEN inventory_detail.qty * COALESCE(purchase_order_detail.net_order_price, 0)
+                        ELSE 0
+                    END
+                ) AS day_gt_365
+            ")
+                ->first();
+
+            $item->aging1 = $aging->day_1_90;
+            $item->aging2 = $aging->day_91_180;
+            $item->aging3 = $aging->day_181_365;
+            $item->aging4 = $aging->day_gt_365;
+        }
+
+        return response()->json([
+            'data' => $storage,
+        ]);
     }
 
     public function outbound(Request $request): View

@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('storage', function (Blueprint $table) {
             $table->id();
+            $table->enum('type', ['inv', 'gr', 'spare', 'pm'])->default('inv');
             $table->string('raw')->nullable();
             $table->string('area')->nullable();
             $table->string('rak')->nullable();

@@ -95,7 +95,31 @@
                     <h4 class="card-title text-center mb-0"> ~ Inventory in all warehouse ~ </h4>
                 </div>
                 <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Storage Location</th>
+                                    <th class="text-center">1 - 90 Day</th>
+                                    <th class="text-center">91 - 180 Day</th>
+                                    <th class="text-center">181 - 360 Day</th>
+                                    <th class="text-center">> 360 Day</th>
+                                </tr>
+                            </thead>
+                            <tbody id="aging-table">
 
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td class="fw-bold">Total</td>
+                                    <td class="text-center fw-bold" id="aging-table-1"></td>
+                                    <td class="text-center fw-bold" id="aging-table-2"></td>
+                                    <td class="text-center fw-bold" id="aging-table-3"></td>
+                                    <td class="text-center fw-bold" id="aging-table-4"></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
@@ -205,6 +229,50 @@
                 document.getElementById('aging-price-4').innerText = formatUSD(res[3]);
             }
         });
+
+        $.ajax({
+            url: '{{ route('customer.aging.chart.table') }}',
+            method: 'GET',
+            success: (res) => {
+                const data = res.data;
+                let html = '';
+
+                let aging1 = 0;
+                let aging2 = 0;
+                let aging3 = 0;
+                let aging4 = 0;
+
+                data.forEach((item) => {
+                    const a1 = Number(item.aging1) || 0;
+                    const a2 = Number(item.aging2) || 0;
+                    const a3 = Number(item.aging3) || 0;
+                    const a4 = Number(item.aging4) || 0;
+
+                    html += `
+                <tr>
+                    <td>${item.raw} - ${item.area} - ${item.rak} - ${item.bin}</td>
+                    <td class="text-center fw-bold">${formatUSD(a1)}</td>
+                    <td class="text-center fw-bold">${formatUSD(a2)}</td>
+                    <td class="text-center fw-bold">${formatUSD(a3)}</td>
+                    <td class="text-center fw-bold">${formatUSD(a4)}</td>
+                </tr>
+            `;
+
+                    aging1 += a1;
+                    aging2 += a2;
+                    aging3 += a3;
+                    aging4 += a4;
+                });
+
+                document.getElementById('aging-table').innerHTML = html;
+
+                document.getElementById('aging-table-1').innerText = formatUSD(aging1);
+                document.getElementById('aging-table-2').innerText = formatUSD(aging2);
+                document.getElementById('aging-table-3').innerText = formatUSD(aging3);
+                document.getElementById('aging-table-4').innerText = formatUSD(aging4);
+            }
+        });
+
     </script>
 @endsection
 
