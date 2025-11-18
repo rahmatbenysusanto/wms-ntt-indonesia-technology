@@ -166,13 +166,30 @@
             method: 'GET',
             success: (res) => {
                 const chartAgingPriceColors = getChartColorsArray("chart-pie-aging-price");
+
                 if (chartAgingPriceColors) {
                     const optionsAgingPrice = {
                         series: res,
-                        chart: { height: 300, type: "pie" },
-                        labels: ["1 - 90 Day", "91 - 180 Day", "181 - 365 Day", "> 365 Day"],
+                        chart: {
+                            height: 300,
+                            type: "pie"
+                        },
+                        labels: [
+                            "1 - 90 Day",
+                            "91 - 180 Day",
+                            "181 - 365 Day",
+                            "> 365 Day"
+                        ],
                         legend: { position: "bottom" },
                         dataLabels: { dropShadow: { enabled: false } },
+                        tooltip: {
+                            y: {
+                                formatter: function (value) {
+                                    return formatUSD(value);
+                                }
+                            }
+                        },
+
                         colors: chartAgingPriceColors
                     };
 
