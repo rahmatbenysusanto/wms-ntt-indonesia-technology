@@ -154,22 +154,28 @@
             }
         });
 
-        const chartAgingPriceColors = getChartColorsArray("chart-pie-aging-price");
-        if (chartAgingPriceColors) {
-            const optionsAgingPrice = {
-                series: [44, 55, 13, 43],
-                chart: { height: 300, type: "pie" },
-                labels: ["1 - 90 Day", "91 - 180 Day", "181 - 365 Day", "> 365 Day"],
-                legend: { position: "bottom" },
-                dataLabels: { dropShadow: { enabled: false } },
-                colors: chartAgingPriceColors
-            };
+        $.ajax({
+            url: '{{ route('customer.aging.chart.price') }}',
+            method: 'GET',
+            success: (res) => {
+                const chartAgingPriceColors = getChartColorsArray("chart-pie-aging-price");
+                if (chartAgingPriceColors) {
+                    const optionsAgingPrice = {
+                        series: res,
+                        chart: { height: 300, type: "pie" },
+                        labels: ["1 - 90 Day", "91 - 180 Day", "181 - 365 Day", "> 365 Day"],
+                        legend: { position: "bottom" },
+                        dataLabels: { dropShadow: { enabled: false } },
+                        colors: chartAgingPriceColors
+                    };
 
-            new ApexCharts(
-                document.querySelector("#chart-pie-aging-price"),
-                optionsAgingPrice
-            ).render();
-        }
+                    new ApexCharts(
+                        document.querySelector("#chart-pie-aging-price"),
+                        optionsAgingPrice
+                    ).render();
+                }
+            }
+        });
     </script>
 @endsection
 

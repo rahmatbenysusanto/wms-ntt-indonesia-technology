@@ -122,6 +122,56 @@ class DashboardCustomerController extends Controller
         return response()->json($series);
     }
 
+    public function agingChartPrice(): JsonResponse
+    {
+        $aging = DB::table('inventory_detail')
+            ->leftJoin('purchase_order_detail', 'purchase_order_detail.id', '=', 'inventory_detail.purchase_order_detail_id')
+            ->selectRaw("
+                SUM(
+                    CASE
+                        WHEN DATEDIFF(CURDATE(), inventory_detail.aging_date) BETWEEN 0 AND 90
+                            THEN inventory_detail.qty * COALESCE(purchase_order_detail.net_order_price, 0)
+                        ELSE 0
+                    END
+                ) AS day_1_90,
+
+                SUM(
+                    CASE
+                        WHEN DATEDIFF(CURDATE(), inventory_detail.aging_date) BETWEEN 91 AND 180
+                            THEN inventory_detail.qty * COALESCE(purchase_order_detail.net_order_price, 0)
+                        ELSE 0
+                    END
+                ) AS day_91_180,
+
+                SUM(
+                    CASE
+                        WHEN DATEDIFF(CURDATE(), inventory_detail.aging_date) BETWEEN 181 AND 365
+                            THEN inventory_detail.qty * COALESCE(purchase_order_detail.net_order_price, 0)
+                        ELSE 0
+                    END
+                ) AS day_181_365,
+
+                SUM(
+                    CASE
+                        WHEN DATEDIFF(CURDATE(), inventory_detail.aging_date) > 365
+                            THEN inventory_detail.qty * COALESCE(purchase_order_detail.net_order_price, 0)
+                        ELSE 0
+                    END
+                ) AS day_gt_365
+            ")
+            ->first();
+
+        $series = [
+            (float) $aging->day_1_90,
+            (float) $aging->day_91_180,
+            (float) $aging->day_181_365,
+            (float) $aging->day_gt_365,
+        ];
+
+
+        return response()->json($series);
+    }
+
     public function outbound(): View
     {
         $customer = Customer::all();
