@@ -48,8 +48,11 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
 
         Route::get('/inbound', 'inbound')->name('customer.inbound');
         Route::get('/inbound/detail', 'inboundDetail')->name('customer.inbound.detail');
+
         Route::get('/outbound', 'outbound')->name('customer.outbound');
+
         Route::get('/aging', 'aging')->name('customer.aging');
+        Route::get('/aging/chart/qty', 'agingChartQty')->name('customer.aging.chart.qty');
     });
 
     Route::prefix('/customer')->controller(CustomerController::class)->group(function () {

@@ -101,6 +101,27 @@ class DashboardCustomerController extends Controller
         return view('dashboard-customer.aging', compact('title', 'customer'));
     }
 
+    public function agingChartQty(): JsonResponse
+    {
+        $aging = DB::table('inventory_detail')
+            ->selectRaw("
+                SUM(CASE WHEN DATEDIFF(CURDATE(), aging_date) BETWEEN 0 AND 90 THEN qty ELSE 0 END) AS day_1_90,
+                SUM(CASE WHEN DATEDIFF(CURDATE(), aging_date) BETWEEN 91 AND 180 THEN qty ELSE 0 END) AS day_91_180,
+                SUM(CASE WHEN DATEDIFF(CURDATE(), aging_date) BETWEEN 181 AND 365 THEN qty ELSE 0 END) AS day_181_365,
+                SUM(CASE WHEN DATEDIFF(CURDATE(), aging_date) > 365 THEN qty ELSE 0 END) AS day_gt_365
+            ")
+            ->first();
+
+        $series = [
+            (int) $aging->day_1_90,
+            (int) $aging->day_91_180,
+            (int) $aging->day_181_365,
+            (int) $aging->day_gt_365,
+        ];
+
+        return response()->json($series);
+    }
+
     public function outbound(): View
     {
         $customer = Customer::all();
