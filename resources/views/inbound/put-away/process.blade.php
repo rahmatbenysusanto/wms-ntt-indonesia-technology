@@ -91,6 +91,31 @@
                     <table class="table table-striped align-middle">
                         <thead>
                             <tr>
+                                <th></th>
+                                <th></th>
+                                <th></th>
+                                <th></th>
+                                <th></th>
+                                <th></th>
+                                <th>
+                                    <select class="form-control" onchange="changeMassQty(this.value)">
+                                        <option value="0">Choose QTY</option>
+                                        <option>1</option>
+                                        <option>2</option>
+                                        <option>3</option>
+                                        <option>4</option>
+                                        <option>5</option>
+                                        <option>6</option>
+                                        <option>7</option>
+                                        <option>8</option>
+                                        <option>9</option>
+                                        <option>10</option>
+                                    </select>
+                                </th>
+                            </tr>
+                        </thead>
+                        <thead>
+                            <tr>
                                 <th>#</th>
                                 <th>Type</th>
                                 <th>Item</th>
@@ -998,6 +1023,14 @@
             });
         }
 
+        function changeMassQty(value) {
+            const addBox = JSON.parse(localStorage.getItem('addBox')) ?? [];
+            addBox.forEach((item) => {
+                item.qtySelect = value;
+            });
+            localStorage.setItem('addBox', JSON.stringify(addBox));
+            viewMasterProductModal();
+        }
     </script>
 
     <script>
