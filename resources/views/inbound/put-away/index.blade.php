@@ -61,7 +61,8 @@
                                     <th>Parent Material</th>
                                     <th>Parent Item Desc</th>
                                     <th class="text-center">QTY Item</th>
-                                    <th class="text-center">QTY</th>
+                                    <th class="text-center">QTY Parent</th>
+                                    <th class="text-center">Total QTY</th>
                                     <th class="text-center">Status</th>
                                     <th>QC Date</th>
                                     <th>Action</th>
@@ -81,6 +82,7 @@
                                     <td>{{ $item->product->product->material }}</td>
                                     <td>{{ $item->product->product->po_item_desc }}</td>
                                     <td class="text-center fw-bold">{{ number_format($item->qty_item) }}</td>
+                                    <td class="text-center fw-bold">{{ number_format($item->parent) }}</td>
                                     <td class="text-center fw-bold">{{ number_format($item->qty) }}</td>
                                     <td class="text-center">
                                         @if($item->status == 'open')

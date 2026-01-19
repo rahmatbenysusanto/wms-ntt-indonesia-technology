@@ -647,6 +647,8 @@ class InboundController extends Controller
             $product->purchase_order = '';
             $product->sales_doc = array_unique($sales_docs);
             $product->product = $productPackageItemParent;
+
+            $product->parent = ProductPackageItem::where('product_package_id', $product->id)->where('is_parent', 1)->sum('qty');
         }
 
         $title = 'Put Away';
