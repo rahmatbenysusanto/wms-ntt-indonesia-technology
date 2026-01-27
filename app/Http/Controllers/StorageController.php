@@ -13,7 +13,7 @@ class StorageController extends Controller
     {
         $storage = Storage::where('deleted_at', null)->paginate(10);
 
-        $raw = Storage::whereNull('area')->whereNull('rak')->whereNull('bin')->get();
+        $raw = Storage::whereNull('area')->whereNull('rak')->whereNull('bin')->whereNull('deleted_at')->get();
 
         $title = 'Storage';
         return view('storage.index', compact('title', 'storage', 'raw'));
@@ -25,6 +25,7 @@ class StorageController extends Controller
             ->where('area', '!=', null)
             ->where('rak', null)
             ->where('bin', null)
+            ->whereNull('deleted_at')
             ->get();
 
         return response()->json([
@@ -38,6 +39,7 @@ class StorageController extends Controller
             ->where('area', $request->get('area'))
             ->where('rak', '!=', null)
             ->where('bin', null)
+            ->whereNull('deleted_at')
             ->get();
 
         return response()->json([
@@ -51,6 +53,7 @@ class StorageController extends Controller
             ->where('area', $request->get('area'))
             ->where('rak', $request->get('rak'))
             ->where('bin', '!=', null)
+            ->whereNull('deleted_at')
             ->get();
 
         return response()->json([

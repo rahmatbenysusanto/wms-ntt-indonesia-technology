@@ -403,7 +403,7 @@ class InventoryController extends Controller
             ->whereNotIn('storage_id', [1,2,3,4])
             ->get();
 
-        $storageRaw = Storage::whereNull('area')->whereNull('rak')->whereNull('bin')->whereNotIn('id', [1,2,3,4])->get();
+        $storageRaw = Storage::whereNull('area')->whereNull('rak')->whereNull('bin')->whereNotIn('id', [1,2,3,4])->whereNull('deleted_at')->get();
 
         $title = 'Transfer Location';
         return view('inventory.transfer-location.create', compact('title', 'listBox', 'storageRaw'));
