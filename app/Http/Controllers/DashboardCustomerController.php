@@ -74,6 +74,17 @@ class DashboardCustomerController extends Controller
             })
             ->count();
 
+        $totalParent = DB::table('inventory_package_item')
+            ->leftJoin('inventory_package', 'inventory_package_item.inventory_package_id', '=', 'inventory_package.id')
+            ->leftJoin('purchase_order', 'purchase_order.id', '=', 'inventory_package.purchase_order_id')
+            ->when($request->get('customer'), function ($query) use ($request) {
+                if ($request->get('customer') != '') {
+                    $query->where('purchase_order.customer_id', $request->get('customer'));
+                }
+            })
+            ->where('inventory_package_item.is_parent', 1)
+            ->sum('inventory_package_item.qty');
+
         $totalSO = DB::table('purchase_order')
             ->leftJoin('purchase_order_detail', 'purchase_order_detail.purchase_order_id', '=', 'purchase_order.id')
             ->whereIn('purchase_order.status', ['new', 'open'])
@@ -114,6 +125,7 @@ class DashboardCustomerController extends Controller
                 'totalSO'       => $totalSO,
                 'totalStock'    => $totalStock,
                 'totalPrice'    => $totalPrice,
+                'totalParent'   => $totalParent,
             ]
         ]);
     }

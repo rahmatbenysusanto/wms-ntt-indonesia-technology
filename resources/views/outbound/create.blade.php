@@ -95,6 +95,36 @@
                     <table class="table table-striped align-middle">
                         <thead>
                             <tr>
+                                <th></th>
+                                <th></th>
+                                <th></th>
+                                <th></th>
+                                <th></th>
+                                <th></th>
+                                <th>
+                                    <select class="form-control" id="changeMassQTY" onchange="changeMassQTY(this.value)">
+                                        <option value="0">-- Choose QTY --</option>
+                                        <option>1</option>
+                                        <option>2</option>
+                                        <option>3</option>
+                                        <option>4</option>
+                                        <option>5</option>
+                                        <option>6</option>
+                                        <option>7</option>
+                                        <option>8</option>
+                                        <option>9</option>
+                                        <option>10</option>
+                                        <option>11</option>
+                                        <option>12</option>
+                                        <option>13</option>
+                                        <option>14</option>
+                                        <option>15</option>
+                                    </select>
+                                </th>
+                                <th></th>
+                                <th></th>
+                            </tr>
+                            <tr>
                                 <th>Material</th>
                                 <th>Item</th>
                                 <th class="text-center">Type</th>
@@ -389,6 +419,30 @@
             if (el) {
                 el.innerHTML = html;
             }
+        }
+
+        async function changeMassQTY(value) {
+            const products = await kvGet('salesDocProduct', []) ?? [];
+            const qtyValue = parseInt(value);
+
+            for (const item of products) {
+                if (parseInt(item?.disable) === 0) {
+
+                    if (qtyValue > parseInt(item.qty)) {
+                        await Swal.fire({
+                            icon: 'error',
+                            title: 'Qty tidak valid',
+                            text: 'Qty yang dipilih melebihi stok tersedia',
+                        });
+                        return;
+                    }
+
+                    item.qtySelect = qtyValue;
+                }
+            }
+
+            await kvSet('salesDocProduct', products);
+            await viewProductOutbound();
         }
 
         window.deleteProduct = async function deleteProduct(index) {
