@@ -33,7 +33,7 @@
                         <div class="card-body">
                             <div class="d-flex align-items-center">
                                 <div class="flex-grow-1 overflow-hidden">
-                                    <p class="text-uppercase fw-medium text-muted text-truncate mb-0">Total Parent</p>
+                                    <p class="text-uppercase fw-medium text-muted text-truncate mb-0">Purchase Order</p>
                                 </div>
                             </div>
                             <div class="d-flex align-items-end justify-content-between mt-4">
@@ -42,7 +42,7 @@
 
                                     </h4>
                                     @if(in_array(Auth::user()->role, ['admin', 'warehouse', 'mobile']))
-                                        <a href="{{ route('inventory.index') }}" class="text-decoration-underline text-primary fw-medium">View Detail</a>
+                                        <a href="{{ route('inbound.purchase-order') }}" class="text-decoration-underline text-primary fw-medium">View Detail</a>
                                     @endif
                                 </div>
                                 <div class="avatar-sm flex-shrink-0">
@@ -60,7 +60,7 @@
                         <div class="card-body">
                             <div class="d-flex align-items-center">
                                 <div class="flex-grow-1 overflow-hidden">
-                                    <p class="text-uppercase fw-medium text-muted text-truncate mb-0">Total Sales Doc (SO)</p>
+                                    <p class="text-uppercase fw-medium text-muted text-truncate mb-0">Total Parent</p>
                                 </div>
                             </div>
                             <div class="d-flex align-items-end justify-content-between mt-4">
@@ -69,7 +69,7 @@
 
                                     </h4>
                                     @if(in_array(Auth::user()->role, ['admin', 'warehouse', 'mobile']))
-                                        <a href="{{ route('inbound.purchase-order') }}" class="text-decoration-underline text-success fw-medium">View Detail</a>
+                                        <a href="{{ route('inventory.index') }}" class="text-decoration-underline text-success fw-medium">View Detail</a>
                                     @endif
                                 </div>
                                 <div class="avatar-sm flex-shrink-0">
@@ -167,8 +167,8 @@
                 success: (res) => {
                     const data = res.data;
 
-                    document.getElementById('totalPO').innerHTML = `<span class="counter-value" data-target="${data.totalParent}">${data.totalParent}</span>`;
-                    document.getElementById('totalSO').innerHTML = `<span class="counter-value" data-target="${new Intl.NumberFormat('en-US').format(data.totalSO)}">${new Intl.NumberFormat('en-US').format(data.totalSO)}</span>`;
+                    document.getElementById('totalPO').innerHTML = `<span class="counter-value" data-target="${data.totalPO}">${data.totalPO}</span>`;
+                    document.getElementById('totalSO').innerHTML = `<span class="counter-value" data-target="${new Intl.NumberFormat('en-US').format(data.totalParent)}">${new Intl.NumberFormat('en-US').format(data.totalParent)}</span>`;
                     document.getElementById('totalStock').innerHTML = `<span class="counter-value" data-target="${new Intl.NumberFormat('en-US').format(data.totalStock)}">${new Intl.NumberFormat('en-US').format(data.totalStock)}</span>`;
                     document.getElementById('totalPrice').innerHTML = `$<span class="counter-value" data-target="${new Intl.NumberFormat('en-US').format(data.totalPrice)}">${new Intl.NumberFormat('en-US').format(data.totalPrice)}</span>`;
                 }
