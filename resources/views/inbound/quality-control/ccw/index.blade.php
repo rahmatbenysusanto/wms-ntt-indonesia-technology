@@ -78,15 +78,15 @@
                     <div class="table-responsive">
                         <table class="table table-striped align-middle" id="tableListPoSAP">
                             <thead>
-                            <tr>
-                                <th>#</th>
-                                <th>Sales Doc</th>
-                                <th>Item</th>
-                                <th>Material</th>
-                                <th>PO Item Desc</th>
-                                <th>Prod Hierarchy Desc</th>
-                                <th class="text-center">QTY</th>
-                            </tr>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Sales Doc</th>
+                                    <th>Item</th>
+                                    <th>Material</th>
+                                    <th>PO Item Desc</th>
+                                    <th>Prod Hierarchy Desc</th>
+                                    <th class="text-center">QTY</th>
+                                </tr>
                             </thead>
                             <tbody id="listPoSAP">
 
@@ -99,7 +99,8 @@
     </div>
 
     <!-- Default Modals -->
-    <div id="listSalesDocModal" class="modal fade" tabindex="-1" aria-labelledby="myModalLabel" aria-hidden="true" style="display: none;">
+    <div id="listSalesDocModal" class="modal fade" tabindex="-1" aria-labelledby="myModalLabel" aria-hidden="true"
+        style="display: none;">
         <div class="modal-dialog modal-xl">
             <div class="modal-content">
                 <div class="modal-header">
@@ -129,7 +130,8 @@
         </div>
     </div>
 
-    <div id="detailSerialNumberModal" class="modal fade" tabindex="-1" aria-labelledby="myModalLabel" aria-hidden="true" style="display: none;">
+    <div id="detailSerialNumberModal" class="modal fade" tabindex="-1" aria-labelledby="myModalLabel" aria-hidden="true"
+        style="display: none;">
         <div class="modal-dialog modal-xl">
             <div class="modal-content">
                 <div class="modal-header">
@@ -171,10 +173,13 @@
                     </table>
 
                     <div class="mb-3">
-                        <input type="text" class="form-control" id="scanSerialNumber" placeholder="Scan Serial Number" autofocus>
+                        <input type="text" class="form-control" id="scanSerialNumber"
+                            placeholder="Scan Serial Number" autofocus>
                     </div>
 
-                    <div id="scanSerialNumberError" class="alert alert-danger alert-dismissible alert-label-icon label-arrow shadow fade show" role="alert" style="display: none">
+                    <div id="scanSerialNumberError"
+                        class="alert alert-danger alert-dismissible alert-label-icon label-arrow shadow fade show"
+                        role="alert" style="display: none">
                         <i class="ri-error-warning-line label-icon"></i>
                         <strong>Error</strong> - <span id="scanSerialNumberErrorMessage"></span>
                         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
@@ -214,11 +219,11 @@
                             <h5>List Serial Number SO</h5>
                             <table class="table table-striped align-middle">
                                 <thead>
-                                <tr>
-                                    <th>#</th>
-                                    <th>Serial Number</th>
-                                    <th>Action</th>
-                                </tr>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Serial Number</th>
+                                        <th>Action</th>
+                                    </tr>
                                 </thead>
                                 <tbody id="listSerialNumber">
 
@@ -235,7 +240,8 @@
         </div>
     </div>
 
-    <div id="serialNumberDirectOutboundModal" class="modal fade" tabindex="-1" aria-labelledby="myModalLabel" aria-hidden="true" style="display: none;">
+    <div id="serialNumberDirectOutboundModal" class="modal fade" tabindex="-1" aria-labelledby="myModalLabel"
+        aria-hidden="true" style="display: none;">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
@@ -273,10 +279,13 @@
                     <input type="hidden" id="detail_Direct_indexSalesDoc">
 
                     <div class="mb-3">
-                        <input type="text" class="form-control" id="scanSerialNumberDirect" placeholder="Scan Serial Number" autofocus>
+                        <input type="text" class="form-control" id="scanSerialNumberDirect"
+                            placeholder="Scan Serial Number" autofocus>
                     </div>
 
-                    <div id="scanSerialNumberDirectError" class="alert alert-danger alert-dismissible alert-label-icon label-arrow shadow fade show" role="alert" style="display: none">
+                    <div id="scanSerialNumberDirectError"
+                        class="alert alert-danger alert-dismissible alert-label-icon label-arrow shadow fade show"
+                        role="alert" style="display: none">
                         <i class="ri-error-warning-line label-icon"></i>
                         <strong>Error</strong> - <span id="scanSerialNumberDirectErrorMessage"></span>
                         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
@@ -287,7 +296,8 @@
                             <div class="col-2">
                                 <label class="form-label text-white">-</label>
                                 <div>
-                                    <a class="btn btn-secondary w-100" onclick="addSerialNumberManualDirect()">SN Manual</a>
+                                    <a class="btn btn-secondary w-100" onclick="addSerialNumberManualDirect()">SN
+                                        Manual</a>
                                 </div>
                             </div>
                         </div>
@@ -295,11 +305,11 @@
 
                     <table class="table table-striped align-middle">
                         <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>Serial Number</th>
-                            <th>Action</th>
-                        </tr>
+                            <tr>
+                                <th>#</th>
+                                <th>Serial Number</th>
+                                <th>Action</th>
+                            </tr>
                         </thead>
                         <tbody id="listDetailSerialNumberDirect">
 
@@ -314,7 +324,8 @@
         </div>
     </div>
 
-    <div id="manualSalesDocModal" class="modal fade" tabindex="-1" aria-labelledby="myModalLabel" aria-hidden="true" style="display: none;">
+    <div id="manualSalesDocModal" class="modal fade" tabindex="-1" aria-labelledby="myModalLabel" aria-hidden="true"
+        style="display: none;">
         <div class="modal-dialog modal-xl">
             <div class="modal-content">
                 <div class="modal-header">
@@ -353,11 +364,13 @@
                         <div class="col-6">
                             <div class="mb-3 mt-4">
                                 <label class="form-label">Sales Doc</label>
-                                <input type="text" class="form-control" placeholder="Sales Doc ..." id="salesDocManual">
+                                <input type="text" class="form-control" placeholder="Sales Doc ..."
+                                    id="salesDocManual">
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">QTY</label>
-                                <input type="text" class="form-control" placeholder="Sales Doc ..." id="salesDocManualQTY">
+                                <input type="text" class="form-control" placeholder="Sales Doc ..."
+                                    id="salesDocManualQTY">
                             </div>
                         </div>
                         <div class="d-flex justify-content-end">
@@ -380,23 +393,34 @@
         // Dexie (IndexedDB) KV Helpers
         // ================================
         const db = new Dexie('qc-offline');
-        db.version(1).stores({ kv: 'key' });
+        db.version(1).stores({
+            kv: 'key'
+        });
 
         const storage = {
             async getJSON(key, fallback = null) {
                 const row = await db.kv.get(key);
                 return row?.value ?? fallback;
             },
-            async setJSON(key, value) { await db.kv.put({ key, value }); },
-            async remove(key) { await db.kv.delete(key); },
-            async clear() { await db.kv.clear(); }
+            async setJSON(key, value) {
+                await db.kv.put({
+                    key,
+                    value
+                });
+            },
+            async remove(key) {
+                await db.kv.delete(key);
+            },
+            async clear() {
+                await db.kv.clear();
+            }
         };
         const toInt = (v) => parseInt(v ?? 0, 10);
 
         // ================================
         // Init Page (with Draft support)
         // ================================
-        (async function initPage(){
+        (async function initPage() {
             await storage.clear();
 
             // Try load draft first; if none, load from Blade data
@@ -420,7 +444,7 @@
                 material: item.material,
                 poItemDesc: item.po_item_desc,
                 prodHierarchyDesc: item.prod_hierarchy_desc,
-                qty: item.po_item_qty,
+                qty: toInt(item.po_item_qty) - toInt(item.qty_qc),
                 select: 0,
                 manual: false
             }));
@@ -438,10 +462,14 @@
             const reader = new FileReader();
             reader.onload = async (e) => {
                 const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, { type: 'array' });
+                const workbook = XLSX.read(data, {
+                    type: 'array'
+                });
                 const firstSheetName = workbook.SheetNames[1];
                 const worksheet = workbook.Sheets[firstSheetName];
-                const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
+                const jsonData = XLSX.utils.sheet_to_json(worksheet, {
+                    defval: ''
+                });
 
                 const filteredData = jsonData.map((row) => {
                     const snList = (row['Serial Numbers'] || '').split('\r\n').filter(Boolean);
@@ -458,7 +486,10 @@
                         listSalesDoc: [],
                         purchaseOrderDetailId: null,
                         putAwayStep: 1,
-                        snAvailable: snList.map(sn => ({ serialNumber: sn, status: true }))
+                        snAvailable: snList.map(sn => ({
+                            serialNumber: sn,
+                            status: true
+                        }))
                     };
                 });
 
@@ -529,7 +560,8 @@
                 // SalesDoc chips/buttons
                 let htmlSalesDoc = '';
                 (item.salesDoc || []).forEach((sales, indexSalesDoc) => {
-                    const done = (toInt(sales.serialNumber.length) + toInt(sales.snDirect.length)) === toInt(sales.qty);
+                    const done = (toInt(sales.serialNumber.length) + toInt(sales.snDirect.length)) ===
+                        toInt(sales.qty);
                     htmlSalesDoc += `
           <div class="d-flex gap-2 align-items-center">
             <p class="mb-0" style="min-width: 140px;">${sales.salesDoc} <b>(QTY : ${sales.qty})</b></p>
@@ -547,10 +579,25 @@
             onchange="handlePutAwayStepChange(this, ${index})">
         </div>`;
 
+                let typeLabel = '';
+                if (item.typeManual) {
+                    typeLabel = item.typeManual === 'Parent' ?
+                        '<span class="badge bg-danger-subtle text-danger" style="cursor: pointer;" onclick="changeTypeProcess(' +
+                        index + ')">Parent <i class="ri-refresh-line ms-1"></i></span>' :
+                        '<span class="badge bg-secondary-subtle text-secondary" style="cursor: pointer;" onclick="changeTypeProcess(' +
+                        index + ')">Child <i class="ri-refresh-line ms-1"></i></span>';
+                } else {
+                    typeLabel = statusParent ?
+                        '<span class="badge bg-danger-subtle text-danger" style="cursor: pointer;" onclick="changeTypeProcess(' +
+                        index + ')">Parent <i class="ri-refresh-line ms-1"></i></span>' :
+                        '<span class="badge bg-secondary-subtle text-secondary" style="cursor: pointer;" onclick="changeTypeProcess(' +
+                        index + ')">Child <i class="ri-refresh-line ms-1"></i></span>';
+                }
+
                 html += `
         <tr class="${isEmptySalesDoc ? 'table-danger' : ''}">
           <td>${number}</td>
-          <td>${statusParent ? '<span class="badge bg-danger-subtle text-danger">Parent</span>' : '<span class="badge bg-secondary-subtle text-secondary">Child</span>'}</td>
+          <td>${typeLabel}</td>
           <td>${putAwayStep}</td>
           <td>${item.lineNumber}</td>
           <td>${item.itemName}</td>
@@ -558,18 +605,26 @@
           <td class="text-center fw-bold">${item.qty}</td>
           <td><div class="d-flex flex-column gap-2">${htmlSalesDoc}</div></td>
           <td>${(toInt(item.qty) === toInt(item.qtyAdd)) ? '' : `
-            <div class="d-flex gap-2">
-              <a class="btn btn-info btn-sm" onclick="pilihSalesDoc('${index}')">Pilih Sales Doc</a>
-              <a class="btn btn-warning btn-sm" onclick="manualSalesDoc('${index}')">Manual Sales Doc</a>
-            </div>`}
+                                                <div class="d-flex gap-2">
+                                                  <a class="btn btn-info btn-sm" onclick="pilihSalesDoc('${index}')">Pilih Sales Doc</a>
+                                                  <a class="btn btn-warning btn-sm" onclick="manualSalesDoc('${index}')">Manual Sales Doc</a>
+                                                </div>`}
           </td>
         </tr>`;
                 number++;
             });
 
             document.getElementById('listProducts').innerHTML = html;
-            const table = new DataTable('#tableListProduct');
-            table.page(currentPage).draw('page');
+            const table = new DataTable('#tableListProduct', {
+                stateSave: true
+            });
+
+            const pageCount = table.page.info().pages;
+            if (currentPage < pageCount) {
+                table.page(currentPage).draw(false);
+            } else if (pageCount > 0) {
+                table.page(pageCount - 1).draw(false);
+            }
 
             await viewPoSAP();
         }
@@ -617,10 +672,14 @@
             const compare = await storage.getJSON('compare', []);
             const serialNumber = compare[index].salesDoc[indexSalesDoc].snDirect;
 
-            if ((serialNumber.length + compare[index].salesDoc[indexSalesDoc].serialNumber.length) === compare[index].salesDoc[indexSalesDoc].qty) {
-                document.getElementById('scanSerialNumberDirectErrorMessage').innerText = 'Serial number exceeds item quantity';
+            if ((serialNumber.length + compare[index].salesDoc[indexSalesDoc].serialNumber.length) === compare[index]
+                .salesDoc[indexSalesDoc].qty) {
+                document.getElementById('scanSerialNumberDirectErrorMessage').innerText =
+                    'Serial number exceeds item quantity';
                 document.getElementById('scanSerialNumberDirectError').style.display = 'block';
-                setTimeout(() => { document.getElementById('scanSerialNumberDirectError').style.display = 'none'; }, 3000);
+                setTimeout(() => {
+                    document.getElementById('scanSerialNumberDirectError').style.display = 'none';
+                }, 3000);
                 new Audio("{{ asset('assets/sound/error.mp3') }}").play();
                 document.getElementById('scanSerialNumberDirect').value = '';
                 document.getElementById('scanSerialNumberDirect').focus();
@@ -657,6 +716,41 @@
             await viewCompareSAPCCW();
         }
 
+        async function changeTypeProcess(index) {
+            const compare = await storage.getJSON('compare', []);
+            const item = compare[index];
+            const currentType = item.typeManual || (isParentFormat(item.lineNumber) ? 'Parent' : 'Child');
+            const targetType = currentType === 'Parent' ? 'Child' : 'Parent';
+
+            Swal.fire({
+                title: 'Konfirmasi Perubahan Type',
+                text: `Apakah anda yakin ingin mengganti type dari ${currentType} ke ${targetType}?`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Ya, Ganti!',
+                cancelButtonText: 'Batal',
+                customClass: {
+                    confirmButton: 'btn btn-primary w-xs me-2 mt-2',
+                    cancelButton: 'btn btn-danger w-xs mt-2'
+                },
+                buttonsStyling: false,
+                showCloseButton: true
+            }).then(async (result) => {
+                if (result.value) {
+                    item.typeManual = targetType;
+                    await storage.setJSON('compare', compare);
+                    await viewCompareSAPCCW();
+                    Swal.fire({
+                        title: 'Berhasil!',
+                        text: `Type berhasil diganti menjadi ${targetType}`,
+                        icon: 'success',
+                        timer: 1500,
+                        showConfirmButton: false
+                    });
+                }
+            });
+        }
+
         // ================================
         // Hapus SalesDoc
         // ================================
@@ -681,7 +775,8 @@
             const sapIndex = sap.findIndex(i => toInt(i.id) === toInt(idPoDetail));
             if (sapIndex !== -1) {
                 const item = sap[sapIndex];
-                if (item.manual === true) sap.splice(sapIndex, 1); else item.select = 0;
+                if (item.manual === true) sap.splice(sapIndex, 1);
+                else item.select = 0;
             }
 
             await storage.setJSON('sap', sap);
@@ -721,8 +816,16 @@
             });
 
             document.getElementById('listPoSAP').innerHTML = html;
-            const table = new DataTable('#tableListPoSAP');
-            table.page(currentPage).draw('page');
+            const table = new DataTable('#tableListPoSAP', {
+                stateSave: true
+            });
+
+            const pageCount = table.page.info().pages;
+            if (currentPage < pageCount) {
+                table.page(currentPage).draw(false);
+            } else if (pageCount > 0) {
+                table.page(pageCount - 1).draw(false);
+            }
         }
 
         // ================================
@@ -756,10 +859,14 @@
             const reader = new FileReader();
             reader.onload = async (e) => {
                 const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, { type: 'array' });
+                const workbook = XLSX.read(data, {
+                    type: 'array'
+                });
                 const firstSheetName = workbook.SheetNames[0];
                 const worksheet = workbook.Sheets[firstSheetName];
-                const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
+                const jsonData = XLSX.utils.sheet_to_json(worksheet, {
+                    defval: ''
+                });
                 const serialNumber = jsonData.map((row) => row['Serial Number']);
 
                 const index = document.getElementById('detailSN_index').value;
@@ -767,7 +874,11 @@
                 const compare = await storage.getJSON('compare', []);
 
                 if (serialNumber.length === toInt(compare[index].salesDoc[indexSalesDoc].qty)) {
-                    Swal.fire({ title: 'Warning!', text: 'Jumlah Serial Number tidak boleh lebih dari QTY', icon: 'warning' });
+                    Swal.fire({
+                        title: 'Warning!',
+                        text: 'Jumlah Serial Number tidak boleh lebih dari QTY',
+                        icon: 'warning'
+                    });
                     return true;
                 }
 
@@ -805,7 +916,9 @@
 
             let htmlSN = '';
             (data.snAvailable || []).forEach((i) => {
-                const btn = i.status ? `<a class="btn btn-primary btn-sm" onclick="selectSnAvailable('${i.serialNumber}')">Select SN</a>` : '';
+                const btn = i.status ?
+                    `<a class="btn btn-primary btn-sm" onclick="selectSnAvailable('${i.serialNumber}')">Select SN</a>` :
+                    '';
                 htmlSN += `<tr><td>${i.serialNumber}</td><td>${btn}</td></tr>`;
             });
 
@@ -821,7 +934,11 @@
             let serialNumber = await storage.getJSON('serialNumber', []);
 
             if (serialNumber.length === toInt(compare[index].salesDoc[indexSalesDoc].qty)) {
-                Swal.fire({ title: 'Warning!', text: 'Jumlah Serial Number tidak boleh lebih dari QTY', icon: 'warning' });
+                Swal.fire({
+                    title: 'Warning!',
+                    text: 'Jumlah Serial Number tidak boleh lebih dari QTY',
+                    icon: 'warning'
+                });
                 return true;
             }
 
@@ -845,7 +962,9 @@
 
             const ccw = await storage.getJSON('ccw', []);
             const data = ccw[index];
-            (data.snAvailable || []).forEach((item) => { if (item.serialNumber === sn) item.status = true; });
+            (data.snAvailable || []).forEach((item) => {
+                if (item.serialNumber === sn) item.status = true;
+            });
             await storage.setJSON('ccw', ccw);
 
             await viewSerialNumber(index, indexSalesDoc);
@@ -896,7 +1015,9 @@
             }
 
             document.getElementById('listSalesDoc').innerHTML = html;
-            $('#salesDocTable').DataTable({ pageLength: 10 });
+            $('#salesDocTable').DataTable({
+                pageLength: 10
+            });
             $('#listSalesDocModal').modal('show');
         }
 
@@ -906,7 +1027,11 @@
             const findSAP = sap.find(i => toInt(i.id) === toInt(id));
 
             if (toInt(compare[index].qtyAdd + findSAP.qty) > toInt(compare[index].qty)) {
-                Swal.fire({ title: 'Warning!', text: 'QTY melebihi ketentuan PO', icon: 'warning' });
+                Swal.fire({
+                    title: 'Warning!',
+                    text: 'QTY melebihi ketentuan PO',
+                    icon: 'warning'
+                });
                 return true;
             }
 
@@ -939,34 +1064,79 @@
         // ================================
         async function processQualityControl() {
             Swal.fire({
-                title: 'Are you sure?', text: 'Process Quality Control', icon: 'warning', showCancelButton: true,
-                customClass: { confirmButton: 'btn btn-primary w-xs me-2 mt-2', cancelButton: 'btn btn-danger w-xs mt-2' },
-                confirmButtonText: 'Yes, Process it!', buttonsStyling: false, showCloseButton: true
+                title: 'Are you sure?',
+                text: 'Process Quality Control',
+                icon: 'warning',
+                showCancelButton: true,
+                customClass: {
+                    confirmButton: 'btn btn-primary w-xs me-2 mt-2',
+                    cancelButton: 'btn btn-danger w-xs mt-2'
+                },
+                confirmButtonText: 'Yes, Process it!',
+                buttonsStyling: false,
+                showCloseButton: true
             }).then(async function(t) {
                 if (!t.value) return;
 
-                // Validation Serial Number n/a / qty
+                // Validation Serial Number & Sales Doc
                 const compare = await storage.getJSON('compare', []);
+                let totalProcessed = 0;
                 for (const item of compare) {
                     for (const salesDoc of (item.salesDoc || [])) {
-                        if ((salesDoc.serialNumber.length + salesDoc.snDirect.length) !== salesDoc.qty) {
-                            const sisaQTY = (salesDoc.serialNumber.length + salesDoc.snDirect.length) - salesDoc.qty;
-                            for (let i = 0; i < sisaQTY; i++) salesDoc.serialNumber.push('N/A');
+                        // Produk harus memiliki Sales Doc (sudah ada dalam array salesDoc)
+                        // dan harus memiliki Serial Number yang lengkap sesuai QTY
+                        if (!salesDoc.salesDoc) {
+                            Swal.fire({
+                                title: 'Warning!',
+                                text: `Sales Doc belum terpilih untuk ${item.itemName}.`,
+                                icon: 'warning'
+                            });
+                            return true;
                         }
-                    }
-                    if (toInt(item.qty) !== toInt(item.qtyAdd)) {
-                        Swal.fire({ title: 'Warning!', text: 'There are unprocessed CCW items', icon: 'warning' });
-                        return true;
+
+                        if ((salesDoc.serialNumber.length + salesDoc.snDirect.length) !== salesDoc.qty) {
+                            Swal.fire({
+                                title: 'Warning!',
+                                text: `Serial number untuk ${item.itemName} / ${salesDoc.salesDoc} belum lengkap. (Dibutuhkan: ${salesDoc.qty})`,
+                                icon: 'warning'
+                            });
+                            return true;
+                        }
+
+                        // Cek jika ada SN kosong atau 'N/A'
+                        const allSNs = [...(salesDoc.serialNumber || []), ...(salesDoc.snDirect || [])];
+                        if (allSNs.some(sn => !sn || sn === 'N/A' || sn.trim() === '')) {
+                            Swal.fire({
+                                title: 'Warning!',
+                                text: `Serial number untuk ${item.itemName} tidak valid / kosong. SN wajib diisi.`,
+                                icon: 'warning'
+                            });
+                            return true;
+                        }
+                        totalProcessed += salesDoc.qty;
                     }
                 }
+
+                if (totalProcessed === 0) {
+                    Swal.fire({
+                        title: 'Warning!',
+                        text: 'Belum ada produk yang diproses (Sales Doc & SN wajib diisi).',
+                        icon: 'warning'
+                    });
+                    return true;
+                }
+
                 await storage.setJSON('compare', compare);
 
                 // Upload JSON dahulu
                 await sendLocalStorageAsJsonFileToBackend({
-                    key: 'compare', filename: 'compare.json', uploadUrl: '{{ route('inbound.quality-control.upload.ccw') }}',
+                    key: 'compare',
+                    filename: 'compare.json',
+                    uploadUrl: '{{ route('inbound.quality-control.upload.ccw') }}',
                     onSuccess: async (fileName) => {
                         $.ajax({
-                            url: '{{ route('inbound.quality-control-process-ccw-store') }}', method: 'POST',
+                            url: '{{ route('inbound.quality-control-process-ccw-store') }}',
+                            method: 'POST',
                             data: {
                                 _token: '{{ csrf_token() }}',
                                 fileName: await storage.getJSON('fileName'),
@@ -974,10 +1144,31 @@
                             },
                             success: (res) => {
                                 if (res.status) {
-                                    Swal.fire({ title: 'Success!', text: 'Quality Control successfully!', icon: 'success', confirmButtonText: 'OK', customClass: { confirmButton: 'btn btn-primary w-xs mt-2' }, buttonsStyling: false })
-                                        .then(() => { window.location.href = '{{ route('inbound.quality-control') }}'; });
+                                    Swal.fire({
+                                            title: 'Success!',
+                                            text: 'Quality Control successfully!',
+                                            icon: 'success',
+                                            confirmButtonText: 'OK',
+                                            customClass: {
+                                                confirmButton: 'btn btn-primary w-xs mt-2'
+                                            },
+                                            buttonsStyling: false
+                                        })
+                                        .then(() => {
+                                            window.location.href =
+                                                '{{ route('inbound.quality-control') }}';
+                                        });
                                 } else {
-                                    Swal.fire({ title: 'Error!', text: 'Quality Control Failed!', icon: 'error', confirmButtonText: 'OK', customClass: { confirmButton: 'btn btn-primary w-xs mt-2' }, buttonsStyling: false });
+                                    Swal.fire({
+                                        title: 'Error!',
+                                        text: 'Quality Control Failed!',
+                                        icon: 'error',
+                                        confirmButtonText: 'OK',
+                                        customClass: {
+                                            confirmButton: 'btn btn-primary w-xs mt-2'
+                                        },
+                                        buttonsStyling: false
+                                    });
                                 }
                             }
                         });
@@ -986,19 +1177,34 @@
             });
         }
 
-        async function sendLocalStorageAsJsonFileToBackend({ key = 'compare', filename = 'compare.json', uploadUrl, onSuccess }) {
+        async function sendLocalStorageAsJsonFileToBackend({
+            key = 'compare',
+            filename = 'compare.json',
+            uploadUrl,
+            onSuccess
+        }) {
             const rawObj = await storage.getJSON(key, null);
-            if (!rawObj) { console.error(`❌ Tidak ada data untuk key "${key}"`); return; }
+            if (!rawObj) {
+                console.error(`❌ Tidak ada data untuk key "${key}"`);
+                return;
+            }
 
             const rawData = JSON.stringify(rawObj);
-            const blob = new Blob([rawData], { type: 'application/json' });
-            const file = new File([blob], filename, { type: 'application/json' });
+            const blob = new Blob([rawData], {
+                type: 'application/json'
+            });
+            const file = new File([blob], filename, {
+                type: 'application/json'
+            });
 
             const formData = new FormData();
             formData.append('json_file', file);
             formData.append('_token', '{{ csrf_token() }}');
 
-            return fetch(uploadUrl, { method: 'POST', body: formData })
+            return fetch(uploadUrl, {
+                    method: 'POST',
+                    body: formData
+                })
                 .then(r => r.json())
                 .then(async (result) => {
                     await storage.setJSON('fileName', result.fileName);
@@ -1018,18 +1224,28 @@
             let serialNumber = await storage.getJSON('serialNumber', []);
 
             if (serialNumber.length === toInt(compare[index].salesDoc[indexSalesDoc].qty)) {
-                Swal.fire({ title: 'Warning!', text: 'qty serial number exceeds qty product', icon: 'error' });
+                Swal.fire({
+                    title: 'Warning!',
+                    text: 'qty serial number exceeds qty product',
+                    icon: 'error'
+                });
                 return true;
             }
 
             const exists = serialNumber.find((i) => i === value);
             if (exists != null) {
-                document.getElementById('scanSerialNumberErrorMessage').innerText = 'Serial number is already in the list';
+                document.getElementById('scanSerialNumberErrorMessage').innerText =
+                    'Serial number is already in the list';
                 document.getElementById('scanSerialNumberError').style.display = 'block';
-                setTimeout(() => { document.getElementById('scanSerialNumberError').style.display = 'none'; }, 3000);
+                setTimeout(() => {
+                    document.getElementById('scanSerialNumberError').style.display = 'none';
+                }, 3000);
                 new Audio("{{ asset('assets/sound/error.mp3') }}").play();
                 const input = document.getElementById('scanSerialNumber');
-                if (input) { input.value = ''; input.focus(); }
+                if (input) {
+                    input.value = '';
+                    input.focus();
+                }
                 return true;
             }
 
@@ -1043,12 +1259,17 @@
 
             const ccw = await storage.getJSON('ccw', []);
             const data = ccw[index];
-            (data.snAvailable || []).forEach((item) => { if (item.serialNumber === value) item.status = false; });
+            (data.snAvailable || []).forEach((item) => {
+                if (item.serialNumber === value) item.status = false;
+            });
             await storage.setJSON('ccw', ccw);
 
             await viewSerialNumber(index, indexSalesDoc);
             const input = document.getElementById('scanSerialNumber');
-            if (input) { input.value = ''; input.focus(); }
+            if (input) {
+                input.value = '';
+                input.focus();
+            }
             await viewCompareSAPCCW();
         }
 
@@ -1056,15 +1277,20 @@
         // Scanner Enter Listeners (SN & SN Direct)
         // ================================
         document.getElementById('scanSerialNumber')?.addEventListener('keydown', async function(e) {
-            if (e.key !== 'Enter') return; e.preventDefault();
+            if (e.key !== 'Enter') return;
+            e.preventDefault();
             const value = this.value.trim();
 
             if (!value) {
-                document.getElementById('scanSerialNumberErrorMessage').innerText = 'Serial number cannot be empty';
+                document.getElementById('scanSerialNumberErrorMessage').innerText =
+                    'Serial number cannot be empty';
                 document.getElementById('scanSerialNumberError').style.display = 'block';
-                setTimeout(() => { document.getElementById('scanSerialNumberError').style.display = 'none'; }, 3000);
+                setTimeout(() => {
+                    document.getElementById('scanSerialNumberError').style.display = 'none';
+                }, 3000);
                 new Audio("{{ asset('assets/sound/error.mp3') }}").play();
-                this.value = ''; this.focus();
+                this.value = '';
+                this.focus();
                 return;
             }
 
@@ -1074,17 +1300,25 @@
             let serialNumber = await storage.getJSON('serialNumber', []);
 
             if (serialNumber.length === toInt(compare[index].salesDoc[indexSalesDoc].qty)) {
-                Swal.fire({ title: 'Warning!', text: 'qty serial number exceeds qty product', icon: 'error' });
+                Swal.fire({
+                    title: 'Warning!',
+                    text: 'qty serial number exceeds qty product',
+                    icon: 'error'
+                });
                 return true;
             }
 
             const exists = serialNumber.find((i) => i === value);
             if (exists != null) {
-                document.getElementById('scanSerialNumberErrorMessage').innerText = 'Serial number is already in the list';
+                document.getElementById('scanSerialNumberErrorMessage').innerText =
+                    'Serial number is already in the list';
                 document.getElementById('scanSerialNumberError').style.display = 'block';
-                setTimeout(() => { document.getElementById('scanSerialNumberError').style.display = 'none'; }, 3000);
+                setTimeout(() => {
+                    document.getElementById('scanSerialNumberError').style.display = 'none';
+                }, 3000);
                 new Audio("{{ asset('assets/sound/error.mp3') }}").play();
-                this.value = ''; this.focus();
+                this.value = '';
+                this.focus();
                 return true;
             }
 
@@ -1096,19 +1330,25 @@
 
             new Audio("{{ asset('assets/sound/scan.mp3') }}").play();
             await viewSerialNumber(index, indexSalesDoc);
-            this.value = ''; this.focus();
+            this.value = '';
+            this.focus();
             await viewCompareSAPCCW();
         });
 
         document.getElementById('scanSerialNumberDirect')?.addEventListener('keydown', async function(e) {
-            if (e.key !== 'Enter') return; e.preventDefault();
+            if (e.key !== 'Enter') return;
+            e.preventDefault();
             const value = this.value.trim();
             if (!value) {
-                document.getElementById('scanSerialNumberDirectErrorMessage').innerText = 'Serial number cannot be empty';
+                document.getElementById('scanSerialNumberDirectErrorMessage').innerText =
+                    'Serial number cannot be empty';
                 document.getElementById('scanSerialNumberDirectError').style.display = 'block';
-                setTimeout(() => { document.getElementById('scanSerialNumberDirectError').style.display = 'none'; }, 3000);
+                setTimeout(() => {
+                    document.getElementById('scanSerialNumberDirectError').style.display = 'none';
+                }, 3000);
                 new Audio("{{ asset('assets/sound/error.mp3') }}").play();
-                this.value = ''; this.focus();
+                this.value = '';
+                this.focus();
                 return;
             }
 
@@ -1119,17 +1359,25 @@
 
             const exists = serialNumber.find((i) => i === value);
             if (exists != null) {
-                document.getElementById('scanSerialNumberDirectErrorMessage').innerText = 'Serial number is already in the list';
+                document.getElementById('scanSerialNumberDirectErrorMessage').innerText =
+                    'Serial number is already in the list';
                 document.getElementById('scanSerialNumberDirectError').style.display = 'block';
-                setTimeout(() => { document.getElementById('scanSerialNumberDirectError').style.display = 'none'; }, 3000);
+                setTimeout(() => {
+                    document.getElementById('scanSerialNumberDirectError').style.display = 'none';
+                }, 3000);
                 new Audio("{{ asset('assets/sound/error.mp3') }}").play();
-                this.value = ''; this.focus();
+                this.value = '';
+                this.focus();
                 return true;
             }
 
             const checkQTY = serialNumber.length + compare[index].salesDoc[indexSalesDoc].serialNumber.length;
             if (checkQTY === toInt(compare[index].salesDoc[indexSalesDoc].qty)) {
-                Swal.fire({ title: 'Warning!', text: 'qty serial number exceeds qty product', icon: 'error' });
+                Swal.fire({
+                    title: 'Warning!',
+                    text: 'qty serial number exceeds qty product',
+                    icon: 'error'
+                });
                 return true;
             }
 
@@ -1140,7 +1388,8 @@
             await viewSerialNumberDirectOutbound(index, indexSalesDoc);
 
             new Audio("{{ asset('assets/sound/scan.mp3') }}").play();
-            this.value = ''; this.focus();
+            this.value = '';
+            this.focus();
             await viewCompareSAPCCW();
         });
 
@@ -1151,7 +1400,9 @@
             const ccw = await storage.getJSON('ccw', []);
             const indexCCW = document.getElementById('detailSN_ccw_index').value;
             const list = (ccw[indexCCW]?.snAvailable || []);
-            for (const item of list) { if (item.status === true) await selectSnAvailable(item.serialNumber); }
+            for (const item of list) {
+                if (item.status === true) await selectSnAvailable(item.serialNumber);
+            }
         }
 
         // ================================
@@ -1177,7 +1428,7 @@
             const salesDocManual = await storage.getJSON('salesDocManual', {});
 
             // simple unique id (YYYYMMDDHHMMSS)
-            const id = new Date().toISOString().replace(/[-:TZ.]/g, '').slice(0,14);
+            const id = new Date().toISOString().replace(/[-:TZ.]/g, '').slice(0, 14);
 
             sap.push({
                 id,
@@ -1205,8 +1456,8 @@
         // Draft: Save & Load (Laravel API)
         // ================================
         const PURCHASE_ORDER_ID = '{{ request()->get('id') }}';
-        const DRAFT_ROUTE_SAVE = '{{ route('inbound.qc.draft.save') }}';   // POST
-        const DRAFT_ROUTE_LOAD = '{{ route('inbound.qc.draft.load') }}';   // GET ?purchaseOrderId=
+        const DRAFT_ROUTE_SAVE = '{{ route('inbound.qc.draft.save') }}'; // POST
+        const DRAFT_ROUTE_LOAD = '{{ route('inbound.qc.draft.load') }}'; // GET ?purchaseOrderId=
 
         // Call this on a button: <button id="saveDraftBtn" onclick="saveDraft()">Save Draft</button>
         async function saveDraft() {
@@ -1219,7 +1470,9 @@
 
                 const payload = {
                     purchaseOrderId: PURCHASE_ORDER_ID,
-                    sap, ccw, compare
+                    sap,
+                    ccw,
+                    compare
                 };
 
                 const res = await fetch(DRAFT_ROUTE_SAVE, {
@@ -1236,13 +1489,21 @@
 
                 // Optional: toast
                 if (window.Swal) {
-                    Swal.fire({ title: 'Draft saved', text: out.message || 'Draft berhasil disimpan', icon: 'success' });
+                    Swal.fire({
+                        title: 'Draft saved',
+                        text: out.message || 'Draft berhasil disimpan',
+                        icon: 'success'
+                    });
                 } else {
                     console.log('Draft saved');
                 }
             } catch (err) {
                 console.error('Save draft error', err);
-                if (window.Swal) Swal.fire({ title: 'Error', text: 'Gagal menyimpan draft', icon: 'error' });
+                if (window.Swal) Swal.fire({
+                    title: 'Error',
+                    text: 'Gagal menyimpan draft',
+                    icon: 'error'
+                });
             }
         }
 
@@ -1250,7 +1511,11 @@
         async function loadDraftIfAny() {
             try {
                 const url = `${DRAFT_ROUTE_LOAD}?purchaseOrderId=${encodeURIComponent(PURCHASE_ORDER_ID)}`;
-                const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+                const res = await fetch(url, {
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
                 if (!res.ok) return false; // 404/empty -> no draft
 
                 const data = await res.json(); // { sap:[], ccw:[], compare:[], updated_at?: string }
@@ -1288,30 +1553,5 @@
         //         }
         //     } catch (_) {}
         // }, 60000);
-
     </script>
 @endsection
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

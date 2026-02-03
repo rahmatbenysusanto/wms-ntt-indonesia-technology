@@ -891,7 +891,12 @@ class InboundController extends Controller
 
     public function qualityControlProcessCcw(Request $request): View
     {
-        $purcDocDetail = PurchaseOrderDetail::where('purchase_order_id', $request->query('id'))->where('status', 'new')->get();
+        $purcDocDetail = PurchaseOrderDetail::where('purchase_order_id', $request->query('id'))
+            ->where(function($query) {
+                $query->where('status', 'new')
+                    ->orWhereRaw('qty_qc < po_item_qty');
+            })
+            ->get();
 
         $title = 'Quality Control';
         return view('inbound.quality-control.ccw.index', compact('title', 'purcDocDetail'));
@@ -985,16 +990,22 @@ class InboundController extends Controller
                     ]);
 
                     foreach ($parent['serialNumber'] ?? [] as $serialNumber) {
+                        if ($serialNumber == "" || $serialNumber == "N/A") {
+                            throw new \Exception("Product " . $purchaseOrderDetail->material . " must have a valid serial number for QC.");
+                        }
                         ProductPackageItemSN::create([
                             'product_package_item_id'  => $productPackageItem->id,
-                            'serial_number'            => $serialNumber == "" ? rand(111111,999999) : $serialNumber,
+                            'serial_number'            => $serialNumber,
                         ]);
                     }
 
+                    $newQtyQc = ($purchaseOrderDetail->qty_qc ?? 0) + $parent['qty'];
+                    $status = $newQtyQc >= $purchaseOrderDetail->po_item_qty ? 'qc' : 'new';
+
                     PurchaseOrderDetail::where('id', $parent['id'])
                         ->update([
-                            'status' => 'qc',
-                            'qty_qc' => $parent['qty'],
+                            'status' => $status,
+                            'qty_qc' => $newQtyQc,
                         ]);
 
                     $qty_item++;
@@ -1013,16 +1024,22 @@ class InboundController extends Controller
                         ]);
 
                         foreach ($childDetail['serialNumber'] ?? [] as $serialNumber) {
+                            if ($serialNumber == "" || $serialNumber == "N/A") {
+                                throw new \Exception("Product " . $purchaseOrderDetail->material . " must have a valid serial number for QC.");
+                            }
                             ProductPackageItemSN::create([
                                 'product_package_item_id'  => $productPackageItem->id,
-                                'serial_number'            => $serialNumber == "" ? rand(111111,999999) : $serialNumber,
+                                'serial_number'            => $serialNumber,
                             ]);
                         }
 
+                        $newQtyQcChild = ($purchaseOrderDetail->qty_qc ?? 0) + $childDetail['qty'];
+                        $statusChild = $newQtyQcChild >= $purchaseOrderDetail->po_item_qty ? 'qc' : 'new';
+
                         PurchaseOrderDetail::where('id', $childDetail['id'])
                             ->update([
-                                'status' => 'qc',
-                                'qty_qc' => $childDetail['qty'],
+                                'status' => $statusChild,
+                                'qty_qc' => $newQtyQcChild,
                             ]);
 
                         $qty_item++;
