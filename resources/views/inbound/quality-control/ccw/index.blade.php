@@ -186,7 +186,7 @@
                     </div>
 
                     <div class="row mb-3 mt-3">
-                        <div class="col-8">
+                        <div class="col-6">
                             <input type="file" class="form-control" id="uploadFileSerialNumber">
                         </div>
                         <div class="col-2">
@@ -194,6 +194,9 @@
                         </div>
                         <div class="col-2">
                             <a class="btn btn-info w-100" onclick="addManualSN()">Add SN Manual</a>
+                        </div>
+                        <div class="col-2">
+                            <a class="btn btn-warning w-100" onclick="generateNA()">Generate N/A</a>
                         </div>
                     </div>
 
@@ -298,6 +301,12 @@
                                 <div>
                                     <a class="btn btn-secondary w-100" onclick="addSerialNumberManualDirect()">SN
                                         Manual</a>
+                                </div>
+                            </div>
+                            <div class="col-2">
+                                <label class="form-label text-white">-</label>
+                                <div>
+                                    <a class="btn btn-warning w-100" onclick="generateNADirect()">Generate N/A</a>
                                 </div>
                             </div>
                         </div>
@@ -605,10 +614,10 @@
           <td class="text-center fw-bold">${item.qty}</td>
           <td><div class="d-flex flex-column gap-2">${htmlSalesDoc}</div></td>
           <td>${(toInt(item.qty) === toInt(item.qtyAdd)) ? '' : `
-                                                <div class="d-flex gap-2">
-                                                  <a class="btn btn-info btn-sm" onclick="pilihSalesDoc('${index}')">Pilih Sales Doc</a>
-                                                  <a class="btn btn-warning btn-sm" onclick="manualSalesDoc('${index}')">Manual Sales Doc</a>
-                                                </div>`}
+                                                                <div class="d-flex gap-2">
+                                                                  <a class="btn btn-info btn-sm" onclick="pilihSalesDoc('${index}')">Pilih Sales Doc</a>
+                                                                  <a class="btn btn-warning btn-sm" onclick="manualSalesDoc('${index}')">Manual Sales Doc</a>
+                                                                </div>`}
           </td>
         </tr>`;
                 number++;
@@ -691,6 +700,7 @@
 
             await storage.setJSON('compare', compare);
             await viewSerialNumberDirectOutbound(index, indexSalesDoc);
+            await viewCompareSAPCCW();
         }
 
         async function changeSNDirect(indexSN, value) {
@@ -704,6 +714,37 @@
 
             await storage.setJSON('compare', compare);
             await viewSerialNumberDirectOutbound(index, indexSalesDoc);
+            await viewCompareSAPCCW();
+        }
+
+        async function generateNADirect() {
+            const index = document.getElementById('detail_Direct_index').value;
+            const indexSalesDoc = document.getElementById('detail_Direct_indexSalesDoc').value;
+            const compare = await storage.getJSON('compare', []);
+            const salesDoc = compare[index].salesDoc[indexSalesDoc];
+            const serialNumber = salesDoc.snDirect || [];
+
+            const targetQty = toInt(salesDoc.qty);
+            const currentQty = (serialNumber.length + salesDoc.serialNumber.length);
+
+            if (currentQty >= targetQty) {
+                Swal.fire({
+                    title: 'Warning!',
+                    text: 'Jumlah Serial Number sudah lengkap',
+                    icon: 'warning'
+                });
+                return;
+            }
+
+            const diff = targetQty - currentQty;
+            for (let i = 0; i < diff; i++) {
+                serialNumber.push('N/A');
+            }
+
+            salesDoc.qtyDirect = serialNumber.length;
+            await storage.setJSON('compare', compare);
+            await viewSerialNumberDirectOutbound(index, indexSalesDoc);
+            await viewCompareSAPCCW();
         }
 
         // ================================
@@ -948,6 +989,39 @@
             await storage.setJSON('serialNumber', serialNumber);
 
             await viewSerialNumber(index, indexSalesDoc);
+            await viewCompareSAPCCW();
+        }
+
+        async function generateNA() {
+            const index = document.getElementById('detailSN_index').value;
+            const indexSalesDoc = document.getElementById('detailSN_index_sales_doc').value;
+
+            const compare = await storage.getJSON('compare', []);
+            let serialNumber = await storage.getJSON('serialNumber', []);
+
+            const targetQty = toInt(compare[index].salesDoc[indexSalesDoc].qty);
+            const currentQty = serialNumber.length;
+
+            if (currentQty >= targetQty) {
+                Swal.fire({
+                    title: 'Warning!',
+                    text: 'Jumlah Serial Number sudah lengkap',
+                    icon: 'warning'
+                });
+                return;
+            }
+
+            const diff = targetQty - currentQty;
+            for (let i = 0; i < diff; i++) {
+                serialNumber.push('N/A');
+            }
+
+            compare[index].salesDoc[indexSalesDoc].serialNumber = serialNumber;
+            await storage.setJSON('compare', compare);
+            await storage.setJSON('serialNumber', serialNumber);
+
+            await viewSerialNumber(index, indexSalesDoc);
+            await viewCompareSAPCCW();
         }
 
         async function deleteSerialNumber(index, indexSalesDoc, indexDetail, sn) {
@@ -968,6 +1042,7 @@
             await storage.setJSON('ccw', ccw);
 
             await viewSerialNumber(index, indexSalesDoc);
+            await viewCompareSAPCCW();
         }
 
         async function changeSerialNumber(index, indexSalesDoc, indexDetail, value) {
@@ -981,6 +1056,7 @@
             await storage.setJSON('serialNumber', serialNumber);
 
             await viewSerialNumber(index, indexSalesDoc);
+            await viewCompareSAPCCW();
         }
 
         // ================================
@@ -1103,9 +1179,9 @@
                             return true;
                         }
 
-                        // Cek jika ada SN kosong atau 'N/A'
+                        // Cek jika ada SN kosong
                         const allSNs = [...(salesDoc.serialNumber || []), ...(salesDoc.snDirect || [])];
-                        if (allSNs.some(sn => !sn || sn === 'N/A' || sn.trim() === '')) {
+                        if (allSNs.some(sn => !sn || sn.trim() === '')) {
                             Swal.fire({
                                 title: 'Warning!',
                                 text: `Serial number untuk ${item.itemName} tidak valid / kosong. SN wajib diisi.`,
