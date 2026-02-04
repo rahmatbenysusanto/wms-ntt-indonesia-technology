@@ -39,6 +39,12 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <h4 class="card-title mb-0">Purchase Order CCW</h4>
                         <div class="d-flex gap-2">
+                            <div class="input-group" style="width: 250px;">
+                                <input type="text" class="form-control" id="prefixMassDelete"
+                                    placeholder="Prefix (cth: 1)">
+                                <button class="btn btn-danger" type="button" onclick="massDeleteByLinePrefix()">Mass
+                                    Delete</button>
+                            </div>
                             <a class="btn btn-warning" onclick="saveDraft()">Save Draft CCW</a>
                             <a class="btn btn-primary" onclick="processQualityControl()">Process Quality Control</a>
                         </div>
@@ -614,10 +620,10 @@
           <td class="text-center fw-bold">${item.qty}</td>
           <td><div class="d-flex flex-column gap-2">${htmlSalesDoc}</div></td>
           <td>${(toInt(item.qty) === toInt(item.qtyAdd)) ? '' : `
-                                                                        <div class="d-flex gap-2">
-                                                                          <a class="btn btn-info btn-sm" onclick="pilihSalesDoc('${index}')">Pilih Sales Doc</a>
-                                                                          <a class="btn btn-warning btn-sm" onclick="manualSalesDoc('${index}')">Manual Sales Doc</a>
-                                                                        </div>`}
+                                                                                    <div class="d-flex gap-2">
+                                                                                      <a class="btn btn-info btn-sm" onclick="pilihSalesDoc('${index}')">Pilih Sales Doc</a>
+                                                                                      <a class="btn btn-warning btn-sm" onclick="manualSalesDoc('${index}')">Manual Sales Doc</a>
+                                                                                    </div>`}
           </td>
         </tr>`;
                 number++;
@@ -745,6 +751,75 @@
             await storage.setJSON('compare', compare);
             await viewSerialNumberDirectOutbound(index, indexSalesDoc);
             await viewCompareSAPCCW();
+        }
+
+        // ================================
+        // Mass Delete By Line Prefix
+        // ================================
+        async function massDeleteByLinePrefix() {
+            const prefix = document.getElementById('prefixMassDelete').value;
+            if (!prefix) return alert('Silakan masukkan prefix angka depan (contoh: 1)');
+
+            const sap = await storage.getJSON('sap', []);
+            const compare = await storage.getJSON('compare', []);
+            const ccw = await storage.getJSON('ccw', []);
+
+            const regex = new RegExp('^' + prefix + '\\.');
+
+            let affectedCount = 0;
+            compare.forEach((item, index) => {
+                if (regex.test(item.lineNumber)) {
+                    // 1. Kembalikan SN ke available di CCW jika ada
+                    (item.salesDoc || []).forEach(sales => {
+                        (sales.serialNumber || []).forEach(sn => {
+                            const change = ccw[index].snAvailable.find(s => s.serialNumber ===
+                                sn);
+                            if (change) change.status = true;
+                        });
+
+                        // 2. Reset SAP status
+                        const sapIndex = sap.findIndex(s => toInt(s.id) === toInt(sales.id));
+                        if (sapIndex !== -1) {
+                            if (sap[sapIndex].manual === true) {
+                                sap[sapIndex]._toDelete = true;
+                            } else {
+                                sap[sapIndex].select = 0;
+                            }
+                        }
+                    });
+
+                    // 3. Kosongkan Sales Doc di compare record ini
+                    item.salesDoc = [];
+                    item.qtyAdd = 0;
+                    item.purchaseOrderDetailId = null;
+                    affectedCount++;
+                }
+            });
+
+            // Hapus SAP yang ditandai manual
+            for (let i = sap.length - 1; i >= 0; i--) {
+                if (sap[i]._toDelete) sap.splice(i, 1);
+            }
+
+            if (affectedCount === 0) {
+                alert(`Tidak ditemukan Line Number dengan prefix "${prefix}."`);
+                return;
+            }
+
+            await storage.setJSON('sap', sap);
+            await storage.setJSON('compare', compare);
+            await storage.setJSON('ccw', ccw);
+
+            await viewCompareSAPCCW();
+            document.getElementById('prefixMassDelete').value = '';
+
+            Swal.fire({
+                title: 'Berhasil!',
+                text: `${affectedCount} baris berhasil dikosongkan Sales Doc-nya.`,
+                icon: 'success',
+                timer: 1500,
+                showConfirmButton: false
+            });
         }
 
         // ================================
@@ -1181,7 +1256,7 @@
 
                         // Pastikan Serial Number yang kosong diisi dengan N/A
                         salesDoc.serialNumber = (salesDoc.serialNumber || []).map(sn => (!sn || sn
-                        .trim() === '') ? 'N/A' : sn);
+                            .trim() === '') ? 'N/A' : sn);
                         salesDoc.snDirect = (salesDoc.snDirect || []).map(sn => (!sn || sn.trim() === '') ?
                             'N/A' : sn);
 

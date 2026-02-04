@@ -80,7 +80,8 @@
     </div>
 
     <!-- Add Box Modals -->
-    <div id="addBoxModal" class="modal fade" tabindex="-1" aria-labelledby="myModalLabel" aria-hidden="true" style="display: none;">
+    <div id="addBoxModal" class="modal fade" tabindex="-1" aria-labelledby="myModalLabel" aria-hidden="true"
+        style="display: none;">
         <div class="modal-dialog modal-xl">
             <div class="modal-content">
                 <div class="modal-header">
@@ -139,7 +140,8 @@
     </div>
 
     <!-- Detail SN Master Modals -->
-    <div id="detailSerialNumberModal" class="modal fade" tabindex="-1" aria-labelledby="myModalLabel" aria-hidden="true" style="display: none;">
+    <div id="detailSerialNumberModal" class="modal fade" tabindex="-1" aria-labelledby="myModalLabel" aria-hidden="true"
+        style="display: none;">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
@@ -184,7 +186,8 @@
     </div>
 
     <!-- Box Serial Number Modals -->
-    <div id="boxSerialNumberModal" class="modal fade" tabindex="-1" aria-labelledby="myModalLabel" aria-hidden="true" style="display: none;">
+    <div id="boxSerialNumberModal" class="modal fade" tabindex="-1" aria-labelledby="myModalLabel" aria-hidden="true"
+        style="display: none;">
         <div class="modal-dialog modal-xl">
             <div class="modal-content">
                 <div class="modal-header">
@@ -227,22 +230,25 @@
 
                     <div class="row mt-3">
                         <div class="col-10">
-{{--                            <div class="row">--}}
-{{--                                <div class="col-8">--}}
-{{--                                    <select class="form-control" id="selectSerialNumber"></select>--}}
-{{--                                </div>--}}
-{{--                                <div class="col-4">--}}
-{{--                                    <a class="btn btn-info w-100" onclick="pilihSerialNumber()">Pilih SN</a>--}}
-{{--                                </div>--}}
-{{--                            </div>--}}
-                            <input type="text" class="form-control" id="scanSerialNumber" placeholder="Scan Serial Number ...">
+                            {{--                            <div class="row"> --}}
+                            {{--                                <div class="col-8"> --}}
+                            {{--                                    <select class="form-control" id="selectSerialNumber"></select> --}}
+                            {{--                                </div> --}}
+                            {{--                                <div class="col-4"> --}}
+                            {{--                                    <a class="btn btn-info w-100" onclick="pilihSerialNumber()">Pilih SN</a> --}}
+                            {{--                                </div> --}}
+                            {{--                            </div> --}}
+                            <input type="text" class="form-control" id="scanSerialNumber"
+                                placeholder="Scan Serial Number ...">
                         </div>
                         <div class="col-2">
                             <a class="btn btn-secondary w-100" onclick="tambahManualSerialNumber()">Tambah Manual</a>
                         </div>
                     </div>
 
-                    <div id="scanSerialNumberError" class="alert alert-danger alert-dismissible alert-label-icon label-arrow shadow fade show mt-2" role="alert" style="display: none">
+                    <div id="scanSerialNumberError"
+                        class="alert alert-danger alert-dismissible alert-label-icon label-arrow shadow fade show mt-2"
+                        role="alert" style="display: none">
                         <i class="ri-error-warning-line label-icon"></i>
                         <strong>Error</strong> - <span id="scanSerialNumberErrorMessage"></span>
                         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
@@ -253,11 +259,11 @@
                             <h5 class="mb-1">Data Serial Number Product</h5>
                             <table class="table table-striped align-middle mt-3">
                                 <thead>
-                                <tr>
-                                    <th>#</th>
-                                    <th>Serial Number</th>
-                                    <th>Action</th>
-                                </tr>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Serial Number</th>
+                                        <th>Action</th>
+                                    </tr>
                                 </thead>
                                 <tbody id="listSerialNumberAvailable">
 
@@ -291,6 +297,7 @@
         localStorage.clear();
 
         loadDataProducts();
+
         function loadDataProducts() {
             const products = @json($products);
             console.log(products);
@@ -453,21 +460,20 @@
             const child = [];
 
             addBox.forEach((item) => {
-                if (parseInt(item.isParent) === 1) {
-                    if (parseInt(item.qtySelect) !== 0) {
-                        // Update QTY Master
-                        master[item.index].qtyPa = parseInt(master[item.index].qtyPa) + parseInt(item.qtySelect);
-                        item.serialNumber = [];
+                const qtySelect = parseInt(item.qtySelect);
+                if (qtySelect !== 0) {
+                    // Update QTY Master
+                    master[item.index].qtyPa = parseInt(master[item.index].qtyPa) + qtySelect;
 
-                        parent.push(item);
-                    }
-                } else {
-                    if (parseInt(item.qtySelect) !== 0) {
-                        // Update QTY Master
-                        master[item.index].qtyPa = parseInt(master[item.index].qtyPa) + parseInt(item.qtySelect);
-                        item.serialNumber = [];
+                    // Create a deep clone to ensure this box has its own item instance
+                    const itemToBox = JSON.parse(JSON.stringify(item));
+                    itemToBox.serialNumber = []; // Reset SN as it's newly scanned for this box
+                    itemToBox.qtySelect = qtySelect;
 
-                        child.push(item);
+                    if (parseInt(itemToBox.isParent) === 1) {
+                        parent.push(itemToBox);
+                    } else {
+                        child.push(itemToBox);
                     }
                 }
             });
@@ -491,54 +497,56 @@
             let html = '';
 
             box.forEach((item, index) => {
-                (item.parent).forEach((parent, indexParent) => {
+                const parentsInBox = (item.parent || []).map((p, pIdx) => ({
+                    ...p,
+                    _type: 'parent',
+                    _idxDetail: pIdx
+                }));
+                const childrenInBox = (item.child || []).map((c, cIdx) => ({
+                    ...c,
+                    _type: 'child',
+                    _idxDetail: cIdx
+                }));
+                const allItems = [...parentsInBox, ...childrenInBox];
+
+                allItems.forEach((subItem, subIndex) => {
+                    const isFirstRow = subIndex === 0;
                     let colorBtn = 'info';
-                    if (parseInt(parent.qtySelect) === parent.serialNumber.length) {
+                    if (parseInt(subItem.qtySelect) === subItem.serialNumber.length) {
                         colorBtn = 'success';
                     }
 
-                    // Location
-                    const location = JSON.parse(localStorage.getItem('location')) ?? [];
-                    let htmlLocation = '<option value="">-- Choose Location --</option>';
-                    location.forEach((loc) => {
-                        htmlLocation += `<option value="${loc.id}" ${item.location === loc.id ? 'selected' : ''}>${loc.raw} | ${loc.area} | ${loc.rak} | ${loc.bin}</option>`;
-                    });
+                    let locationHtml = '';
+                    if (isFirstRow) {
+                        const location = JSON.parse(localStorage.getItem('location')) ?? [];
+                        let options = '<option value="">-- Choose Location --</option>';
+                        location.forEach((loc) => {
+                            options +=
+                                `<option value="${loc.id}" ${item.location === loc.id ? 'selected' : ''}>${loc.raw} | ${loc.area} | ${loc.rak} | ${loc.bin}</option>`;
+                        });
+                        locationHtml =
+                            `<select class="form-control" onchange="changeLocation(${index}, this.value)">${options}</select>`;
+                    }
 
                     html += `
-                        <tr>
-                            <td class="text-center fw-bold">${item.boxNumber}</td>
-                            <td><span class="badge bg-danger-subtle text-danger">Parent</span></td>
-                            <td>${parent.item}</td>
-                            <td>${parent.salesDoc}</td>
-                            <td>${parent.material}</td>
-                            <td class="text-center fw-bold">${parent.qtySelect}</td>
-                            <td><a class="btn btn-${colorBtn} btn-sm" onclick="serialNumber('parent', '${index}', '${indexParent}', '${parent.indexMaster}')">Serial Number</a></td>
+                        <tr style="${isFirstRow ? 'border-top: 2px solid #ccc;' : ''}">
+                            <td class="text-center fw-bold">${isFirstRow ? item.boxNumber : ''}</td>
                             <td>
-                                <select class="form-control" onchange="changeLocation(${index}, this.value)">
-                                    ${htmlLocation}
-                                </select>
+                                ${subItem._type === 'parent' ? 
+                                    '<span class="badge bg-danger-subtle text-danger">Parent</span>' : 
+                                    '<span class="badge bg-secondary-subtle text-secondary">Child</span>'}
                             </td>
-                            <td><a class="btn btn-danger btn-sm" onclick="deleteBox(${index})">Delete</a></td>
-                        </tr>
-                    `;
-                });
-
-                (item.child).forEach((child, indexChild) => {
-                    let colorBtn = 'info';
-                    if (parseInt(child.qtySelect) === child.serialNumber.length) {
-                        colorBtn = 'success';
-                    }
-
-                    html += `
-                        <tr>
-                            <td class="text-center fw-bold"></td>
-                            <td><span class="badge bg-secondary-subtle text-secondary">Child</span></td>
-                            <td>${child.item}</td>
-                            <td>${child.salesDoc}</td>
-                            <td>${child.material}</td>
-                            <td class="text-center fw-bold">${child.qtySelect}</td>
-                            <td><a class="btn btn-${colorBtn} btn-sm" onclick="serialNumber('child', '${index}', '${indexChild}', '${child.indexMaster}')">Serial Number</a></td>
-                            <td></td>
+                            <td>${subItem.item}</td>
+                            <td>${subItem.salesDoc}</td>
+                            <td>${subItem.material}</td>
+                            <td class="text-center fw-bold">${subItem.qtySelect}</td>
+                            <td>
+                                <a class="btn btn-${colorBtn} btn-sm" onclick="serialNumber('${subItem._type}', '${index}', '${subItem._idxDetail}', '${subItem.indexMaster}')">
+                                    Serial Number
+                                </a>
+                            </td>
+                            <td>${locationHtml}</td>
+                            <td>${isFirstRow ? `<a class="btn btn-danger btn-sm" onclick="deleteBox(${index})">Delete Box</a>` : ''}</td>
                         </tr>
                     `;
                 });
@@ -864,40 +872,32 @@
             const box = JSON.parse(localStorage.getItem('box')) ?? [];
             const master = JSON.parse(localStorage.getItem('master')) ?? [];
 
-            // Parent
-            (box[index].parent).forEach((parent) => {
-                master[parent.index].qtyPa = parseInt(master[parent.index].qtyPa) - parseInt(parent.qtySelect);
+            // Kembalikan QTY Master & SN
+            const targetBox = box[index];
+            const allItemsInBox = [...(targetBox.parent || []), ...(targetBox.child || [])];
 
-                (parent.serialNumber).forEach((sn) => {
-                    const findSnMaster = master[parent.index].serialNumber.find(i => i.serial_number === sn);
-                    if (findSnMaster) {
-                        findSnMaster.select = 0;
-                    }
-                });
-            });
+            allItemsInBox.forEach((itemInBox) => {
+                const masterIdx = itemInBox.indexMaster; // Gunakan indexMaster untuk mapping yang tepat
+                if (master[masterIdx]) {
+                    master[masterIdx].qtyPa = parseInt(master[masterIdx].qtyPa) - parseInt(itemInBox.qtySelect);
 
-            // Child
-            (box[index].child).forEach((child) => {
-                master[child.index].qtyPa = parseInt(master[child.index].qtyPa) - parseInt(child.qtySelect);
-
-                (child.serialNumber).forEach((sn) => {
-                    const findSnMaster = master[child.index].serialNumber.find(i => i.serial_number === sn);
-                    if (findSnMaster) {
-                        findSnMaster.select = 0;
-                    }
-                });
+                    (itemInBox.serialNumber || []).forEach((sn) => {
+                        const findSnMaster = master[masterIdx].serialNumber.find(i => i.serialNumber ===
+                        sn);
+                        if (findSnMaster) {
+                            findSnMaster.select = 0;
+                        }
+                    });
+                }
             });
 
             box.splice(index, 1);
 
-            const dataBox = [];
-            box.forEach((item, index) => {
-                dataBox.push({
-                    boxNumber: index + 1,
-                    parent: item.parent,
-                    child: item.child
-                });
-            });
+            // Re-indexing Box Number dan pertahankan location
+            const dataBox = box.map((item, idx) => ({
+                ...item,
+                boxNumber: idx + 1
+            }));
 
             localStorage.setItem('box', JSON.stringify(dataBox));
             localStorage.setItem('master', JSON.stringify(master));
@@ -914,7 +914,8 @@
                     document.getElementById('scanSerialNumber').value = "";
                     document.getElementById('scanSerialNumber').focus();
                 } else {
-                    document.getElementById('scanSerialNumberErrorMessage').innerText = "Serial number cannot be empty";
+                    document.getElementById('scanSerialNumberErrorMessage').innerText =
+                        "Serial number cannot be empty";
                     document.getElementById('scanSerialNumberError').style.display = "block";
 
                     setTimeout(() => {
@@ -974,7 +975,8 @@
                                     subItem.serialNumber.push(...Array(missingQty).fill('N/A'));
                                 }
 
-                                subItem.serialNumber = subItem.serialNumber.map(sn => (sn === null || sn === '') ? 'N/A' : sn);
+                                subItem.serialNumber = subItem.serialNumber.map(sn => (sn ===
+                                    null || sn === '') ? 'N/A' : sn);
                             });
                         });
                     };
@@ -1008,7 +1010,8 @@
                                     text: 'Put Away Product Success',
                                     icon: 'success'
                                 }).then((e) => {
-                                    window.location.href = '/inbound/put-away/detail?id='+res.data;
+                                    window.location.href = '/inbound/put-away/detail?id=' + res
+                                        .data;
                                 });
                             } else {
                                 Swal.fire({
