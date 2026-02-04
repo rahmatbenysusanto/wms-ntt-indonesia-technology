@@ -104,7 +104,7 @@ class InboundController extends Controller
                         'date'            => $r['date'] ?? null,
                     ];
                 })
-                ->filter(fn ($r) => $r['purc_doc'] !== '' && $r['item'] !== '');
+                ->filter(fn($r) => $r['purc_doc'] !== '' && $r['item'] !== '');
 
             if ($rows->isEmpty()) {
                 DB::commit();
@@ -112,7 +112,7 @@ class InboundController extends Controller
             }
 
             // 2) Kelompokkan lebih dulu berdasarkan customer_name
-            $groups = $rows->groupBy(fn ($r) => $r['customer_name'] ?? '__NO_CUSTOMER__');
+            $groups = $rows->groupBy(fn($r) => $r['customer_name'] ?? '__NO_CUSTOMER__');
 
             // Cache sederhana agar hemat query
             $vendorCache   = [];
@@ -189,7 +189,6 @@ class InboundController extends Controller
 
             DB::commit();
             return response()->json(['status' => true], 201);
-
         } catch (\Throwable $err) {
             DB::rollBack();
             Log::error($err->getMessage(), ['line' => $err->getLine(), 'trace' => $err->getTraceAsString()]);
@@ -467,12 +466,12 @@ class InboundController extends Controller
                     $inventoryPackage = InventoryPackage::create([
                         'purchase_order_id' => $request->post('purchaseOrderId'),
                         'storage_id'        => 1,
-                        'number'            => 'PA-'.date('YmdHis').rand(100, 999),
+                        'number'            => 'PA-' . date('YmdHis') . rand(100, 999),
                         'reff_number'       => 'Cross Docking',
                         'qty_item'          => 0,
                         'qty'               => 0,
                         'sales_docs'        => json_encode([]),
-                        'product_package_id'=> $productPackage->id,
+                        'product_package_id' => $productPackage->id,
                         'created_by'        => Auth::id(),
                     ]);
 
@@ -674,13 +673,18 @@ class InboundController extends Controller
     public function putAwayProcess(Request $request): View
     {
         $products = ProductPackageItem::with([
-                'purchaseOrderDetail' => function ($purchaseOrderDetail) {
-                    $purchaseOrderDetail->select([
-                        'id', 'item', 'material', 'po_item_desc', 'prod_hierarchy_desc', 'sales_doc'
-                    ]);
-                },
-                'productPackageItemSn'
-            ])->where('product_package_id', $request->query('id'))
+            'purchaseOrderDetail' => function ($purchaseOrderDetail) {
+                $purchaseOrderDetail->select([
+                    'id',
+                    'item',
+                    'material',
+                    'po_item_desc',
+                    'prod_hierarchy_desc',
+                    'sales_doc'
+                ]);
+            },
+            'productPackageItemSn'
+        ])->where('product_package_id', $request->query('id'))
             ->get();
 
         $storage = Storage::whereNotNull('raw')->whereNotNull('area')->whereNotNull('rak')->whereNotNull('bin')->whereNull('deleted_at')->get();
@@ -736,7 +740,7 @@ class InboundController extends Controller
             DB::beginTransaction();
 
             $listBox = $request->post('box');
-            $putAwayNumber = 'PA-'.date('ymdHis').rand(111, 999);
+            $putAwayNumber = 'PA-' . date('ymdHis') . rand(111, 999);
             $numberBox = 1;
             $totalBox = count($listBox);
             $stock = 0;
@@ -763,8 +767,8 @@ class InboundController extends Controller
                 $inventoryPackage = InventoryPackage::create([
                     'purchase_order_id'     => $productPackage->purchase_order_id,
                     'storage_id'            => $box['location'],
-                    'number'                => $putAwayNumber.'-'.$numberBox,
-                    'reff_number'           => $numberBox.' of '.$totalBox,
+                    'number'                => $putAwayNumber . '-' . $numberBox,
+                    'reff_number'           => $numberBox . ' of ' . $totalBox,
                     'qty_item'              => 0,
                     'qty'                   => 0,
                     'sales_docs'            => json_encode([]),
@@ -892,7 +896,7 @@ class InboundController extends Controller
     public function qualityControlProcessCcw(Request $request): View
     {
         $purcDocDetail = PurchaseOrderDetail::where('purchase_order_id', $request->query('id'))
-            ->where(function($query) {
+            ->where(function ($query) {
                 $query->where('status', 'new')
                     ->orWhereRaw('qty_qc < po_item_qty');
             })
@@ -990,12 +994,10 @@ class InboundController extends Controller
                     ]);
 
                     foreach ($parent['serialNumber'] ?? [] as $serialNumber) {
-                        if ($serialNumber == "" || $serialNumber == "N/A") {
-                            throw new \Exception("Product " . $purchaseOrderDetail->material . " must have a valid serial number for QC.");
-                        }
+                        $snValue = !empty($serialNumber) ? $serialNumber : "N/A";
                         ProductPackageItemSN::create([
                             'product_package_item_id'  => $productPackageItem->id,
-                            'serial_number'            => $serialNumber,
+                            'serial_number'            => $snValue,
                         ]);
                     }
 
@@ -1024,12 +1026,10 @@ class InboundController extends Controller
                         ]);
 
                         foreach ($childDetail['serialNumber'] ?? [] as $serialNumber) {
-                            if ($serialNumber == "" || $serialNumber == "N/A") {
-                                throw new \Exception("Product " . $purchaseOrderDetail->material . " must have a valid serial number for QC.");
-                            }
+                            $snValue = !empty($serialNumber) ? $serialNumber : "N/A";
                             ProductPackageItemSN::create([
                                 'product_package_item_id'  => $productPackageItem->id,
-                                'serial_number'            => $serialNumber,
+                                'serial_number'            => $snValue,
                             ]);
                         }
 
@@ -1061,12 +1061,12 @@ class InboundController extends Controller
                     $inventoryPackage = InventoryPackage::create([
                         'purchase_order_id' => $request->post('purchaseOrderId'),
                         'storage_id'        => 1,
-                        'number'            => 'PA-'.date('YmdHis').rand(100, 999),
+                        'number'            => 'PA-' . date('YmdHis') . rand(100, 999),
                         'reff_number'       => 'Cross Docking',
                         'qty_item'          => 0,
                         'qty'               => 0,
                         'sales_docs'        => json_encode([]),
-                        'product_package_id'=> $productPackage->id,
+                        'product_package_id' => $productPackage->id,
                         'created_by'        => Auth::id(),
                     ]);
 
@@ -1247,10 +1247,9 @@ class InboundController extends Controller
                     InventoryPackage::where('id', $inventoryPackage->id)->update([
                         'qty_item'  => $qtyItemDirect,
                         'qty'       => $qtyDirect,
-                        'sales_docs'=> json_encode(array_unique($salesDocsDirect)),
+                        'sales_docs' => json_encode(array_unique($salesDocsDirect)),
                     ]);
                 }
-
             }
 
             // Check Purchase Order
@@ -1397,12 +1396,14 @@ class InboundController extends Controller
 
                 $rate = Cache::remember("fx2:USD:IDR:{$dateForRate}", 86400, function () use ($dateForRate) {
                     $resp = Http::get("https://api.frankfurter.dev/v1/{$dateForRate}", [
-                        'base' => 'USD', 'symbols' => 'IDR'
+                        'base' => 'USD',
+                        'symbols' => 'IDR'
                     ]);
 
                     if ($resp->failed()) {
                         $resp = Http::get('https://api.frankfurter.dev/v1/latest', [
-                            'base' => 'USD', 'symbols' => 'IDR'
+                            'base' => 'USD',
+                            'symbols' => 'IDR'
                         ]);
                     }
 
@@ -1458,20 +1459,20 @@ class InboundController extends Controller
     {
         $purchaseOrder = PurchaseOrder::with('customer', 'user', 'purchaseOrderDetail')
             ->when($request->query('purcDoc'), function ($q) use ($request) {
-                $q->where('purc_doc', 'LIKE', '%'.$request->query('purcDoc').'%');
+                $q->where('purc_doc', 'LIKE', '%' . $request->query('purcDoc') . '%');
             })
             ->whereHas('customer', function ($customer) use ($request) {
                 if ($request->query('customer') != null) {
-                    $customer->where('name', 'LIKE', '%'.$request->query('customer').'%');
+                    $customer->where('name', 'LIKE', '%' . $request->query('customer') . '%');
                 }
             })
             ->whereHas('purchaseOrderDetail', function ($purchaseOrderDetail) use ($request) {
                 if ($request->query('salesDoc') != null) {
-                    $purchaseOrderDetail->where('sales_doc', 'LIKE', '%'.$request->query('salesDoc').'%');
+                    $purchaseOrderDetail->where('sales_doc', 'LIKE', '%' . $request->query('salesDoc') . '%');
                 }
 
                 if ($request->query('material') != null) {
-                    $purchaseOrderDetail->where('material', 'LIKE', '%'.$request->query('material').'%');
+                    $purchaseOrderDetail->where('material', 'LIKE', '%' . $request->query('material') . '%');
                 }
             })
             ->latest()
@@ -1495,10 +1496,10 @@ class InboundController extends Controller
         $purchaseOrder = PurchaseOrder::with('customer', 'user')->where('id', $request->query('id'))->first();
         $purchaseOrderDetail = PurchaseOrderDetail::where('purchase_order_id', $request->query('id'))
             ->when($request->query('salesDoc'), function ($q) use ($request) {
-                $q->where('sales_doc', 'LIKE', '%'.$request->query('salesDoc').'%');
+                $q->where('sales_doc', 'LIKE', '%' . $request->query('salesDoc') . '%');
             })
             ->when($request->query('material'), function ($q) use ($request) {
-                $q->where('material', 'LIKE', '%'.$request->query('material').'%');
+                $q->where('material', 'LIKE', '%' . $request->query('material') . '%');
             })
             ->select([
                 'sales_doc',
@@ -1520,7 +1521,7 @@ class InboundController extends Controller
         $purchaseOrderDetail = PurchaseOrderDetail::where('purchase_order_id', $purchaseOrderId)
             ->where('sales_doc', $salesDoc)
             ->when($request->query('material'), function ($q) use ($request) {
-                $q->where('material', 'LIKE', '%'.$request->query('material').'%');
+                $q->where('material', 'LIKE', '%' . $request->query('material') . '%');
             })
             ->get();
 
@@ -1584,7 +1585,6 @@ class InboundController extends Controller
                         $sheet->setCellValue('F' . $column, '');
                         $sheet->setCellValue('G' . $column, '');
                         $sheet->setCellValue('H' . $column, '');
-
                     }
                     $sheet->setCellValue('I' . $column, $item->serial_number);
                     $column++;
@@ -1594,14 +1594,14 @@ class InboundController extends Controller
 
         $writer = new Xlsx($spreadsheet);
 
-        $response = new StreamedResponse(function() use ($writer) {
+        $response = new StreamedResponse(function () use ($writer) {
             $writer->save('php://output');
         });
 
-        $fileName = 'Report Purchase Order '. $purchaseOrder->purc_doc. ' '. date('Y-m-d') . '.xlsx';
+        $fileName = 'Report Purchase Order ' . $purchaseOrder->purc_doc . ' ' . date('Y-m-d') . '.xlsx';
         $response->headers->set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         $response->headers->set('Content-Disposition', "attachment;filename=\"$fileName\"");
-        $response->headers->set('Cache-Control','max-age=0');
+        $response->headers->set('Cache-Control', 'max-age=0');
 
         return $response;
     }
@@ -1612,7 +1612,7 @@ class InboundController extends Controller
             ->leftJoin('inventory_package_item', 'inventory_package_item.inventory_package_id', '=', 'inventory_package.id')
             ->leftJoin('inventory_package_item_sn', 'inventory_package_item_sn.inventory_package_item_id', '=', 'inventory_package_item.id')
             ->where('inventory_package_item.purchase_order_detail_id', $request->query('id'))
-            ->whereNotIn('inventory_package.storage_id', [1,2,3,4])
+            ->whereNotIn('inventory_package.storage_id', [1, 2, 3, 4])
             ->where('inventory_package_item.qty', '!=', 0)
             ->where('inventory_package_item_sn.qty', '!=', 0)
             ->select([
@@ -1677,7 +1677,7 @@ class InboundController extends Controller
         ];
 
         $pdf = Pdf::loadView('pdf.inbound', $data)->setPaper('a4', 'landscape');;
-        return $pdf->stream('Purchase Order '.$purchaseOrder->purc_doc.'.pdf');
+        return $pdf->stream('Purchase Order ' . $purchaseOrder->purc_doc . '.pdf');
     }
 
     public function ccwDraftSave(Request $request)
@@ -1716,51 +1716,3 @@ class InboundController extends Controller
         ]);
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

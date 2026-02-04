@@ -614,10 +614,10 @@
           <td class="text-center fw-bold">${item.qty}</td>
           <td><div class="d-flex flex-column gap-2">${htmlSalesDoc}</div></td>
           <td>${(toInt(item.qty) === toInt(item.qtyAdd)) ? '' : `
-                                                                <div class="d-flex gap-2">
-                                                                  <a class="btn btn-info btn-sm" onclick="pilihSalesDoc('${index}')">Pilih Sales Doc</a>
-                                                                  <a class="btn btn-warning btn-sm" onclick="manualSalesDoc('${index}')">Manual Sales Doc</a>
-                                                                </div>`}
+                                                                        <div class="d-flex gap-2">
+                                                                          <a class="btn btn-info btn-sm" onclick="pilihSalesDoc('${index}')">Pilih Sales Doc</a>
+                                                                          <a class="btn btn-warning btn-sm" onclick="manualSalesDoc('${index}')">Manual Sales Doc</a>
+                                                                        </div>`}
           </td>
         </tr>`;
                 number++;
@@ -1179,16 +1179,12 @@
                             return true;
                         }
 
-                        // Cek jika ada SN kosong
-                        const allSNs = [...(salesDoc.serialNumber || []), ...(salesDoc.snDirect || [])];
-                        if (allSNs.some(sn => !sn || sn.trim() === '')) {
-                            Swal.fire({
-                                title: 'Warning!',
-                                text: `Serial number untuk ${item.itemName} tidak valid / kosong. SN wajib diisi.`,
-                                icon: 'warning'
-                            });
-                            return true;
-                        }
+                        // Pastikan Serial Number yang kosong diisi dengan N/A
+                        salesDoc.serialNumber = (salesDoc.serialNumber || []).map(sn => (!sn || sn
+                        .trim() === '') ? 'N/A' : sn);
+                        salesDoc.snDirect = (salesDoc.snDirect || []).map(sn => (!sn || sn.trim() === '') ?
+                            'N/A' : sn);
+
                         totalProcessed += salesDoc.qty;
                     }
                 }
