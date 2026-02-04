@@ -946,54 +946,36 @@ class InboundController extends Controller
                 }
             }
 
-            foreach ($compare as $item) {
-                if (preg_match('/^\d+\.0$/', $item['lineNumber'])) {
-                    $key = explode('.', $item['lineNumber'])[0];
-                    $parents[$key] = [
-                        'parent' => $item,
-                        'children' => []
-                    ];
-                }
-            }
+            $productPackage = ProductPackage::create([
+                'purchase_order_id' => $request->post('purchaseOrderId'),
+                'qty_item'          => 0,
+                'qty'               => 0,
+                'status'            => 'open',
+                'created_by'        => Auth::id()
+            ]);
+
+            $qty_item = 0;
+            $qty = 0;
+            $directOutbound = false;
 
             foreach ($compare as $item) {
-                if (preg_match('/^(\d+)\.0\./', $item['lineNumber'], $match)) {
-                    $key = $match[1];
-                    if (isset($parents[$key])) {
-                        $parents[$key]['children'][] = $item;
-                    }
-                }
-            }
-
-            $grouped = array_values($parents);
-
-            foreach ($grouped as $item) {
-                $directOutbound = false;
-                $qty_item = 0;
-                $qty = 0;
-                $productPackage = ProductPackage::create([
-                    'purchase_order_id' => $request->post('purchaseOrderId'),
-                    'qty_item'          => 0,
-                    'qty'               => 0,
-                    'status'            => 'open',
-                    'created_by'        => Auth::id()
-                ]);
-
-                if ($item['parent']['putAwayStep'] == 0) {
+                if ($item['putAwayStep'] == 0) {
                     $directOutbound = true;
                 }
 
-                foreach ($item['parent']['salesDoc'] as $parent) {
-                    $purchaseOrderDetail = PurchaseOrderDetail::find($parent['id']);
+                $isParent = preg_match('/^\d+\.0$/', $item['lineNumber']);
+
+                foreach ($item['salesDoc'] as $so) {
+                    $purchaseOrderDetail = PurchaseOrderDetail::find($so['id']);
                     $productPackageItem = ProductPackageItem::create([
                         'product_package_id'        => $productPackage->id,
                         'product_id'                => $purchaseOrderDetail->product_id,
-                        'purchase_order_detail_id'  => $parent['id'],
-                        'is_parent'                 => 1,
-                        'qty'                       => $parent['qty'],
+                        'purchase_order_detail_id'  => $so['id'],
+                        'is_parent'                 => $isParent ? 1 : 0,
+                        'qty'                       => $so['qty'],
                     ]);
 
-                    foreach ($parent['serialNumber'] ?? [] as $serialNumber) {
+                    foreach ($so['serialNumber'] ?? [] as $serialNumber) {
                         $snValue = !empty($serialNumber) ? $serialNumber : "N/A";
                         ProductPackageItemSN::create([
                             'product_package_item_id'  => $productPackageItem->id,
@@ -1001,82 +983,46 @@ class InboundController extends Controller
                         ]);
                     }
 
-                    $newQtyQc = ($purchaseOrderDetail->qty_qc ?? 0) + $parent['qty'];
+                    $newQtyQc = ($purchaseOrderDetail->qty_qc ?? 0) + $so['qty'];
                     $status = $newQtyQc >= $purchaseOrderDetail->po_item_qty ? 'qc' : 'new';
 
-                    PurchaseOrderDetail::where('id', $parent['id'])
+                    PurchaseOrderDetail::where('id', $so['id'])
                         ->update([
                             'status' => $status,
                             'qty_qc' => $newQtyQc,
                         ]);
 
                     $qty_item++;
-                    $qty += $parent['qty'];
+                    $qty += $so['qty'];
                 }
+            }
 
-                foreach ($item['children'] as $child) {
-                    foreach ($child['salesDoc'] as $childDetail) {
-                        $purchaseOrderDetail = PurchaseOrderDetail::find($childDetail['id']);
-                        $productPackageItem = ProductPackageItem::create([
-                            'product_package_id'        => $productPackage->id,
-                            'product_id'                => $purchaseOrderDetail->product_id,
-                            'purchase_order_detail_id'  => $childDetail['id'],
-                            'is_parent'                 => 0,
-                            'qty'                       => $childDetail['qty'],
-                        ]);
+            ProductPackage::where('id', $productPackage->id)->update([
+                'qty_item'  => $qty_item,
+                'qty'       => $qty,
+            ]);
 
-                        foreach ($childDetail['serialNumber'] ?? [] as $serialNumber) {
-                            $snValue = !empty($serialNumber) ? $serialNumber : "N/A";
-                            ProductPackageItemSN::create([
-                                'product_package_item_id'  => $productPackageItem->id,
-                                'serial_number'            => $snValue,
-                            ]);
-                        }
-
-                        $newQtyQcChild = ($purchaseOrderDetail->qty_qc ?? 0) + $childDetail['qty'];
-                        $statusChild = $newQtyQcChild >= $purchaseOrderDetail->po_item_qty ? 'qc' : 'new';
-
-                        PurchaseOrderDetail::where('id', $childDetail['id'])
-                            ->update([
-                                'status' => $statusChild,
-                                'qty_qc' => $newQtyQcChild,
-                            ]);
-
-                        $qty_item++;
-                        $qty += $childDetail['qty'];
-                    }
-
-                    if ($child['putAwayStep'] == 0) {
-                        $directOutbound = true;
-                    }
-                }
-
-                ProductPackage::where('id', $productPackage->id)->update([
-                    'qty_item'  => $qty_item,
-                    'qty'       => $qty,
+            // Direct Outbound
+            if ($directOutbound) {
+                $inventoryPackage = InventoryPackage::create([
+                    'purchase_order_id' => $request->post('purchaseOrderId'),
+                    'storage_id'        => 1,
+                    'number'            => 'PA-' . date('YmdHis') . rand(100, 999),
+                    'reff_number'       => 'Cross Docking',
+                    'qty_item'          => 0,
+                    'qty'               => 0,
+                    'sales_docs'        => json_encode([]),
+                    'product_package_id' => $productPackage->id,
+                    'created_by'        => Auth::id(),
                 ]);
 
-                // Direct Outbound
-                if ($directOutbound) {
-                    $inventoryPackage = InventoryPackage::create([
-                        'purchase_order_id' => $request->post('purchaseOrderId'),
-                        'storage_id'        => 1,
-                        'number'            => 'PA-' . date('YmdHis') . rand(100, 999),
-                        'reff_number'       => 'Cross Docking',
-                        'qty_item'          => 0,
-                        'qty'               => 0,
-                        'sales_docs'        => json_encode([]),
-                        'product_package_id' => $productPackage->id,
-                        'created_by'        => Auth::id(),
-                    ]);
+                $qtyItemDirect = 0;
+                $qtyDirect = 0;
+                $salesDocsDirect = [];
 
-                    $qtyItemDirect = 0;
-                    $qtyDirect = 0;
-                    $salesDocsDirect = [];
-
-                    // Parent
-                    if ($item['parent']['putAwayStep'] == 0) {
-                        foreach ($item['parent']['salesDoc'] as $salesDoc) {
+                foreach ($compare as $item) {
+                    if ($item['putAwayStep'] == 0) {
+                        foreach ($item['salesDoc'] as $salesDoc) {
                             if ($salesDoc['qtyDirect'] != 0) {
 
                                 $purchaseOrderDetail = PurchaseOrderDetail::find($salesDoc['id']);
@@ -1157,99 +1103,13 @@ class InboundController extends Controller
                             }
                         }
                     }
-
-                    // Child
-                    foreach ($item['children'] as $child) {
-                        if ($child['putAwayStep'] == 0) {
-                            foreach ($child['salesDoc'] as $salesDoc) {
-                                if ($salesDoc['qtyDirect'] != 0) {
-
-                                    $purchaseOrderDetail = PurchaseOrderDetail::find($salesDoc['id']);
-                                    $inventoryPackageItem = InventoryPackageItem::create([
-                                        'inventory_package_id'      => $inventoryPackage->id,
-                                        'product_id'                => $purchaseOrderDetail->product_id,
-                                        'purchase_order_detail_id'  => $purchaseOrderDetail->id,
-                                        'is_parent'                 => 0,
-                                        'direct_outbound'           => 1,
-                                        'qty'                       => $salesDoc['qtyDirect'],
-                                    ]);
-
-                                    // Serial Number
-                                    foreach ($salesDoc['snDirect'] ?? [] as $serialNumber) {
-                                        InventoryPackageItemSN::create([
-                                            'inventory_package_item_id' => $inventoryPackageItem->id,
-                                            'serial_number'             => $serialNumber,
-                                            'qty'                       => 1
-                                        ]);
-                                    }
-
-                                    // Inventory
-                                    $checkInventory = Inventory::where('purchase_order_id', $purchaseOrderDetail->purchase_order_id)->where('type', 'inv')->first();
-                                    if ($checkInventory != null) {
-                                        Inventory::where('id', $checkInventory->id)->increment('stock', $salesDoc['qtyDirect']);
-                                        $inventoryId = $checkInventory->id;
-                                    } else {
-                                        $inventory = Inventory::create([
-                                            'purchase_order_id' => $purchaseOrderDetail->purchase_order_id,
-                                            'stock'             => $salesDoc['qtyDirect'],
-                                            'type'              => 'inv'
-                                        ]);
-                                        $inventoryId = $inventory->id;
-                                    }
-
-                                    InventoryDetail::create([
-                                        'inventory_id'              => $inventoryId,
-                                        'purchase_order_detail_id'  => $purchaseOrderDetail->id,
-                                        'storage_id'                => 1,
-                                        'inventory_package_item_id' => $inventoryPackageItem->id,
-                                        'sales_doc'                 => $purchaseOrderDetail->sales_doc,
-                                        'qty'                       => $salesDoc['qtyDirect'],
-                                    ]);
-
-                                    $checkInventoryItem = InventoryItem::where('purc_doc', $purchaseOrder->purc_doc)
-                                        ->where('sales_doc', $purchaseOrderDetail->sales_doc)
-                                        ->where('product_id', $purchaseOrderDetail->product_id)
-                                        ->where('storage_id', 1)
-                                        ->where('type', 'inv')
-                                        ->first();
-                                    if ($checkInventoryItem != null) {
-                                        InventoryItem::where('id', $checkInventoryItem->id)->increment('stock', $salesDoc['qtyDirect']);
-                                    } else {
-                                        InventoryItem::create([
-                                            'purc_doc'      => $purchaseOrder->purc_doc,
-                                            'sales_doc'     => $purchaseOrderDetail->sales_doc,
-                                            'product_id'    => $purchaseOrderDetail->product_id,
-                                            'storage_id'    => 1,
-                                            'stock'         => $salesDoc['qtyDirect'],
-                                            'type'          => 'inv'
-                                        ]);
-                                    }
-
-                                    // Inventory History
-                                    InventoryHistory::create([
-                                        'purchase_order_id'             => $purchaseOrder->id,
-                                        'purchase_order_detail_id'      => $purchaseOrderDetail->id,
-                                        'inventory_package_item_id'     => $inventoryPackageItem->id,
-                                        'qty'                           => $salesDoc['qtyDirect'],
-                                        'type'                          => 'inbound',
-                                        'serial_number'                 => json_encode($salesDoc['snDirect']),
-                                        'created_by'                    => Auth::id()
-                                    ]);
-
-                                    $qtyDirect = $salesDoc['qtyDirect'];
-                                    $qtyItemDirect++;
-                                    $salesDocsDirect[] = $salesDoc['salesDoc'];
-                                }
-                            }
-                        }
-                    }
-
-                    InventoryPackage::where('id', $inventoryPackage->id)->update([
-                        'qty_item'  => $qtyItemDirect,
-                        'qty'       => $qtyDirect,
-                        'sales_docs' => json_encode(array_unique($salesDocsDirect)),
-                    ]);
                 }
+
+                InventoryPackage::where('id', $inventoryPackage->id)->update([
+                    'qty_item'  => $qtyItemDirect,
+                    'qty'       => $qtyDirect,
+                    'sales_docs' => json_encode(array_unique($salesDocsDirect)),
+                ]);
             }
 
             // Check Purchase Order
