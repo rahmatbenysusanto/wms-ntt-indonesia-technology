@@ -959,6 +959,9 @@ class InboundController extends Controller
             $directOutbound = false;
 
             foreach ($compare as $item) {
+                if ((int)($item['qty'] ?? 0) !== (int)($item['qtyAdd'] ?? 0) || empty($item['salesDoc'])) {
+                    continue;
+                }
                 if ($item['putAwayStep'] == 0) {
                     $directOutbound = true;
                 }
@@ -1021,6 +1024,9 @@ class InboundController extends Controller
                 $salesDocsDirect = [];
 
                 foreach ($compare as $item) {
+                    if ((int)($item['qty'] ?? 0) !== (int)($item['qtyAdd'] ?? 0) || empty($item['salesDoc'])) {
+                        continue;
+                    }
                     if ($item['putAwayStep'] == 0) {
                         foreach ($item['salesDoc'] as $salesDoc) {
                             if ($salesDoc['qtyDirect'] != 0) {

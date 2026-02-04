@@ -620,10 +620,10 @@
           <td class="text-center fw-bold">${item.qty}</td>
           <td><div class="d-flex flex-column gap-2">${htmlSalesDoc}</div></td>
           <td>${(toInt(item.qty) === toInt(item.qtyAdd)) ? '' : `
-                                                                                                                                                            <div class="d-flex gap-2">
-                                                                                                                                                              <a class="btn btn-info btn-sm" onclick="pilihSalesDoc('${index}')">Pilih Sales Doc</a>
-                                                                                                                                                              <a class="btn btn-warning btn-sm" onclick="manualSalesDoc('${index}')">Manual Sales Doc</a>
-                                                                                                                                                            </div>`}
+                                                                                                                                                                    <div class="d-flex gap-2">
+                                                                                                                                                                      <a class="btn btn-info btn-sm" onclick="pilihSalesDoc('${index}')">Pilih Sales Doc</a>
+                                                                                                                                                                      <a class="btn btn-warning btn-sm" onclick="manualSalesDoc('${index}')">Manual Sales Doc</a>
+                                                                                                                                                                    </div>`}
           </td>
         </tr>`;
                 number++;
@@ -1233,6 +1233,8 @@
                 const compare = await storage.getJSON('compare', []);
                 let totalProcessed = 0;
                 for (const item of compare) {
+                    if (toInt(item.qty) !== toInt(item.qtyAdd) || (item.salesDoc || []).length === 0)
+                        continue;
                     for (const salesDoc of (item.salesDoc || [])) {
                         // Produk harus memiliki Sales Doc (sudah ada dalam array salesDoc)
                         // dan harus memiliki Serial Number yang lengkap sesuai QTY
