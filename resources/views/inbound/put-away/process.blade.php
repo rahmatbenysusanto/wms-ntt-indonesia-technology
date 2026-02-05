@@ -257,7 +257,10 @@
 
                     <div class="row mt-3">
                         <div class="col-6">
-                            <h5 class="mb-1">Data Serial Number Product</h5>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5 class="mb-1">Data Serial Number Product</h5>
+                                <button class="btn btn-primary btn-sm" onclick="selectAllSN()">Select All SN</button>
+                            </div>
                             <table class="table table-striped align-middle mt-3">
                                 <thead>
                                     <tr>
@@ -1057,6 +1060,94 @@
             });
             localStorage.setItem('addBox', JSON.stringify(addBox));
             viewMasterProductModal();
+        }
+
+        function selectAllSN() {
+            const box = JSON.parse(localStorage.getItem('box')) ?? [];
+            const master = JSON.parse(localStorage.getItem('master')) ?? [];
+            const serialNumber = JSON.parse(localStorage.getItem('serialNumber')) ?? [];
+
+            const type = document.getElementById('boxSerialNumber_type').value;
+            const index = document.getElementById('boxSerialNumber_index').value;
+            const indexDetail = document.getElementById('boxSerialNumber_indexDetail').value;
+            const indexMaster = document.getElementById('boxSerialNumber_indexMaster').value;
+
+            // Determine Target Quantity
+            let targetQty = 0;
+            if (type === 'parent') {
+                targetQty = parseInt(box[index].parent[indexDetail].qtySelect);
+            } else {
+                targetQty = parseInt(box[index].child[indexDetail].qtySelect);
+            }
+
+            // Calculate needed amount
+            const neededParams = targetQty - serialNumber.length;
+
+            if (neededParams <= 0) {
+                Swal.fire({
+                    title: 'Warning!',
+                    text: 'Quantity is already full',
+                    icon: 'warning'
+                });
+                return;
+            }
+
+            // Get Available SNs from Master
+            const masterSNList = master[indexMaster].serialNumber;
+            // Find SNs that are NOT selected (status == 0)
+            const availableSNs = masterSNList.filter(sn => parseInt(sn.select) === 0);
+
+            if (availableSNs.length === 0) {
+                Swal.fire({
+                    title: 'Warning!',
+                    text: 'No more available serial numbers',
+                    icon: 'warning'
+                });
+                return;
+            }
+
+            // Take as many as needed or as many as available
+            const toAdd = availableSNs.slice(0, neededParams);
+            const addedCount = toAdd.length;
+
+            toAdd.forEach(snObj => {
+                // Add to Box SN list
+                serialNumber.push(snObj.serialNumber);
+
+                // Mark as selected in Master
+                // We need to find the specific object in the master array to update it
+                // Since filter returned references (or we iterate master again to be safe)
+                // Let's iterate master directly to find and update reference
+                const snInMaster = master[indexMaster].serialNumber.find(mSn => mSn ===
+                snObj); // Check reference or content
+                if (snInMaster) snInMaster.select = 1;
+            });
+
+            // Save Updates
+            localStorage.setItem('serialNumber', JSON.stringify(serialNumber));
+            localStorage.setItem('master', JSON.stringify(master));
+
+            if (type === 'parent') {
+                box[index].parent[indexDetail].serialNumber = serialNumber;
+            } else {
+                box[index].child[indexDetail].serialNumber = serialNumber;
+            }
+            localStorage.setItem('box', JSON.stringify(box));
+
+            // Refresh Views
+            viewListSerialNumber();
+            viewSelectSnAvailable(indexMaster);
+
+            const sound = new Audio("{{ asset('assets/sound/scan.mp3') }}");
+            sound.play();
+
+            Swal.fire({
+                title: 'Success!',
+                text: `${addedCount} Serial Numbers added automatically.`,
+                icon: 'success',
+                timer: 1500,
+                showConfirmButton: false
+            });
         }
     </script>
 
