@@ -627,7 +627,13 @@ class InboundController extends Controller
                 }
             })
             ->when($request->query('status'), function ($query) use ($request) {
-                $status = $request->query('status') == 'Put Away' ? 'open' : 'done';
+                if ($request->query('status') == 'Put Away') {
+                    $status = 'process';
+                } elseif ($request->query('status') == 'In Progress') {
+                    $status = 'inprogress';
+                } else {
+                    $status = 'done';
+                }
                 $query->where('status', $status);
             })
             ->where('qty_item', '!=', 0)
@@ -648,6 +654,7 @@ class InboundController extends Controller
             $product->product = $productPackageItemParent;
 
             $product->parent = ProductPackageItem::where('product_package_id', $product->id)->where('is_parent', 1)->sum('qty');
+            $product->qty_pa = ProductPackageItem::where('product_package_id', $product->id)->sum('qty_pa');
         }
 
         $title = 'Put Away';
@@ -817,6 +824,14 @@ class InboundController extends Controller
                     $stock += $parent['qtySelect'];
                     $qtyItem++;
                     $qty += $parent['qtySelect'];
+
+                    // Update Product Package Item QTY PA
+                    ProductPackageItem::where('id', $parent['productPackageItemId'])->increment('qty_pa', $parent['qtySelect']);
+
+                    // Update Status Serial Number
+                    ProductPackageItemSn::whereIn('serial_number', $parent['serialNumber'] ?? [])
+                        ->where('product_package_item_id', $parent['productPackageItemId'])
+                        ->update(['status' => 1]);
                 }
 
                 foreach ($box['child'] ?? [] as $child) {
@@ -860,6 +875,14 @@ class InboundController extends Controller
                     $stock += $child['qtySelect'];
                     $qtyItem++;
                     $qty += $child['qtySelect'];
+
+                    // Update Product Package Item QTY PA
+                    ProductPackageItem::where('id', $child['productPackageItemId'])->increment('qty_pa', $child['qtySelect']);
+
+                    // Update Status Serial Number
+                    ProductPackageItemSn::whereIn('serial_number', $child['serialNumber'] ?? [])
+                        ->where('product_package_item_id', $child['productPackageItemId'])
+                        ->update(['status' => 1]);
                 }
 
                 InventoryPackage::where('id', $inventoryPackage->id)->update([
@@ -874,9 +897,29 @@ class InboundController extends Controller
             // Inventory
             Inventory::where('id', $inventoryId)->increment('stock', $stock);
 
-            ProductPackage::where('id', $productPackage->id)->update([
-                'status'    => 'done'
-            ]);
+            // Calculate total QTY processed for this ProductPackage
+            // Use ProductPackageItem to get the authoritative total expected quantity
+            $totalQtyPackage = ProductPackageItem::where('product_package_id', $productPackage->id)->sum('qty');
+
+            // Check existing processed QTY + current stock
+            // Summing valid PutAway items from InventoryPackage
+            $processedQty = InventoryPackage::where('product_package_id', $productPackage->id)->sum('qty');
+
+            // If processed QTY >= Total Package QTY, mark as done.
+            if ($processedQty >= $totalQtyPackage) {
+                ProductPackage::where('id', $productPackage->id)->update([
+                    'status'    => 'done'
+                ]);
+            } elseif ($processedQty > 0) {
+                // Partial PA
+                ProductPackage::where('id', $productPackage->id)->update([
+                    'status'    => 'inprogress'
+                ]);
+            } else {
+                ProductPackage::where('id', $productPackage->id)->update([
+                    'status'    => 'process' // Or 'open' depending on your flow, but let's stick to 'process' as active
+                ]);
+            }
 
             DB::commit();
             return response()->json([

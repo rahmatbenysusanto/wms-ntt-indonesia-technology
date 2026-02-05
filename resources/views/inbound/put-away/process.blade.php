@@ -171,6 +171,7 @@
                         <thead>
                             <tr>
                                 <th>Serial Number</th>
+                                <th>Status</th>
                             </tr>
                         </thead>
                         <tbody id="listSerialNumberMaster">
@@ -308,7 +309,7 @@
                 (product.product_package_item_sn).forEach((sn) => {
                     serialNumber.push({
                         serialNumber: sn.serial_number,
-                        select: 0
+                        select: sn.status ?? 0
                     });
                 });
 
@@ -320,6 +321,7 @@
                     isParent: product.is_parent,
                     qty: product.qty,
                     qtyPa: 0,
+                    qtyPaDb: product.qty_pa ?? 0,
                     productId: product.product_id,
                     item: product.purchase_order_detail.item,
                     material: product.purchase_order_detail.material,
@@ -373,7 +375,10 @@
                         <td>${product.material}</td>
                         <td>${product.poItemDesc}</td>
                         <td>${product.prodHierarchyDesc}</td>
-                        <td class="text-center fw-bold">${product.qty}</td>
+                        <td class="text-center fw-bold">
+                            ${product.qty}
+                            ${product.qtyPaDb > 0 ? `<br><small class="text-danger">(Sisa: ${product.qty - product.qtyPaDb})</small>` : ''}
+                        </td>
                         <td><a class="btn btn-primary btn-sm" onclick="detailSerialNumberMaster(${index})">Detail Serial Number</a></td>
                     </td>
                 `;
@@ -390,6 +395,9 @@
                 html += `
                     <tr>
                         <td>${sn.serialNumber}</td>
+                        <td>
+                            ${parseInt(sn.select) === 1 ? '<span class="badge bg-success">Done</span>' : '<span class="badge bg-warning">Open</span>'}
+                        </td>
                     </tr>
                 `;
             });
@@ -407,7 +415,7 @@
 
             const addBox = [];
             master.forEach((item, index) => {
-                if (parseInt(item.qty) !== parseInt(item.qtyPa)) {
+                if (parseInt(item.qty - item.qtyPaDb) !== parseInt(item.qtyPa)) {
                     item.index = index;
                     item.qtySelect = 0;
                     addBox.push(item);
@@ -433,7 +441,7 @@
                             <td>${item.item}</td>
                             <td>${item.salesDoc}</td>
                             <td>${item.material}</td>
-                            <td>${item.qty - item.qtyPa}</td>
+                            <td>${(item.qty - item.qtyPaDb) - item.qtyPa}</td>
                             <td><input type="number" class="form-control" value="${item.qtySelect}" onchange="changeQtyPa(${index}, this.value)"></td>
                         </tr>
                     `;
@@ -963,18 +971,19 @@
                 if (t.value) {
 
                     // Validation Products
+                    // Validation Products
                     const master = JSON.parse(localStorage.getItem('master')) ?? [];
-                    master.forEach((item) => {
-                        if (parseInt(item.qty) !== parseInt(item.qtyPa)) {
-                            Swal.fire({
-                                title: 'Warning!',
-                                text: 'Not all QTY have been entered into the box',
-                                icon: 'warning'
-                            });
-
-                            return true;
-                        }
-                    });
+                    // Removed validation for checking if all QTY is entered into box to allow Partial Put Away
+                    // master.forEach((item) => {
+                    //     if (parseInt(item.qty) !== parseInt(item.qtyPa)) {
+                    //         Swal.fire({
+                    //             title: 'Warning!',
+                    //             text: 'Not all QTY have been entered into the box',
+                    //             icon: 'warning'
+                    //         });
+                    //         return true;
+                    //     }
+                    // });
 
                     // Validation Serial Number N/A
                     const box = JSON.parse(localStorage.getItem('box')) ?? [];

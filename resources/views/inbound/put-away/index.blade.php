@@ -25,17 +25,21 @@
                         <div class="row">
                             <div class="col-2">
                                 <label class="form-label">Purc Doc</label>
-                                <input type="text" class="form-control" value="{{ request()->get('purcDoc', null) }}" name="purcDoc" placeholder="Purc Doc ...">
+                                <input type="text" class="form-control" value="{{ request()->get('purcDoc', null) }}"
+                                    name="purcDoc" placeholder="Purc Doc ...">
                             </div>
                             <div class="col-2">
                                 <label class="form-label">Sales Doc</label>
-                                <input type="text" class="form-control" value="{{ request()->get('salesDoc', null) }}" name="salesDoc" placeholder="Sales Doc ...">
+                                <input type="text" class="form-control" value="{{ request()->get('salesDoc', null) }}"
+                                    name="salesDoc" placeholder="Sales Doc ...">
                             </div>
                             <div class="col-2">
                                 <label class="form-label">Status Put Away</label>
                                 <select name="status" class="form-control">
                                     <option value="">-- Select Status --</option>
                                     <option {{ request()->get('status') == 'Put Away' ? 'selected' : '' }}>Put Away</option>
+                                    <option {{ request()->get('status') == 'In Progress' ? 'selected' : '' }}>In Progress
+                                    </option>
                                     <option {{ request()->get('status') == 'Done' ? 'selected' : '' }}>Done</option>
                                 </select>
                             </div>
@@ -69,42 +73,55 @@
                                 </tr>
                             </thead>
                             <tbody>
-                            @foreach($putAway as $index => $item)
-                                <tr>
-                                    <td>{{ $loop->iteration }}</td>
-                                    <td>{{ $item->purchaseOrder->purc_doc }}</td>
-                                    <td>
-                                        @foreach($item->sales_doc as $salesDoc)
-                                            <div class="mb-1">{{ $salesDoc }}</div>
-                                        @endforeach
-                                    </td>
-                                    <td>{{ $item->purchaseOrder->customer->name }}</td>
-                                    <td>{{ $item->product->product->material }}</td>
-                                    <td>{{ $item->product->product->po_item_desc }}</td>
-                                    <td class="text-center fw-bold">{{ number_format($item->qty_item) }}</td>
-                                    <td class="text-center fw-bold">{{ number_format($item->parent) }}</td>
-                                    <td class="text-center fw-bold">{{ number_format($item->qty) }}</td>
-                                    <td class="text-center">
-                                        @if($item->status == 'open')
-                                            <span class="badge bg-warning-subtle text-warning">Put Away</span>
-                                        @else
-                                            <span class="badge bg-success-subtle text-success">Done</span>
-                                        @endif
-                                    </td>
-                                    <td>{{ \Carbon\Carbon::parse($item->created_at)->translatedFormat('d F Y H:i') }}</td>
-                                    <td>
-                                        <div class="d-flex gap-2">
-                                            @if($item->status == 'open')
-                                                <a href="{{ route('inbound.put-away-detail.open', ['id' => $item->id]) }}" class="btn btn-primary btn-sm">Detail</a>
-                                                {{--<a href="{{ route('inbound.put-away-edit', ['id' => $item->id]) }}" class="btn btn-warning btn-sm">Edit</a>--}}
-                                                <a href="{{ route('inbound.put-away-process', ['id' => $item->id]) }}" class="btn btn-info btn-sm">Put Away</a>
+                                @foreach ($putAway as $index => $item)
+                                    <tr>
+                                        <td>{{ $loop->iteration }}</td>
+                                        <td>{{ $item->purchaseOrder->purc_doc }}</td>
+                                        <td>
+                                            @foreach ($item->sales_doc as $salesDoc)
+                                                <div class="mb-1">{{ $salesDoc }}</div>
+                                            @endforeach
+                                        </td>
+                                        <td>{{ $item->purchaseOrder->customer->name }}</td>
+                                        <td>{{ $item->product->product->material }}</td>
+                                        <td>{{ $item->product->product->po_item_desc }}</td>
+                                        <td class="text-center fw-bold">{{ number_format($item->qty_item) }}</td>
+                                        <td class="text-center fw-bold">{{ number_format($item->parent) }}</td>
+                                        <td class="text-center fw-bold">
+                                            {{ number_format($item->qty) }}
+                                            <br>
+                                            <small class="text-success">(PA: {{ number_format($item->qty_pa) }})</small>
+                                            <br>
+                                            <small class="text-danger">(Sisa:
+                                                {{ number_format($item->qty - $item->qty_pa) }})</small>
+                                        </td>
+                                        <td class="text-center">
+                                            @if ($item->status == 'process')
+                                                <span class="badge bg-warning-subtle text-warning">Put Away</span>
+                                            @elseif ($item->status == 'inprogress')
+                                                <span class="badge bg-info-subtle text-info">In Progress</span>
                                             @else
-                                                <a href="{{ route('inbound.put-away-detail', ['id' => $item->id]) }}" class="btn btn-primary btn-sm">Detail</a>
+                                                <span class="badge bg-success-subtle text-success">Done</span>
                                             @endif
-                                        </div>
-                                    </td>
-                                </tr>
-                            @endforeach
+                                        </td>
+                                        <td>{{ \Carbon\Carbon::parse($item->created_at)->translatedFormat('d F Y H:i') }}
+                                        </td>
+                                        <td>
+                                            <div class="d-flex gap-2">
+                                                @if ($item->status == 'open' || $item->status == 'process' || $item->status == 'inprogress')
+                                                    <a href="{{ route('inbound.put-away-detail.open', ['id' => $item->id]) }}"
+                                                        class="btn btn-primary btn-sm">Detail</a>
+                                                    {{-- <a href="{{ route('inbound.put-away-edit', ['id' => $item->id]) }}" class="btn btn-warning btn-sm">Edit</a> --}}
+                                                    <a href="{{ route('inbound.put-away-process', ['id' => $item->id]) }}"
+                                                        class="btn btn-info btn-sm">Put Away</a>
+                                                @else
+                                                    <a href="{{ route('inbound.put-away-detail', ['id' => $item->id]) }}"
+                                                        class="btn btn-primary btn-sm">Detail</a>
+                                                @endif
+                                            </div>
+                                        </td>
+                                    </tr>
+                                @endforeach
                             </tbody>
                         </table>
                     </div>
@@ -114,7 +131,8 @@
                                 @if ($putAway->onFirstPage())
                                     <li class="disabled"><span>&laquo; Previous</span></li>
                                 @else
-                                    <li><a href="{{ $putAway->previousPageUrl() }}&per_page={{ request('per_page', 10) }}" rel="prev">&laquo; Previous</a></li>
+                                    <li><a href="{{ $putAway->previousPageUrl() }}&per_page={{ request('per_page', 10) }}"
+                                            rel="prev">&laquo; Previous</a></li>
                                 @endif
 
                                 @foreach ($putAway->links()->elements as $element)
@@ -127,14 +145,17 @@
                                             @if ($page == $putAway->currentPage())
                                                 <li class="active"><span>{{ $page }}</span></li>
                                             @else
-                                                <li><a href="{{ $url }}&per_page={{ request('per_page', 10) }}">{{ $page }}</a></li>
+                                                <li><a
+                                                        href="{{ $url }}&per_page={{ request('per_page', 10) }}">{{ $page }}</a>
+                                                </li>
                                             @endif
                                         @endforeach
                                     @endif
                                 @endforeach
 
                                 @if ($putAway->hasMorePages())
-                                    <li><a href="{{ $putAway->nextPageUrl() }}&per_page={{ request('per_page', 10) }}" rel="next">Next &raquo;</a></li>
+                                    <li><a href="{{ $putAway->nextPageUrl() }}&per_page={{ request('per_page', 10) }}"
+                                            rel="next">Next &raquo;</a></li>
                                 @else
                                     <li class="disabled"><span>Next &raquo;</span></li>
                                 @endif
