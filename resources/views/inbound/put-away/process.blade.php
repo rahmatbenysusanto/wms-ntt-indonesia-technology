@@ -692,7 +692,7 @@
                         <td>${number}</td>
                         <td>${sn.serialNumber}</td>
                         <td>
-                            ${sn.serialNumber === 'N/A' ? '' : `<a class="btn btn-info btn-sm" onclick="pilihSerialNumber('${sn.serialNumber}')">Pilih</a>`}
+                            <a class="btn btn-info btn-sm" onclick="pilihSerialNumber('${sn.serialNumber}')">Pilih</a>
                         </td>
                     </tr>
                 `;
@@ -712,26 +712,35 @@
             const indexDetail = document.getElementById('boxSerialNumber_indexDetail').value;
             const indexMaster = document.getElementById('boxSerialNumber_indexMaster').value;
 
-            // Validation Apakah SN ada didalam list master
-            const check = master[indexMaster].serialNumber.find((item) => item.serialNumber === valueSN);
-            if (check === null) {
-                document.getElementById('scanSerialNumberErrorMessage').innerText = "Serial number is not in master data";
-                document.getElementById('scanSerialNumberError').style.display = "block";
+            // Validation Apakah SN ada didalam list master dan belum dipilih
+            // Cari yang valuenya sama DAN belum dipilih (select == 0)
+            let check = master[indexMaster].serialNumber.find((item) => item.serialNumber === valueSN && parseInt(item
+                .select) === 0);
 
-                setTimeout(() => {
-                    document.getElementById('scanSerialNumberError').style.display = "none";
-                }, 3000);
+            if (!check) {
+                // Jika tidak ditemukan item available, cek apakah SN itu sebenarnya ada di master?
+                const exists = master[indexMaster].serialNumber.find((item) => item.serialNumber === valueSN);
 
-                const sound = new Audio("{{ asset('assets/sound/error.mp3') }}");
-                sound.play();
-
-                document.getElementById('scanSerialNumber').value = "";
-                document.getElementById('scanSerialNumber').focus();
-
-                return true;
-            } else {
-                if (parseInt(check.select) === 1) {
+                if (exists) {
+                    // Ada di master, berarti semuanya sudah terpilih (select=1)
                     document.getElementById('scanSerialNumberErrorMessage').innerText = "Serial Number has been added";
+                    document.getElementById('scanSerialNumberError').style.display = "block";
+
+                    setTimeout(() => {
+                        document.getElementById('scanSerialNumberError').style.display = "none";
+                    }, 3000);
+
+                    const sound = new Audio("{{ asset('assets/sound/error.mp3') }}");
+                    sound.play();
+
+                    document.getElementById('scanSerialNumber').value = "";
+                    document.getElementById('scanSerialNumber').focus();
+
+                    return true;
+                } else {
+                    // Benar-benar tidak ada di master
+                    document.getElementById('scanSerialNumberErrorMessage').innerText =
+                        "Serial number is not in master data";
                     document.getElementById('scanSerialNumberError').style.display = "block";
 
                     setTimeout(() => {
@@ -806,9 +815,15 @@
             serialNumber.push(valueSN);
             localStorage.setItem('serialNumber', JSON.stringify(serialNumber));
 
-            const masterSN = master[indexMaster].serialNumber;
-            const masterSNFilter = masterSN.find(i => i.serialNumber === valueSN);
-            masterSNFilter.select = 1;
+            // Mark as selected in Master
+            // Note: 'check' is a reference to the object inside the 'master' array structure? 
+            // Dexie/LocalStorage might return copies.
+            // Since we parsed 'master' from localStorage at the top, 'check' is an object in that array.
+            // We just need to modify it and save 'master' back.
+            // However, finding it again is safer if we want to be explicit.
+            // Let's use the object found:
+            check.select = 1;
+
             localStorage.setItem('master', JSON.stringify(master));
 
             // Save SN to BOX
@@ -883,7 +898,7 @@
 
                     (itemInBox.serialNumber || []).forEach((sn) => {
                         const findSnMaster = master[masterIdx].serialNumber.find(i => i.serialNumber ===
-                        sn);
+                            sn);
                         if (findSnMaster) {
                             findSnMaster.select = 0;
                         }
