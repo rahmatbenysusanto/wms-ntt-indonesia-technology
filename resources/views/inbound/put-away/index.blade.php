@@ -96,9 +96,9 @@
                                                 {{ number_format($item->qty - $item->qty_pa) }})</small>
                                         </td>
                                         <td class="text-center">
-                                            @if ($item->status == 'process')
+                                            @if ($item->status == 'open')
                                                 <span class="badge bg-warning-subtle text-warning">Put Away</span>
-                                            @elseif ($item->status == 'inprogress')
+                                            @elseif ($item->status == 'inprogress' || $item->status == 'process')
                                                 <span class="badge bg-info-subtle text-info">In Progress</span>
                                             @else
                                                 <span class="badge bg-success-subtle text-success">Done</span>
