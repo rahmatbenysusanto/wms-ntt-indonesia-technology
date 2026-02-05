@@ -1,33 +1,47 @@
 <!doctype html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport"
-          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+        content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Outbound</title>
     <style>
-        body { font-family: DejaVu Sans, sans-serif; font-size: 10.5px; }
-        .row { width: 100%; clear: both; }
+        body {
+            font-family: DejaVu Sans, sans-serif;
+            font-size: 10.5px;
+        }
+
+        .row {
+            width: 100%;
+            clear: both;
+        }
+
         .col-4 {
             float: left;
             width: 33.33%;
             box-sizing: border-box;
             padding: 5px;
         }
+
         .col-6 {
             float: left;
             width: 50%;
             box-sizing: border-box;
             padding: 5px;
         }
-        .clearfix { clear: both; }
+
+        .clearfix {
+            clear: both;
+        }
 
         .tbl {
             width: 100%;
             border-collapse: collapse;
             font-size: 10.5px;
-            table-layout: fixed; /* wajib kalau pakai width di th */
+            table-layout: fixed;
+            /* wajib kalau pakai width di th */
         }
 
         .tbl th,
@@ -59,25 +73,32 @@
             width: 90px;
         }
 
-        .serial-item { display: block; }
+        .serial-item {
+            display: block;
+        }
 
-        thead { display: table-header-group; }
-        tr { page-break-inside: avoid; }
+        thead {
+            display: table-header-group;
+        }
+
+        tr {
+            page-break-inside: avoid;
+        }
     </style>
 </head>
+
 <body>
     <section>
         <div class="row">
             <div class="col-4">
                 <div><i>FROM</i></div>
-                <div><b>PT.  NTT Indonesia Technology</b></div>
-                <div>DBS Tower 22nd Floor</div>
-                <div>JL. Prof. Dr. Satrio Kav. 3-5</div>
-                <div>Jakarta Selatan 12940 Indonesia</div>
-                <div>Phone : (021) 2854-8000</div>
+                <div><b>PT. Transkargo Solusindo</b></div>
+                <div>Komplek Pergudangan Tunas Daan Mogot</div>
+                <div>Blok B2 No.11 Kebon Besar</div>
+                <div>Batu Ceper, Tangerang 15122</div>
             </div>
             <div class="col-4">
-                @if($outbound->deliv_dest == 'client')
+                @if ($outbound->deliv_dest == 'client')
                     <div><i>DELIVER / SHIP TO </i></div>
                     <div><b>{{ $outbound->customer->name }}</b></div>
                     <div>{{ $outbound->deliv_loc }}</div>
@@ -120,7 +141,7 @@
                                 $so = [];
                             @endphp
 
-                            @foreach($outboundDetail as $detail)
+                            @foreach ($outboundDetail as $detail)
                                 @php
                                     $value = $detail->inventoryPackageItem->purchaseOrderDetail->sales_doc ?? '';
                                     $numericValue = preg_replace('/\D/', '', $value);
@@ -135,7 +156,7 @@
                                 $so = array_unique($so);
                             @endphp
 
-                            @foreach($so as $item)
+                            @foreach ($so as $item)
                                 {{ $item . ' ' }}
                             @endforeach
                         </td>
@@ -159,29 +180,29 @@
                 </tr>
             </thead>
             <tbody>
-            @php $number = 1; @endphp
-            @foreach($outboundDetail as $detail)
-                <tr>
-                    <td style="text-align: center">{{ $number++ }}</td>
-                    <td>
-                        <div>{{ $detail->inventoryPackageItem->purchaseOrderDetail->material }}</div>
-                        <div>{{ $detail->inventoryPackageItem->purchaseOrderDetail->sales_doc }}</div>
-                    </td>
-                    <td>
-                        <div>{{ $detail->inventoryPackageItem->purchaseOrderDetail->po_item_desc }}</div>
-                        <div>{{ $detail->inventoryPackageItem->purchaseOrderDetail->prod_hierarchy_desc }}</div>
-                        @if($detail->inventoryPackageItem->inventoryPackage->storage->id == 1)
-                            <div><b style="color: green;">Note: Delivered Directly to Client</b></div>
-                        @endif
-                    </td>
-                    <td style="text-align: center">{{ number_format($detail->qty) }}</td>
-                    <td>
-                        @foreach($detail->outboundDetailSN as $serialNumber)
-                            <span class="serial-item">{{ $serialNumber->serial_number }}</span>
-                        @endforeach
-                    </td>
-                </tr>
-            @endforeach
+                @php $number = 1; @endphp
+                @foreach ($outboundDetail as $detail)
+                    <tr>
+                        <td style="text-align: center">{{ $number++ }}</td>
+                        <td>
+                            <div>{{ $detail->inventoryPackageItem->purchaseOrderDetail->material }}</div>
+                            <div>{{ $detail->inventoryPackageItem->purchaseOrderDetail->sales_doc }}</div>
+                        </td>
+                        <td>
+                            <div>{{ $detail->inventoryPackageItem->purchaseOrderDetail->po_item_desc }}</div>
+                            <div>{{ $detail->inventoryPackageItem->purchaseOrderDetail->prod_hierarchy_desc }}</div>
+                            @if ($detail->inventoryPackageItem->inventoryPackage->storage->id == 1)
+                                <div><b style="color: green;">Note: Delivered Directly to Client</b></div>
+                            @endif
+                        </td>
+                        <td style="text-align: center">{{ number_format($detail->qty) }}</td>
+                        <td>
+                            @foreach ($detail->outboundDetailSN as $serialNumber)
+                                <span class="serial-item">{{ $serialNumber->serial_number }}</span>
+                            @endforeach
+                        </td>
+                    </tr>
+                @endforeach
             </tbody>
         </table>
     </section>
@@ -199,4 +220,5 @@
         </div>
     </section>
 </body>
+
 </html>
