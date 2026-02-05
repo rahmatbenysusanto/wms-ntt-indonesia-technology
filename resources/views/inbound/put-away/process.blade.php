@@ -101,16 +101,9 @@
                                 <th>
                                     <select class="form-control" onchange="changeMassQty(this.value)">
                                         <option value="0">Choose QTY</option>
-                                        <option>1</option>
-                                        <option>2</option>
-                                        <option>3</option>
-                                        <option>4</option>
-                                        <option>5</option>
-                                        <option>6</option>
-                                        <option>7</option>
-                                        <option>8</option>
-                                        <option>9</option>
-                                        <option>10</option>
+                                        @for ($i = 1; $i <= 200; $i++)
+                                            <option>{{ $i }}</option>
+                                        @endfor
                                     </select>
                                 </th>
                             </tr>
@@ -1119,7 +1112,7 @@
                 // Since filter returned references (or we iterate master again to be safe)
                 // Let's iterate master directly to find and update reference
                 const snInMaster = master[indexMaster].serialNumber.find(mSn => mSn ===
-                snObj); // Check reference or content
+                    snObj); // Check reference or content
                 if (snInMaster) snInMaster.select = 1;
             });
 
