@@ -39,11 +39,13 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <h4 class="card-title mb-0">Purchase Order CCW</h4>
                         <div class="d-flex gap-2">
-                            <div class="input-group" style="width: 250px;">
+                            <div class="input-group" style="width: 400px;">
                                 <input type="text" class="form-control" id="prefixMassDelete"
                                     placeholder="Prefix (cth: 1)">
-                                <button class="btn btn-danger" type="button" onclick="massDeleteByLinePrefix()">Mass
-                                    Delete</button>
+                                <button class="btn btn-outline-danger" type="button" onclick="massDeleteSOByPrefix()">Mass
+                                    Delete SO</button>
+                                <button class="btn btn-danger" type="button" onclick="massDeleteRowByPrefix()">Mass
+                                    Delete Baris</button>
                             </div>
                             <a class="btn btn-warning" onclick="saveDraft()">Save Draft CCW</a>
                             <a class="btn btn-primary" onclick="processQualityControl()">Process Quality Control</a>
@@ -582,7 +584,7 @@
             <p class="mb-0" style="min-width: 140px;">${sales.salesDoc} <b>(QTY : ${sales.qty})</b></p>
             ${toInt(item.putAwayStep) === 0 ? `<a class="btn btn-dark btn-sm" onclick="directOutboundSerialNumber(${index}, ${indexSalesDoc})">SN Direct Outbound</a>` : ''}
             <a class="btn ${done ? 'btn-success' : 'btn-secondary'} btn-sm" onclick="detailSerialNumber(${index}, ${indexSalesDoc})">Serial Number</a>
-            <a class="btn btn-danger btn-sm" onclick="hapusSalesDoc(${index}, ${indexSalesDoc}, ${sales.id})">Hapus</a>
+            <a class="btn btn-danger btn-sm" onclick="hapusSalesDoc(${index}, ${indexSalesDoc}, ${sales.id})">Hapus SO</a>
           </div>`;
                 });
 
@@ -619,11 +621,14 @@
           <td>${item.itemDesc}</td>
           <td class="text-center fw-bold">${item.qty}</td>
           <td><div class="d-flex flex-column gap-2">${htmlSalesDoc}</div></td>
-          <td>${(toInt(item.qty) === toInt(item.qtyAdd)) ? '' : `
-                                                                                                                                                                    <div class="d-flex gap-2">
-                                                                                                                                                                      <a class="btn btn-info btn-sm" onclick="pilihSalesDoc('${index}')">Pilih Sales Doc</a>
-                                                                                                                                                                      <a class="btn btn-warning btn-sm" onclick="manualSalesDoc('${index}')">Manual Sales Doc</a>
-                                                                                                                                                                    </div>`}
+          <td>
+            <div class="d-flex gap-2">
+                ${(toInt(item.qty) === toInt(item.qtyAdd)) ? '' : `
+                                            <a class="btn btn-info btn-sm" onclick="pilihSalesDoc('${index}')">Pilih Sales Doc</a>
+                                            <a class="btn btn-warning btn-sm" onclick="manualSalesDoc('${index}')">Manual Sales Doc</a>
+                                        `}
+                <a class="btn btn-danger btn-sm" onclick="deleteRow('${index}')">Hapus Baris</a>
+            </div>
           </td>
         </tr>`;
                 number++;
@@ -754,71 +759,160 @@
         }
 
         // ================================
-        // Mass Delete By Line Prefix
+        // Mass Delete Row By Line Prefix (Hapus Baris)
         // ================================
-        async function massDeleteByLinePrefix() {
+        async function massDeleteRowByPrefix() {
             const prefix = document.getElementById('prefixMassDelete').value;
             if (!prefix) return alert('Silakan masukkan prefix angka depan (contoh: 1)');
 
-            const sap = await storage.getJSON('sap', []);
-            const compare = await storage.getJSON('compare', []);
-            const ccw = await storage.getJSON('ccw', []);
+            Swal.fire({
+                title: 'Konfirmasi Mass Delete Row',
+                text: `Anda yakin ingin menghapus semua BARIS dengan prefix "${prefix}"?`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Ya, Hapus!',
+                cancelButtonText: 'Batal'
+            }).then(async (result) => {
+                if (!result.value) return;
 
-            const regex = new RegExp('^' + prefix + '\\.');
+                const sap = await storage.getJSON('sap', []);
+                const compare = await storage.getJSON('compare', []);
+                const ccw = await storage.getJSON('ccw', []);
 
-            let affectedCount = 0;
-            compare.forEach((item, index) => {
-                if (regex.test(item.lineNumber)) {
-                    // 1. Kembalikan SN ke available di CCW jika ada
-                    (item.salesDoc || []).forEach(sales => {
-                        (sales.serialNumber || []).forEach(sn => {
-                            const change = ccw[index].snAvailable.find(s => s.serialNumber ===
-                                sn);
-                            if (change) change.status = true;
-                        });
+                const regex = new RegExp('^' + prefix + '\\.');
+                let affectedCount = 0;
+                const newCompare = [];
+                const newCcw = [];
 
-                        // 2. Reset SAP status
-                        const sapIndex = sap.findIndex(s => toInt(s.id) === toInt(sales.id));
-                        if (sapIndex !== -1) {
-                            if (sap[sapIndex].manual === true) {
-                                sap[sapIndex]._toDelete = true;
-                            } else {
-                                sap[sapIndex].select = 0;
+                compare.forEach((item, index) => {
+                    if (regex.test(item.lineNumber)) {
+                        // Item ini akan dihapus
+                        affectedCount++;
+                        // Reset SAP status yang terhubung dengan item ini
+                        (item.salesDoc || []).forEach(sales => {
+                            const sapIndex = sap.findIndex(s => toInt(s.id) === toInt(sales
+                                .id));
+                            if (sapIndex !== -1) {
+                                if (sap[sapIndex].manual === true) {
+                                    sap[sapIndex]._toDelete = true;
+                                } else {
+                                    sap[sapIndex].select = 0;
+                                }
                             }
-                        }
-                    });
+                        });
+                    } else {
+                        newCompare.push(item);
+                        newCcw.push(ccw[index]);
+                    }
+                });
 
-                    // 3. Kosongkan Sales Doc di compare record ini
-                    item.salesDoc = [];
-                    item.qtyAdd = 0;
-                    item.purchaseOrderDetailId = null;
-                    affectedCount++;
+                // Hapus SAP yang ditandai manual
+                for (let i = sap.length - 1; i >= 0; i--) {
+                    if (sap[i]._toDelete) sap.splice(i, 1);
                 }
+
+                if (affectedCount === 0) {
+                    alert(`Tidak ditemukan Line Number dengan prefix "${prefix}."`);
+                    return;
+                }
+
+                await storage.setJSON('sap', sap);
+                await storage.setJSON('compare', newCompare);
+                await storage.setJSON('ccw', newCcw);
+
+                await viewCompareSAPCCW();
+                document.getElementById('prefixMassDelete').value = '';
+
+                Swal.fire({
+                    title: 'Berhasil!',
+                    text: `${affectedCount} baris berhasil dihapus dari data.`,
+                    icon: 'success',
+                    timer: 1500,
+                    showConfirmButton: false
+                });
             });
+        }
 
-            // Hapus SAP yang ditandai manual
-            for (let i = sap.length - 1; i >= 0; i--) {
-                if (sap[i]._toDelete) sap.splice(i, 1);
-            }
-
-            if (affectedCount === 0) {
-                alert(`Tidak ditemukan Line Number dengan prefix "${prefix}."`);
-                return;
-            }
-
-            await storage.setJSON('sap', sap);
-            await storage.setJSON('compare', compare);
-            await storage.setJSON('ccw', ccw);
-
-            await viewCompareSAPCCW();
-            document.getElementById('prefixMassDelete').value = '';
+        // ================================
+        // Mass Delete SO By Line Prefix (Hapus Sales Doc saja)
+        // ================================
+        async function massDeleteSOByPrefix() {
+            const prefix = document.getElementById('prefixMassDelete').value;
+            if (!prefix) return alert('Silakan masukkan prefix angka depan (contoh: 1)');
 
             Swal.fire({
-                title: 'Berhasil!',
-                text: `${affectedCount} baris berhasil dikosongkan Sales Doc-nya.`,
-                icon: 'success',
-                timer: 1500,
-                showConfirmButton: false
+                title: 'Konfirmasi Mass Delete SO',
+                text: `Anda yakin ingin me-reset SALES DOC untuk prefix "${prefix}"? (Baris tetap ada)`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Ya, Reset SO!',
+                cancelButtonText: 'Batal'
+            }).then(async (result) => {
+                if (!result.value) return;
+
+                const sap = await storage.getJSON('sap', []);
+                const compare = await storage.getJSON('compare', []);
+                const ccw = await storage.getJSON('ccw', []);
+
+                const regex = new RegExp('^' + prefix + '\\.');
+                let affectedCount = 0;
+
+                compare.forEach((item, index) => {
+                    if (regex.test(item.lineNumber)) {
+                        // 1. Kembalikan SN ke available di CCW jika ada
+                        (item.salesDoc || []).forEach(sales => {
+                            (sales.serialNumber || []).forEach(sn => {
+                                const change = ccw[index].snAvailable.find(s => s
+                                    .serialNumber === sn);
+                                if (change) change.status = true;
+                            });
+
+                            // 2. Reset SAP status
+                            const sapIndex = sap.findIndex(s => toInt(s.id) === toInt(sales
+                                .id));
+                            if (sapIndex !== -1) {
+                                if (sap[sapIndex].manual === true) {
+                                    sap[sapIndex]._toDelete = true;
+                                } else {
+                                    sap[sapIndex].select = 0;
+                                }
+                            }
+                        });
+
+                        // 3. Kosongkan Sales Doc di compare record ini
+                        if ((item.salesDoc || []).length > 0) {
+                            item.salesDoc = [];
+                            item.qtyAdd = 0;
+                            item.purchaseOrderDetailId = null;
+                            affectedCount++;
+                        }
+                    }
+                });
+
+                // Hapus SAP yang ditandai manual
+                for (let i = sap.length - 1; i >= 0; i--) {
+                    if (sap[i]._toDelete) sap.splice(i, 1);
+                }
+
+                if (affectedCount === 0) {
+                    alert(`Tidak ditemukan Sales Doc pada Line Number dengan prefix "${prefix}."`);
+                    return;
+                }
+
+                await storage.setJSON('sap', sap);
+                await storage.setJSON('compare', compare);
+                await storage.setJSON('ccw', ccw);
+
+                await viewCompareSAPCCW();
+                document.getElementById('prefixMassDelete').value = '';
+
+                Swal.fire({
+                    title: 'Berhasil!',
+                    text: `${affectedCount} baris berhasil dikosongkan Sales Doc-nya.`,
+                    icon: 'success',
+                    timer: 1500,
+                    showConfirmButton: false
+                });
             });
         }
 
@@ -900,6 +994,78 @@
             await storage.setJSON('ccw', ccw);
 
             await viewCompareSAPCCW();
+        }
+
+        // ================================
+        // Delete Row (Hapus Baris Excel)
+        // ================================
+        async function deleteRow(index) {
+            Swal.fire({
+                title: 'Konfirmasi Hapus',
+                text: 'Apakah anda yakin ingin menghapus baris ini? Data yang dihapus tidak dapat dikembalikan.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Ya, Hapus!',
+                cancelButtonText: 'Batal',
+                customClass: {
+                    confirmButton: 'btn btn-primary w-xs me-2 mt-2',
+                    cancelButton: 'btn btn-secondary w-xs mt-2'
+                },
+                buttonsStyling: false,
+                showCloseButton: true
+            }).then(async (result) => {
+                if (result.value) {
+                    const sap = await storage.getJSON('sap', []);
+                    const compare = await storage.getJSON('compare', []);
+                    const ccw = await storage.getJSON('ccw', []);
+
+                    const item = compare[index];
+
+                    // Reset SAP status yang terhubung dengan baris ini
+                    if (item.salesDoc && item.salesDoc.length > 0) {
+                        // Kumpulkan ID manual yang perlu dihapus dari SAP
+                        const manualIdsToDelete = [];
+
+                        item.salesDoc.forEach(sales => {
+                            const sapIndex = sap.findIndex(s => toInt(s.id) === toInt(sales.id));
+                            if (sapIndex !== -1) {
+                                if (sap[sapIndex].manual === true) {
+                                    manualIdsToDelete.push(toInt(sales.id));
+                                } else {
+                                    sap[sapIndex].select = 0; // Kembalikan ke unselected
+                                }
+                            }
+                        });
+
+                        // Hapus SAP manual
+                        if (manualIdsToDelete.length > 0) {
+                            for (let i = sap.length - 1; i >= 0; i--) {
+                                if (manualIdsToDelete.includes(toInt(sap[i].id))) {
+                                    sap.splice(i, 1);
+                                }
+                            }
+                        }
+                    }
+
+                    // Hapus dari compare dan ccw
+                    compare.splice(index, 1);
+                    ccw.splice(index, 1);
+
+                    await storage.setJSON('sap', sap);
+                    await storage.setJSON('compare', compare);
+                    await storage.setJSON('ccw', ccw);
+
+                    await viewCompareSAPCCW();
+
+                    Swal.fire({
+                        title: 'Berhasil!',
+                        text: 'Baris berhasil dihapus.',
+                        icon: 'success',
+                        timer: 1500,
+                        showConfirmButton: false
+                    });
+                }
+            });
         }
 
         // ================================
