@@ -28,7 +28,7 @@
                             <label class="form-label">Customer</label>
                             <select class="form-control" id="customerId">
                                 <option value="">-- Select Customer --</option>
-                                @foreach($customer as $item)
+                                @foreach ($customer as $item)
                                     <option value="{{ $item->id }}">{{ $item->name }}</option>
                                 @endforeach
                             </select>
@@ -52,7 +52,8 @@
                         </div>
                         <div class="col-6 mb-3">
                             <label class="form-label">Delivery Note Number</label>
-                            <input type="text" class="form-control" id="deliveryNoteNumber" placeholder="Delivery Note Number">
+                            <input type="text" class="form-control" id="deliveryNoteNumber"
+                                placeholder="Delivery Note Number">
                         </div>
                     </div>
                 </div>
@@ -146,7 +147,8 @@
     </div>
 
     <!-- Serial Number Modals -->
-    <div id="serialNumberModal" class="modal fade" tabindex="-1" aria-labelledby="myModalLabel" aria-hidden="true" style="display: none;">
+    <div id="serialNumberModal" class="modal fade" tabindex="-1" aria-labelledby="myModalLabel" aria-hidden="true"
+        style="display: none;">
         <div class="modal-dialog modal-xl">
             <div class="modal-content">
                 <div class="modal-header">
@@ -157,9 +159,13 @@
                     <input type="hidden" id="idModal">
                     <div class="row">
                         <div class="col-6">
-                            <div class="d-flex justify-content-between align-items-center">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
                                 <h4 class="card-title mb-2">Data Serial Number</h4>
                                 <a class="btn btn-danger btn-sm" onclick="pilihSemuaSN()">Pilih Semua SN</a>
+                            </div>
+                            <div class="mb-2">
+                                <input type="text" class="form-control" id="searchSN" placeholder="Search Serial Number"
+                                    onkeyup="filterSN()">
                             </div>
                             <table class="table table-striped align-middle">
                                 <thead>
@@ -177,10 +183,10 @@
                             <h4 class="card-title mb-2">Data Outbound Serial Number</h4>
                             <table class="table table-striped align-middle">
                                 <thead>
-                                <tr>
-                                    <th>Serial Number</th>
-                                    <th>Action</th>
-                                </tr>
+                                    <tr>
+                                        <th>Serial Number</th>
+                                        <th>Action</th>
+                                    </tr>
                                 </thead>
                                 <tbody id="listDataOutboundSN">
 
@@ -201,14 +207,23 @@
     <script>
         // ====================== IndexedDB (Dexie) ======================
         const db = new Dexie('OutboundDB');
-        db.version(1).stores({ kv: 'key' }); // simple key-value store
+        db.version(1).stores({
+            kv: 'key'
+        }); // simple key-value store
 
-        async function kvSet(key, value) { return db.kv.put({ key, value }); }
+        async function kvSet(key, value) {
+            return db.kv.put({
+                key,
+                value
+            });
+        }
         async function kvGet(key, fallback = null) {
             const row = await db.kv.get(key);
             return row ? row.value : fallback;
         }
-        async function kvDelete(key) { return db.kv.delete(key); }
+        async function kvDelete(key) {
+            return db.kv.delete(key);
+        }
 
         // ====================== Helpers ======================
         // Normalisasi sales_docs agar SELALU array of string
@@ -220,7 +235,9 @@
             if (typeof raw === 'object') {
                 try {
                     return Object.values(raw).filter(v => v != null && v !== '').map(String);
-                } catch { return []; }
+                } catch {
+                    return [];
+                }
             }
 
             // jika number/boolean → jadikan array dgn 1 elemen string
@@ -267,7 +284,7 @@
         }
 
         // ====================== Boot ======================
-        $(document).ready(async function () {
+        $(document).ready(async function() {
             // simpan data server ke IndexedDB
             try {
                 const salesDocServer = @json($salesDoc);
@@ -293,7 +310,8 @@
 
                 let storage = '';
                 if (item?.storage) {
-                    storage = `${item.storage.raw ?? ''} - ${item.storage.area ?? ''} - ${item.storage.rak ?? ''} - ${item.storage.bin ?? ''}`;
+                    storage =
+                        `${item.storage.raw ?? ''} - ${item.storage.area ?? ''} - ${item.storage.rak ?? ''} - ${item.storage.bin ?? ''}`;
                     if (parseInt(item.storage.id) === 1) storage = 'Cross Docking';
                 }
 
@@ -327,7 +345,9 @@
             $.ajax({
                 url: '{{ route('outbound.sales-doc') }}',
                 method: 'GET',
-                data: { id },
+                data: {
+                    id
+                },
                 success: async (res) => {
                     try {
                         const products = [];
@@ -346,7 +366,8 @@
                             products.push({
                                 inventoryPackageId: product.inventory_package_id,
                                 inventoryPackageItemId: product.id,
-                                purchaseOrderId: product?.purchase_order_detail?.purchase_order_id,
+                                purchaseOrderId: product?.purchase_order_detail
+                                    ?.purchase_order_id,
                                 purchaseOrderDetailId: product?.purchase_order_detail_id,
                                 isParent: product?.is_parent,
                                 directOutbound: product?.direct_outbound,
@@ -355,7 +376,8 @@
                                 productId: product?.product_id,
                                 material: product?.purchase_order_detail?.material,
                                 poItemDesc: product?.purchase_order_detail?.po_item_desc,
-                                prodHierarchyDesc: product?.purchase_order_detail?.prod_hierarchy_desc,
+                                prodHierarchyDesc: product?.purchase_order_detail
+                                    ?.prod_hierarchy_desc,
                                 salesDoc: product?.purchase_order_detail?.sales_doc,
                                 purcDoc: res?.data?.purchase_order?.purc_doc,
                                 dataSN: dataSN,
@@ -373,10 +395,18 @@
                         await viewProductOutbound();
                     } catch (e) {
                         console.error('Gagal proses pilihSalesDoc:', e);
-                        Swal.fire({ title: 'Error', text: 'Gagal memproses data', icon: 'error' });
+                        Swal.fire({
+                            title: 'Error',
+                            text: 'Gagal memproses data',
+                            icon: 'error'
+                        });
                     }
                 },
-                error: () => Swal.fire({ title: 'Error', text: 'Request gagal', icon: 'error' })
+                error: () => Swal.fire({
+                    title: 'Error',
+                    text: 'Request gagal',
+                    icon: 'error'
+                })
             });
         };
 
@@ -459,7 +489,11 @@
 
             const newVal = parseInt(value || 0);
             if (newVal > parseInt(products[index]?.qty || 0)) {
-                Swal.fire({ title: 'Warning!', text: 'QTY outbound melebihi qty diinventory', icon: 'warning' });
+                Swal.fire({
+                    title: 'Warning!',
+                    text: 'QTY outbound melebihi qty diinventory',
+                    icon: 'warning'
+                });
                 await viewProductOutbound();
                 return;
             }
@@ -505,6 +539,12 @@
 
             if (typeof $ !== 'undefined' && $('#serialNumberModal').modal) {
                 $('#serialNumberModal').modal('show');
+            }
+
+            const searchInput = document.getElementById('searchSN');
+            if (searchInput) {
+                searchInput.value = '';
+                filterSN();
             }
         };
 
@@ -571,25 +611,50 @@
             if (elAvail) {
                 elAvail.innerHTML = dataSN;
             }
+            filterSN();
         }
+
+        window.filterSN = function filterSN() {
+            const input = document.getElementById('searchSN');
+            if (!input) return;
+            const filter = input.value.toUpperCase();
+            const tbody = document.getElementById("listDataSN");
+            const tr = tbody.getElementsByTagName("tr");
+            for (let i = 0; i < tr.length; i++) {
+                const td = tr[i].getElementsByTagName("td")[0];
+                if (td) {
+                    const txtValue = td.textContent || td.innerText;
+                    if (txtValue.toUpperCase().indexOf(filter) > -1) {
+                        tr[i].style.display = "";
+                    } else {
+                        tr[i].style.display = "none";
+                    }
+                }
+            }
+        };
 
         window.pilihSemuaSN = async function pilihSemuaSN() {
             const index = document.getElementById('idModal')?.value;
-            if (index == null) {
-                return;
-            }
+            if (index == null) return;
 
             const products = await kvGet('salesDocProduct', []) ?? [];
             const product = products[index];
-            if (!product) {
-                return;
-            }
+            if (!product) return;
 
-            product.serialNumber = [];
+            product.serialNumber = product.serialNumber || [];
+
+            const searchInput = document.getElementById('searchSN');
+            const filter = searchInput ? searchInput.value.toUpperCase() : '';
+
             (product?.dataSN ?? []).forEach((item) => {
-                item.select = 1;
-                const exists = product.serialNumber.some(sn => parseInt(sn.id) === parseInt(item.id));
-                if (!exists) {
+                // If filter is active and item does not match, skip it
+                if (filter && item.serialNumber.toUpperCase().indexOf(filter) === -1) {
+                    return;
+                }
+
+                // Add to selection if not currently selected
+                if (parseInt(item.select) === 0) {
+                    item.select = 1;
                     product.serialNumber.push(item);
                 }
             });
@@ -641,15 +706,26 @@
                 },
                 success: async (res) => {
                     if (res?.status) {
-                        await Swal.fire({ title: 'Success', text: 'Create Order Successfully', icon: 'success' });
+                        await Swal.fire({
+                            title: 'Success',
+                            text: 'Create Order Successfully',
+                            icon: 'success'
+                        });
                         window.location.href = '{{ route('outbound.index') }}';
                     } else {
-                        Swal.fire({ title: 'Error', text: 'Create Order Failed', icon: 'error' });
+                        Swal.fire({
+                            title: 'Error',
+                            text: 'Create Order Failed',
+                            icon: 'error'
+                        });
                     }
                 },
-                error: () => Swal.fire({ title: 'Error', text: 'Request gagal', icon: 'error' })
+                error: () => Swal.fire({
+                    title: 'Error',
+                    text: 'Request gagal',
+                    icon: 'error'
+                })
             });
         };
     </script>
 @endsection
-
