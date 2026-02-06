@@ -139,26 +139,15 @@
                         <td>
                             @php
                                 $so = [];
-                            @endphp
-
-                            @foreach ($outboundDetail as $detail)
-                                @php
-                                    $value = $detail->inventoryPackageItem->purchaseOrderDetail->sales_doc ?? '';
-                                    $numericValue = preg_replace('/\D/', '', $value);
-
-                                    if (strlen($numericValue) === 8) {
-                                        $so[] = $numericValue;
+                                foreach ($outboundDetail as $detail) {
+                                    $val = $detail->inventoryPackageItem->purchaseOrderDetail->sales_doc ?? null;
+                                    if ($val) {
+                                        $so[] = $val;
                                     }
-                                @endphp
-                            @endforeach
-
-                            @php
+                                }
                                 $so = array_unique($so);
                             @endphp
-
-                            @foreach ($so as $item)
-                                {{ $item . ' ' }}
-                            @endforeach
+                            {{ implode(', ', $so) }}
                         </td>
                     </tr>
                 </table>
@@ -210,12 +199,20 @@
     <div class="clearfix"></div>
 
     <section style="margin-top: 80px">
-        <div class="row">
+        <div class="row" style="margin-bottom: 80px">
             <div class="col-6" style="text-align: center">
                 <div>Logistic Executive</div>
             </div>
             <div class="col-6" style="text-align: center">
                 <div>Customer's name & signature</div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-6" style="text-align: center">
+                <div style="font-weight: bold;">WH Transkargo Solusindo</div>
+            </div>
+            <div class="col-6" style="text-align: center">
+                <div style="font-weight: bold;">Team Movers</div>
             </div>
         </div>
     </section>
