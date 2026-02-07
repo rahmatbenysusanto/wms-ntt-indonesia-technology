@@ -199,14 +199,6 @@
     <div class="clearfix"></div>
 
     <section style="margin-top: 80px">
-        <div class="row" style="margin-bottom: 80px">
-            <div class="col-6" style="text-align: center">
-                <div>Logistic Executive</div>
-            </div>
-            <div class="col-6" style="text-align: center">
-                <div>Customer's name & signature</div>
-            </div>
-        </div>
         <div class="row">
             <div class="col-6" style="text-align: center">
                 <div style="font-weight: bold;">WH Transkargo Solusindo</div>
