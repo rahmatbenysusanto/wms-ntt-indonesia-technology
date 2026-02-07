@@ -83,14 +83,22 @@
     <script src="{{ asset('assets/js/xlsx.full.min.js') }}"></script>
 
     <script>
-        /* ================= Storage helper (sessionStorage) ================= */
-        const STORAGE_KEY = 'purchaseOrder';
-        const SS = {
-            set(key, val) { try { sessionStorage.setItem(key, JSON.stringify(val)); } catch(e){ console.error('sessionStorage.set', e); } },
-            get(key) { try { const s = sessionStorage.getItem(key); return s ? JSON.parse(s) : null; } catch(e){ console.error('sessionStorage.get', e); return null; } },
-            remove(key) { try { sessionStorage.removeItem(key); } catch(_){} }
+        /* ================= Storage helper (Memory instead of sessionStorage) ================= */
+        // SessionStorage memiliki limit (5-10MB). Untuk file besar, gunakan variabel global.
+        window.GLOBAL_UPLOAD_DATA = [];
+
+        const DATA_STORE = {
+            set(val) {
+                window.GLOBAL_UPLOAD_DATA = val;
+            },
+            get() {
+                return window.GLOBAL_UPLOAD_DATA;
+            },
+            clear() {
+                window.GLOBAL_UPLOAD_DATA = [];
+            }
         };
-        SS.remove(STORAGE_KEY); // clear di awal halaman
+        DATA_STORE.clear(); // clear di awal
 
         /* ================= Modal helpers ================= */
         function showBusyModal(msg = 'Membaca & menyiapkan file…') {
@@ -150,19 +158,28 @@
                 });
             }
         }
-        function upgradeToProgressModal(title, total){
+
+        function upgradeToProgressModal(title, total) {
             showProgressModal(title); // pastikan struktur bar ada
             const txt = document.getElementById('parseText');
             if (txt) txt.textContent = `Processed 0/${total} rows (0%)`;
         }
+
         function updateProgressModal(done, total) {
-            const pct = total ? Math.floor((done/total)*100) : 0;
+            const pct = total ? Math.floor((done / total) * 100) : 0;
             const bar = document.getElementById('parseBar');
             const txt = document.getElementById('parseText');
-            if (bar) { bar.style.width = pct+'%'; bar.setAttribute('aria-valuenow', pct); bar.textContent = pct+'%'; }
+            if (bar) {
+                bar.style.width = pct + '%';
+                bar.setAttribute('aria-valuenow', pct);
+                bar.textContent = pct + '%';
+            }
             if (txt) txt.textContent = `Processed ${done}/${total} rows (${pct}%)`;
         }
-        function closeProgressModal(){ if (window.Swal && Swal.isVisible()) Swal.close(); }
+
+        function closeProgressModal() {
+            if (window.Swal && Swal.isVisible()) Swal.close();
+        }
         const nextFrame = () => new Promise(r => requestAnimationFrame(r)); // repaint-friendly
 
         /* ================= Konfigurasi preview (0 = tampilkan semua) ================= */
@@ -174,7 +191,7 @@
             const frag = document.createDocumentFragment();
             let n = 1;
             const limit = PREVIEW_LIMIT ? Math.min(PREVIEW_LIMIT, rows.length) : rows.length;
-            for (let i=0; i<limit; i++) {
+            for (let i = 0; i < limit; i++) {
                 const r = rows[i];
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
@@ -201,34 +218,40 @@
         }
 
         /* ================= Utils ================= */
-        function toNumber(val){
+        function toNumber(val) {
             if (val == null) return 0;
             if (typeof val === 'number') return val;
             if (typeof val === 'string') {
-                const n = parseFloat(val.replace(/\./g,'').replace(/,/g,'.'));
+                const n = parseFloat(val.replace(/\./g, '').replace(/,/g, '.'));
                 return isNaN(n) ? 0 : n;
             }
             return 0;
         }
-        function excelDateToISO(v){
-            if (typeof v==='number'){
-                const d=new Date((Math.floor(v-25569)*86400)*1000);
+
+        function excelDateToISO(v) {
+            if (typeof v === 'number') {
+                const d = new Date((Math.floor(v - 25569) * 86400) * 1000);
                 return d.toISOString().split('T')[0];
             }
-            if (typeof v==='string' && v.trim()!==''){
-                const d=new Date(v); if(!isNaN(d)) return d.toISOString().split('T')[0];
-                const m=v.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);
-                if (m){ const dd=new Date(+m[3], +m[2]-1, +m[1]); if(!isNaN(dd)) return dd.toISOString().split('T')[0]; }
+            if (typeof v === 'string' && v.trim() !== '') {
+                const d = new Date(v);
+                if (!isNaN(d)) return d.toISOString().split('T')[0];
+                const m = v.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);
+                if (m) {
+                    const dd = new Date(+m[3], +m[2] - 1, +m[1]);
+                    if (!isNaN(dd)) return dd.toISOString().split('T')[0];
+                }
             }
             return '';
         }
+
         function mapRowByIndex(row, idx) {
             const materialRaw = row[idx['Material']];
             return {
                 purc_doc: row[idx['Pur. Doc.']],
                 sales_doc: row[idx['Sales Doc']],
                 item: row[idx['Item']],
-                material: String(materialRaw ?? '').replace(/\./g,''),
+                material: String(materialRaw ?? '').replace(/\./g, ''),
                 po_item_desc: row[idx['PO Item Desc']],
                 prod_hierarchy_desc: row[idx['Prod Hierarchy Desc']],
                 acc_ass_cat: row[idx['Acc Ass Cat']],
@@ -245,18 +268,21 @@
         }
 
         /* ================= Upload / Parse flow (2 tahap modal) ================= */
-        SS.remove(STORAGE_KEY);
+        DATA_STORE.clear();
 
-        document.getElementById('uploadBtn').addEventListener('click', async function (evt) {
+        document.getElementById('uploadBtn').addEventListener('click', async function(evt) {
             evt.preventDefault(); // kalau tombolnya <a>, cegah navigasi
             const fileInput = document.getElementById('excelFile');
             const file = fileInput.files[0];
-            if (!file) { Swal.fire('File belum dipilih','Silakan pilih file Excel terlebih dahulu.','warning'); return; }
+            if (!file) {
+                Swal.fire('File belum dipilih', 'Silakan pilih file Excel terlebih dahulu.', 'warning');
+                return;
+            }
 
             // Tahap 1: Tampilkan spinner, lalu beri waktu browser untuk render
             showBusyModal('Membaca & menyiapkan file…');
-            await nextFrame();           // 1 frame
-            await nextFrame();           // +1 frame (beberapa browser butuh 2 frame utk render modal)
+            await nextFrame(); // 1 frame
+            await nextFrame(); // +1 frame (beberapa browser butuh 2 frame utk render modal)
 
             // Mulai baca file (asinkron, tidak menghambat render spinner)
             const reader = new FileReader();
@@ -271,26 +297,33 @@
                     await nextFrame();
 
                     // Parse workbook
-                    const wb = XLSX.read(new Uint8Array(e.target.result), { type:'array' });
+                    const wb = XLSX.read(new Uint8Array(e.target.result), {
+                        type: 'array'
+                    });
                     const ws = wb.Sheets[wb.SheetNames[0]];
 
                     // === 1) Baca sebagai JSON baris-objek (stabil), JANGAN 2D-array
                     const json = XLSX.utils.sheet_to_json(ws, {
-                        defval: "",   // kosong jadi string kosong (bukan undefined)
-                        raw: true,    // angka/tanggal tetap mentah, kita olah sendiri
+                        defval: "", // kosong jadi string kosong (bukan undefined)
+                        raw: true, // angka/tanggal tetap mentah, kita olah sendiri
                         blankrows: false
                     });
 
                     // === 2) Helper: normalisasi & ambil kolom (toleran variasi header)
-                    const norm = s => String(s || "").trim().replace(/\s+/g,' ').replace(/\.$/,'').toLowerCase();
+                    const norm = s => String(s || "").trim().replace(/\s+/g, ' ').replace(/\.$/, '')
+                        .toLowerCase();
                     const aliases = {
-                        "pur. doc.": ["pur. doc.", "pur. doc", "pur doc", "purchase doc", "purch doc"],
+                        "pur. doc.": ["pur. doc.", "pur. doc", "pur doc", "purchase doc",
+                            "purch doc"
+                        ],
                         "sales doc": ["sales doc", "sales document"],
                         "item": ["item", "itm"],
                         "material": ["material", "material no", "material number"],
                         "po item desc": ["po item desc", "po item description", "description"],
                         "prod hierarchy desc": ["prod hierarchy desc", "product hierarchy desc"],
-                        "acc ass cat": ["acc ass cat", "account assignment cat", "account assignment"],
+                        "acc ass cat": ["acc ass cat", "account assignment cat",
+                            "account assignment"
+                        ],
                         "vendor name": ["vendor name", "vendor", "supp name", "supplier name"],
                         "customer name": ["customer name", "customer", "sold-to name"],
                         "stor loc": ["stor loc", "storage loc", "storage location", "sloc"],
@@ -308,39 +341,41 @@
                         for (const cand of list) {
                             // coba cocokkan langsung
                             for (const real in (json[0] || {})) {
-                                if (norm(real) === norm(cand)) return real; // kembalikan nama kolom asli
+                                if (norm(real) === norm(cand))
+                                    return real; // kembalikan nama kolom asli
                             }
                         }
                         return null;
                     };
 
                     const H = {
-                        purc_doc:      pickHeader("pur. doc."),
-                        sales_doc:     pickHeader("sales doc"),
-                        item:          pickHeader("item"),
-                        material:      pickHeader("material"),
-                        po_item_desc:  pickHeader("po item desc"),
-                        prod_hier:     pickHeader("prod hierarchy desc"),
-                        acc_ass_cat:   pickHeader("acc ass cat"),
-                        vendor_name:   pickHeader("vendor name"),
+                        purc_doc: pickHeader("pur. doc."),
+                        sales_doc: pickHeader("sales doc"),
+                        item: pickHeader("item"),
+                        material: pickHeader("material"),
+                        po_item_desc: pickHeader("po item desc"),
+                        prod_hier: pickHeader("prod hierarchy desc"),
+                        acc_ass_cat: pickHeader("acc ass cat"),
+                        vendor_name: pickHeader("vendor name"),
                         customer_name: pickHeader("customer name"),
-                        stor_loc:      pickHeader("stor loc"),
-                        sloc_desc:     pickHeader("sloc desc"),
-                        valuation:     pickHeader("valuation"),
-                        po_itm_qty:    pickHeader("po itm qty"),
-                        net_price:     pickHeader("net price"),
-                        crcy:          pickHeader("crcy"),
-                        created_on:    pickHeader("created on")
+                        stor_loc: pickHeader("stor loc"),
+                        sloc_desc: pickHeader("sloc desc"),
+                        valuation: pickHeader("valuation"),
+                        po_itm_qty: pickHeader("po itm qty"),
+                        net_price: pickHeader("net price"),
+                        crcy: pickHeader("crcy"),
+                        created_on: pickHeader("created on")
                     };
 
                     // === 3) Baris valid = minimal ada isi di salah satu kolom KUNCI
                     const hasAny = (row, keys) => keys.some(k => {
-                        const h = H[k]; if (!h) return false;
+                        const h = H[k];
+                        if (!h) return false;
                         return String(row[h] ?? "").trim() !== "";
                     });
 
                     const dataRows = json.filter(r =>
-                        hasAny(r, ["purc_doc","sales_doc","item","material","po_item_desc"])
+                        hasAny(r, ["purc_doc", "sales_doc", "item", "material", "po_item_desc"])
                     );
 
                     const total = dataRows.length;
@@ -394,8 +429,8 @@
                     }
                     updateProgressModal(total, total);
 
-                    // === 6) Simpan SEKALI ke sessionStorage + render
-                    SS.set(STORAGE_KEY, poCache);
+                    // === 6) Simpan SEKALI ke Memory + render
+                    DATA_STORE.set(poCache);
                     renderTable(poCache);
                     closeProgressModal();
 
@@ -414,14 +449,19 @@
         async function sendBatchAjax(batch) {
             const res = await fetch(`{{ route('inbound.purchase-order-upload-process') }}`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
-                body: JSON.stringify({ purchaseOrder: batch })
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({
+                    purchaseOrder: batch
+                })
             });
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             return res.json();
         }
 
-        window.processImport = function () {
+        window.processImport = function() {
             Swal.fire({
                 title: "Are you sure?",
                 text: "Import Purchase Order",
@@ -434,22 +474,25 @@
                 confirmButtonText: "Yes, Import it!",
                 buttonsStyling: false,
                 showCloseButton: true
-            }).then(async (t)=>{
+            }).then(async (t) => {
                 if (!t.value) return;
 
-                const allData = SS.get(STORAGE_KEY) || [];
-                if (!allData.length) { Swal.fire('Tidak ada data','Silakan upload & parse file terlebih dahulu.','info'); return; }
+                const allData = DATA_STORE.get() || [];
+                if (!allData.length) {
+                    Swal.fire('Tidak ada data', 'Silakan upload & parse file terlebih dahulu.', 'info');
+                    return;
+                }
 
                 const total = allData.length;
-                const batchSize = 1000;
+                const batchSize = 250; // Kurangi dari 1000 ke 250 agar server tidak timeout
                 let sent = 0;
 
                 showProgressModal('Importing to Server');
                 updateProgressModal(0, total);
 
                 try {
-                    for (let i=0; i<total; i+=batchSize) {
-                        const batch = allData.slice(i, i+batchSize);
+                    for (let i = 0; i < total; i += batchSize) {
+                        const batch = allData.slice(i, i + batchSize);
                         await sendBatchAjax(batch);
                         sent += batch.length;
                         updateProgressModal(sent, total);
@@ -461,19 +504,20 @@
                         text: 'Import Purchase Order successfully!',
                         icon: 'success',
                         confirmButtonText: 'OK',
-                        customClass: { confirmButton: "btn btn-primary w-xs mt-2" },
+                        customClass: {
+                            confirmButton: "btn btn-primary w-xs mt-2"
+                        },
                         buttonsStyling: false
-                    }).then(()=>{
-                        SS.remove(STORAGE_KEY);
+                    }).then(() => {
+                        DATA_STORE.clear();
                         window.location.href = '{{ route('inbound.purchase-order') }}';
                     });
                 } catch (err) {
                     console.error(err);
                     closeProgressModal();
-                    Swal.fire('Error','Import gagal pada salah satu batch.','error');
+                    Swal.fire('Error', 'Import gagal pada salah satu batch.', 'error');
                 }
             });
         };
     </script>
 @endsection
-
