@@ -75,7 +75,7 @@
                             <tbody>
                                 @foreach ($putAway as $index => $item)
                                     <tr>
-                                        <td>{{ $loop->iteration }}</td>
+                                        <td>{{ $putAway->firstItem() + $index }}</td>
                                         <td>{{ $item->purchaseOrder->purc_doc }}</td>
                                         <td>
                                             @foreach ($item->sales_doc as $salesDoc)
