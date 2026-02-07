@@ -83,7 +83,7 @@ class DashboardController extends Controller
         foreach ($purchaseOrderDetail as $detail) {
             $detail->stock = DB::table('inventory_detail')
                 ->where('sales_doc', $detail->sales_doc)
-                ->whereNotIn('storage_id', [1,2,3,4])
+                ->whereNotIn('storage_id', [1, 2, 3, 4])
                 ->sum('qty');
 
             $detail->qty_outbound = DB::table('outbound_detail')
@@ -124,7 +124,7 @@ class DashboardController extends Controller
             ->leftJoin('inventory_package', 'inventory_package_item.inventory_package_id', '=', 'inventory_package.id')
             ->leftJoin('inventory_package_item_sn', 'inventory_package_item_sn.inventory_package_item_id', '=', 'inventory_package_item.id')
             ->where('purchase_order_detail_id', $request->query('id'))
-            ->whereNotIn('inventory_package.storage_id', [1,2,3,4])
+            ->whereNotIn('inventory_package.storage_id', [1, 2, 3, 4])
             ->where('inventory_package_item.qty', '!=', 0)
             ->where('inventory_package_item_sn.qty', '!=', 0)
             ->select([
@@ -133,7 +133,62 @@ class DashboardController extends Controller
             ->get();
 
         $title = 'Dashboard PO';
-        return view('dashboard.po.sn', compact('title', 'serialNumber'));
+        $purchaseOrderDetailId = $request->query('id');
+
+        return view('dashboard.po.sn', compact('title', 'serialNumber', 'purchaseOrderDetailId'));
+    }
+
+    public function dashboardStockSnDownloadExcel(Request $request): StreamedResponse
+    {
+        $serialNumber = DB::table('inventory_package_item')
+            ->leftJoin('inventory_package', 'inventory_package_item.inventory_package_id', '=', 'inventory_package.id')
+            ->leftJoin('inventory_package_item_sn', 'inventory_package_item_sn.inventory_package_item_id', '=', 'inventory_package_item.id')
+            ->leftJoin('purchase_order_detail', 'inventory_package_item.purchase_order_detail_id', '=', 'purchase_order_detail.id')
+            ->leftJoin('purchase_order', 'purchase_order_detail.purchase_order_id', '=', 'purchase_order.id')
+            ->where('purchase_order_detail_id', $request->query('id'))
+            ->whereNotIn('inventory_package.storage_id', [1, 2, 3, 4])
+            ->where('inventory_package_item.qty', '!=', 0)
+            ->where('inventory_package_item_sn.qty', '!=', 0)
+            ->select([
+                'inventory_package_item_sn.serial_number',
+                'purchase_order.purc_doc',
+                'purchase_order_detail.sales_doc',
+                'purchase_order_detail.material',
+                'purchase_order_detail.po_item_desc',
+            ])
+            ->get();
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+
+        $sheet->setCellValue('A1', 'Purc Doc');
+        $sheet->setCellValue('B1', 'Sales Doc');
+        $sheet->setCellValue('C1', 'Material');
+        $sheet->setCellValue('D1', 'PO Item Desc');
+        $sheet->setCellValue('E1', 'Serial Number');
+
+        $row = 2;
+        foreach ($serialNumber as $item) {
+            $sheet->setCellValue('A' . $row, $item->purc_doc);
+            $sheet->setCellValue('B' . $row, $item->sales_doc);
+            $sheet->setCellValue('C' . $row, $item->material);
+            $sheet->setCellValue('D' . $row, $item->po_item_desc);
+            $sheet->setCellValue('E' . $row, $item->serial_number);
+            $row++;
+        }
+
+        $writer = new Xlsx($spreadsheet);
+
+        $response = new StreamedResponse(function () use ($writer) {
+            $writer->save('php://output');
+        });
+
+        $fileName = 'Report Serial Number ' . date('Y-m-d_H-i-s') . '.xlsx';
+        $response->headers->set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        $response->headers->set('Content-Disposition', "attachment;filename=\"$fileName\"");
+        $response->headers->set('Cache-Control', 'max-age=0');
+
+        return $response;
     }
 
     public function dashboardOutboundSN(Request $request): View
@@ -392,7 +447,7 @@ class DashboardController extends Controller
                 $q->where('purc_doc', $request->query('purcDoc'));
             })
             ->when($request->query('salesDoc'), function ($q) use ($request) {
-                $q->where('sales_doc', 'LIKE', '%'.$request->query('salesDoc').'%');
+                $q->where('sales_doc', 'LIKE', '%' . $request->query('salesDoc') . '%');
             })
             ->when($request->query('customer'), function ($q) use ($request) {
                 $q->where('customer_id', $request->query('customer'));
@@ -559,14 +614,14 @@ class DashboardController extends Controller
 
         $writer = new Xlsx($spreadsheet);
 
-        $response = new StreamedResponse(function() use ($writer) {
+        $response = new StreamedResponse(function () use ($writer) {
             $writer->save('php://output');
         });
 
         $fileName = 'Report Dashboard Aging.xlsx';
         $response->headers->set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         $response->headers->set('Content-Disposition', "attachment;filename=\"$fileName\"");
-        $response->headers->set('Cache-Control','max-age=0');
+        $response->headers->set('Cache-Control', 'max-age=0');
 
         return $response;
     }

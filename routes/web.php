@@ -31,6 +31,7 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
         Route::get('/dashboard-po/detail', 'dashboardDetail')->name('dashboard.po.detail');
         Route::get('/dashboard-so/detail', 'dashboardSoDetail')->name('dashboard.so.detail');
         Route::get('/dashboard-stock-sn', 'dashboardStockSN')->name('dashboard.po.stock.sn');
+        Route::get('/dashboard-stock-sn/download-excel', 'dashboardStockSnDownloadExcel')->name('dashboard.po.stock.sn.download.excel');
         Route::get('/dashboard-outbound-sn', 'dashboardOutboundSN')->name('dashboard.po.outbound.sn');
 
         Route::get('/dashboard-aging', 'dashboardAging')->name('dashboard.aging');

@@ -16,21 +16,27 @@
 
         <div class="col-6">
             <div class="card">
+                <div class="card-header d-flex justify-content-end">
+                    @if (isset($purchaseOrderDetailId))
+                        <a href="{{ route('dashboard.po.stock.sn.download.excel', ['id' => $purchaseOrderDetailId]) }}"
+                            class="btn btn-success btn-sm">Download Excel</a>
+                    @endif
+                </div>
                 <div class="card-body">
                     <table class="table table-striped">
                         <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>Serial Number</th>
-                        </tr>
+                            <tr>
+                                <th>#</th>
+                                <th>Serial Number</th>
+                            </tr>
                         </thead>
                         <tbody>
-                        @foreach($serialNumber as $sn)
-                            <tr>
-                                <td>{{ $loop->iteration }}</td>
-                                <td>{{ $sn->serial_number }}</td>
-                            </tr>
-                        @endforeach
+                            @foreach ($serialNumber as $sn)
+                                <tr>
+                                    <td>{{ $loop->iteration }}</td>
+                                    <td>{{ $sn->serial_number }}</td>
+                                </tr>
+                            @endforeach
                         </tbody>
                     </table>
                 </div>
