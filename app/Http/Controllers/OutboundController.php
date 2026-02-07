@@ -83,7 +83,7 @@ class OutboundController extends Controller
 
     public function create(): View
     {
-        $salesDoc = InventoryPackage::with('purchaseOrder', 'storage')
+        $salesDoc = InventoryPackage::with('purchaseOrder', 'storage', 'purchaseOrder.customer')
             ->where('qty', '!=', 0)
             ->whereNotIn('storage_id', [2, 3, 4])
             ->get();

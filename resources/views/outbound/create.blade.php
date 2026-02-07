@@ -321,6 +321,7 @@
                         <td>${salesDocHtml}</td>
                         <td>
                             ${parseInt(item?.storage?.id) === 1 ? '<div><span class="badge bg-danger"> Cross Docking </span></div>' : ''}
+                            <div class="fw-bold mb-1">${item?.purchase_order?.customer?.name ?? ''}</div>
                             <div><b>Purc Doc: </b>${item?.purchase_order?.purc_doc ?? ''}</div>
                             <div>${item?.number ?? ''}</div>
                             <div><b>Box: </b>${item?.reff_number ?? ''}</div>
