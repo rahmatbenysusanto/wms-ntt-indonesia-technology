@@ -936,6 +936,104 @@ class InboundController extends Controller
         }
     }
 
+    public function putAwayCancel(Request $request): \Illuminate\Http\RedirectResponse
+    {
+        try {
+            DB::beginTransaction();
+
+            $id = $request->query('id');
+            $productPackage = ProductPackage::find($id);
+
+            if (!$productPackage) {
+                return back()->with('error', 'Put Away not found');
+            }
+
+            // Get items
+            $items = ProductPackageItem::where('product_package_id', $productPackage->id)->get();
+            $hasProcessedAny = false;
+
+            foreach ($items as $item) {
+                // Calculate quantity to cancel (Total assigned - Already Put Away)
+                $qtyToCancel = $item->qty - $item->qty_pa;
+
+                if ($qtyToCancel > 0) {
+                    // Revert QC Qty in PurchaseOrderDetail
+                    $poDetail = PurchaseOrderDetail::find($item->purchase_order_detail_id);
+                    if ($poDetail) {
+                        $poDetail->qty_qc -= $qtyToCancel;
+                        if ($poDetail->qty_qc < 0) $poDetail->qty_qc = 0;
+
+                        // Update status: If QC count drops below PO qty, it's not fully QC'd anymore
+                        if ($poDetail->qty_qc < $poDetail->po_item_qty) {
+                            $poDetail->status = 'new';
+                        }
+                        $poDetail->save();
+                    }
+
+                    // Delete unused SNs (status != 1 means not processed yet)
+                    ProductPackageItemSN::where('product_package_item_id', $item->id)
+                        ->where(function ($query) {
+                            $query->where('status', '!=', 1)
+                                ->orWhereNull('status');
+                        })
+                        ->delete();
+
+                    // Update Item Qty to match what was actually processed
+                    $item->qty = $item->qty_pa;
+                    $item->save();
+                }
+
+                if ($item->qty_pa > 0) {
+                    $hasProcessedAny = true;
+                }
+
+                // If item ends up with 0 qty (completely cancelled), delete it
+                if ($item->qty == 0) {
+                    $item->delete();
+                }
+            }
+
+            // Recalculate Package Totals
+            $totalQty = ProductPackageItem::where('product_package_id', $id)->sum('qty');
+            $totalItems = ProductPackageItem::where('product_package_id', $id)->count();
+
+            $productPackage->qty = $totalQty;
+            $productPackage->qty_item = $totalItems;
+
+            $msg = '';
+
+            // Determine Package Status
+            if ($totalQty == 0) {
+                // Completely Cancelled
+                $productPackage->delete();
+                $msg = 'Put Away Cancelled Successfully. Products are available for QC again.';
+            } else {
+                // Partially Processed -> Mark remainder as cancelled, so this package is now 'done' with what it has.
+                $productPackage->status = 'done';
+                $productPackage->save();
+                $msg = 'Unprocessed Put Away items cancelled. Processed items remain in inventory.';
+            }
+
+            // Re-evaluate Purchase Order Status
+            $poId = $productPackage->purchase_order_id;
+            $poDetailsCount = PurchaseOrderDetail::where('purchase_order_id', $poId)->count();
+            $poDetailsNewCount = PurchaseOrderDetail::where('purchase_order_id', $poId)->where('status', 'new')->count();
+
+            if ($poDetailsNewCount == $poDetailsCount) {
+                PurchaseOrder::where('id', $poId)->update(['status' => 'open']);
+            } else {
+                PurchaseOrder::where('id', $poId)->update(['status' => 'process']);
+            }
+
+            DB::commit();
+            return back()->with('success', $msg);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error($e->getMessage());
+            return back()->with('error', 'Failed to cancel Put Away');
+        }
+    }
+
     public function qualityControlProcessCcw(Request $request): View
     {
         $purcDocDetail = PurchaseOrderDetail::where('purchase_order_id', $request->query('id'))

@@ -114,6 +114,10 @@
                                                     {{-- <a href="{{ route('inbound.put-away-edit', ['id' => $item->id]) }}" class="btn btn-warning btn-sm">Edit</a> --}}
                                                     <a href="{{ route('inbound.put-away-process', ['id' => $item->id]) }}"
                                                         class="btn btn-info btn-sm">Put Away</a>
+                                                    @if ($item->status == 'open' || $item->status == 'inprogress' || $item->status == 'process')
+                                                        <a onclick="confirmCancel('{{ route('inbound.put-away-cancel', ['id' => $item->id]) }}')"
+                                                            class="btn btn-danger btn-sm">Cancel</a>
+                                                    @endif
                                                 @else
                                                     <a href="{{ route('inbound.put-away-detail', ['id' => $item->id]) }}"
                                                         class="btn btn-primary btn-sm">Detail</a>
@@ -167,4 +171,24 @@
             </div>
         </div>
     </div>
+@endsection
+
+@section('js')
+    <script>
+        function confirmCancel(url) {
+            Swal.fire({
+                title: 'Are you sure?',
+                text: "You won't be able to revert this!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Yes, cancel it!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = url;
+                }
+            })
+        }
+    </script>
 @endsection

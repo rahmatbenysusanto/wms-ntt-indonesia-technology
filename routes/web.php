@@ -140,6 +140,7 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
             Route::get('/detail/open', 'putAwayDetailOpen')->name('inbound.put-away-detail.open');
             Route::get('/process', 'putAwayProcess')->name('inbound.put-away-process');
             Route::post('/store', 'putAwayStore')->name('inbound.put-away.store');
+            Route::get('/cancel', 'putAwayCancel')->name('inbound.put-away-cancel');
 
             Route::get('/edit', 'putAwayEdit')->name('inbound.put-away-edit');
 
