@@ -253,6 +253,7 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
         Route::get('/create', 'create')->name('outbound.create');
         Route::post('/create', 'store')->name('outbound.store');
         Route::get('/detail', 'detail')->name('outbound.detail');
+        Route::get('/cancel', 'cancel')->name('outbound.cancel');
 
         Route::get('/return', 'return')->name('outbound.return');
         Route::get('/return/get-products', 'returnGetProducts')->name('outbound.return.get-products');
@@ -332,34 +333,3 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
 });
 
 Route::get('/compare-sap-ccw', [InboundController::class, 'compareSapCcw'])->name('compare-sap-ccw');
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

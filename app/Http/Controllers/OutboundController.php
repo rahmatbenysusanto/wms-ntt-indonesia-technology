@@ -85,7 +85,7 @@ class OutboundController extends Controller
     {
         $salesDoc = InventoryPackage::with('purchaseOrder', 'storage')
             ->where('qty', '!=', 0)
-            ->whereNotIn('storage_id', [2,3,4])
+            ->whereNotIn('storage_id', [2, 3, 4])
             ->get();
 
         $customer = Customer::all();
@@ -96,7 +96,7 @@ class OutboundController extends Controller
 
     public function getItemBySalesDoc(Request $request): \Illuminate\Http\JsonResponse
     {
-        $products = InventoryPackage::with('storage', 'inventoryPackageItem', 'inventoryPackageItem.purchaseOrderDetail','inventoryPackageItem.inventoryPackageItemSn', 'inventoryPackageItem.purchaseOrderDetail', 'purchaseOrder')
+        $products = InventoryPackage::with('storage', 'inventoryPackageItem', 'inventoryPackageItem.purchaseOrderDetail', 'inventoryPackageItem.inventoryPackageItemSn', 'inventoryPackageItem.purchaseOrderDetail', 'purchaseOrder')
             ->where('id', $request->get('id'))
             ->first();
 
@@ -159,7 +159,7 @@ class OutboundController extends Controller
                 'sales_doc'     => $item->sales_doc,
                 'material'      => $item->material,
                 'po_item_desc'  => $item->po_item_desc,
-                'prod_hierarchy'=> $item->prod_hierarchy_desc,
+                'prod_hierarchy' => $item->prod_hierarchy_desc,
                 'qty'           => $item->qty,
                 'qty_select'    => $item->qty,
                 'type'          => 'parent',
@@ -167,7 +167,7 @@ class OutboundController extends Controller
                 'pa_number'     => $inventoryParent->pa_reff_number ?? $inventoryParent->pa_number,
                 'item'          => $item->item,
                 'purc_doc'      => $item->purc_doc,
-                'storage'       => $storage->id == 1 ? '-' : ($storage->raw.' - '.$storage->area.' - '.$storage->rak.' - '.$storage->bin),
+                'storage'       => $storage->id == 1 ? '-' : ($storage->raw . ' - ' . $storage->area . ' - ' . $storage->rak . ' - ' . $storage->bin),
                 'storage_id'    => $storage->id,
                 'serial_number' => $serialNumber,
                 'sn_select'     => [],
@@ -206,7 +206,7 @@ class OutboundController extends Controller
                 'sales_doc'     => $item->sales_doc,
                 'material'      => $item->material,
                 'po_item_desc'  => $item->po_item_desc,
-                'prod_hierarchy'=> $item->prod_hierarchy_desc,
+                'prod_hierarchy' => $item->prod_hierarchy_desc,
                 'qty'           => $item->qty,
                 'qty_select'    => $item->qty,
                 'type'          => 'child',
@@ -214,7 +214,7 @@ class OutboundController extends Controller
                 'pa_number'     => $inventoryParent->pa_reff_number ?? $inventoryParent->pa_number,
                 'item'          => $item->item,
                 'purc_doc'      => $item->purc_doc,
-                'storage'       => $storage->id == 1 ? '-' : ($storage->raw.' - '.$storage->area.' - '.$storage->rak.' - '.$storage->bin),
+                'storage'       => $storage->id == 1 ? '-' : ($storage->raw . ' - ' . $storage->area . ' - ' . $storage->rak . ' - ' . $storage->bin),
                 'storage_id'    => $storage->id,
                 'serial_number' => $serialNumber,
                 'sn_select'     => [],
@@ -354,7 +354,7 @@ class OutboundController extends Controller
                 $inventoryPackage = InventoryPackage::create([
                     'purchase_order_id'         => $purchaseOrder->id,
                     'storage_id'                => $storage,
-                    'number'                    => strtoupper($type).'-'.date('ymdHis').rand(100, 999),
+                    'number'                    => strtoupper($type) . '-' . date('ymdHis') . rand(100, 999),
                     'reff_number'               => '',
                     'qty_item'                  => $qty_item,
                     'qty'                       => $qty,
@@ -427,7 +427,86 @@ class OutboundController extends Controller
             ]);
         }
     }
+    public function cancel(Request $request): \Illuminate\Http\RedirectResponse
+    {
+        try {
+            DB::beginTransaction();
 
+            $id = $request->query('id');
+            $outbound = Outbound::find($id);
+
+            if (!$outbound) {
+                return back()->with('error', 'Outbound not found');
+            }
+
+            // Get Outbound Details
+            $outboundDetails = OutboundDetail::where('outbound_id', $id)->get();
+
+            foreach ($outboundDetails as $detail) {
+                // Restore Stock
+                // 1. InventoryPackageItem
+                InventoryPackageItem::where('id', $detail->inventory_package_item_id)->increment('qty', $detail->qty);
+
+                // 2. InventoryPackage
+                $invPackageItem = InventoryPackageItem::find($detail->inventory_package_item_id);
+                if ($invPackageItem) {
+                    InventoryPackage::where('id', $invPackageItem->inventory_package_id)->increment('qty', $detail->qty);
+
+                    $invPackage = InventoryPackage::find($invPackageItem->inventory_package_id);
+                    $inventory = Inventory::where('purchase_order_id', $invPackage->purchase_order_id)->where('type', 'inv')->first();
+
+                    if ($inventory) {
+                        // 3. Inventory
+                        Inventory::where('id', $inventory->id)->increment('stock', $detail->qty);
+
+                        // 4. InventoryDetail
+                        InventoryDetail::where('inventory_package_item_id', $detail->inventory_package_item_id)
+                            ->where('inventory_id', $inventory->id)
+                            ->increment('qty', $detail->qty);
+                    }
+
+                    // Restore Serial Numbers
+                    $sns = OutboundDetailSN::where('outbound_detail_id', $detail->id)->get();
+                    $snList = [];
+                    foreach ($sns as $sn) {
+                        InventoryPackageItemSN::where('inventory_package_item_id', $detail->inventory_package_item_id)
+                            ->where('serial_number', $sn->serial_number)
+                            ->update(['qty' => 1]);
+                        $snList[] = $sn->serial_number;
+                    }
+
+                    // Log History
+                    InventoryHistory::create([
+                        'purchase_order_id'         => $invPackage->purchase_order_id,
+                        'purchase_order_detail_id'  => $invPackageItem->purchase_order_detail_id,
+                        'outbound_id'               => $outbound->id,
+                        'inventory_package_item_id' => $detail->inventory_package_item_id,
+                        'qty'                       => $detail->qty,
+                        'type'                      => 'inbound', // Back to inventory
+                        'serial_number'             => json_encode($snList),
+                        'created_by'                => Auth::id(),
+                        'note'                      => 'Outbound ' . $outbound->number . ' Cancelled',
+                    ]);
+                }
+
+                // Delete SNs from Outbound
+                OutboundDetailSN::where('outbound_detail_id', $detail->id)->delete();
+
+                // Delete Detail
+                $detail->delete();
+            }
+
+            // Delete Outbound
+            $outbound->delete();
+
+            DB::commit();
+            return back()->with('success', 'Outbound Cancelled Successfully');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error($e->getMessage());
+            return back()->with('error', 'Failed to cancel Outbound');
+        }
+    }
     public function detail(Request $request): View
     {
         $outbound = Outbound::with('user', 'customer')->where('id', $request->query('id'))->first();
@@ -441,21 +520,21 @@ class OutboundController extends Controller
     {
         $outbound = Outbound::where('type', 'outbound')->where('status', 'outbound')->get();
 
-        $storageRaw = Storage::whereNotIn('id', [1,2,3,4])
+        $storageRaw = Storage::whereNotIn('id', [1, 2, 3, 4])
             ->where('raw', '!=', '-')
             ->whereNull('area')
             ->whereNull('rak')
             ->whereNull('bin')
             ->get();
 
-        $dataMasterBox = InventoryPackage::whereNotIn('storage_id', [1,2,3,4])
+        $dataMasterBox = InventoryPackage::whereNotIn('storage_id', [1, 2, 3, 4])
             ->where('qty', '!=', 0)
             ->get();
 
         $masterBox = [];
         foreach ($dataMasterBox as $box) {
             $explode = explode("-", $box->number);
-            $masterBox[] = $explode[0].'-'.$explode[1];
+            $masterBox[] = $explode[0] . '-' . $explode[1];
         }
         $masterBox = array_unique($masterBox);
 
@@ -487,7 +566,7 @@ class OutboundController extends Controller
                 'purc_doc'      => $returnOutbound->purc_doc,
                 'sales_docs'    => json_encode([]),
                 'outbound_date' => $request->post('outboundDate') ?? date('Y-m-d H:i:s'),
-                'number'        => 'inv-'.date('YmdHis').rand(111,999),
+                'number'        => 'inv-' . date('YmdHis') . rand(111, 999),
                 'qty_item'      => 0,
                 'qty'           => 0,
                 'type'          => 'outbound',
@@ -503,7 +582,7 @@ class OutboundController extends Controller
             $inventoryPackage = InventoryPackage::create([
                 'purchase_order_id' => $purchaseOrder->id,
                 'storage_id'        => $request->post('bin'),
-                'number'            => $request->post('masterBox') != null ? $request->post('masterBox') : 'PA-'.date('YmdHis').rand(111,999),
+                'number'            => $request->post('masterBox') != null ? $request->post('masterBox') : 'PA-' . date('YmdHis') . rand(111, 999),
                 'reff_number'       => $request->post('boxName'),
                 'qty'               => 0,
                 'qty_item'          => 0,
@@ -603,7 +682,7 @@ class OutboundController extends Controller
         ];
 
         $pdf = Pdf::loadView('pdf.outbound', $data)->setPaper('A4', 'landscape');
-        return $pdf->stream('outbound '.$outbound->delivery_note_number.'.pdf');
+        return $pdf->stream('outbound ' . $outbound->delivery_note_number . '.pdf');
     }
 
     public function downloadExcel(Request $request): StreamedResponse
@@ -621,7 +700,7 @@ class OutboundController extends Controller
         $sheet->setCellValue('C1', 'To');
         $sheet->setCellValue('C2', $outbound->customer->name);
 
-        $sheet->setCellValue('E1', 'No : '.$outbound->delivery_note_number);
+        $sheet->setCellValue('E1', 'No : ' . $outbound->delivery_note_number);
         $sheet->setCellValue('E2', $outbound->created_at);
 
         $outboundDetail = OutboundDetail::with([
@@ -668,15 +747,17 @@ class OutboundController extends Controller
 
         $writer = new Xlsx($spreadsheet);
 
-        $response = new StreamedResponse(function() use ($writer) {
-            if (ob_get_length()) { @ob_end_clean(); }
+        $response = new StreamedResponse(function () use ($writer) {
+            if (ob_get_length()) {
+                @ob_end_clean();
+            }
             $writer->save('php://output');
         });
 
         $fileName = 'Report Outbound' . date('Y-m-d_H-i-s') . '.xlsx';
         $response->headers->set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        $response->headers->set('Content-Disposition', 'attachment; filename="'.$fileName.'"');
-        $response->headers->set('Cache-Control','max-age=0');
+        $response->headers->set('Content-Disposition', 'attachment; filename="' . $fileName . '"');
+        $response->headers->set('Cache-Control', 'max-age=0');
 
         return $response;
     }
@@ -690,16 +771,16 @@ class OutboundController extends Controller
             ->leftJoin('purchase_order_detail', 'purchase_order_detail.id', '=', 'inventory_package_item.purchase_order_detail_id')
             ->leftJoin('customer', 'customer.id', '=', 'outbound.customer_id')
             ->when($request->query('purcDoc'), function ($query) use ($request) {
-                $query->where('outbound.purc_doc', 'LIKE', '%'.$request->query('purcDoc').'%');
+                $query->where('outbound.purc_doc', 'LIKE', '%' . $request->query('purcDoc') . '%');
             })
             ->when($request->query('salesDoc'), function ($query) use ($request) {
-                $query->where('outbound.sales_docs', 'LIKE', '%'.$request->query('salesDoc').'%');
+                $query->where('outbound.sales_docs', 'LIKE', '%' . $request->query('salesDoc') . '%');
             })
             ->when($request->query('material'), function ($query) use ($request) {
-                $query->where('purchase_order_detail.material', 'LIKE', '%'.$request->query('material').'%');
+                $query->where('purchase_order_detail.material', 'LIKE', '%' . $request->query('material') . '%');
             })
             ->when($request->query('customer'), function ($query) use ($request) {
-                $query->where('customer.name', 'LIKE', '%'.$request->query('customer').'%');
+                $query->where('customer.name', 'LIKE', '%' . $request->query('customer') . '%');
             })
             ->select([
                 'outbound.id',
@@ -762,9 +843,9 @@ class OutboundController extends Controller
     {
         $outbound = Outbound::with('outboundDetail', 'outboundDetail.outboundDetailSN', 'outboundDetail.inventoryPackageItem', 'outboundDetail.inventoryPackageItem.purchaseOrderDetail', 'customer')
             ->when($request->query('purcDoc'), function ($query) use ($request) {
-                $query->where('purc_doc', 'LIKE', '%'.$request->query('purcDoc').'%');
+                $query->where('purc_doc', 'LIKE', '%' . $request->query('purcDoc') . '%');
             })->when($request->query('salesDoc'), function ($query) use ($request) {
-                $query->where('sales_docs', 'LIKE', '%'.$request->query('salesDoc').'%');
+                $query->where('sales_docs', 'LIKE', '%' . $request->query('salesDoc') . '%');
             })->when($request->query('client'), function ($query) use ($request) {
                 $query->where('customer_id', $request->query('client'));
             })
@@ -780,8 +861,5 @@ class OutboundController extends Controller
         return $pdf->stream('Report Outbound.pdf');
     }
 
-    public function reportDownloadExcel(Request $request)
-    {
-
-    }
+    public function reportDownloadExcel(Request $request) {}
 }

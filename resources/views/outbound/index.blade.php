@@ -26,21 +26,22 @@
                                 'salesDoc' => request()->get('salesDoc', null),
                                 'client' => request()->get('client', null),
                                 'start' => request()->get('start', date('Y-m-01')),
-                                'end' => request()->get('end', date('Y-m-d'))
-                                ]) }}" class="btn btn-pdf btn-sm" target="_blank">
+                                'end' => request()->get('end', date('Y-m-d')),
+                            ]) }}"
+                                class="btn btn-pdf btn-sm" target="_blank">
                                 <span class="mdi mdi-file-pdf-box"></span>
                                 Download PDF
                             </a>
-{{--                            <a href="{{ route('report.outbound.excel', [--}}
-{{--                                'purcDoc' => request()->get('purcDoc', null),--}}
-{{--                                'salesDoc' => request()->get('salesDoc', null),--}}
-{{--                                'client' => request()->get('client', null),--}}
-{{--                                'start' => request()->get('start', date('Y-m-01')),--}}
-{{--                                'end' => request()->get('end', date('Y-m-d'))--}}
-{{--                                ]) }}" class="btn btn-success btn-sm">--}}
-{{--                                <span class="mdi mdi-file-pdf-box"></span>--}}
-{{--                                Download Excel--}}
-{{--                            </a>--}}
+                            {{--                            <a href="{{ route('report.outbound.excel', [ --}}
+                            {{--                                'purcDoc' => request()->get('purcDoc', null), --}}
+                            {{--                                'salesDoc' => request()->get('salesDoc', null), --}}
+                            {{--                                'client' => request()->get('client', null), --}}
+                            {{--                                'start' => request()->get('start', date('Y-m-01')), --}}
+                            {{--                                'end' => request()->get('end', date('Y-m-d')) --}}
+                            {{--                                ]) }}" class="btn btn-success btn-sm"> --}}
+                            {{--                                <span class="mdi mdi-file-pdf-box"></span> --}}
+                            {{--                                Download Excel --}}
+                            {{--                            </a> --}}
                             <a href="{{ route('outbound.return') }}" class="btn btn-info btn-sm">Return Order</a>
                             <a href="{{ route('outbound.create') }}" class="btn btn-primary btn-sm">Create Order</a>
                         </div>
@@ -51,28 +52,34 @@
                         <div class="row">
                             <div class="col-2">
                                 <label class="form-label">Purc Doc</label>
-                                <input type="text" class="form-control" name="purcDoc" value="{{ request()->get('purcDoc') }}" placeholder="Purc Doc ...">
+                                <input type="text" class="form-control" name="purcDoc"
+                                    value="{{ request()->get('purcDoc') }}" placeholder="Purc Doc ...">
                             </div>
                             <div class="col-2">
                                 <label class="form-label">Sales Doc</label>
-                                <input type="text" class="form-control" name="salesDoc" value="{{ request()->get('salesDoc') }}" placeholder="Sales Doc ...">
+                                <input type="text" class="form-control" name="salesDoc"
+                                    value="{{ request()->get('salesDoc') }}" placeholder="Sales Doc ...">
                             </div>
                             <div class="col-2">
                                 <label class="form-label">Client</label>
                                 <select class="form-control" name="client">
                                     <option value="">-- Select Client --</option>
-                                    @foreach($customer as $item)
-                                        <option value="{{ $item->id }}" {{ $item->id == request()->get('client') ? 'selected' : '' }}>{{ $item->name }}</option>
+                                    @foreach ($customer as $item)
+                                        <option value="{{ $item->id }}"
+                                            {{ $item->id == request()->get('client') ? 'selected' : '' }}>
+                                            {{ $item->name }}</option>
                                     @endforeach
                                 </select>
                             </div>
                             <div class="col-2">
                                 <label class="form-label">Start Date</label>
-                                <input type="date" class="form-control" name="start" value="{{ request()->get('start', date('Y-m-01')) }}">
+                                <input type="date" class="form-control" name="start"
+                                    value="{{ request()->get('start', date('Y-m-01')) }}">
                             </div>
                             <div class="col-2">
                                 <label class="form-label">End Date</label>
-                                <input type="date" class="form-control" name="end" value="{{ request()->get('end', date('Y-m-d')) }}">
+                                <input type="date" class="form-control" name="end"
+                                    value="{{ request()->get('end', date('Y-m-d')) }}">
                             </div>
                             <div class="col-2">
                                 <label class="form-label text-white">-</label>
@@ -105,54 +112,65 @@
                                 </tr>
                             </thead>
                             <tbody>
-                            @foreach($outbound as $index => $out)
-                                <tr>
-                                    <td>{{ $outbound->firstItem() + $index }}</td>
-                                    <td>{{ $out->delivery_note_number }}</td>
-                                    <td>{{ $out->purc_doc }}</td>
-                                    <td>
-                                        @foreach(json_decode($out->sales_docs) as $item)
-                                            <div>{{ $item }}</div>
-                                        @endforeach
-                                    </td>
-                                    <td>{{ $out->customer->name }}</td>
-                                    <td>{{ $out->deliv_loc }}</td>
-                                    <td class="text-center">
-                                        @if($out->deliv_dest == 'client')
-                                            Client
-                                        @elseif($out->deliv_dest == 'pm room')
-                                            PM Room
-                                        @elseif($out->deliv_dest == 'general room')
-                                            GR Room
-                                        @elseif($out->deliv_dest == 'spare room')
-                                            Spare Room
-                                        @endif
-                                    </td>
-                                    <td class="text-center fw-bold">{{ number_format($out->qty_item) }}</td>
-                                    <td class="text-center">
-                                        @if($out->status == 'outbound')
-                                            <span class="badge bg-success-subtle text-success">Outbound</span>
-                                        @else
-                                            <span class="badge bg-warning-subtle text-warning">Return</span>
-                                        @endif
-                                    </td>
-                                    <td>{{ \Carbon\Carbon::parse($out->created_at)->translatedFormat('d F Y H:i') }}</td>
-                                    <td>{{ $out->user->name }}</td>
-                                    <td class="text-center">
-                                        <div class="d-flex justify-content-center gap-2">
-                                            <a href="{{ route('outbound.download-excel', ['id' => $out->id]) }}" class="btn btn-success btn-sm">
-                                                <i class="mdi mdi-file-excel" style="font-size: 14px;"></i>
-                                            </a>
-                                            <a href="{{ route('outbound.download-pdf', ['id' => $out->id]) }}" class="btn btn-pdf btn-sm" target="_blank">
-                                                <i class="mdi mdi-file-pdf-box" style="font-size: 14px;"></i>
-                                            </a>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <a href="{{ route('outbound.detail', ['id' => $out->id]) }}" class="btn btn-info btn-sm">Detail</a>
-                                    </td>
-                                </tr>
-                            @endforeach
+                                @foreach ($outbound as $index => $out)
+                                    <tr>
+                                        <td>{{ $outbound->firstItem() + $index }}</td>
+                                        <td>{{ $out->delivery_note_number }}</td>
+                                        <td>{{ $out->purc_doc }}</td>
+                                        <td>
+                                            @foreach (json_decode($out->sales_docs) as $item)
+                                                <div>{{ $item }}</div>
+                                            @endforeach
+                                        </td>
+                                        <td>{{ $out->customer->name }}</td>
+                                        <td>{{ $out->deliv_loc }}</td>
+                                        <td class="text-center">
+                                            @if ($out->deliv_dest == 'client')
+                                                Client
+                                            @elseif($out->deliv_dest == 'pm room')
+                                                PM Room
+                                            @elseif($out->deliv_dest == 'general room')
+                                                GR Room
+                                            @elseif($out->deliv_dest == 'spare room')
+                                                Spare Room
+                                            @endif
+                                        </td>
+                                        <td class="text-center fw-bold">{{ number_format($out->qty_item) }}</td>
+                                        <td class="text-center">
+                                            @if ($out->status == 'outbound')
+                                                <span class="badge bg-success-subtle text-success">Outbound</span>
+                                            @else
+                                                <span class="badge bg-warning-subtle text-warning">Return</span>
+                                            @endif
+                                        </td>
+                                        <td>{{ \Carbon\Carbon::parse($out->created_at)->translatedFormat('d F Y H:i') }}
+                                        </td>
+                                        <td>{{ $out->user->name }}</td>
+                                        <td class="text-center">
+                                            <div class="d-flex justify-content-center gap-2">
+                                                <a href="{{ route('outbound.download-excel', ['id' => $out->id]) }}"
+                                                    class="btn btn-success btn-sm">
+                                                    <i class="mdi mdi-file-excel" style="font-size: 14px;"></i>
+                                                </a>
+                                                <a href="{{ route('outbound.download-pdf', ['id' => $out->id]) }}"
+                                                    class="btn btn-pdf btn-sm" target="_blank">
+                                                    <i class="mdi mdi-file-pdf-box" style="font-size: 14px;"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="d-flex gap-2">
+                                                <a href="{{ route('outbound.detail', ['id' => $out->id]) }}"
+                                                    class="btn btn-info btn-sm">Detail</a>
+                                                @if ($out->status == 'outbound')
+                                                    <button
+                                                        onclick="confirmCancel('{{ route('outbound.cancel', ['id' => $out->id]) }}')"
+                                                        class="btn btn-danger btn-sm">Cancel</button>
+                                                @endif
+                                            </div>
+                                        </td>
+                                    </tr>
+                                @endforeach
                             </tbody>
                         </table>
                     </div>
@@ -162,7 +180,8 @@
                                 @if ($outbound->onFirstPage())
                                     <li class="disabled"><span>&laquo; Previous</span></li>
                                 @else
-                                    <li><a href="{{ $outbound->previousPageUrl() }}&per_page={{ request('per_page', 10) }}" rel="prev">&laquo; Previous</a></li>
+                                    <li><a href="{{ $outbound->previousPageUrl() }}&per_page={{ request('per_page', 10) }}"
+                                            rel="prev">&laquo; Previous</a></li>
                                 @endif
 
                                 @foreach ($outbound->links()->elements as $element)
@@ -175,14 +194,17 @@
                                             @if ($page == $outbound->currentPage())
                                                 <li class="active"><span>{{ $page }}</span></li>
                                             @else
-                                                <li><a href="{{ $url }}&per_page={{ request('per_page', 10) }}">{{ $page }}</a></li>
+                                                <li><a
+                                                        href="{{ $url }}&per_page={{ request('per_page', 10) }}">{{ $page }}</a>
+                                                </li>
                                             @endif
                                         @endforeach
                                     @endif
                                 @endforeach
 
                                 @if ($outbound->hasMorePages())
-                                    <li><a href="{{ $outbound->nextPageUrl() }}&per_page={{ request('per_page', 10) }}" rel="next">Next &raquo;</a></li>
+                                    <li><a href="{{ $outbound->nextPageUrl() }}&per_page={{ request('per_page', 10) }}"
+                                            rel="next">Next &raquo;</a></li>
                                 @else
                                     <li class="disabled"><span>Next &raquo;</span></li>
                                 @endif
@@ -194,4 +216,24 @@
             </div>
         </div>
     </div>
+@endsection
+
+@section('js')
+    <script>
+        function confirmCancel(url) {
+            Swal.fire({
+                title: 'Are you sure?',
+                text: "You won't be able to revert this!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Yes, cancel it!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = url;
+                }
+            })
+        }
+    </script>
 @endsection
