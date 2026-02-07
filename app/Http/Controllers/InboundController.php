@@ -80,6 +80,7 @@ class InboundController extends Controller
     {
         try {
             DB::beginTransaction();
+            Log::channel('inbound_po')->info('PO Upload Process Started', ['user_id' => Auth::id()]);
 
             // 1) Mapping & normalisasi DI AWAL
             $rows = collect($request->post('purchaseOrder', []))
@@ -191,6 +192,7 @@ class InboundController extends Controller
             return response()->json(['status' => true], 201);
         } catch (\Throwable $err) {
             DB::rollBack();
+            Log::channel('inbound_po')->error('PO Upload Process Failed: ' . $err->getMessage(), ['trace' => $err->getTraceAsString()]);
             Log::error($err->getMessage(), ['line' => $err->getLine(), 'trace' => $err->getTraceAsString()]);
             return response()->json(['status' => 'error'], 400);
         }
@@ -404,6 +406,7 @@ class InboundController extends Controller
     {
         try {
             DB::beginTransaction();
+            Log::channel('inbound_qc_process')->info('QC Store Process Started', ['po_id' => $request->post('purchaseOrderId'), 'user_id' => Auth::id()]);
 
             $purchaseOrder = PurchaseOrder::find($request->post('purchaseOrderId'));
 
@@ -605,6 +608,7 @@ class InboundController extends Controller
             ]);
         } catch (\Exception $err) {
             DB::rollBack();
+            Log::channel('inbound_qc_process')->error('QC Store Process Failed: ' . $err->getMessage());
             Log::error($err->getMessage());
             Log::error($err->getLine());
             return response()->json([
@@ -745,6 +749,7 @@ class InboundController extends Controller
     {
         try {
             DB::beginTransaction();
+            Log::channel('inbound_put_away_store')->info('Put Away Store Process Started', ['package_id' => $request->post('productPackageId'), 'user_id' => Auth::id()]);
 
             $listBox = $request->post('box');
             $putAwayNumber = 'PA-' . date('ymdHis') . rand(111, 999);
@@ -928,6 +933,7 @@ class InboundController extends Controller
             ]);
         } catch (\Exception $err) {
             DB::rollBack();
+            Log::channel('inbound_put_away_store')->error('Put Away Store Process Failed: ' . $err->getMessage());
             Log::error($err->getMessage());
             Log::error($err->getLine());
             return response()->json([
@@ -940,6 +946,7 @@ class InboundController extends Controller
     {
         try {
             DB::beginTransaction();
+            Log::channel('inbound_put_away_process')->info('Put Away Cancel Process Started', ['id' => $request->query('id'), 'user_id' => Auth::id()]);
 
             $id = $request->query('id');
             $productPackage = ProductPackage::find($id);
@@ -1029,6 +1036,7 @@ class InboundController extends Controller
             return back()->with('success', $msg);
         } catch (\Exception $e) {
             DB::rollBack();
+            Log::channel('inbound_put_away_process')->error('Put Away Cancel Process Failed: ' . $e->getMessage());
             Log::error($e->getMessage());
             return back()->with('error', 'Failed to cancel Put Away');
         }
@@ -1051,6 +1059,7 @@ class InboundController extends Controller
     {
         try {
             DB::beginTransaction();
+            Log::channel('inbound_qc_process')->info('QC CCW Store Process Started', ['po_id' => $request->post('purchaseOrderId'), 'user_id' => Auth::id()]);
 
             $fileName = $request->post('fileName');
             $path = storage_path('app/private/json_uploads/' . $fileName);
@@ -1279,6 +1288,7 @@ class InboundController extends Controller
             ]);
         } catch (\Exception $err) {
             DB::rollBack();
+            Log::channel('inbound_qc_process')->error('QC CCW Store Process Failed: ' . $err->getMessage());
             Log::error($err->getMessage());
             Log::error($err->getLine());
             return response()->json([
@@ -1338,6 +1348,7 @@ class InboundController extends Controller
     {
         try {
             DB::beginTransaction();
+            Log::channel('inbound_po')->info('PO Request Edit Started', ['user_id' => Auth::id()]);
 
             foreach ($request->post('editProducts') as $requestEdit) {
                 PurchaseOrderEditReq::create([
@@ -1356,6 +1367,7 @@ class InboundController extends Controller
             ]);
         } catch (\Exception $err) {
             DB::rollBack();
+            Log::channel('inbound_po')->error('PO Request Edit Failed: ' . $err->getMessage());
             Log::error($err->getMessage());
             Log::error($err->getLine());
             return response()->json([
@@ -1376,6 +1388,7 @@ class InboundController extends Controller
     {
         try {
             DB::beginTransaction();
+            Log::channel('inbound_po')->info('PO Edit Approved Started', ['id' => $request->get('id'), 'user_id' => Auth::id()]);
 
             PurchaseOrderEditReq::where('id', $request->get('id'))->update([
                 'status'        => 'approved',
@@ -1443,6 +1456,7 @@ class InboundController extends Controller
             ]);
         } catch (\Exception $err) {
             DB::rollBack();
+            Log::channel('inbound_po')->error('PO Edit Approved Failed: ' . $err->getMessage());
             Log::error($err->getMessage());
             Log::error($err->getLine());
             return response()->json([

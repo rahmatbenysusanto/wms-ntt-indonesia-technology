@@ -30,7 +30,7 @@ class InventoryController extends Controller
     public function index(Request $request): View
     {
         $inventory = InventoryDetail::with('purchaseOrderDetail', 'purchaseOrderDetail.purchaseOrder')
-            ->whereNotIn('storage_id', [1,2,3,4])
+            ->whereNotIn('storage_id', [1, 2, 3, 4])
             ->where('qty', '!=', 0)
             ->whereHas('purchaseOrderDetail', function ($query) use ($request) {
                 if ($request->query('material') != null) {
@@ -115,7 +115,7 @@ class InventoryController extends Controller
             ->where('purchase_order_detail.sales_doc', $salesDoc)
             ->where('inventory_package_item.product_id', $productId)
             ->where('inventory_package_item.qty', '!=', 0)
-            ->whereNotIn('storage.id', [1,2,3,4])
+            ->whereNotIn('storage.id', [1, 2, 3, 4])
             ->select([
                 'inventory_package.number',
                 'inventory_package.reff_number',
@@ -185,7 +185,7 @@ class InventoryController extends Controller
                 }
             })
             ->whereHas('storage', function ($storage) {
-                $storage->whereNotIn('id', [1,2,3,4]);
+                $storage->whereNotIn('id', [1, 2, 3, 4]);
             })
             ->when($request->query('sales_doc'), function ($q) use ($request) {
                 $q->where('sales_doc', $request->query('sales_doc'));
@@ -207,7 +207,7 @@ class InventoryController extends Controller
     public function box(Request $request): View
     {
         $box = InventoryPackage::with('purchaseOrder', 'user', 'storage')
-            ->whereNotIn('storage_id', [1,2,3,4])
+            ->whereNotIn('storage_id', [1, 2, 3, 4])
             ->where('qty', '!=', 0)
             ->whereHas('purchaseOrder', function ($purchaseOrder) use ($request) {
                 if ($request->query('purcDoc')) {
@@ -301,7 +301,7 @@ class InventoryController extends Controller
     public function cycleCountDownloadPDF(Request $request): \Illuminate\Http\Response
     {
         $cycleCount = InventoryHistory::with('purchaseOrder', 'purchaseOrderDetail', 'inventoryPackageItem.inventoryPackage', 'inventoryPackageItem.inventoryPackage.storage')
-            ->whereBetween('created_at', [$request->get('startDate').' 00:00:00', $request->get('endDate').' 23:59:59']);
+            ->whereBetween('created_at', [$request->get('startDate') . ' 00:00:00', $request->get('endDate') . ' 23:59:59']);
 
         if ($request->get('type') != 'all') {
             $cycleCount = $cycleCount->where('type', $request->get('type'));
@@ -323,7 +323,7 @@ class InventoryController extends Controller
         $sheet = $spreadsheet->getActiveSheet();
 
         $cycleCount = InventoryHistory::with('purchaseOrder', 'purchaseOrderDetail', 'inventoryPackageItem.inventoryPackage', 'inventoryPackageItem.inventoryPackage.storage')
-            ->whereBetween('created_at', [$request->get('startDate').' 00:00:00', $request->get('endDate').' 23:59:59']);
+            ->whereBetween('created_at', [$request->get('startDate') . ' 00:00:00', $request->get('endDate') . ' 23:59:59']);
 
         if ($request->get('type') != 'all') {
             $cycleCount = $cycleCount->where('type', $request->get('type'));
@@ -344,24 +344,24 @@ class InventoryController extends Controller
 
         $column = 2;
         foreach ($cycleCount as $item) {
-            $sheet->setCellValue('A'.$column, data_get($item, 'purchaseOrderDetail.purchaseOrder.purc_doc', ''));
-            $sheet->setCellValue('B'.$column, data_get($item, 'purchaseOrderDetail.sales_doc', ''));
-            $sheet->setCellValue('C'.$column, data_get($item, 'purchaseOrderDetail.material', ''));
-            $sheet->setCellValue('D'.$column, data_get($item, 'purchaseOrderDetail.po_item_desc', ''));
-            $sheet->setCellValue('E'.$column, data_get($item, 'purchaseOrderDetail.prod_hierarchy_desc', ''));
-            $sheet->setCellValue('F'.$column, (string) $item->qty);
+            $sheet->setCellValue('A' . $column, data_get($item, 'purchaseOrderDetail.purchaseOrder.purc_doc', ''));
+            $sheet->setCellValue('B' . $column, data_get($item, 'purchaseOrderDetail.sales_doc', ''));
+            $sheet->setCellValue('C' . $column, data_get($item, 'purchaseOrderDetail.material', ''));
+            $sheet->setCellValue('D' . $column, data_get($item, 'purchaseOrderDetail.po_item_desc', ''));
+            $sheet->setCellValue('E' . $column, data_get($item, 'purchaseOrderDetail.prod_hierarchy_desc', ''));
+            $sheet->setCellValue('F' . $column, (string) $item->qty);
 
-            if (in_array($item->inventoryPackageItem->inventoryPackage->storage->id, [2,3,4])) {
+            if (in_array($item->inventoryPackageItem->inventoryPackage->storage->id, [2, 3, 4])) {
                 $storage = $item->inventoryPackageItem->inventoryPackage->storage->raw;
             } else if ($item->inventoryPackageItem->inventoryPackage->storage->id == 1) {
                 $storage = 'Cross Docking';
             } else {
-                $storage = $item->inventoryPackageItem->inventoryPackage->storage->raw.' - '.$item->inventoryPackageItem->inventoryPackage->storage->area.' - '.$item->inventoryPackageItem->inventoryPackage->storage->rak.' - '.$item->inventoryPackageItem->inventoryPackage->storage->bin;
+                $storage = $item->inventoryPackageItem->inventoryPackage->storage->raw . ' - ' . $item->inventoryPackageItem->inventoryPackage->storage->area . ' - ' . $item->inventoryPackageItem->inventoryPackage->storage->rak . ' - ' . $item->inventoryPackageItem->inventoryPackage->storage->bin;
             }
 
-            $sheet->setCellValue('G'.$column, $storage);
-            $sheet->setCellValue('H'.$column, (string) $item->type);
-            $sheet->setCellValue('I'.$column, optional($item->created_at)->format('Y-m-d H:i:s') ?? '');
+            $sheet->setCellValue('G' . $column, $storage);
+            $sheet->setCellValue('H' . $column, (string) $item->type);
+            $sheet->setCellValue('I' . $column, optional($item->created_at)->format('Y-m-d H:i:s') ?? '');
 
             $serials = json_decode($item->serial_number ?: '[]', true) ?: [];
 
@@ -369,7 +369,7 @@ class InventoryController extends Controller
                 $column++;
             } else {
                 foreach ($serials as $sn) {
-                    $sheet->setCellValue('J'.$column, (string) $sn);
+                    $sheet->setCellValue('J' . $column, (string) $sn);
                     $column++;
                 }
             }
@@ -377,14 +377,14 @@ class InventoryController extends Controller
 
         $writer = new Xlsx($spreadsheet);
 
-        $response = new StreamedResponse(function() use ($writer) {
+        $response = new StreamedResponse(function () use ($writer) {
             $writer->save('php://output');
         });
 
         $fileName = 'Report Cycle Count ' . date('Y-m-d H:i:s') . '.xlsx';
         $response->headers->set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         $response->headers->set('Content-Disposition', "attachment;filename=\"$fileName\"");
-        $response->headers->set('Cache-Control','max-age=0');
+        $response->headers->set('Cache-Control', 'max-age=0');
 
         return $response;
     }
@@ -400,10 +400,10 @@ class InventoryController extends Controller
     public function transferLocationCreate(): View
     {
         $listBox = InventoryPackage::where('qty', '!=', 0)
-            ->whereNotIn('storage_id', [1,2,3,4])
+            ->whereNotIn('storage_id', [1, 2, 3, 4])
             ->get();
 
-        $storageRaw = Storage::whereNull('area')->whereNull('rak')->whereNull('bin')->whereNotIn('id', [1,2,3,4])->whereNull('deleted_at')->get();
+        $storageRaw = Storage::whereNull('area')->whereNull('rak')->whereNull('bin')->whereNotIn('id', [1, 2, 3, 4])->whereNull('deleted_at')->get();
 
         $title = 'Transfer Location';
         return view('inventory.transfer-location.create', compact('title', 'listBox', 'storageRaw'));
@@ -424,6 +424,7 @@ class InventoryController extends Controller
     {
         try {
             DB::beginTransaction();
+            Log::channel('inventory_transfer_location')->info('Transfer Location Started', ['user_id' => Auth::id()]);
 
             $inventoryPackage = InventoryPackage::where('number', $request->post('paNumber'))->first();
             $inventoryPackageItem = InventoryPackageItem::where('inventory_package_id', $inventoryPackage->id)->get();
@@ -453,6 +454,7 @@ class InventoryController extends Controller
             ]);
         } catch (\Exception $err) {
             DB::rollBack();
+            Log::channel('inventory_transfer_location')->error('Transfer Location Failed: ' . $err->getMessage());
             Log::error($err->getMessage());
             Log::error($err->getLine());
             return response()->json([
@@ -463,19 +465,28 @@ class InventoryController extends Controller
 
     public function changeTypeProduct(Request $request): \Illuminate\Http\JsonResponse
     {
-        InventoryPackageItem::where('id', $request->post('id'))->update([
-            'is_parent' => $request->post('isParent') == 1 ? 0 : 1,
-        ]);
+        try {
+            Log::channel('inventory_change_type')->info('Change Type Product Started', ['id' => $request->post('id'), 'user_id' => Auth::id()]);
+            InventoryPackageItem::where('id', $request->post('id'))->update([
+                'is_parent' => $request->post('isParent') == 1 ? 0 : 1,
+            ]);
+            Log::channel('inventory_change_type')->info('Change Type Product Success', ['id' => $request->post('id')]);
 
-        return response()->json([
-            'status'    => true,
-        ]);
+            return response()->json([
+                'status'    => true,
+            ]);
+        } catch (\Exception $e) {
+            Log::channel('inventory_change_type')->error('Change Type Product Failed: ' . $e->getMessage());
+            return response()->json([
+                'status'    => false,
+            ]);
+        }
     }
 
     public function changeNewBox(Request $request): View
     {
         $inventoryPackage = InventoryPackage::with('storage', 'purchaseOrder')->find($request->query('packageId'));
-        $listBox = InventoryPackage::whereNotIn('storage_id', [1,2,3,4])->whereNot('id', $request->query('packageId'))->get();
+        $listBox = InventoryPackage::whereNotIn('storage_id', [1, 2, 3, 4])->whereNot('id', $request->query('packageId'))->get();
         $products = DB::table('inventory_package_item')
             ->leftJoin('inventory_package_item_sn', 'inventory_package_item_sn.inventory_package_item_id', '=', 'inventory_package_item.id')
             ->leftJoin('purchase_order_detail', 'inventory_package_item.purchase_order_detail_id', '=', 'purchase_order_detail.id')
@@ -505,7 +516,7 @@ class InventoryController extends Controller
             ->where('area', null)
             ->where('rak', null)
             ->where('bin', null)
-            ->whereNotIn('id', [1,2,3,4])
+            ->whereNotIn('id', [1, 2, 3, 4])
             ->whereNull('deleted_at')
             ->get();
 
@@ -517,11 +528,12 @@ class InventoryController extends Controller
     {
         try {
             DB::beginTransaction();
+            Log::channel('inventory_change_box')->info('Change New Box Started', ['user_id' => Auth::id()]);
 
             $inventoryPackage = InventoryPackage::create([
                 'purchase_order_id' => $request->post('purchaseOrderId'),
                 'storage_id'        => $request->post('storageId'),
-                'number'            => 'PA-'.date('YmdHis').rand(100, 999),
+                'number'            => 'PA-' . date('YmdHis') . rand(100, 999),
                 'reff_number'       => $request->post('reffNumber'),
                 'qty_item'          => 0,
                 'qty'               => 0,
@@ -613,6 +625,7 @@ class InventoryController extends Controller
             ]);
         } catch (\Exception $err) {
             DB::rollBack();
+            Log::channel('inventory_change_box')->error('Change New Box Failed: ' . $err->getMessage());
             Log::error($err->getMessage());
             Log::error($err->getLine());
             return response()->json([
@@ -624,7 +637,7 @@ class InventoryController extends Controller
     public function changeBox(Request $request): View
     {
         $inventoryPackage = InventoryPackage::with('storage', 'purchaseOrder')->find($request->query('packageId'));
-        $listBox = InventoryPackage::whereNotIn('storage_id', [1,2,3,4])->whereNot('id', $request->query('packageId'))->get();
+        $listBox = InventoryPackage::whereNotIn('storage_id', [1, 2, 3, 4])->whereNot('id', $request->query('packageId'))->get();
         $products = DB::table('inventory_package_item')
             ->leftJoin('inventory_package_item_sn', 'inventory_package_item_sn.inventory_package_item_id', '=', 'inventory_package_item.id')
             ->leftJoin('purchase_order_detail', 'inventory_package_item.purchase_order_detail_id', '=', 'purchase_order_detail.id')
@@ -658,6 +671,7 @@ class InventoryController extends Controller
     {
         try {
             DB::beginTransaction();
+            Log::channel('inventory_change_box')->info('Change Box Started', ['user_id' => Auth::id()]);
 
             $inventoryPackage = InventoryPackage::find($request->post('newBox'));
 
@@ -766,6 +780,7 @@ class InventoryController extends Controller
             ]);
         } catch (\Exception $err) {
             DB::rollBack();
+            Log::channel('inventory_change_box')->error('Change Box Failed: ' . $err->getMessage());
             Log::error($err->getMessage());
             Log::error($err->getLine());
             return response()->json([
@@ -786,16 +801,16 @@ class InventoryController extends Controller
             ->where('inventory.type', 'inv')
             ->where('inventory_detail.qty', '!=', 0)
             ->when($request->query('purcDoc'), function ($query) use ($request) {
-                $query->where('purchase_order.purc_doc', 'LIKE', '%'.$request->query('purcDoc').'%');
+                $query->where('purchase_order.purc_doc', 'LIKE', '%' . $request->query('purcDoc') . '%');
             })
             ->when($request->query('salesDoc'), function ($query) use ($request) {
-                $query->where('purchase_order_detail.sales_doc', 'LIKE', '%'.$request->query('salesDoc').'%');
+                $query->where('purchase_order_detail.sales_doc', 'LIKE', '%' . $request->query('salesDoc') . '%');
             })
             ->when($request->query('material'), function ($query) use ($request) {
-                $query->where('purchase_order_detail.material', 'LIKE', '%'.$request->query('material').'%');
+                $query->where('purchase_order_detail.material', 'LIKE', '%' . $request->query('material') . '%');
             })
             ->when($request->query('customer'), function ($query) use ($request) {
-                $query->where('customer.name', 'LIKE', '%'.$request->query('customer').'%');
+                $query->where('customer.name', 'LIKE', '%' . $request->query('customer') . '%');
             })
             ->select([
                 'purchase_order.purc_doc',
@@ -844,7 +859,7 @@ class InventoryController extends Controller
         $inventoryPackageItem = InventoryPackageItem::with('inventoryPackage')
             ->whereIn('purchase_order_detail_id', $purchaseOrderDetailArray)
             ->whereHas('inventoryPackage', function ($query) {
-                $query->whereNotIn('storage_id', [1,2,3,4]);
+                $query->whereNotIn('storage_id', [1, 2, 3, 4]);
             })
             ->sum('qty');
 
@@ -865,7 +880,7 @@ class InventoryController extends Controller
             ->leftJoin('inventory_package_item', 'inventory_package_item.id', '=', 'outbound_detail.inventory_package_item_id')
             ->leftJoin('outbound_detail_sn', 'outbound_detail_sn.outbound_detail_id', '=', 'outbound_detail.id')
             ->where('outbound.type', 'outbound')
-            ->where('outbound.status','outbound')
+            ->where('outbound.status', 'outbound')
             ->where('inventory_package_item.purchase_order_detail_id', $purchaseOrderDetail->id)
             ->select([
                 'outbound_detail_sn.serial_number'
@@ -875,7 +890,7 @@ class InventoryController extends Controller
         $serialNumberStock = DB::table('inventory_package')
             ->leftJoin('inventory_package_item', 'inventory_package_item.inventory_package_id', '=', 'inventory_package.id')
             ->leftJoin('inventory_package_item_sn', 'inventory_package_item_sn.inventory_package_item_id', '=', 'inventory_package_item.id')
-            ->whereNotIn('inventory_package.storage_id', [1,2,3,4])
+            ->whereNotIn('inventory_package.storage_id', [1, 2, 3, 4])
             ->where('inventory_package_item.qty', '!=', 0)
             ->where('inventory_package_item_sn.qty', '!=', 0)
             ->whereIn('inventory_package_item.purchase_order_detail_id', $purchaseOrderDetailArray)
@@ -889,7 +904,7 @@ class InventoryController extends Controller
 
     public function boxMobile(): View
     {
-        $box = InventoryPackage::with('purchaseOrder', 'storage')->whereNotIn('storage_id', [1,2,3,4])->latest()->paginate(5);
+        $box = InventoryPackage::with('purchaseOrder', 'storage')->whereNotIn('storage_id', [1, 2, 3, 4])->latest()->paginate(5);
 
         return view('mobile.inventory.box', compact('box'));
     }
@@ -1037,7 +1052,6 @@ class InventoryController extends Controller
                     ->where('inventory_detail.aging_date', '<', $start)
                     ->leftJoin('customer', 'customer.id', '=', 'purchase_order.customer_id')
                     ->leftJoin('vendor', 'vendor.id', '=', 'purchase_order.vendor_id')
-                    ->whereBetween('inventory_detail.aging_date', [$start, $end])
                     ->where('inventory_detail.qty', '!=', 0)
                     ->select([
                         'purchase_order.purc_doc',
@@ -1229,7 +1243,7 @@ class InventoryController extends Controller
             ->leftJoin('purchase_order_detail', 'purchase_order_detail.id', '=', 'inventory_detail.purchase_order_detail_id')
             ->leftJoin('purchase_order', 'purchase_order.id', '=', 'purchase_order_detail.purchase_order_id')
             ->where('inventory_detail.qty', '!=', 0)
-            ->whereNotIn('inventory_detail.storage_id', [1,2,3,4])
+            ->whereNotIn('inventory_detail.storage_id', [1, 2, 3, 4])
             ->select([
                 'purchase_order.purc_doc',
                 'purchase_order_detail.id',
@@ -1289,14 +1303,14 @@ class InventoryController extends Controller
 
         $writer = new Xlsx($spreadsheet);
 
-        $response = new StreamedResponse(function() use ($writer) {
+        $response = new StreamedResponse(function () use ($writer) {
             $writer->save('php://output');
         });
 
         $fileName = 'Report Inventory ' . date('Y-m-d H:i:s') . '.xlsx';
         $response->headers->set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         $response->headers->set('Content-Disposition', "attachment;filename=\"$fileName\"");
-        $response->headers->set('Cache-Control','max-age=0');
+        $response->headers->set('Cache-Control', 'max-age=0');
 
         return $response;
     }
@@ -1319,7 +1333,7 @@ class InventoryController extends Controller
         $inventoryAging = InventoryDetail::with('purchaseOrderDetail.purchaseOrder', 'purchaseOrderDetail', 'storage', 'inventoryPackageItem', 'inventoryPackageItem.inventoryPackageItemSN', 'inventoryPackageItem.inventoryPackage')
             ->where('qty', '!=', 0)
             ->whereHas('storage', function ($storage) {
-                $storage->whereNotIn('id', [1,2,3,4]);
+                $storage->whereNotIn('id', [1, 2, 3, 4]);
             })
             ->whereHas('inventoryPackageItem.inventoryPackageItemSN', function ($inventoryPackageItemSn) {
                 $inventoryPackageItemSn->where('qty', '!=', 0);
@@ -1356,14 +1370,14 @@ class InventoryController extends Controller
 
         $writer = new Xlsx($spreadsheet);
 
-        $response = new StreamedResponse(function() use ($writer) {
+        $response = new StreamedResponse(function () use ($writer) {
             $writer->save('php://output');
         });
 
         $fileName = 'Report Aging ' . date('Y-m-d H:i:s') . '.xlsx';
         $response->headers->set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         $response->headers->set('Content-Disposition', "attachment;filename=\"$fileName\"");
-        $response->headers->set('Cache-Control','max-age=0');
+        $response->headers->set('Cache-Control', 'max-age=0');
 
         return $response;
     }
@@ -1373,7 +1387,7 @@ class InventoryController extends Controller
         $inventoryAging = InventoryDetail::with('purchaseOrderDetail.purchaseOrder', 'purchaseOrderDetail', 'storage', 'inventoryPackageItem', 'inventoryPackageItem.inventoryPackageItemSN', 'inventoryPackageItem.inventoryPackage')
             ->where('qty', '!=', 0)
             ->whereHas('storage', function ($storage) {
-                $storage->whereNotIn('id', [1,2,3,4]);
+                $storage->whereNotIn('id', [1, 2, 3, 4]);
             })
             ->withWhereHas('inventoryPackageItem.inventoryPackageItemSN', function ($q) {
                 $q->where('qty', '!=', 0);
@@ -1400,7 +1414,7 @@ class InventoryController extends Controller
         $sheet = $spreadsheet->getActiveSheet();
 
         $listBox = InventoryPackage::with('purchaseOrder', 'user', 'storage', 'inventoryPackageItem', 'inventoryPackageItem.inventoryPackageItemSN', 'inventoryPackageItem.purchaseOrderDetail')
-            ->whereNotIn('storage_id', [1,2,3,4])
+            ->whereNotIn('storage_id', [1, 2, 3, 4])
             ->where('qty', '!=', 0)
             ->withWhereHas('inventoryPackageItem.inventoryPackageItemSN', function ($q) {
                 $q->where('qty', '!=', 0);
@@ -1426,7 +1440,7 @@ class InventoryController extends Controller
                 if ($index == 0) {
                     $sheet->setCellValue('A' . $column, $detail->number);
                     $sheet->setCellValue('B' . $column, $detail->reff_number);
-                    $sheet->setCellValue('C' . $column, $detail->storage->raw.'-'.$detail->storage->area.'-'.$detail->storage->rak.'-'.$detail->storage->bin);
+                    $sheet->setCellValue('C' . $column, $detail->storage->raw . '-' . $detail->storage->area . '-' . $detail->storage->rak . '-' . $detail->storage->bin);
                     $sheet->setCellValue('D' . $column, $detail->purchaseOrder->purc_doc);
                     $sheet->setCellValue('E' . $column, $item->purchaseOrderDetail->sales_doc);
                     $sheet->setCellValue('F' . $column, $item->purchaseOrderDetail->item);
@@ -1454,14 +1468,14 @@ class InventoryController extends Controller
 
         $writer = new Xlsx($spreadsheet);
 
-        $response = new StreamedResponse(function() use ($writer) {
+        $response = new StreamedResponse(function () use ($writer) {
             $writer->save('php://output');
         });
 
         $fileName = 'Report Box Inventory ' . date('Y-m-d H:i:s') . '.xlsx';
         $response->headers->set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         $response->headers->set('Content-Disposition', "attachment;filename=\"$fileName\"");
-        $response->headers->set('Cache-Control','max-age=0');
+        $response->headers->set('Cache-Control', 'max-age=0');
 
         return $response;
     }
@@ -1469,7 +1483,7 @@ class InventoryController extends Controller
     public function downloadPdfBox(Request $request): \Illuminate\Http\Response
     {
         $listBox = InventoryPackage::with('purchaseOrder', 'user', 'storage', 'inventoryPackageItem', 'inventoryPackageItem.inventoryPackageItemSN', 'inventoryPackageItem.purchaseOrderDetail')
-            ->whereNotIn('storage_id', [1,2,3,4])
+            ->whereNotIn('storage_id', [1, 2, 3, 4])
             ->where('qty', '!=', 0)
             ->withWhereHas('inventoryPackageItem.inventoryPackageItemSN', function ($q) {
                 $q->where('qty', '!=', 0);
@@ -1490,7 +1504,7 @@ class InventoryController extends Controller
             ->leftJoin('purchase_order_detail', 'purchase_order_detail.id', '=', 'inventory_detail.purchase_order_detail_id')
             ->leftJoin('purchase_order', 'purchase_order.id', '=', 'purchase_order_detail.purchase_order_id')
             ->where('inventory_detail.qty', '!=', 0)
-            ->whereNotIn('inventory_detail.storage_id', [1,2,3,4])
+            ->whereNotIn('inventory_detail.storage_id', [1, 2, 3, 4])
             ->select([
                 'purchase_order.purc_doc',
                 'purchase_order_detail.id',

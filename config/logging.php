@@ -89,7 +89,7 @@ return [
             'handler_with' => [
                 'host' => env('PAPERTRAIL_URL'),
                 'port' => env('PAPERTRAIL_PORT'),
-                'connectionString' => 'tls://'.env('PAPERTRAIL_URL').':'.env('PAPERTRAIL_PORT'),
+                'connectionString' => 'tls://' . env('PAPERTRAIL_URL') . ':' . env('PAPERTRAIL_PORT'),
             ],
             'processors' => [PsrLogMessageProcessor::class],
         ],
@@ -125,6 +125,125 @@ return [
 
         'emergency' => [
             'path' => storage_path('logs/laravel.log'),
+        ],
+
+        'customer_inbound' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/customer_inbound/customer_inbound.log'),
+            'level' => 'debug',
+            'days' => 14,
+        ],
+
+        'vendor' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/vendor/vendor.log'),
+            'level' => 'debug',
+            'days' => 14,
+        ],
+
+        'warehouse' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/warehouse/warehouse.log'),
+            'level' => 'debug',
+            'days' => 14,
+        ],
+
+        'storage' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/storage/storage.log'),
+            'level' => 'debug',
+            'days' => 14,
+        ],
+
+        'inbound_po' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/inbound/po/po.log'),
+            'level' => 'debug',
+            'days' => 14,
+        ],
+
+        'inbound_qc_process' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/inbound/qc/qc.log'),
+            'level' => 'debug',
+            'days' => 14,
+        ],
+
+        'inbound_put_away_process' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/inbound/put_away/process.log'),
+            'level' => 'debug',
+            'days' => 14,
+        ],
+
+        'inbound_put_away_store' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/inbound/put_away/store.log'),
+            'level' => 'debug',
+            'days' => 14,
+        ],
+
+        'inventory_product' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/inventory/product.log'),
+            'level' => 'debug',
+            'days' => 14,
+        ],
+
+        'inventory_change_box' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/inventory/change_box.log'),
+            'level' => 'debug',
+            'days' => 14,
+        ],
+
+        'inventory_change_type' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/inventory/change_type.log'),
+            'level' => 'debug',
+            'days' => 14,
+        ],
+
+        'inventory_transfer_location' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/inventory/transfer_location.log'),
+            'level' => 'debug',
+            'days' => 14,
+        ],
+
+        'gr' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/gr/gr.log'),
+            'level' => 'debug',
+            'days' => 14,
+        ],
+
+        'pm' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/pm/pm.log'),
+            'level' => 'debug',
+            'days' => 14,
+        ],
+
+        'spare' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/spare/spare.log'),
+            'level' => 'debug',
+            'days' => 14,
+        ],
+
+        'outbound' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/outbound/outbound.log'),
+            'level' => 'debug',
+            'days' => 14,
+        ],
+
+        'user_management' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/user_management/user.log'),
+            'level' => 'debug',
+            'days' => 14,
         ],
 
     ],

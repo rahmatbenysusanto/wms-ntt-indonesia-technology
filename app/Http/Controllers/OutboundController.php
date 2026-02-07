@@ -234,6 +234,7 @@ class OutboundController extends Controller
     {
         try {
             DB::beginTransaction();
+            Log::channel('outbound')->info('Outbound Store Process Started', ['user_id' => Auth::id()]);
 
             $products = $request->post('products');
             $customer = Customer::find($request->post('customerId'));
@@ -420,6 +421,7 @@ class OutboundController extends Controller
             ]);
         } catch (\Exception $err) {
             DB::rollBack();
+            Log::channel('outbound')->error('Outbound Store Process Failed: ' . $err->getMessage());
             Log::error($err->getMessage());
             Log::error($err->getLine());
             return response()->json([
@@ -431,6 +433,7 @@ class OutboundController extends Controller
     {
         try {
             DB::beginTransaction();
+            Log::channel('outbound')->info('Outbound Cancel Process Started', ['id' => $request->query('id'), 'user_id' => Auth::id()]);
 
             $id = $request->query('id');
             $outbound = Outbound::find($id);
@@ -503,6 +506,7 @@ class OutboundController extends Controller
             return back()->with('success', 'Outbound Cancelled Successfully');
         } catch (\Exception $e) {
             DB::rollBack();
+            Log::channel('outbound')->error('Outbound Cancel Process Failed: ' . $e->getMessage());
             Log::error($e->getMessage());
             return back()->with('error', 'Failed to cancel Outbound');
         }
@@ -555,6 +559,7 @@ class OutboundController extends Controller
     {
         try {
             DB::beginTransaction();
+            Log::channel('outbound')->info('Outbound Return Process Started', ['user_id' => Auth::id()]);
 
             $products = $request->post('products');
 
@@ -663,6 +668,7 @@ class OutboundController extends Controller
             ]);
         } catch (\Exception $err) {
             DB::rollBack();
+            Log::channel('outbound')->error('Outbound Return Process Failed: ' . $err->getMessage());
             Log::error($err->getMessage());
             Log::error($err->getLine());
             return response()->json([
