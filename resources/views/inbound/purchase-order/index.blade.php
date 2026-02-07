@@ -21,7 +21,8 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <h4 class="card-title mb-0">List Purchase Order</h4>
                         <div class="d-flex gap-2">
-                            <a href="{{ route('inbound.edit-purchase-order') }}" class="btn btn-warning">Edit Purchase Order</a>
+                            <a href="{{ route('inbound.edit-purchase-order') }}" class="btn btn-warning">Edit Purchase
+                                Order</a>
                             <a href="{{ route('inbound.purchase-order-upload') }}" class="btn btn-info">Upload PO Excel</a>
                         </div>
                     </div>
@@ -31,14 +32,17 @@
                         <div class="row">
                             <div class="col-2">
                                 <label class="form-label">Purc Doc</label>
-                                <input type="text" class="form-control" value="{{ request()->get('purcDoc', null) }}" name="purcDoc" placeholder="Purc Doc ...">
+                                <input type="text" class="form-control" value="{{ request()->get('purcDoc', null) }}"
+                                    name="purcDoc" placeholder="Purc Doc ...">
                             </div>
                             <div class="col-2">
                                 <label class="form-label">Vendor</label>
                                 <select class="form-control select2Vendor" name="vendor">
                                     <option value="">-- Select Vendor --</option>
-                                    @foreach($vendor as $item)
-                                        <option value="{{ $item->id }}" {{ request()->get('vendor') == $item->id ? 'selected' : '' }}>{{ $item->name }}</option>
+                                    @foreach ($vendor as $item)
+                                        <option value="{{ $item->id }}"
+                                            {{ request()->get('vendor') == $item->id ? 'selected' : '' }}>
+                                            {{ $item->name }}</option>
                                     @endforeach
                                 </select>
                             </div>
@@ -46,14 +50,17 @@
                                 <label class="form-label">Customer</label>
                                 <select class="form-control select2Customer" name="customer">
                                     <option value="">-- Select Customer --</option>
-                                    @foreach($customer as $item)
-                                        <option value="{{ $item->id }}" {{ request()->get('customer') == $item->id ? 'selected' : '' }}>{{ $item->name }}</option>
+                                    @foreach ($customer as $item)
+                                        <option value="{{ $item->id }}"
+                                            {{ request()->get('customer') == $item->id ? 'selected' : '' }}>
+                                            {{ $item->name }}</option>
                                     @endforeach
                                 </select>
                             </div>
                             <div class="col-2">
                                 <label class="form-label">Created Date</label>
-                                <input type="date" class="form-control" value="{{ request()->get('date', null) }}" name="date">
+                                <input type="date" class="form-control" value="{{ request()->get('date', null) }}"
+                                    name="date">
                             </div>
                             <div class="col-2">
                                 <label class="form-label text-white">-</label>
@@ -85,56 +92,77 @@
                                 </tr>
                             </thead>
                             <tbody>
-                            @foreach($purchaseOrder as $index => $po)
-                                <tr>
-                                    <td>{{ $purchaseOrder->firstItem() + $index }}</td>
-                                    <td><a href="{{ route('inbound.purchase-order-detail', ['id' => $po->id]) }}">{{ $po->purc_doc }}</a></td>
-                                    <td>{{ $po->vendor->name }}</td>
-                                    <td>{{ $po->customer->name }}</td>
-                                    <td class="text-center">{{ number_format($po->sales_doc_qty) }}</td>
-                                    <td class="text-center">{{ number_format($po->material_qty) }}</td>
-                                    <td class="text-center">{{ number_format($po->item_qty) }}</td>
-                                    <td class="text-center">
-                                        @switch($po->status)
-                                            @case('new')
-                                                <span class="badge bg-success-subtle text-success">New</span>
+                                @foreach ($purchaseOrder as $index => $po)
+                                    <tr>
+                                        <td>{{ $purchaseOrder->firstItem() + $index }}</td>
+                                        <td><a
+                                                href="{{ route('inbound.purchase-order-detail', ['id' => $po->id]) }}">{{ $po->purc_doc }}</a>
+                                        </td>
+                                        <td>{{ $po->vendor->name }}</td>
+                                        <td>{{ $po->customer->name }}</td>
+                                        <td class="text-center">{{ number_format($po->sales_doc_qty) }}</td>
+                                        <td class="text-center">{{ number_format($po->material_qty) }}</td>
+                                        <td class="text-center fw-bold">
+                                            {{ number_format($po->item_qty) }}
+                                            <br>
+                                            <small class="text-success">(QC: {{ number_format($po->total_qc) }})</small>
+                                            <br>
+                                            <small class="text-primary">(PA: {{ number_format($po->total_pa) }})</small>
+                                            <br>
+                                            <small class="text-danger">(Sisa QC:
+                                                {{ number_format($po->item_qty - $po->total_qc) }})</small>
+                                        </td>
+                                        <td class="text-center">
+                                            @switch($po->status)
+                                                @case('new')
+                                                    <span class="badge bg-success-subtle text-success">New</span>
                                                 @break
-                                            @case('open')
-                                                <span class="badge bg-info-subtle text-info">Open</span>
+
+                                                @case('open')
+                                                    <span class="badge bg-info-subtle text-info">Open</span>
                                                 @break
-                                            @case('process')
-                                                <span class="badge bg-primary-subtle text-primary">In Process</span>
+
+                                                @case('process')
+                                                    <span class="badge bg-primary-subtle text-primary">In Process</span>
                                                 @break
-                                            @case('done')
-                                                <span class="badge bg-secondary-subtle text-secondary">Done</span>
+
+                                                @case('done')
+                                                    <span class="badge bg-secondary-subtle text-secondary">Done</span>
                                                 @break
-                                            @case('cancel')
-                                                <span class="badge bg-danger-subtle text-danger">Cancel</span>
+
+                                                @case('cancel')
+                                                    <span class="badge bg-danger-subtle text-danger">Cancel</span>
                                                 @break
-                                        @endswitch
-                                    </td>
-                                    <td>{{ \Carbon\Carbon::parse($po->created_at)->translatedFormat('d F Y H:i') }}</td>
-                                    <td>{{ $po->user->name }}</td>
-                                    <td class="text-center">
-                                        <div class="d-flex gap-2 justify-content-center">
-                                            <a href="{{ route('inbound.purchase-order-download-excel', ['id' => $po->id]) }}" class="btn btn-success btn-sm">
-                                                <i class="mdi mdi-file-excel" style="font-size: 14px;"></i>
-                                            </a>
-                                            <a href="{{ route('inbound.purchase-order-download-pdf', ['id' => $po->id]) }}" class="btn btn-pdf btn-sm text-white" target="_blank">
-                                                <i class="mdi mdi-file-pdf-box" style="font-size: 14px;"></i>
-                                            </a>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div class="d-flex gap-2">
-                                            @if($po->status == 'new')
-                                                <a class="btn btn-info btn-sm" onclick="approvedPurchaseOrder('{{ $po->id }}')">Approved PO</a>
-                                                <a class="btn btn-danger btn-sm" onclick="cancelPurchaseOrder('{{ $po->id }}')">Cancel PO</a>
-                                            @endif
-                                        </div>
-                                    </td>
-                                </tr>
-                            @endforeach
+                                            @endswitch
+                                        </td>
+                                        <td>{{ \Carbon\Carbon::parse($po->created_at)->translatedFormat('d F Y H:i') }}
+                                        </td>
+                                        <td>{{ $po->user->name }}</td>
+                                        <td class="text-center">
+                                            <div class="d-flex gap-2 justify-content-center">
+                                                <a href="{{ route('inbound.purchase-order-download-excel', ['id' => $po->id]) }}"
+                                                    class="btn btn-success btn-sm">
+                                                    <i class="mdi mdi-file-excel" style="font-size: 14px;"></i>
+                                                </a>
+                                                <a href="{{ route('inbound.purchase-order-download-pdf', ['id' => $po->id]) }}"
+                                                    class="btn btn-pdf btn-sm text-white" target="_blank">
+                                                    <i class="mdi mdi-file-pdf-box" style="font-size: 14px;"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="d-flex gap-2">
+                                                @if ($po->status == 'new')
+                                                    <a class="btn btn-info btn-sm"
+                                                        onclick="approvedPurchaseOrder('{{ $po->id }}')">Approved
+                                                        PO</a>
+                                                    <a class="btn btn-danger btn-sm"
+                                                        onclick="cancelPurchaseOrder('{{ $po->id }}')">Cancel PO</a>
+                                                @endif
+                                            </div>
+                                        </td>
+                                    </tr>
+                                @endforeach
                             </tbody>
                         </table>
                         <div class="d-flex justify-content-end mt-2">
@@ -143,7 +171,8 @@
                                     @if ($purchaseOrder->onFirstPage())
                                         <li class="disabled"><span>&laquo; Previous</span></li>
                                     @else
-                                        <li><a href="{{ $purchaseOrder->previousPageUrl() }}&per_page={{ request('per_page', 10) }}" rel="prev">&laquo; Previous</a></li>
+                                        <li><a href="{{ $purchaseOrder->previousPageUrl() }}&per_page={{ request('per_page', 10) }}"
+                                                rel="prev">&laquo; Previous</a></li>
                                     @endif
 
                                     @foreach ($purchaseOrder->links()->elements as $element)
@@ -156,14 +185,17 @@
                                                 @if ($page == $purchaseOrder->currentPage())
                                                     <li class="active"><span>{{ $page }}</span></li>
                                                 @else
-                                                    <li><a href="{{ $url }}&per_page={{ request('per_page', 10) }}">{{ $page }}</a></li>
+                                                    <li><a
+                                                            href="{{ $url }}&per_page={{ request('per_page', 10) }}">{{ $page }}</a>
+                                                    </li>
                                                 @endif
                                             @endforeach
                                         @endif
                                     @endforeach
 
                                     @if ($purchaseOrder->hasMorePages())
-                                        <li><a href="{{ $purchaseOrder->nextPageUrl() }}&per_page={{ request('per_page', 10) }}" rel="next">Next &raquo;</a></li>
+                                        <li><a href="{{ $purchaseOrder->nextPageUrl() }}&per_page={{ request('per_page', 10) }}"
+                                                rel="next">Next &raquo;</a></li>
                                     @else
                                         <li class="disabled"><span>Next &raquo;</span></li>
                                     @endif
@@ -199,7 +231,7 @@
                     $.ajax({
                         url: '{{ route('inbound.changeStatusPurchaseOrder') }}',
                         method: 'POST',
-                        data:{
+                        data: {
                             _token: '{{ csrf_token() }}',
                             type: 'approved',
                             id: id
@@ -243,7 +275,7 @@
                     $.ajax({
                         url: '{{ route('inbound.changeStatusPurchaseOrder') }}',
                         method: 'POST',
-                        data:{
+                        data: {
                             _token: '{{ csrf_token() }}',
                             type: 'cancel',
                             id: id

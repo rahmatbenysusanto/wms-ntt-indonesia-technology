@@ -60,6 +60,11 @@ class InboundController extends Controller
 
         $purchaseOrder = $purchaseOrder->latest()->paginate(10);
 
+        foreach ($purchaseOrder as $po) {
+            $po->total_qc = PurchaseOrderDetail::where('purchase_order_id', $po->id)->sum('qty_qc');
+            $po->total_pa = InventoryHistory::where('purchase_order_id', $po->id)->where('type', 'inbound')->sum('qty');
+        }
+
         $vendor = Vendor::all();
         $customer = Customer::all();
 
@@ -336,6 +341,10 @@ class InboundController extends Controller
             ->whereIn('status', ['open', 'process'])
             ->paginate(10);
 
+        foreach ($purchaseOrder as $po) {
+            $po->total_qc = PurchaseOrderDetail::where('purchase_order_id', $po->id)->sum('qty_qc');
+        }
+
         $vendor = Vendor::all();
         $customer = Customer::all();
 
@@ -360,6 +369,10 @@ class InboundController extends Controller
             $doc->item_qty = PurchaseOrderDetail::where('purchase_order_id', $request->query('id'))
                 ->where('sales_doc', $doc->sales_doc)
                 ->sum('po_item_qty');
+
+            $doc->qc_qty = PurchaseOrderDetail::where('purchase_order_id', $request->query('id'))
+                ->where('sales_doc', $doc->sales_doc)
+                ->sum('qty_qc');
 
             $status = PurchaseOrderDetail::where('purchase_order_id', $request->query('id'))
                 ->where('sales_doc', $doc->sales_doc)
