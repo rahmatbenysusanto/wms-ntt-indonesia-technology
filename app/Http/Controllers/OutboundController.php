@@ -242,6 +242,11 @@ class OutboundController extends Controller
             $qty = 0;
             $salesDocs = [];
 
+            $deliveryNoteNumber = $request->post('deliveryNoteNumber');
+            if (empty($deliveryNoteNumber)) {
+                $deliveryNoteNumber = $this->generateDeliveryNoteNumber();
+            }
+
             $outbound = Outbound::create([
                 'customer_id'   => $customer->id,
                 'purc_doc'      => $products[0]['purcDoc'],
@@ -255,7 +260,7 @@ class OutboundController extends Controller
                 'deliv_loc'     => $request->post('delivLocation'),
                 'deliv_dest'    => $request->post('deliveryDest'),
                 'delivery_date' => $request->post('deliveryDate'),
-                'delivery_note_number' => $request->post('deliveryNoteNumber'),
+                'delivery_note_number' => $deliveryNoteNumber,
                 'created_by'    => Auth::id()
             ]);
 
@@ -566,6 +571,11 @@ class OutboundController extends Controller
             $returnOutbound = Outbound::find($products[0]['outboundId']);
             $purchaseOrder = PurchaseOrder::where('purc_doc', $returnOutbound->purc_doc)->first();
 
+            $deliveryNoteNumber = $request->post('reffNumber');
+            if (empty($deliveryNoteNumber)) {
+                $deliveryNoteNumber = $this->generateDeliveryNoteNumber();
+            }
+
             $outbound = Outbound::create([
                 'customer_id'   => $returnOutbound->customer_id,
                 'purc_doc'      => $returnOutbound->purc_doc,
@@ -580,7 +590,7 @@ class OutboundController extends Controller
                 'deliv_dest'    => '-',
                 'note'          => $request->post('note'),
                 'delivery_date' => $request->post('outboundDate') ?? date('Y-m-d H:i:s'),
-                'delivery_note_number' => $request->post('reffNumber') ?? null,
+                'delivery_note_number' => $deliveryNoteNumber,
                 'created_by'    => Auth::id(),
             ]);
 
@@ -868,4 +878,38 @@ class OutboundController extends Controller
     }
 
     public function reportDownloadExcel(Request $request) {}
+
+    private function generateDeliveryNoteNumber()
+    {
+        $now = Carbon::now();
+        $monthShort = strtoupper($now->format('M'));
+        $romanMonth = $this->getRomanMonth($now->month);
+        $year = $now->year;
+
+        // Find the count of outbounds in the current month with this pattern
+        $pattern = "%-TKS-WMS-{$monthShort}-{$romanMonth}-{$year}";
+        $count = Outbound::where('delivery_note_number', 'like', $pattern)->count();
+        $nextNumber = $count + 1;
+
+        return str_pad($nextNumber, 3, '0', STR_PAD_LEFT) . "-TKS-WMS-{$monthShort}-{$romanMonth}-{$year}";
+    }
+
+    private function getRomanMonth($month)
+    {
+        $romans = [
+            1 => 'I',
+            2 => 'II',
+            3 => 'III',
+            4 => 'IV',
+            5 => 'V',
+            6 => 'VI',
+            7 => 'VII',
+            8 => 'VIII',
+            9 => 'IX',
+            10 => 'X',
+            11 => 'XI',
+            12 => 'XII'
+        ];
+        return $romans[$month] ?? $month;
+    }
 }
