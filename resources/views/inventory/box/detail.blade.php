@@ -21,8 +21,10 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <h4 class="card-title mb-0">List Item</h4>
                         <div class="d-flex gap-2">
-                            <a href="{{ route('inventory.change.new-box', ['packageId' => $products[0]->id]) }}" class="btn btn-primary btn-sm">Change to new box</a>
-                            <a href="{{ route('inventory.change.box', ['packageId' => $products[0]->id]) }}" class="btn btn-info btn-sm">Change to other box</a>
+                            <a href="{{ route('inventory.change.new-box', ['packageId' => $products[0]->id]) }}"
+                                class="btn btn-primary btn-sm">Change to new box</a>
+                            <a href="{{ route('inventory.change.box', ['packageId' => $products[0]->id]) }}"
+                                class="btn btn-info btn-sm">Change to other box</a>
                         </div>
                     </div>
                 </div>
@@ -30,62 +32,73 @@
                     <div class="table-responsive">
                         <table class="table table-striped align-middle">
                             <thead>
-                            <tr>
-                                <th>Box</th>
-                                <th class="text-center">Item</th>
-                                <th>Sales Doc</th>
-                                <th class="text-center">Type</th>
-                                <th>Material</th>
-                                <th>Po Item Desc</th>
-                                <th>Prod Hierarchy Desc</th>
-                                <th class="text-center">QTY</th>
-                                <th class="text-center">Serial Number</th>
-                                <th class="text-center">Barcode</th>
-                                <th>Storage</th>
-                                <th>Action</th>
-                            </tr>
+                                <tr>
+                                    <th>Client</th>
+                                    <th>Box</th>
+                                    <th class="text-center">Item</th>
+                                    <th>Sales Doc</th>
+                                    <th class="text-center">Type</th>
+                                    <th>Material</th>
+                                    <th>Po Item Desc</th>
+                                    <th>Prod Hierarchy Desc</th>
+                                    <th class="text-center">QTY</th>
+                                    <th class="text-center">Serial Number</th>
+                                    <th class="text-center">Barcode</th>
+                                    <th>Storage</th>
+                                    <th>Action</th>
+                                </tr>
                             </thead>
                             <tbody>
-                            @foreach($products as $index => $product)
-                                @foreach($product->inventoryPackageItem as $item)
-                                    @if($item->qty != 0)
-                                        @if(!in_array($product->storage->id, [1,2,3,4]))
-                                            <tr>
-                                                <td>{{ $loop->iteration == 1 ? $product->reff_number : '' }}</td>
-                                                <td>{{ $item->purchaseOrderDetail->item }}</td>
-                                                <td>{{ $item->purchaseOrderDetail->sales_doc }}</td>
-                                                <td class="text-center">
-                                                    @if($item->is_parent == 1)
-                                                        <span class="badge bg-danger-subtle text-danger">Parent</span>
-                                                    @else
-                                                        <span class="badge bg-secondary-subtle text-secondary">Child</span>
-                                                    @endif
-                                                </td>
-                                                <td>{{ $item->purchaseOrderDetail->material }}</td>
-                                                <td>{{ $item->purchaseOrderDetail->po_item_desc }}</td>
-                                                <td>{{ $item->purchaseOrderDetail->prod_hierarchy_desc }}</td>
-                                                <td class="text-center fw-bold">{{ $item->qty }}</td>
-                                                <td class="text-center"><a class="btn btn-info btn-sm" onclick="detailSerialNumber('{{ $item->id }}')">Serial Number</a></td>
-                                                <td class="text-center">
-                                                    @if($loop->iteration == 1)
-                                                        <a class="btn btn-secondary btn-sm" onclick="showBarcodeModal('{{ $index }}')">Download Barcode</a>
-                                                    @endif
-                                                </td>
-                                                <td>
-                                                    @if($loop->iteration == 1)
-                                                        {{ $product->storage->raw }} - {{ $product->storage->area }} - {{ $product->storage->rak }} - {{ $product->storage->bin }}
-                                                    @endif
-                                                </td>
-                                                <td>
-                                                    <div class="d-flex gap-2">
-                                                        <a class="btn btn-secondary btn-sm" onclick="changeType('{{ $item->id }}', '{{ $item->is_parent }}')">Change Type</a>
-                                                    </div>
-                                                </td>
-                                            </tr>
+                                @foreach ($products as $index => $product)
+                                    @foreach ($product->inventoryPackageItem as $item)
+                                        @if ($item->qty != 0)
+                                            @if (!in_array($product->storage->id, [1, 2, 3, 4]))
+                                                <tr>
+                                                    <td>{{ $loop->iteration == 1 ? $product->purchaseOrder->customer->name ?? '-' : '' }}
+                                                    </td>
+                                                    <td>{{ $loop->iteration == 1 ? $product->reff_number : '' }}</td>
+                                                    <td>{{ $item->purchaseOrderDetail->item }}</td>
+                                                    <td>{{ $item->purchaseOrderDetail->sales_doc }}</td>
+                                                    <td class="text-center">
+                                                        @if ($item->is_parent == 1)
+                                                            <span class="badge bg-danger-subtle text-danger">Parent</span>
+                                                        @else
+                                                            <span
+                                                                class="badge bg-secondary-subtle text-secondary">Child</span>
+                                                        @endif
+                                                    </td>
+                                                    <td>{{ $item->purchaseOrderDetail->material }}</td>
+                                                    <td>{{ $item->purchaseOrderDetail->po_item_desc }}</td>
+                                                    <td>{{ $item->purchaseOrderDetail->prod_hierarchy_desc }}</td>
+                                                    <td class="text-center fw-bold">{{ $item->qty }}</td>
+                                                    <td class="text-center"><a class="btn btn-info btn-sm"
+                                                            onclick="detailSerialNumber('{{ $item->id }}')">Serial
+                                                            Number</a></td>
+                                                    <td class="text-center">
+                                                        @if ($loop->iteration == 1)
+                                                            <a class="btn btn-secondary btn-sm"
+                                                                onclick="showBarcodeModal('{{ $index }}')">Download
+                                                                Barcode</a>
+                                                        @endif
+                                                    </td>
+                                                    <td>
+                                                        @if ($loop->iteration == 1)
+                                                            {{ $product->storage->raw }} - {{ $product->storage->area }} -
+                                                            {{ $product->storage->rak }} - {{ $product->storage->bin }}
+                                                        @endif
+                                                    </td>
+                                                    <td>
+                                                        <div class="d-flex gap-2">
+                                                            <a class="btn btn-secondary btn-sm"
+                                                                onclick="changeType('{{ $item->id }}', '{{ $item->is_parent }}')">Change
+                                                                Type</a>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            @endif
                                         @endif
-                                    @endif
+                                    @endforeach
                                 @endforeach
-                            @endforeach
                             </tbody>
                         </table>
                     </div>
@@ -127,7 +140,8 @@
     </div>
 
     <!-- Default Modals -->
-    <div id="detailSNModal" class="modal fade" tabindex="-1" aria-labelledby="myModalLabel" aria-hidden="true" style="display: none;">
+    <div id="detailSNModal" class="modal fade" tabindex="-1" aria-labelledby="myModalLabel" aria-hidden="true"
+        style="display: none;">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
@@ -137,11 +151,11 @@
                 <div class="modal-body">
                     <table class="table table-striped">
                         <thead>
-                        <tr>
-                            <th>Serial Number</th>
-                            <th class="text-center">QTY</th>
-                            <th class="text-center">Status</th>
-                        </tr>
+                            <tr>
+                                <th>Serial Number</th>
+                                <th class="text-center">QTY</th>
+                                <th class="text-center">Status</th>
+                            </tr>
                         </thead>
                         <tbody id="listSerialNumber"></tbody>
                     </table>
@@ -161,7 +175,8 @@
 
     <script>
         let currentBarcodeId = '';
-        let locationText = '{{ $products[0]->storage->raw.' - '.$products[0]->storage->area.' - '.$products[0]->storage->rak.' - '.$products[0]->storage->bin }}';
+        let locationText =
+            '{{ $products[0]->storage->raw . ' - ' . $products[0]->storage->area . ' - ' . $products[0]->storage->rak . ' - ' . $products[0]->storage->bin }}';
         let boxName = '';
         let purcDoc = '';
         let salesDoc = '';
@@ -170,17 +185,33 @@
         function getSize(scale) {
             const cmToPx = cm => cm * 37.8;
             switch (scale) {
-                case 'small': return { width: cmToPx(7), height: cmToPx(7), fontSize: 12 };
-                case 'medium': return { width: cmToPx(8), height: cmToPx(8), fontSize: 13 };
-                case 'large': return { width: cmToPx(9), height: cmToPx(9), fontSize: 14 };
-                case 'xlarge': return { width: cmToPx(10), height: cmToPx(10), fontSize: 15 };
-                default: return { width: cmToPx(7), height: cmToPx(7), fontSize: 12 };
+                case 'small':
+                    return {
+                        width: cmToPx(7), height: cmToPx(7), fontSize: 12
+                    };
+                case 'medium':
+                    return {
+                        width: cmToPx(8), height: cmToPx(8), fontSize: 13
+                    };
+                case 'large':
+                    return {
+                        width: cmToPx(9), height: cmToPx(9), fontSize: 14
+                    };
+                case 'xlarge':
+                    return {
+                        width: cmToPx(10), height: cmToPx(10), fontSize: 15
+                    };
+                default:
+                    return {
+                        width: cmToPx(7), height: cmToPx(7), fontSize: 12
+                    };
             }
         }
 
         function showBarcodeModal(index) {
             currentBarcodeId = '';
-            locationText = '{{ $products[0]->storage->raw.' - '.$products[0]->storage->area.' - '.$products[0]->storage->rak.' - '.$products[0]->storage->bin }}';
+            locationText =
+                '{{ $products[0]->storage->raw . ' - ' . $products[0]->storage->area . ' - ' . $products[0]->storage->rak . ' - ' . $products[0]->storage->bin }}';
             boxName = '';
             purcDoc = '';
             salesDoc = '';
@@ -196,7 +227,7 @@
 
             const salesDocs = JSON.parse(find.sales_docs);
             salesDocs.forEach((item) => {
-                salesDoc += item+', ';
+                salesDoc += item + ', ';
             });
 
             updateBarcodePreview();
@@ -208,7 +239,11 @@
             area.innerHTML = '';
 
             const scale = document.getElementById('sizeSelector').value;
-            const { width, height, fontSize } = getSize(scale);
+            const {
+                width,
+                height,
+                fontSize
+            } = getSize(scale);
 
             const container = document.createElement('div');
             Object.assign(container.style, {
@@ -274,8 +309,17 @@
             container.appendChild(table);
             area.appendChild(container);
 
-            const qrSize = { small: 100, medium: 120, large: 140, xlarge: 180 }[scale] || 100;
-            new QRCode(qrDiv, { text: currentBarcodeId, width: qrSize, height: qrSize });
+            const qrSize = {
+                small: 100,
+                medium: 120,
+                large: 140,
+                xlarge: 180
+            } [scale] || 100;
+            new QRCode(qrDiv, {
+                text: currentBarcodeId,
+                width: qrSize,
+                height: qrSize
+            });
         }
 
         function printBarcode() {
@@ -352,24 +396,24 @@
             }).then(function(t) {
                 if (t.value) {
 
-                $.ajax({
-                    url: '{{ route('inventory.change.type.product') }}',
-                    method: 'POST',
-                    data: {
-                        _token: '{{ csrf_token() }}',
-                        id: id,
-                        isParent: isParent
-                    },
-                    success: (res) => {
-                        Swal.fire({
-                            title: 'Success!',
-                            text: 'Change Type Product Success',
-                            icon: 'success'
-                        }).then((i) => {
-                            window.location.reload();
-                        });
-                    }
-                });
+                    $.ajax({
+                        url: '{{ route('inventory.change.type.product') }}',
+                        method: 'POST',
+                        data: {
+                            _token: '{{ csrf_token() }}',
+                            id: id,
+                            isParent: isParent
+                        },
+                        success: (res) => {
+                            Swal.fire({
+                                title: 'Success!',
+                                text: 'Change Type Product Success',
+                                icon: 'success'
+                            }).then((i) => {
+                                window.location.reload();
+                            });
+                        }
+                    });
 
                 }
             });

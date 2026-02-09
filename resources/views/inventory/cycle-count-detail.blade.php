@@ -25,6 +25,11 @@
                         <div class="col-4">
                             <table>
                                 <tr>
+                                    <td class="fw-bold">Client</td>
+                                    <td class="fw-bold ps-3">:</td>
+                                    <td class="ps-1">{{ $cycleCount->purchaseOrder->customer->name ?? '-' }}</td>
+                                </tr>
+                                <tr>
                                     <td class="fw-bold">Purc Doc</td>
                                     <td class="fw-bold ps-3">:</td>
                                     <td class="ps-1">{{ $cycleCount->purchaseOrder->purc_doc }}</td>
@@ -67,12 +72,14 @@
                                     <td class="fw-bold">Storage Loc</td>
                                     <td class="fw-bold ps-3">:</td>
                                     <td class="ps-1">
-                                        @if(in_array($cycleCount->inventoryPackageItem->inventoryPackage->storage->id, [2,3,4]))
+                                        @if (in_array($cycleCount->inventoryPackageItem->inventoryPackage->storage->id, [2, 3, 4]))
                                             <b>{{ $cycleCount->inventoryPackageItem->inventoryPackage->storage->raw }}</b>
                                         @else
                                             <b>{{ $cycleCount->inventoryPackageItem->inventoryPackage->storage->raw }}</b> -
-                                            <b>{{ $cycleCount->inventoryPackageItem->inventoryPackage->storage->area }}</b> -
-                                            <b>{{ $cycleCount->inventoryPackageItem->inventoryPackage->storage->rak }}</b> -
+                                            <b>{{ $cycleCount->inventoryPackageItem->inventoryPackage->storage->area }}</b>
+                                            -
+                                            <b>{{ $cycleCount->inventoryPackageItem->inventoryPackage->storage->rak }}</b>
+                                            -
                                             <b>{{ $cycleCount->inventoryPackageItem->inventoryPackage->storage->bin }}</b>
                                         @endif
                                     </td>
@@ -81,7 +88,7 @@
                                     <td class="fw-bold">Type</td>
                                     <td class="fw-bold ps-3">:</td>
                                     <td class="ps-1">
-                                        @if($cycleCount->type == 'outbound')
+                                        @if ($cycleCount->type == 'outbound')
                                             <span class="badge bg-danger-subtle text-danger">Outbound</span>
                                         @else
                                             <span class="badge bg-success-subtle text-success">Inbound</span>
@@ -96,12 +103,14 @@
                                 <tr>
                                     <td class="fw-bold">Created At</td>
                                     <td class="fw-bold ps-3">:</td>
-                                    <td class="ps-1">{{ \Carbon\Carbon::parse($cycleCount->created_at)->translatedFormat('d F Y H:i') }}</td>
+                                    <td class="ps-1">
+                                        {{ \Carbon\Carbon::parse($cycleCount->created_at)->translatedFormat('d F Y H:i') }}
+                                    </td>
                                 </tr>
                             </table>
                         </div>
                         <div class="col-4">
-                            @if($cycleCount->type == 'outbound')
+                            @if ($cycleCount->type == 'outbound')
                                 <table>
                                     <tr>
                                         <td class="fw-bold">Delivery Note Number</td>
@@ -140,12 +149,12 @@
                             </tr>
                         </thead>
                         <tbody>
-                        @foreach(json_decode($cycleCount->serial_number) ?? [] as $serialNumber)
-                            <tr>
-                                <td>{{ $loop->iteration }}</td>
-                                <td>{{ $serialNumber }}</td>
-                            </tr>
-                        @endforeach
+                            @foreach (json_decode($cycleCount->serial_number) ?? [] as $serialNumber)
+                                <tr>
+                                    <td>{{ $loop->iteration }}</td>
+                                    <td>{{ $serialNumber }}</td>
+                                </tr>
+                            @endforeach
                         </tbody>
                     </table>
                 </div>

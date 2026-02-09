@@ -21,8 +21,10 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <h4 class="card-title mb-0">List Box</h4>
                         <div class="d-flex gap-2">
-                            <a href="{{ route('inventory.box.report-excel') }}" class="btn btn-success btn-sm">Download Report Excel</a>
-                            <a href="{{ route('inventory.box.report-pdf') }}" class="btn btn-pdf btn-sm" target="_blank">Download Report PDF</a>
+                            <a href="{{ route('inventory.box.report-excel') }}" class="btn btn-success btn-sm">Download
+                                Report Excel</a>
+                            <a href="{{ route('inventory.box.report-pdf') }}" class="btn btn-pdf btn-sm"
+                                target="_blank">Download Report PDF</a>
                         </div>
                     </div>
                 </div>
@@ -61,6 +63,7 @@
                             <thead>
                                 <tr>
                                     <th>#</th>
+                                    <th>Client</th>
                                     <th>Number</th>
                                     <th>Reff</th>
                                     <th>Storage</th>
@@ -74,41 +77,48 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach($box as $index => $item)
+                                @foreach ($box as $index => $item)
                                     <tr>
                                         <td>{{ $box->firstItem() + $index }}</td>
+                                        <td>{{ $item->purchaseOrder->customer->name ?? '-' }}</td>
                                         <td>
                                             <div>{{ $item->number }}</div>
-                                            @if($item->return == 1)
+                                            @if ($item->return == 1)
                                                 @switch($item->return_from)
                                                     @case('gr')
                                                         <span class="badge bg-danger">Return From General Room</span>
-                                                        @break
+                                                    @break
+
                                                     @case('pm')
                                                         <span class="badge bg-danger">Return From PM Room</span>
-                                                        @break
+                                                    @break
+
                                                     @case('spare')
                                                         <span class="badge bg-danger">Return From Spare Room</span>
-                                                        @break
+                                                    @break
+
                                                     @default
                                                         <span class="badge bg-danger">Return From Outbound</span>
                                                 @endswitch
                                             @endif
                                         </td>
                                         <td>{{ $item->reff_number }}</td>
-                                        <td>{{ $item->storage->raw.' - '.$item->storage->area.' - '.$item->storage->rak.' - '.$item->storage->bin }}</td>
+                                        <td>{{ $item->storage->raw . ' - ' . $item->storage->area . ' - ' . $item->storage->rak . ' - ' . $item->storage->bin }}
+                                        </td>
                                         <td>{{ $item->purchaseOrder->purc_doc }}</td>
                                         <td>
-                                            @foreach(json_decode($item->sales_docs) ?? [] as $salesDoc)
+                                            @foreach (json_decode($item->sales_docs) ?? [] as $salesDoc)
                                                 <div>{{ $salesDoc }}</div>
                                             @endforeach
                                         </td>
                                         <td class="text-center fw-bold">{{ number_format($item->qty_item) }}</td>
                                         <td class="text-center fw-bold">{{ number_format($item->qty) }}</td>
                                         <td>{{ $item->user->name }}</td>
-                                        <td>{{ \Carbon\Carbon::parse($item->created_at)->translatedFormat('d F Y H:i') }}</td>
+                                        <td>{{ \Carbon\Carbon::parse($item->created_at)->translatedFormat('d F Y H:i') }}
+                                        </td>
                                         <td>
-                                            <a href="{{ route('inventory.box.detail', ['id' => $item->id]) }}" class="btn btn-info btn-sm">Detail</a>
+                                            <a href="{{ route('inventory.box.detail', ['id' => $item->id]) }}"
+                                                class="btn btn-info btn-sm">Detail</a>
                                         </td>
                                     </tr>
                                 @endforeach
@@ -121,7 +131,8 @@
                                 @if ($box->onFirstPage())
                                     <li class="disabled"><span>&laquo; Previous</span></li>
                                 @else
-                                    <li><a href="{{ $box->previousPageUrl() }}&per_page={{ request('per_page', 10) }}" rel="prev">&laquo; Previous</a></li>
+                                    <li><a href="{{ $box->previousPageUrl() }}&per_page={{ request('per_page', 10) }}"
+                                            rel="prev">&laquo; Previous</a></li>
                                 @endif
 
                                 @foreach ($box->links()->elements as $element)
@@ -134,14 +145,17 @@
                                             @if ($page == $box->currentPage())
                                                 <li class="active"><span>{{ $page }}</span></li>
                                             @else
-                                                <li><a href="{{ $url }}&per_page={{ request('per_page', 10) }}">{{ $page }}</a></li>
+                                                <li><a
+                                                        href="{{ $url }}&per_page={{ request('per_page', 10) }}">{{ $page }}</a>
+                                                </li>
                                             @endif
                                         @endforeach
                                     @endif
                                 @endforeach
 
                                 @if ($box->hasMorePages())
-                                    <li><a href="{{ $box->nextPageUrl() }}&per_page={{ request('per_page', 10) }}" rel="next">Next &raquo;</a></li>
+                                    <li><a href="{{ $box->nextPageUrl() }}&per_page={{ request('per_page', 10) }}"
+                                            rel="next">Next &raquo;</a></li>
                                 @else
                                     <li class="disabled"><span>Next &raquo;</span></li>
                                 @endif

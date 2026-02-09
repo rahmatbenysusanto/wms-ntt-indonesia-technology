@@ -31,18 +31,22 @@
                         <div class="row">
                             <div class="col-2">
                                 <label class="form-label">Purc Doc</label>
-                                <input type="text" class="form-control" name="purcDoc" value="{{ request()->get('purcDoc') }}" placeholder="Purc Doc ...">
+                                <input type="text" class="form-control" name="purcDoc"
+                                    value="{{ request()->get('purcDoc') }}" placeholder="Purc Doc ...">
                             </div>
                             <div class="col-2">
                                 <label class="form-label">Sales Doc</label>
-                                <input type="text" class="form-control" name="salesDoc" value="{{ request()->get('salesDoc') }}" placeholder="Sales Doc ...">
+                                <input type="text" class="form-control" name="salesDoc"
+                                    value="{{ request()->get('salesDoc') }}" placeholder="Sales Doc ...">
                             </div>
                             <div class="col-2">
                                 <label class="form-label">Material</label>
                                 <select name="material" class="form-control select2">
                                     <option value="">-- Select Material --</option>
-                                    @foreach($products as $product)
-                                        <option value="{{ $product->id }}" {{ request()->get('material') == $product->id ? 'selected' : '' }}>{{ $product->material }}</option>
+                                    @foreach ($products as $product)
+                                        <option value="{{ $product->id }}"
+                                            {{ request()->get('material') == $product->id ? 'selected' : '' }}>
+                                            {{ $product->material }}</option>
                                     @endforeach
                                 </select>
                             </div>
@@ -50,13 +54,16 @@
                                 <label class="form-label">Type</label>
                                 <select class="form-control" name="type">
                                     <option value="">-- Select Type --</option>
-                                    <option value="inbound" {{ request()->get('type') == 'inbound' ? 'selected' : '' }}>Inbound</option>
-                                    <option value="outbound" {{ request()->get('type') == 'outbound' ? 'selected' : '' }}>Outbound</option>
+                                    <option value="inbound" {{ request()->get('type') == 'inbound' ? 'selected' : '' }}>
+                                        Inbound</option>
+                                    <option value="outbound" {{ request()->get('type') == 'outbound' ? 'selected' : '' }}>
+                                        Outbound</option>
                                 </select>
                             </div>
                             <div class="col-2">
                                 <label class="form-label">Date</label>
-                                <input type="date" class="form-control" name="date" value="{{ request()->get('date', date('Y-m-d')) }}">
+                                <input type="date" class="form-control" name="date"
+                                    value="{{ request()->get('date', date('Y-m-d')) }}">
                             </div>
                             <div class="col-2">
                                 <label class="form-label text-white">-</label>
@@ -73,6 +80,7 @@
                         <thead>
                             <tr>
                                 <th>#</th>
+                                <th>Client</th>
                                 <th>Purc Doc</th>
                                 <th>Sales Doc</th>
                                 <th>Item</th>
@@ -86,50 +94,52 @@
                             </tr>
                         </thead>
                         <tbody>
-                        @foreach($cycleCount as $index => $item)
-                            <tr>
-                                <td>{{ $cycleCount->firstItem() + $index }}</td>
-                                <td>
-                                    {{ $item->purchaseOrder->purc_doc }}
-                                    @if($item->inventoryPackageItem->inventoryPackage->storage->id == 1)
-                                        <br>
-                                        <span class="badge bg-danger">Cross Docking</span>
-                                    @endif
-                                </td>
-                                <td>{{ $item->purchaseOrderDetail->sales_doc }}</td>
-                                <td>{{ $item->purchaseOrderDetail->item }}</td>
-                                <td>
-                                    <div class="fw-bold">{{ $item->purchaseOrderDetail->material }}</div>
-                                    <div>{{ $item->purchaseOrderDetail->po_item_desc }}</div>
-                                    <div>{{ $item->purchaseOrderDetail->prod_hierarchy_desc }}</div>
-                                </td>
-                                <td class="text-center fw-bold">{{ number_format($item->qty) }}</td>
-                                <td>
-                                    @if(in_array($item->inventoryPackageItem->inventoryPackage->storage->id, [2,3,4]))
-                                        <b>{{ $item->inventoryPackageItem->inventoryPackage->storage->raw }}</b>
-                                    @elseif($item->inventoryPackageItem->inventoryPackage->storage->id == 1)
-                                        <b>Direct Outbound</b>
-                                    @else
-                                        <b>{{ $item->inventoryPackageItem->inventoryPackage->storage->raw }}</b> -
-                                        <b>{{ $item->inventoryPackageItem->inventoryPackage->storage->area }}</b> -
-                                        <b>{{ $item->inventoryPackageItem->inventoryPackage->storage->rak }}</b> -
-                                        <b>{{ $item->inventoryPackageItem->inventoryPackage->storage->bin }}</b>
-                                    @endif
-                                </td>
-                                <td>
-                                    @if($item->type == 'outbound')
-                                        <span class="badge bg-danger-subtle text-danger">Outbound</span>
-                                    @else
-                                        <span class="badge bg-success-subtle text-success">Inbound</span>
-                                    @endif
-                                </td>
-                                <td class="text-center">
-                                    <a href="{{ route('inventory.cycle-count-detail', ['id' => $item->id]) }}" class="btn btn-info btn-sm">Detail SN</a>
-                                </td>
-                                <td>{{ $item->user->name }}</td>
-                                <td>{{ \Carbon\Carbon::parse($item->created_at)->translatedFormat('d F Y H:i') }}</td>
-                            </tr>
-                        @endforeach
+                            @foreach ($cycleCount as $index => $item)
+                                <tr>
+                                    <td>{{ $cycleCount->firstItem() + $index }}</td>
+                                    <td>{{ $item->purchaseOrder->customer->name ?? '-' }}</td>
+                                    <td>
+                                        {{ $item->purchaseOrder->purc_doc }}
+                                        @if ($item->inventoryPackageItem->inventoryPackage->storage->id == 1)
+                                            <br>
+                                            <span class="badge bg-danger">Cross Docking</span>
+                                        @endif
+                                    </td>
+                                    <td>{{ $item->purchaseOrderDetail->sales_doc }}</td>
+                                    <td>{{ $item->purchaseOrderDetail->item }}</td>
+                                    <td>
+                                        <div class="fw-bold">{{ $item->purchaseOrderDetail->material }}</div>
+                                        <div>{{ $item->purchaseOrderDetail->po_item_desc }}</div>
+                                        <div>{{ $item->purchaseOrderDetail->prod_hierarchy_desc }}</div>
+                                    </td>
+                                    <td class="text-center fw-bold">{{ number_format($item->qty) }}</td>
+                                    <td>
+                                        @if (in_array($item->inventoryPackageItem->inventoryPackage->storage->id, [2, 3, 4]))
+                                            <b>{{ $item->inventoryPackageItem->inventoryPackage->storage->raw }}</b>
+                                        @elseif($item->inventoryPackageItem->inventoryPackage->storage->id == 1)
+                                            <b>Direct Outbound</b>
+                                        @else
+                                            <b>{{ $item->inventoryPackageItem->inventoryPackage->storage->raw }}</b> -
+                                            <b>{{ $item->inventoryPackageItem->inventoryPackage->storage->area }}</b> -
+                                            <b>{{ $item->inventoryPackageItem->inventoryPackage->storage->rak }}</b> -
+                                            <b>{{ $item->inventoryPackageItem->inventoryPackage->storage->bin }}</b>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        @if ($item->type == 'outbound')
+                                            <span class="badge bg-danger-subtle text-danger">Outbound</span>
+                                        @else
+                                            <span class="badge bg-success-subtle text-success">Inbound</span>
+                                        @endif
+                                    </td>
+                                    <td class="text-center">
+                                        <a href="{{ route('inventory.cycle-count-detail', ['id' => $item->id]) }}"
+                                            class="btn btn-info btn-sm">Detail SN</a>
+                                    </td>
+                                    <td>{{ $item->user->name }}</td>
+                                    <td>{{ \Carbon\Carbon::parse($item->created_at)->translatedFormat('d F Y H:i') }}</td>
+                                </tr>
+                            @endforeach
                         </tbody>
                     </table>
                     <div class="d-flex justify-content-end mt-2">
@@ -138,7 +148,8 @@
                                 @if ($cycleCount->onFirstPage())
                                     <li class="disabled"><span>&laquo; Previous</span></li>
                                 @else
-                                    <li><a href="{{ $cycleCount->previousPageUrl() }}&per_page={{ request('per_page', 10) }}" rel="prev">&laquo; Previous</a></li>
+                                    <li><a href="{{ $cycleCount->previousPageUrl() }}&per_page={{ request('per_page', 10) }}"
+                                            rel="prev">&laquo; Previous</a></li>
                                 @endif
 
                                 @foreach ($cycleCount->links()->elements as $element)
@@ -151,14 +162,17 @@
                                             @if ($page == $cycleCount->currentPage())
                                                 <li class="active"><span>{{ $page }}</span></li>
                                             @else
-                                                <li><a href="{{ $url }}&per_page={{ request('per_page', 10) }}">{{ $page }}</a></li>
+                                                <li><a
+                                                        href="{{ $url }}&per_page={{ request('per_page', 10) }}">{{ $page }}</a>
+                                                </li>
                                             @endif
                                         @endforeach
                                     @endif
                                 @endforeach
 
                                 @if ($cycleCount->hasMorePages())
-                                    <li><a href="{{ $cycleCount->nextPageUrl() }}&per_page={{ request('per_page', 10) }}" rel="next">Next &raquo;</a></li>
+                                    <li><a href="{{ $cycleCount->nextPageUrl() }}&per_page={{ request('per_page', 10) }}"
+                                            rel="next">Next &raquo;</a></li>
                                 @else
                                     <li class="disabled"><span>Next &raquo;</span></li>
                                 @endif
@@ -171,7 +185,8 @@
     </div>
 
     <!-- Download PDF Modals -->
-    <div id="download-pdf-modal" class="modal fade" tabindex="-1" aria-labelledby="myModalLabel" aria-hidden="true" style="display: none;">
+    <div id="download-pdf-modal" class="modal fade" tabindex="-1" aria-labelledby="myModalLabel" aria-hidden="true"
+        style="display: none;">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
@@ -197,7 +212,8 @@
                             </select>
                         </div>
                         <div class="d-flex justify-content-end">
-                            <button type="submit" class="btn btn-primary" formtarget="_blank" rel="noopener noreferrer">Download</button>
+                            <button type="submit" class="btn btn-primary" formtarget="_blank"
+                                rel="noopener noreferrer">Download</button>
                         </div>
                     </form>
                 </div>
@@ -206,7 +222,8 @@
     </div>
 
     <!-- Download Excel Modals -->
-    <div id="download-excel-modal" class="modal fade" tabindex="-1" aria-labelledby="myModalLabel" aria-hidden="true" style="display: none;">
+    <div id="download-excel-modal" class="modal fade" tabindex="-1" aria-labelledby="myModalLabel" aria-hidden="true"
+        style="display: none;">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
@@ -232,7 +249,8 @@
                             </select>
                         </div>
                         <div class="d-flex justify-content-end">
-                            <button type="submit" class="btn btn-primary" formtarget="_blank" rel="noopener noreferrer">Download</button>
+                            <button type="submit" class="btn btn-primary" formtarget="_blank"
+                                rel="noopener noreferrer">Download</button>
                         </div>
                     </form>
                 </div>

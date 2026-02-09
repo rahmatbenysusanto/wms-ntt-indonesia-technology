@@ -1,33 +1,47 @@
 <!doctype html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport"
-          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+        content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Product List</title>
     <style>
-        body { font-family: DejaVu Sans, sans-serif; font-size: 10.5px; }
-        .row { width: 100%; clear: both; }
+        body {
+            font-family: DejaVu Sans, sans-serif;
+            font-size: 10.5px;
+        }
+
+        .row {
+            width: 100%;
+            clear: both;
+        }
+
         .col-4 {
             float: left;
             width: 33.33%;
             box-sizing: border-box;
             padding: 5px;
         }
+
         .col-6 {
             float: left;
             width: 50%;
             box-sizing: border-box;
             padding: 5px;
         }
-        .clearfix { clear: both; }
+
+        .clearfix {
+            clear: both;
+        }
 
         .tbl {
             width: 100%;
             border-collapse: collapse;
             font-size: 10.5px;
-            table-layout: fixed; /* wajib kalau pakai width di th */
+            table-layout: fixed;
+            /* wajib kalau pakai width di th */
         }
 
         .tbl th,
@@ -59,12 +73,20 @@
             width: 90px;
         }
 
-        .serial-item { display: block; }
+        .serial-item {
+            display: block;
+        }
 
-        thead { display: table-header-group; }
-        tr { page-break-inside: avoid; }
+        thead {
+            display: table-header-group;
+        }
+
+        tr {
+            page-break-inside: avoid;
+        }
     </style>
 </head>
+
 <body>
     <h2 style="text-align: center;">Product List Inventory</h2>
     <section style="margin-top: 20px;">
@@ -72,6 +94,7 @@
             <thead>
                 <tr>
                     <th style="width: 5%; text-align: center;">#</th>
+                    <th>Client</th>
                     <th style="width: 8%;">Purc Doc</th>
                     <th style="width: 8%;">Sales Doc</th>
                     <th>Material</th>
@@ -82,9 +105,10 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach($inventoryDetail as $detail)
+                @foreach ($inventoryDetail as $detail)
                     <tr>
                         <td style="text-align: center;">{{ $loop->iteration }}</td>
+                        <td>{{ $detail->client_name }}</td>
                         <td>{{ $detail->purc_doc }}</td>
                         <td>{{ $detail->sales_doc }}</td>
                         <td>
@@ -96,7 +120,7 @@
                         <td>${{ number_format($detail->nominal) }}</td>
                         <td>Rp{{ number_format($detail->nominalIDR) }}</td>
                         <td>
-                            @foreach($detail->serialNumber as $serialNumber)
+                            @foreach ($detail->serialNumber as $serialNumber)
                                 <div>{{ $serialNumber->serial_number }}</div>
                             @endforeach
                         </td>
@@ -106,4 +130,5 @@
         </table>
     </section>
 </body>
+
 </html>

@@ -22,6 +22,11 @@
                 <div class="card-body">
                     <table>
                         <tr>
+                            <td class="fw-bold">Client</td>
+                            <td class="fw-bold ps-3">:</td>
+                            <td class="ps-1">{{ $product->client_name }}</td>
+                        </tr>
+                        <tr>
                             <td class="fw-bold">Purc Doc</td>
                             <td class="fw-bold ps-3">:</td>
                             <td class="ps-1">{{ $product->purc_doc }}</td>
@@ -67,35 +72,38 @@
                             </tr>
                         </thead>
                         <tbody>
-                        @foreach($dataBox as $box)
-                            <tr>
-                                <td>{{ $loop->iteration }}</td>
-                                <td>
-                                    <div><b>Number: </b>{{ $box->number }}</div>
-                                    <div><b>Reff: </b>{{ $box->reff_number }}</div>
-                                    <div><b>Storage: </b>{{ $box->raw }} - {{ $box->area }} - {{ $box->rak }} - {{ $box->bin }}</div>
-                                    @if($box->return == 1)
-                                        @switch($box->return_from)
-                                            @case('gr')
-                                                <span class="badge bg-danger">Return From General Room</span>
+                            @foreach ($dataBox as $box)
+                                <tr>
+                                    <td>{{ $loop->iteration }}</td>
+                                    <td>
+                                        <div><b>Number: </b>{{ $box->number }}</div>
+                                        <div><b>Reff: </b>{{ $box->reff_number }}</div>
+                                        <div><b>Storage: </b>{{ $box->raw }} - {{ $box->area }} -
+                                            {{ $box->rak }} - {{ $box->bin }}</div>
+                                        @if ($box->return == 1)
+                                            @switch($box->return_from)
+                                                @case('gr')
+                                                    <span class="badge bg-danger">Return From General Room</span>
                                                 @break
-                                            @case('pm')
-                                                <span class="badge bg-danger">Return From PM Room</span>
+
+                                                @case('pm')
+                                                    <span class="badge bg-danger">Return From PM Room</span>
                                                 @break
-                                            @case('spare')
-                                                <span class="badge bg-danger">Return From Spare Room</span>
+
+                                                @case('spare')
+                                                    <span class="badge bg-danger">Return From Spare Room</span>
                                                 @break
-                                        @endswitch
-                                    @endif
-                                </td>
-                                <td>
-                                    @foreach($box->serial_number as $serial_number)
-                                        <div>{{ $serial_number->serial_number }}</div>
-                                    @endforeach
-                                </td>
-                                <td class="text-center fw-bold">{{ number_format($box->qty) }}</td>
-                            </tr>
-                        @endforeach
+                                            @endswitch
+                                        @endif
+                                    </td>
+                                    <td>
+                                        @foreach ($box->serial_number as $serial_number)
+                                            <div>{{ $serial_number->serial_number }}</div>
+                                        @endforeach
+                                    </td>
+                                    <td class="text-center fw-bold">{{ number_format($box->qty) }}</td>
+                                </tr>
+                            @endforeach
                         </tbody>
                     </table>
                 </div>
@@ -124,7 +132,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach($dataOutbound as $outbound)
+                            @foreach ($dataOutbound as $outbound)
                                 <tr>
                                     <td>{{ $loop->iteration }}</td>
                                     <td>{{ $outbound->number }}</td>
@@ -132,13 +140,14 @@
                                     <td>{{ $outbound->type }}</td>
                                     <td class="text-center fw-bold">{{ number_format($outbound->qty) }}</td>
                                     <td>
-                                        @foreach($outbound->serial_number as $serial_number)
+                                        @foreach ($outbound->serial_number as $serial_number)
                                             <div>{{ $serial_number->serial_number }}</div>
                                         @endforeach
                                     </td>
                                     <td>{{ $outbound->deliv_loc }}</td>
                                     <td>{{ $outbound->deliv_dest }}</td>
-                                    <td>{{ \Carbon\Carbon::parse($outbound->delivery_date)->translatedFormat('d F Y H:i') }}</td>
+                                    <td>{{ \Carbon\Carbon::parse($outbound->delivery_date)->translatedFormat('d F Y H:i') }}
+                                    </td>
                                     <td>{{ $outbound->name }}</td>
                                 </tr>
                             @endforeach

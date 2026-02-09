@@ -43,11 +43,19 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class OutboundController extends Controller
 {
+    protected $grRoomService;
+    protected $pmRoomService;
+    protected $spareRoomService;
+
     public function __construct(
-        protected GrRoomService $grRoomService,
-        protected PmRoomService $pmRoomService,
-        protected SpareRoomService $spareRoomService,
-    ) {}
+        GrRoomService $grRoomService,
+        PmRoomService $pmRoomService,
+        SpareRoomService $spareRoomService
+    ) {
+        $this->grRoomService = $grRoomService;
+        $this->pmRoomService = $pmRoomService;
+        $this->spareRoomService = $spareRoomService;
+    }
 
     public function index(Request $request): View
     {
