@@ -899,7 +899,7 @@ class OutboundController extends Controller
         $count = Outbound::where('delivery_note_number', 'like', $pattern)->count();
         $nextNumber = $count + 1;
 
-        return str_pad($nextNumber, 3, '0', STR_PAD_LEFT) . "-TKS-WMS-{$monthShort}-{$romanMonth}-{$year}";
+        return str_pad($nextNumber, 3, '0', STR_PAD_LEFT) . "-TKS-WMS-INV-{$monthShort}-{$romanMonth}-{$year}";
     }
 
     private function getRomanMonth($month)
