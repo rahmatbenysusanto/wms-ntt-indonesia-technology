@@ -23,7 +23,7 @@ class OutboundDetail extends Model
         return $this->belongsTo(InventoryPackageItem::class, 'inventory_package_item_id');
     }
 
-    public function outboundDetailSn(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function outboundDetailSN(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(OutboundDetailSN::class, 'outbound_detail_id');
     }

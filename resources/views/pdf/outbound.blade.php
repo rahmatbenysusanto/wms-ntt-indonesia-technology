@@ -82,7 +82,7 @@
         }
 
         tr {
-            page-break-inside: avoid;
+            page-break-inside: auto;
         }
     </style>
 </head>
@@ -208,6 +208,17 @@
             </div>
         </div>
     </section>
+    <script type="text/php">
+        if (isset($pdf)) {
+            $text = "Page {PAGE_NUM} of {PAGE_COUNT}";
+            $size = 9;
+            $font = $fontMetrics->getFont("DejaVu Sans");
+            $width = $fontMetrics->get_text_width($text, $font, $size);
+            $x = $pdf->get_width() - $width - 20;
+            $y = $pdf->get_height() - 30;
+            $pdf->page_text($x, $y, $text, $font, $size);
+        }
+    </script>
 </body>
 
 </html>

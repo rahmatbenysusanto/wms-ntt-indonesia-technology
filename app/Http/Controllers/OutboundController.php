@@ -527,7 +527,7 @@ class OutboundController extends Controller
     public function detail(Request $request): View
     {
         $outbound = Outbound::with('user', 'customer')->where('id', $request->query('id'))->first();
-        $outboundDetail = OutboundDetail::with('inventoryPackageItem', 'inventoryPackageItem.purchaseOrderDetail', 'outboundDetailSn', 'inventoryPackageItem.inventoryPackage', 'inventoryPackageItem.inventoryPackage.storage')->where('outbound_id', $outbound->id)->get();
+        $outboundDetail = OutboundDetail::with('inventoryPackageItem', 'inventoryPackageItem.purchaseOrderDetail', 'outboundDetailSN', 'inventoryPackageItem.inventoryPackage', 'inventoryPackageItem.inventoryPackage.storage')->where('outbound_id', $outbound->id)->get();
 
         $title = 'Outbound';
         return view('outbound.detail', compact('title', 'outboundDetail', 'outbound'));
@@ -705,7 +705,7 @@ class OutboundController extends Controller
             'outboundDetail'    => $outboundDetail,
         ];
 
-        $pdf = Pdf::loadView('pdf.outbound', $data)->setPaper('A4', 'landscape');
+        $pdf = Pdf::loadView('pdf.outbound', $data)->setPaper('A4', 'landscape')->setOption('isPhpEnabled', true);
         return $pdf->stream('outbound ' . $outbound->delivery_note_number . '.pdf');
     }
 
