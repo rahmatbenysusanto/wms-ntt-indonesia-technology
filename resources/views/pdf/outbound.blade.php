@@ -81,8 +81,8 @@
             display: table-header-group;
         }
 
-        tr {
-            page-break-inside: auto;
+        @page {
+            margin: 40px 30px 60px 30px;
         }
     </style>
 </head>
@@ -171,26 +171,37 @@
             <tbody>
                 @php $number = 1; @endphp
                 @foreach ($outboundDetail as $detail)
-                    <tr>
-                        <td style="text-align: center">{{ $number++ }}</td>
-                        <td>
-                            <div>{{ $detail->inventoryPackageItem->purchaseOrderDetail->material }}</div>
-                            <div>{{ $detail->inventoryPackageItem->purchaseOrderDetail->sales_doc }}</div>
-                        </td>
-                        <td>
-                            <div>{{ $detail->inventoryPackageItem->purchaseOrderDetail->po_item_desc }}</div>
-                            <div>{{ $detail->inventoryPackageItem->purchaseOrderDetail->prod_hierarchy_desc }}</div>
-                            @if ($detail->inventoryPackageItem->inventoryPackage->storage->id == 1)
-                                <div><b style="color: green;">Note: Delivered Directly to Client</b></div>
-                            @endif
-                        </td>
-                        <td style="text-align: center">{{ number_format($detail->qty) }}</td>
-                        <td>
-                            @foreach ($detail->outboundDetailSN as $serialNumber)
-                                <span class="serial-item">{{ $serialNumber->serial_number }}</span>
-                            @endforeach
-                        </td>
-                    </tr>
+                    @php
+                        $sns = $detail->outboundDetailSN;
+                        $chunks = $sns->chunk(20);
+                    @endphp
+                    @foreach ($chunks as $idx => $chunk)
+                        <tr>
+                            <td style="text-align: center">{{ $idx == 0 ? $number++ : '' }}</td>
+                            <td>
+                                @if ($idx == 0)
+                                    <div>{{ $detail->inventoryPackageItem->purchaseOrderDetail->material }}</div>
+                                    <div>{{ $detail->inventoryPackageItem->purchaseOrderDetail->sales_doc }}</div>
+                                @endif
+                            </td>
+                            <td>
+                                @if ($idx == 0)
+                                    <div>{{ $detail->inventoryPackageItem->purchaseOrderDetail->po_item_desc }}</div>
+                                    <div>{{ $detail->inventoryPackageItem->purchaseOrderDetail->prod_hierarchy_desc }}
+                                    </div>
+                                    @if ($detail->inventoryPackageItem->inventoryPackage->storage->id == 1)
+                                        <div><b style="color: green;">Note: Delivered Directly to Client</b></div>
+                                    @endif
+                                @endif
+                            </td>
+                            <td style="text-align: center">{{ $idx == 0 ? number_format($detail->qty) : '' }}</td>
+                            <td>
+                                @foreach ($chunk as $serialNumber)
+                                    <span class="serial-item">{{ $serialNumber->serial_number }}</span>
+                                @endforeach
+                            </td>
+                        </tr>
+                    @endforeach
                 @endforeach
             </tbody>
         </table>
@@ -198,7 +209,7 @@
 
     <div class="clearfix"></div>
 
-    <section style="margin-top: 80px">
+    <section style="margin-top: 80px; page-break-inside: avoid;">
         <div class="row">
             <div class="col-6" style="text-align: center">
                 <div style="font-weight: bold;">WH Transkargo Solusindo</div>
