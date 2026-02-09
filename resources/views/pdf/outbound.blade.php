@@ -82,7 +82,7 @@
         }
 
         @page {
-            margin: 40px 30px 60px 30px;
+            margin: 30px 30px 40px 30px;
         }
     </style>
 </head>
@@ -173,7 +173,7 @@
                 @foreach ($outboundDetail as $detail)
                     @php
                         $sns = $detail->outboundDetailSN;
-                        $chunks = $sns->chunk(20);
+                        $chunks = $sns->chunk(35);
                     @endphp
                     @foreach ($chunks as $idx => $chunk)
                         <tr>
