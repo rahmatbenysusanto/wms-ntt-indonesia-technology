@@ -827,6 +827,7 @@ class InventoryController extends Controller
                 'purchase_order_detail.po_item_desc',
                 'purchase_order_detail.prod_hierarchy_desc',
                 'inventory_package_item.is_parent',
+                'customer.name as client_name',
                 DB::raw('SUM(inventory_detail.qty) AS qty'),
                 DB::raw('SUM(inventory_detail.qty * purchase_order_detail.net_order_price) AS nominal'),
             ])
@@ -838,6 +839,7 @@ class InventoryController extends Controller
                 'purchase_order_detail.po_item_desc',
                 'purchase_order_detail.prod_hierarchy_desc',
                 'inventory_package_item.is_parent',
+                'customer.name',
             ])
             ->paginate(5)
             ->appends([
@@ -1730,9 +1732,13 @@ class InventoryController extends Controller
         return view('mobile.inventory.movement', compact('customer', 'products', 'inventory'));
     }
 
-    public function indexDetailMovementMobile(Request $request): View
+    public function indexDetailMovementMobile(Request $request): View|\Illuminate\Http\RedirectResponse
     {
         $cycleCount = InventoryHistory::with('purchaseOrder', 'purchaseOrderDetail', 'user', 'outbound', 'inventoryPackageItem.inventoryPackage', 'inventoryPackageItem.inventoryPackage.storage')->where('id', $request->query('id'))->first();
+
+        if (!$cycleCount) {
+            return redirect()->route('inventory.index.movement.mobile')->with('error', 'Data tidak ditemukan');
+        }
 
         return view('mobile.inventory.movement-detail', compact('cycleCount'));
     }
