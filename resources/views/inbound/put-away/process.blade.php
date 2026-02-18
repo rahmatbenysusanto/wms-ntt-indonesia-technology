@@ -2,287 +2,275 @@
 @section('title', 'Put Away')
 
 @section('content')
+    <style>
+        .material-card {
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border-left: 4px solid transparent;
+            margin-bottom: 8px;
+        }
+
+        .material-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .material-card.active {
+            border-left-color: #405189;
+            background-color: #f3f6f9;
+        }
+
+        .sn-list-container {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #e9ebec;
+            border-radius: 4px;
+        }
+
+        .storage-item {
+            padding: 12px 15px;
+            border-bottom: 1px solid #f3f6f9;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+        }
+
+        .storage-item:hover {
+            background-color: #f8f9fa;
+            color: #405189;
+        }
+
+        .storage-item.selected {
+            background-color: #e2e5ff;
+            border-left: 4px solid #405189;
+            font-weight: 600;
+            color: #405189;
+        }
+
+        .staging-area {
+            min-height: 250px;
+            background-color: #fafafa;
+            border: 2px dashed #e9ebec;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .staging-area.has-items {
+            border-style: solid;
+            background-color: white;
+        }
+
+        .badge-soft-primary {
+            background-color: rgba(64, 81, 137, 0.1);
+            color: #405189;
+        }
+
+        .sn-checkbox-item {
+            padding: 10px 15px;
+            border-bottom: 1px solid #f3f6f9;
+            transition: background 0.2s;
+        }
+
+        .sn-checkbox-item:hover {
+            background-color: #f8f9fa;
+        }
+
+        .sn-checkbox-item:last-child {
+            border-bottom: none;
+        }
+
+        .search-box {
+            position: relative;
+        }
+
+        .search-box i {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #878a99;
+        }
+
+        .search-box input {
+            padding-left: 35px;
+        }
+
+        .sticky-top-card {
+            position: sticky;
+            top: 70px;
+            z-index: 10;
+        }
+    </style>
+
     <div class="row">
         <div class="col-12">
             <div class="page-title-box d-sm-flex align-items-center justify-content-between">
-                <h4 class="mb-sm-0">Put Away process</h4>
+                <h4 class="mb-sm-0">Put Away Process</h4>
                 <div class="page-title-right">
                     <ol class="breadcrumb m-0">
                         <li class="breadcrumb-item"><a href="javascript: void(0);">Inbound</a></li>
-                        <li class="breadcrumb-item active">Put Away process</li>
+                        <li class="breadcrumb-item active">Put Away Process</li>
                     </ol>
                 </div>
             </div>
         </div>
-
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <h4 class="card-title mb-0">List Item</h4>
-                        <a class="btn btn-primary" onclick="processPutAway()">Process Put Away</a>
-                    </div>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-striped align-middle">
-                            <thead>
-                                <tr>
-                                    <th class="text-center">Item</th>
-                                    <th>Sales Doc</th>
-                                    <th class="text-center">Type</th>
-                                    <th>Material</th>
-                                    <th>Po Item Desc</th>
-                                    <th>Prod Hierarchy Desc</th>
-                                    <th class="text-center">QTY</th>
-                                    <th>Serial Number</th>
-                                </tr>
-                            </thead>
-                            <tbody id="listProductMaster">
-
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <h4 class="card-title mb-0">Set Box Product</h4>
-                        <a class="btn btn-info btn-sm" onclick="addBox()">Add Box</a>
-                    </div>
-                </div>
-                <div class="card-body">
-                    <table class="table table-striped align-middle">
-                        <thead>
-                            <tr>
-                                <th class="text-center">Box Number</th>
-                                <th>Type</th>
-                                <th>Item</th>
-                                <th>Sales Doc</th>
-                                <th>Material</th>
-                                <th class="text-center">QTY</th>
-                                <th>Serial Number</th>
-                                <th>Location</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody id="listBox">
-
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
     </div>
 
-    <!-- Add Box Modals -->
-    <div id="addBoxModal" class="modal fade" tabindex="-1" aria-labelledby="myModalLabel" aria-hidden="true"
-        style="display: none;">
-        <div class="modal-dialog modal-xl">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="myModalLabel">Add Box Put Away</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"> </button>
-                </div>
-                <div class="modal-body">
-                    <table class="table table-striped align-middle">
-                        <thead>
-                            <tr>
-                                <th></th>
-                                <th></th>
-                                <th></th>
-                                <th></th>
-                                <th></th>
-                                <th></th>
-                                <th>
-                                    <select class="form-control" onchange="changeMassQty(this.value)">
-                                        <option value="0">Choose QTY</option>
-                                        @for ($i = 1; $i <= 200; $i++)
-                                            <option>{{ $i }}</option>
-                                        @endfor
-                                    </select>
-                                </th>
-                            </tr>
-                        </thead>
-                        <thead>
-                            <tr>
-                                <th>#</th>
-                                <th>Type</th>
-                                <th>Item</th>
-                                <th>Sales Doc</th>
-                                <th>Material</th>
-                                <th>QTY</th>
-                                <th>QTY Item In Box</th>
-                            </tr>
-                        </thead>
-                        <tbody id="listMaterialAddBox">
-
-                        </tbody>
-                    </table>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
-                    <button type="button" class="btn btn-primary" onclick="addBoxProcess()">Add Box Process</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Detail SN Master Modals -->
-    <div id="detailSerialNumberModal" class="modal fade" tabindex="-1" aria-labelledby="myModalLabel" aria-hidden="true"
-        style="display: none;">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="myModalLabel">Detail Serial Number</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"> </button>
-                </div>
-                <div class="modal-body">
-                    <table>
-                        <tr>
-                            <td class="fw-bold">Item</td>
-                            <td class="fw-bold ps-3">:</td>
-                            <td class="ps-1" id="detailSNMaster_item"></td>
-                        </tr>
-                        <tr>
-                            <td class="fw-bold">Sales Doc</td>
-                            <td class="fw-bold ps-3">:</td>
-                            <td class="ps-1" id="detailSNMaster_salesDoc"></td>
-                        </tr>
-                        <tr>
-                            <td class="fw-bold">Material</td>
-                            <td class="fw-bold ps-3">:</td>
-                            <td class="ps-1" id="detailSNMaster_material"></td>
-                        </tr>
-                    </table>
-
-                    <table class="table table-striped mt-3">
-                        <thead>
-                            <tr>
-                                <th>Serial Number</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody id="listSerialNumberMaster">
-
-                        </tbody>
-                    </table>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Box Serial Number Modals -->
-    <div id="boxSerialNumberModal" class="modal fade" tabindex="-1" aria-labelledby="myModalLabel" aria-hidden="true"
-        style="display: none;">
-        <div class="modal-dialog modal-xl">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="myModalLabel">Detail Serial Number</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"> </button>
-                </div>
-                <div class="modal-body">
-                    <input type="hidden" id="boxSerialNumber_type">
-                    <input type="hidden" id="boxSerialNumber_index">
-                    <input type="hidden" id="boxSerialNumber_indexDetail">
-                    <input type="hidden" id="boxSerialNumber_indexMaster">
-
-                    <table>
-                        <tr>
-                            <td class="fw-bold">Item</td>
-                            <td class="fw-bold ps-3">:</td>
-                            <td class="ps-1" id="boxSerialNumber_item"></td>
-                        </tr>
-                        <tr>
-                            <td class="fw-bold">Sales Doc</td>
-                            <td class="fw-bold ps-3">:</td>
-                            <td class="ps-1" id="boxSerialNumber_salesDoc"></td>
-                        </tr>
-                        <tr>
-                            <td class="fw-bold">Material</td>
-                            <td class="fw-bold ps-3">:</td>
-                            <td class="ps-1" id="boxSerialNumber_material"></td>
-                        </tr>
-                        <tr>
-                            <td class="fw-bold">QTY</td>
-                            <td class="fw-bold ps-3">:</td>
-                            <td class="ps-1" id="boxSerialNumber_qty"></td>
-                        </tr>
-                        <tr>
-                            <td class="fw-bold">QTY Scan Serial Number</td>
-                            <td class="fw-bold ps-3">:</td>
-                            <td class="ps-1" id="boxSerialNumber_qty_scan_sn"></td>
-                        </tr>
-                    </table>
-
-                    <div class="row mt-3">
-                        <div class="col-10">
-                            {{--                            <div class="row"> --}}
-                            {{--                                <div class="col-8"> --}}
-                            {{--                                    <select class="form-control" id="selectSerialNumber"></select> --}}
-                            {{--                                </div> --}}
-                            {{--                                <div class="col-4"> --}}
-                            {{--                                    <a class="btn btn-info w-100" onclick="pilihSerialNumber()">Pilih SN</a> --}}
-                            {{--                                </div> --}}
-                            {{--                            </div> --}}
-                            <input type="text" class="form-control" id="scanSerialNumber"
-                                placeholder="Scan Serial Number ...">
-                        </div>
-                        <div class="col-2">
-                            <a class="btn btn-secondary w-100" onclick="tambahManualSerialNumber()">Tambah Manual</a>
-                        </div>
+    <div class="row">
+        <!-- LEFT COLUMN: Available Materials -->
+        <div class="col-xl-5 col-lg-6">
+            <div class="card shadow-sm border-0">
+                <div class="card-header border-0 bg-white pt-4 px-4 pb-0">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="card-title mb-0 fw-bold">Available Materials</h5>
+                        <span class="badge badge-soft-primary px-3 py-2 rounded-pill" id="totalAvailableSN">0 SN
+                            Available</span>
                     </div>
-
-                    <div id="scanSerialNumberError"
-                        class="alert alert-danger alert-dismissible alert-label-icon label-arrow shadow fade show mt-2"
-                        role="alert" style="display: none">
-                        <i class="ri-error-warning-line label-icon"></i>
-                        <strong>Error</strong> - <span id="scanSerialNumberErrorMessage"></span>
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    <div class="search-box mb-3">
+                        <input type="text" class="form-control border-light-subtle bg-light" id="searchMaterial"
+                            placeholder="Search material, serial, or sales doc...">
+                        <i class="ri-search-line"></i>
                     </div>
-
-                    <div class="row mt-3">
-                        <div class="col-6">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <h5 class="mb-1">Data Serial Number Product</h5>
-                                <button class="btn btn-primary btn-sm" onclick="selectAllSN()">Select All SN</button>
+                </div>
+                <div class="card-body p-0">
+                    <div id="materialList" class="px-4 pb-4" style="max-height: calc(100vh - 300px); overflow-y: auto;">
+                        <!-- Materials will be loaded here -->
+                        <div class="text-center py-5">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
                             </div>
-                            <table class="table table-striped align-middle mt-3">
-                                <thead>
-                                    <tr>
-                                        <th>#</th>
-                                        <th>Serial Number</th>
-                                        <th>Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="listSerialNumberAvailable">
-
-                                </tbody>
-                            </table>
-                        </div>
-                        <div class="col-6">
-                            <h5 class="mb-1">Serial Number Product In Box</h5>
-                            <table class="table table-striped align-middle mt-3">
-                                <thead>
-                                    <tr>
-                                        <th>#</th>
-                                        <th>Serial Number</th>
-                                        <th>Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="listSnBox">
-
-                                </tbody>
-                            </table>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT COLUMN: Storage & Staging -->
+        <div class="col-xl-7 col-lg-6">
+            <div class="sticky-top-card">
+                <!-- TOP CARD: Storage Selection -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header border-0 bg-white pt-4 px-4 pb-0">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="card-title mb-0 fw-bold">1. Select Storage Location</h5>
+                        </div>
+                    </div>
+                    <div class="card-body px-4 pb-3">
+                        <div class="row g-2">
+                            <div class="col-md-3">
+                                <label class="form-label small text-muted">Raw</label>
+                                <select class="form-select form-select-sm border-light-subtle bg-light" id="selectRaw"
+                                    onchange="onRawChange()">
+                                    <option value="">-- Raw --</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small text-muted">Area</label>
+                                <select class="form-select form-select-sm border-light-subtle bg-light" id="selectArea"
+                                    onchange="onAreaChange()" disabled>
+                                    <option value="">-- Area --</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small text-muted">Rak</label>
+                                <select class="form-select form-select-sm border-light-subtle bg-light" id="selectRak"
+                                    onchange="onRakChange()" disabled>
+                                    <option value="">-- Rak --</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small text-muted">Bin</label>
+                                <select class="form-select form-select-sm border-light-subtle bg-light" id="selectBin"
+                                    onchange="onBinChange()" disabled>
+                                    <option value="">-- Bin --</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="mt-3 p-2 bg-light rounded text-center" id="storageDisplayInfo">
+                            <small class="text-muted"><i class="ri-information-line"></i> Please select all location
+                                components</small>
+                        </div>
+
+                        <div class="mt-3">
+                            <button class="btn btn-success px-4 py-2 fw-medium w-100 shadow-sm" id="btnAssignToStorage"
+                                onclick="assignToStorage()" disabled>
+                                <i class="ri-download-2-line me-1"></i> Assign to this Bin
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- BOTTOM CARD: Put Away Staging -->
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header border-0 bg-white pt-4 px-4 pb-0">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="card-title mb-0 fw-bold">2. Put Away Staging</h5>
+                            <div>
+                                <button class="btn btn-outline-danger btn-sm border-0" onclick="clearStaging()"><i
+                                        class="ri-delete-bin-line"></i> Clear</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body px-4 pb-4">
+                        <div id="stagingList" class="staging-area p-3 h-100">
+                            <div class="text-center text-muted py-5" id="emptyStagingMsg">
+                                <i class="ri-inbox-archive-line display-4 text-light"></i>
+                                <p class="mt-2 mb-0">No items staged yet.</p>
+                                <small>Select SNs on the left and a Storage above to begin.</small>
+                            </div>
+                            <!-- Staged items grouped by Storage will be here -->
+                        </div>
+
+                        <div class="mt-4">
+                            <button class="btn btn-primary btn-lg w-100 fw-bold shadow transition-all"
+                                id="btnConfirmPutAway" onclick="processPutAway()" disabled>
+                                <i class="ri-checkbox-circle-line me-1"></i> Confirm Put Away
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SN Selection Modal -->
+    <div id="materialSnModal" class="modal fade" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title text-white">Select Serial Numbers</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <div class="p-3 bg-light border-bottom d-flex justify-content-between align-items-center">
+                        <div class="overflow-hidden">
+                            <h6 class="mb-0 fw-bold text-truncate" id="modalMaterialName">Material Name</h6>
+                            <small class="text-muted d-block text-truncate" id="modalMaterialDesc">Description</small>
+                        </div>
+                        <div class="form-check form-switch ps-5">
+                            <input class="form-check-input" type="checkbox" id="selectAllSn">
+                            <label class="form-check-label fw-medium" for="selectAllSn">All</label>
+                        </div>
+                    </div>
+                    <div class="p-2 border-bottom">
+                        <div class="search-box">
+                            <input type="text" class="form-control form-control-sm border-light-subtle bg-light"
+                                id="searchSn" placeholder="Search serial number...">
+                            <i class="ri-search-line"></i>
+                        </div>
+                    </div>
+                    <div class="sn-list-container" id="modalSnList">
+                        <!-- SNs for selected material -->
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-link text-muted fw-medium"
+                        data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary px-4 fw-bold" onclick="confirmSnSelection()">Set
+                        Selected</button>
                 </div>
             </div>
         </div>
@@ -290,929 +278,569 @@
 @endsection
 
 @section('js')
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
-        localStorage.clear();
+        // Data management
+        let masterData = [];
+        let storages = [];
+        let staging = [];
+        let currentMaterialIndex = -1;
+        let selectedStorageId = null;
 
-        loadDataProducts();
+        $(document).ready(function() {
+            localStorage.clear();
+            initData();
+            renderMaterials();
+            populateRaw(); // Added for cascading selects
+            updateStats();
 
-        function loadDataProducts() {
-            const products = @json($products);
-            console.log(products);
-            const listProduct = [];
-
-            products.forEach((product, index) => {
-                const serialNumber = [];
-                (product.product_package_item_sn).forEach((sn) => {
-                    serialNumber.push({
-                        serialNumber: sn.serial_number,
-                        select: sn.status ?? 0
-                    });
-                });
-
-                listProduct.push({
-                    productPackageId: product.product_poackage_id,
-                    productPackageItemId: product.id,
-                    purchaseOrderDetailId: product.purchase_order_detail_id,
-                    salesDoc: product.purchase_order_detail.sales_doc,
-                    isParent: product.is_parent,
-                    qty: product.qty,
-                    qtyPa: 0,
-                    qtyPaDb: product.qty_pa ?? 0,
-                    productId: product.product_id,
-                    item: product.purchase_order_detail.item,
-                    material: product.purchase_order_detail.material,
-                    poItemDesc: product.purchase_order_detail.po_item_desc,
-                    prodHierarchyDesc: product.purchase_order_detail.prod_hierarchy_desc,
-                    serialNumber: serialNumber,
-                    indexMaster: index
-                });
+            // Search listeners
+            $('#searchMaterial').on('keyup', function() {
+                renderMaterials($(this).val());
             });
 
-            localStorage.setItem('master', JSON.stringify(listProduct));
-            viewProductMaster();
-
-            const dataLocation = @json($storage);
-            const location = [];
-
-            dataLocation.forEach((loc) => {
-                location.push({
-                    id: loc.id,
-                    raw: loc.raw,
-                    area: loc.area,
-                    rak: loc.rak,
-                    bin: loc.bin,
-                });
-            });
-            localStorage.setItem('location', JSON.stringify(location));
-        }
-
-        function getSerialNumber(type, id, detail) {
-            return $.ajax({
-                url: '{{ route('inbound.put-away.find-serial-number') }}',
-                method: 'GET',
-                data: {
-                    type: type,
-                    id: id,
-                    detail: detail
-                }
-            });
-        }
-
-        function viewProductMaster() {
-            const products = JSON.parse(localStorage.getItem('master')) ?? [];
-            let html = '';
-
-            products.forEach((product, index) => {
-                html += `
-                    <tr>
-                        <td class="text-center">${product.item}</td>
-                        <td>${product.salesDoc}</td>
-                        <td class="text-center">${product.isParent === 1 ? '<span class="badge bg-danger-subtle text-danger">Parent</span>' : '<span class="badge bg-secondary-subtle text-secondary">Child</span>'}</td>
-                        <td>${product.material}</td>
-                        <td>${product.poItemDesc}</td>
-                        <td>${product.prodHierarchyDesc}</td>
-                        <td class="text-center fw-bold">
-                            ${product.qty}
-                            ${product.qtyPaDb > 0 ? `<br><small class="text-danger">(Sisa: ${product.qty - product.qtyPaDb})</small>` : ''}
-                        </td>
-                        <td><a class="btn btn-primary btn-sm" onclick="detailSerialNumberMaster(${index})">Detail Serial Number</a></td>
-                    </td>
-                `;
+            $('#selectAllSn').on('change', function() {
+                $('.modal-sn-check:visible').prop('checked', $(this).is(':checked'));
             });
 
-            document.getElementById('listProductMaster').innerHTML = html;
-        }
-
-        function detailSerialNumberMaster(index) {
-            const products = JSON.parse(localStorage.getItem('master')) ?? [];
-            let html = '';
-
-            (products[index].serialNumber).forEach((sn) => {
-                html += `
-                    <tr>
-                        <td>${sn.serialNumber}</td>
-                        <td>
-                            ${parseInt(sn.select) === 1 ? '<span class="badge bg-success">Done</span>' : '<span class="badge bg-warning">Open</span>'}
-                        </td>
-                    </tr>
-                `;
+            $('#searchSn').on('keyup', function() {
+                renderSnList($(this).val());
             });
-
-            document.getElementById('detailSNMaster_item').innerText = products[index].item;
-            document.getElementById('detailSNMaster_salesDoc').innerText = products[index].salesDoc;
-            document.getElementById('detailSNMaster_material').innerText = products[index].material;
-
-            document.getElementById('listSerialNumberMaster').innerHTML = html;
-            $('#detailSerialNumberModal').modal('show');
-        }
-
-        function addBox() {
-            const master = JSON.parse(localStorage.getItem('master')) ?? [];
-
-            const addBox = [];
-            master.forEach((item, index) => {
-                if (parseInt(item.qty - item.qtyPaDb) !== parseInt(item.qtyPa)) {
-                    item.index = index;
-                    item.qtySelect = 0;
-                    addBox.push(item);
-                }
-            });
-
-            localStorage.setItem('addBox', JSON.stringify(addBox));
-
-            viewMasterProductModal();
-            $('#addBoxModal').modal('show');
-        }
-
-        function viewMasterProductModal() {
-            const addBox = JSON.parse(localStorage.getItem('addBox')) ?? [];
-            let html = '';
-            let number = 1;
-
-            addBox.forEach((item, index) => {
-                html += `
-                        <tr>
-                            <td>${number}</td>
-                            <td>${item.isParent === 1 ? '<span class="badge bg-danger-subtle text-danger">Parent</span>' : '<span class="badge bg-secondary-subtle text-secondary">Child</span>'}</td>
-                            <td>${item.item}</td>
-                            <td>${item.salesDoc}</td>
-                            <td>${item.material}</td>
-                            <td>${(item.qty - item.qtyPaDb) - item.qtyPa}</td>
-                            <td><input type="number" class="form-control" value="${item.qtySelect}" onchange="changeQtyPa(${index}, this.value)"></td>
-                        </tr>
-                    `;
-                number++;
-            });
-
-            document.getElementById('listMaterialAddBox').innerHTML = html;
-        }
-
-        function changeQtyPa(index, value) {
-            const addBox = JSON.parse(localStorage.getItem('addBox')) ?? [];
-
-            addBox[index].qtySelect = value;
-
-            localStorage.setItem('addBox', JSON.stringify(addBox));
-            viewMasterProductModal();
-        }
-
-        function addBoxProcess() {
-            const box = JSON.parse(localStorage.getItem('box')) ?? [];
-            const addBox = JSON.parse(localStorage.getItem('addBox'));
-            const master = JSON.parse(localStorage.getItem('master')) ?? [];
-            const parent = [];
-            const child = [];
-
-            addBox.forEach((item) => {
-                const qtySelect = parseInt(item.qtySelect);
-                if (qtySelect !== 0) {
-                    // Update QTY Master
-                    master[item.index].qtyPa = parseInt(master[item.index].qtyPa) + qtySelect;
-
-                    // Create a deep clone to ensure this box has its own item instance
-                    const itemToBox = JSON.parse(JSON.stringify(item));
-                    itemToBox.serialNumber = []; // Reset SN as it's newly scanned for this box
-                    itemToBox.qtySelect = qtySelect;
-
-                    if (parseInt(itemToBox.isParent) === 1) {
-                        parent.push(itemToBox);
-                    } else {
-                        child.push(itemToBox);
-                    }
-                }
-            });
-
-            box.push({
-                boxNumber: box.length + 1,
-                location: null,
-                parent: parent,
-                child: child
-            });
-
-            localStorage.setItem('addBox', JSON.stringify([]));
-            localStorage.setItem('box', JSON.stringify(box));
-            localStorage.setItem('master', JSON.stringify(master));
-            viewListBox();
-            $('#addBoxModal').modal('hide');
-        }
-
-        function viewListBox() {
-            const box = JSON.parse(localStorage.getItem('box')) ?? [];
-            let html = '';
-
-            box.forEach((item, index) => {
-                const parentsInBox = (item.parent || []).map((p, pIdx) => ({
-                    ...p,
-                    _type: 'parent',
-                    _idxDetail: pIdx
-                }));
-                const childrenInBox = (item.child || []).map((c, cIdx) => ({
-                    ...c,
-                    _type: 'child',
-                    _idxDetail: cIdx
-                }));
-                const allItems = [...parentsInBox, ...childrenInBox];
-
-                allItems.forEach((subItem, subIndex) => {
-                    const isFirstRow = subIndex === 0;
-                    let colorBtn = 'info';
-                    if (parseInt(subItem.qtySelect) === subItem.serialNumber.length) {
-                        colorBtn = 'success';
-                    }
-
-                    let locationHtml = '';
-                    if (isFirstRow) {
-                        const location = JSON.parse(localStorage.getItem('location')) ?? [];
-                        let options = '<option value="">-- Choose Location --</option>';
-                        location.forEach((loc) => {
-                            options +=
-                                `<option value="${loc.id}" ${item.location === loc.id ? 'selected' : ''}>${loc.raw} | ${loc.area} | ${loc.rak} | ${loc.bin}</option>`;
-                        });
-                        locationHtml =
-                            `<select class="form-control" onchange="changeLocation(${index}, this.value)">${options}</select>`;
-                    }
-
-                    html += `
-                        <tr style="${isFirstRow ? 'border-top: 2px solid #ccc;' : ''}">
-                            <td class="text-center fw-bold">${isFirstRow ? item.boxNumber : ''}</td>
-                            <td>
-                                ${subItem._type === 'parent' ? 
-                                    '<span class="badge bg-danger-subtle text-danger">Parent</span>' : 
-                                    '<span class="badge bg-secondary-subtle text-secondary">Child</span>'}
-                            </td>
-                            <td>${subItem.item}</td>
-                            <td>${subItem.salesDoc}</td>
-                            <td>${subItem.material}</td>
-                            <td class="text-center fw-bold">${subItem.qtySelect}</td>
-                            <td>
-                                <a class="btn btn-${colorBtn} btn-sm" onclick="serialNumber('${subItem._type}', '${index}', '${subItem._idxDetail}', '${subItem.indexMaster}')">
-                                    Serial Number
-                                </a>
-                            </td>
-                            <td>${locationHtml}</td>
-                            <td>${isFirstRow ? `<a class="btn btn-danger btn-sm" onclick="deleteBox(${index})">Delete Box</a>` : ''}</td>
-                        </tr>
-                    `;
-                });
-            });
-
-            document.getElementById('listBox').innerHTML = html;
-        }
-
-        function changeLocation(index, value) {
-            const box = JSON.parse(localStorage.getItem('box')) ?? [];
-
-            box[index].location = parseInt(value);
-
-            localStorage.setItem('box', JSON.stringify(box));
-            viewListBox();
-        }
-
-        function serialNumber(type, index, indexDetail, indexMaster) {
-            const box = JSON.parse(localStorage.getItem('box')) ?? [];
-            const master = JSON.parse(localStorage.getItem('master')) ?? [];
-
-            // Form Select Serial Number
-            viewSelectSnAvailable(indexMaster);
-
-            // Load Jika sudah punya SN
-            if (type === 'parent') {
-                document.getElementById('boxSerialNumber_item').innerText = box[index].parent[indexDetail].item;
-                document.getElementById('boxSerialNumber_salesDoc').innerText = box[index].parent[indexDetail].salesDoc;
-                document.getElementById('boxSerialNumber_material').innerText = box[index].parent[indexDetail].material;
-                document.getElementById('boxSerialNumber_qty').innerText = box[index].parent[indexDetail].qtySelect;
-
-                const serialNumber = box[index].parent[indexDetail].serialNumber;
-                localStorage.setItem('serialNumber', JSON.stringify(serialNumber));
-            } else {
-                document.getElementById('boxSerialNumber_item').innerText = box[index].child[indexDetail].item;
-                document.getElementById('boxSerialNumber_salesDoc').innerText = box[index].child[indexDetail].salesDoc;
-                document.getElementById('boxSerialNumber_material').innerText = box[index].child[indexDetail].material;
-                document.getElementById('boxSerialNumber_qty').innerText = box[index].child[indexDetail].qtySelect;
-
-                const serialNumber = box[index].child[indexDetail].serialNumber;
-                localStorage.setItem('serialNumber', JSON.stringify(serialNumber));
-            }
-
-            document.getElementById('boxSerialNumber_type').value = type;
-            document.getElementById('boxSerialNumber_index').value = index;
-            document.getElementById('boxSerialNumber_indexDetail').value = indexDetail;
-            document.getElementById('boxSerialNumber_indexMaster').value = indexMaster;
-
-            viewListSerialNumber();
-            $('#boxSerialNumberModal').modal('show');
-
-            setTimeout(() => {
-                document.getElementById('scanSerialNumber').focus();
-            }, 500);
-        }
-
-        function viewListSerialNumber() {
-            const serialNumber = JSON.parse(localStorage.getItem('serialNumber')) ?? [];
-            let html = '';
-            let number = 1;
-
-            serialNumber.forEach((sn, index) => {
-                html += `
-                    <tr>
-                        <td>${number}</td>
-                        <td><input type="text" class="form-control" value="${sn}" onchange="changeSN(${index}, this.value)"></td>
-                        <td><a class="btn btn-danger btn-sm" onclick="deleteSN(${index})">Delete</a></td>
-                    </tr>
-                `;
-
-                number++;
-            });
-
-            viewListBox();
-            document.getElementById('listSnBox').innerHTML = html;
-            document.getElementById('boxSerialNumber_qty_scan_sn').innerText = serialNumber.length;
-        }
-
-        function changeSN(indexSN, value) {
-            const box = JSON.parse(localStorage.getItem('box')) ?? [];
-            const serialNumber = JSON.parse(localStorage.getItem('serialNumber')) ?? [];
-
-            const type = document.getElementById('boxSerialNumber_type').value;
-            const index = document.getElementById('boxSerialNumber_index').value;
-            const indexDetail = document.getElementById('boxSerialNumber_indexDetail').value;
-
-            serialNumber[indexSN] = value;
-
-            if (type === 'parent') {
-                box[index].parent[indexDetail].serialNumber = serialNumber;
-            } else {
-                box[index].child[indexDetail].serialNumber = serialNumber;
-            }
-
-            localStorage.setItem('serialNumber', JSON.stringify(serialNumber));
-            viewListSerialNumber();
-        }
-
-        function deleteSN(indexDelete) {
-            const box = JSON.parse(localStorage.getItem('box')) ?? [];
-            const master = JSON.parse(localStorage.getItem('master')) ?? [];
-            const serialNumber = JSON.parse(localStorage.getItem('serialNumber')) ?? [];
-
-            const type = document.getElementById('boxSerialNumber_type').value;
-            const index = document.getElementById('boxSerialNumber_index').value;
-            const indexDetail = document.getElementById('boxSerialNumber_indexDetail').value;
-            const indexMaster = document.getElementById('boxSerialNumber_indexMaster').value;
-
-            const findSN = serialNumber[indexDelete];
-            const findMasterSN = master[indexMaster].serialNumber.find((item) => item.serialNumber === findSN);
-            if (findMasterSN) {
-                findMasterSN.select = 0;
-            }
-
-            serialNumber.splice(indexDelete, 1);
-
-            if (type === 'parent') {
-                box[index].parent[indexDetail].serialNumber = serialNumber;
-            } else {
-                box[index].child[indexDetail].serialNumber = serialNumber;
-            }
-
-            localStorage.setItem('box', JSON.stringify(box));
-            localStorage.setItem('master', JSON.stringify(master));
-            localStorage.setItem('serialNumber', JSON.stringify(serialNumber));
-
-            viewSelectSnAvailable(indexMaster);
-            viewListSerialNumber();
-        }
-
-        function viewSelectSnAvailable(indexMaster) {
-            const master = JSON.parse(localStorage.getItem('master')) ?? [];
-
-            const serialNumberMaster = master[indexMaster].serialNumber;
-            const serialNumberAvailable = serialNumberMaster.filter(i => parseInt(i.select) === 0);
-
-            let html = '';
-            let number = 1;
-
-            serialNumberAvailable.forEach((sn) => {
-                html += `
-                    <tr>
-                        <td>${number}</td>
-                        <td>${sn.serialNumber}</td>
-                        <td>
-                            <a class="btn btn-info btn-sm" onclick="pilihSerialNumber('${sn.serialNumber}')">Pilih</a>
-                        </td>
-                    </tr>
-                `;
-                number++;
-            });
-
-            document.getElementById('listSerialNumberAvailable').innerHTML = html;
-        }
-
-        function pilihSerialNumber(valueSN) {
-            const box = JSON.parse(localStorage.getItem('box')) ?? [];
-            const master = JSON.parse(localStorage.getItem('master')) ?? [];
-            const serialNumber = JSON.parse(localStorage.getItem('serialNumber')) ?? [];
-
-            const type = document.getElementById('boxSerialNumber_type').value;
-            const index = document.getElementById('boxSerialNumber_index').value;
-            const indexDetail = document.getElementById('boxSerialNumber_indexDetail').value;
-            const indexMaster = document.getElementById('boxSerialNumber_indexMaster').value;
-
-            // Validation Apakah SN ada didalam list master dan belum dipilih
-            // Cari yang valuenya sama DAN belum dipilih (select == 0)
-            let check = master[indexMaster].serialNumber.find((item) => item.serialNumber === valueSN && parseInt(item
-                .select) === 0);
-
-            if (!check) {
-                // Jika tidak ditemukan item available, cek apakah SN itu sebenarnya ada di master?
-                const exists = master[indexMaster].serialNumber.find((item) => item.serialNumber === valueSN);
-
-                if (exists) {
-                    // Ada di master, berarti semuanya sudah terpilih (select=1)
-                    document.getElementById('scanSerialNumberErrorMessage').innerText = "Serial Number has been added";
-                    document.getElementById('scanSerialNumberError').style.display = "block";
-
-                    setTimeout(() => {
-                        document.getElementById('scanSerialNumberError').style.display = "none";
-                    }, 3000);
-
-                    const sound = new Audio("{{ asset('assets/sound/error.mp3') }}");
-                    sound.play();
-
-                    document.getElementById('scanSerialNumber').value = "";
-                    document.getElementById('scanSerialNumber').focus();
-
-                    return true;
-                } else {
-                    // Benar-benar tidak ada di master
-                    document.getElementById('scanSerialNumberErrorMessage').innerText =
-                        "Serial number is not in master data";
-                    document.getElementById('scanSerialNumberError').style.display = "block";
-
-                    setTimeout(() => {
-                        document.getElementById('scanSerialNumberError').style.display = "none";
-                    }, 3000);
-
-                    const sound = new Audio("{{ asset('assets/sound/error.mp3') }}");
-                    sound.play();
-
-                    document.getElementById('scanSerialNumber').value = "";
-                    document.getElementById('scanSerialNumber').focus();
-
-                    return true;
-                }
-            }
-
-            // Validation QTY
-            if (type === 'parent') {
-                if (serialNumber.length === parseInt(box[index].parent[indexDetail].qtySelect)) {
-                    const sound = new Audio("{{ asset('assets/sound/error.mp3') }}");
-                    sound.play();
-
-                    Swal.fire({
-                        title: 'Warning!',
-                        text: 'Count serial numbers is the same as the product QTY',
-                        icon: 'warning'
-                    });
-                    return true;
-                }
-            } else {
-                if (serialNumber.length === parseInt(box[index].child[indexDetail].qtySelect)) {
-                    const sound = new Audio("{{ asset('assets/sound/error.mp3') }}");
-                    sound.play();
-
-                    Swal.fire({
-                        title: 'Warning!',
-                        text: 'Count serial numbers is the same as the product QTY',
-                        icon: 'warning'
-                    });
-                    return true;
-                }
-            }
-
-            if (type === 'parent') {
-                if (parseInt(box[index].parent[indexDetail].qtySelect + 1) > serialNumber.count) {
-                    const sound = new Audio("{{ asset('assets/sound/error.mp3') }}");
-                    sound.play();
-
-                    Swal.fire({
-                        title: 'Error!',
-                        text: 'Count serial numbers exceeds qty',
-                        icon: 'warning'
-                    });
-
-                    return true;
-                }
-            } else {
-                if (parseInt(box[index].child[indexDetail].qtySelect + 1) > serialNumber.count) {
-                    const sound = new Audio("{{ asset('assets/sound/error.mp3') }}");
-                    sound.play();
-
-                    Swal.fire({
-                        title: 'Error!',
-                        text: 'Count serial numbers exceeds qty',
-                        icon: 'warning'
-                    });
-
-                    return true;
-                }
-            }
-
-            serialNumber.push(valueSN);
-            localStorage.setItem('serialNumber', JSON.stringify(serialNumber));
-
-            // Mark as selected in Master
-            // Note: 'check' is a reference to the object inside the 'master' array structure? 
-            // Dexie/LocalStorage might return copies.
-            // Since we parsed 'master' from localStorage at the top, 'check' is an object in that array.
-            // We just need to modify it and save 'master' back.
-            // However, finding it again is safer if we want to be explicit.
-            // Let's use the object found:
-            check.select = 1;
-
-            localStorage.setItem('master', JSON.stringify(master));
-
-            // Save SN to BOX
-            if (type === 'parent') {
-                box[index].parent[indexDetail].serialNumber = serialNumber;
-            } else {
-                box[index].child[indexDetail].serialNumber = serialNumber;
-            }
-            localStorage.setItem('box', JSON.stringify(box));
-
-            viewListSerialNumber();
-            viewSelectSnAvailable(indexMaster);
-
-            const sound = new Audio("{{ asset('assets/sound/scan.mp3') }}");
-            sound.play();
-        }
-
-        function tambahManualSerialNumber() {
-            const serialNumber = JSON.parse(localStorage.getItem('serialNumber')) ?? [];
-            const box = JSON.parse(localStorage.getItem('box')) ?? [];
-
-            const type = document.getElementById('boxSerialNumber_type').value;
-            const index = document.getElementById('boxSerialNumber_index').value;
-            const indexDetail = document.getElementById('boxSerialNumber_indexDetail').value;
-            const indexMaster = document.getElementById('boxSerialNumber_indexMaster').value;
-
-            // Validation QTY
-            if (type === 'parent') {
-                if (serialNumber.length === parseInt(box[index].parent[indexDetail].qtySelect)) {
-                    Swal.fire({
-                        title: 'Warning!',
-                        text: 'Jumlah serial number sudah sama dengan QTY product',
-                        icon: 'warning'
-                    });
-                    return true;
-                }
-            } else {
-                if (serialNumber.length === parseInt(box[index].child[indexDetail].qtySelect)) {
-                    Swal.fire({
-                        title: 'Warning!',
-                        text: 'Jumlah serial number sudah sama dengan QTY product',
-                        icon: 'warning'
-                    });
-                    return true;
-                }
-            }
-
-            serialNumber.push("");
-
-            if (type === 'parent') {
-                box[index].parent[indexDetail].serialNumber = serialNumber;
-            } else {
-                box[index].child[indexDetail].serialNumber = serialNumber;
-            }
-
-            localStorage.setItem('serialNumber', JSON.stringify(serialNumber));
-            viewListSerialNumber();
-        }
-
-        function deleteBox(index) {
-            const box = JSON.parse(localStorage.getItem('box')) ?? [];
-            const master = JSON.parse(localStorage.getItem('master')) ?? [];
-
-            // Kembalikan QTY Master & SN
-            const targetBox = box[index];
-            const allItemsInBox = [...(targetBox.parent || []), ...(targetBox.child || [])];
-
-            allItemsInBox.forEach((itemInBox) => {
-                const masterIdx = itemInBox.indexMaster; // Gunakan indexMaster untuk mapping yang tepat
-                if (master[masterIdx]) {
-                    master[masterIdx].qtyPa = parseInt(master[masterIdx].qtyPa) - parseInt(itemInBox.qtySelect);
-
-                    (itemInBox.serialNumber || []).forEach((sn) => {
-                        const findSnMaster = master[masterIdx].serialNumber.find(i => i.serialNumber ===
-                            sn);
-                        if (findSnMaster) {
-                            findSnMaster.select = 0;
-                        }
-                    });
-                }
-            });
-
-            box.splice(index, 1);
-
-            // Re-indexing Box Number dan pertahankan location
-            const dataBox = box.map((item, idx) => ({
-                ...item,
-                boxNumber: idx + 1
-            }));
-
-            localStorage.setItem('box', JSON.stringify(dataBox));
-            localStorage.setItem('master', JSON.stringify(master));
-            viewListBox();
-        }
-
-        document.getElementById('scanSerialNumber').addEventListener('keydown', function(e) {
-            if (e.key === "Enter") {
-                e.preventDefault();
-                const value = this.value.trim();
-                if (value !== "") {
-                    pilihSerialNumber(value);
-
-                    document.getElementById('scanSerialNumber').value = "";
-                    document.getElementById('scanSerialNumber').focus();
-                } else {
-                    document.getElementById('scanSerialNumberErrorMessage').innerText =
-                        "Serial number cannot be empty";
-                    document.getElementById('scanSerialNumberError').style.display = "block";
-
-                    setTimeout(() => {
-                        document.getElementById('scanSerialNumberError').style.display = "none";
-                    }, 3000);
-
-                    const sound = new Audio("{{ asset('assets/sound/error.mp3') }}");
-                    sound.play();
-
-                    document.getElementById('scanSerialNumber').value = "";
-                    document.getElementById('scanSerialNumber').focus();
-                }
-            }
         });
 
+        function initData() {
+            const products = @json($products);
+            const storageItems = @json($storage);
+
+            masterData = products.map((p, index) => {
+                const sns = p.product_package_item_sn.map(sn => ({
+                    serialNumber: sn.serial_number,
+                    status: sn.status ?? 0,
+                    selected: false
+                }));
+
+                return {
+                    id: p.id,
+                    purchaseOrderDetailId: p.purchase_order_detail_id,
+                    productId: p.product_id,
+                    material: p.purchase_order_detail.material,
+                    desc: p.purchase_order_detail.po_item_desc,
+                    type: p.prod_hierarchy_desc,
+                    salesDoc: p.purchase_order_detail.sales_doc,
+                    item: p.purchase_order_detail.item,
+                    isParent: p.is_parent,
+                    totalQty: p.qty,
+                    qtyPaDb: p.qty_pa ?? 0,
+                    sns: sns,
+                    availableQty: sns.filter(s => s.status == 0).length
+                };
+            });
+
+            storages = storageItems.map(s => ({
+                id: s.id,
+                raw: s.raw,
+                area: s.area,
+                rak: s.rak,
+                bin: s.bin,
+                name: `${s.raw} | ${s.area} | ${s.rak} | ${s.bin}`
+            }));
+        }
+
+        // --- CASCADING SELECT LOGIC ---
+        function populateRaw() {
+            const raws = [...new Set(storages.map(s => s.raw))].sort();
+            const select = $('#selectRaw');
+            raws.forEach(r => select.append(`<option value="${r}">${r}</option>`));
+        }
+
+        function onRawChange() {
+            const raw = $('#selectRaw').val();
+            const selectArea = $('#selectArea');
+            const selectRak = $('#selectRak');
+            const selectBin = $('#selectBin');
+
+            selectArea.html('<option value="">-- Area --</option>').prop('disabled', !raw);
+            selectRak.html('<option value="">-- Rak --</option>').prop('disabled', true);
+            selectBin.html('<option value="">-- Bin --</option>').prop('disabled', true);
+            $('#btnAssignToStorage').prop('disabled', true);
+            $('#storageDisplayInfo').html('<small class="text-muted">Please select Area</small>');
+
+            if (raw) {
+                const areas = [...new Set(storages.filter(s => s.raw === raw).map(s => s.area))].sort();
+                areas.forEach(a => selectArea.append(`<option value="${a}">${a}</option>`));
+            }
+        }
+
+        function onAreaChange() {
+            const raw = $('#selectRaw').val();
+            const area = $('#selectArea').val();
+            const selectRak = $('#selectRak');
+            const selectBin = $('#selectBin');
+
+            selectRak.html('<option value="">-- Rak --</option>').prop('disabled', !area);
+            selectBin.html('<option value="">-- Bin --</option>').prop('disabled', true);
+            $('#btnAssignToStorage').prop('disabled', true);
+            $('#storageDisplayInfo').html('<small class="text-muted">Please select Rak</small>');
+
+            if (area) {
+                const raks = [...new Set(storages.filter(s => s.raw === raw && s.area === area).map(s => s.rak))].sort();
+                raks.forEach(r => selectRak.append(`<option value="${r}">${r}</option>`));
+            }
+        }
+
+        function onRakChange() {
+            const raw = $('#selectRaw').val();
+            const area = $('#selectArea').val();
+            const rak = $('#selectRak').val();
+            const selectBin = $('#selectBin');
+
+            selectBin.html('<option value="">-- Bin --</option>').prop('disabled', !rak);
+            $('#btnAssignToStorage').prop('disabled', true);
+            $('#storageDisplayInfo').html('<small class="text-muted">Please select Bin</small>');
+
+            if (rak) {
+                const bins = [...new Set(storages.filter(s => s.raw === raw && s.area === area && s.rak === rak).map(s => s
+                    .bin))].sort();
+                bins.forEach(b => selectBin.append(`<option value="${b}">${b}</option>`));
+            }
+        }
+
+        function onBinChange() {
+            const raw = $('#selectRaw').val();
+            const area = $('#selectArea').val();
+            const rak = $('#selectRak').val();
+            const bin = $('#selectBin').val();
+
+            if (bin) {
+                const storage = storages.find(s => s.raw === raw && s.area === area && s.rak === rak && s.bin === bin);
+                if (storage) {
+                    selectedStorageId = storage.id;
+                    $('#storageDisplayInfo').html(
+                        `<div class="text-primary fw-bold small"><i class="ri-check-line"></i> ${storage.name}</div>`);
+                    $('#btnAssignToStorage').prop('disabled', false);
+                }
+            } else {
+                $('#btnAssignToStorage').prop('disabled', true);
+            }
+        }
+        // --- END CASCADING SELECT LOGIC ---
+
+        function renderMaterials(filter = '') {
+            let html = '';
+            masterData.forEach((m, index) => {
+                const searchStr = `${m.material} ${m.desc} ${m.salesDoc} ${m.sns.map(s=>s.serialNumber).join(' ')}`
+                    .toLowerCase();
+                if (filter && !searchStr.includes(filter.toLowerCase())) {
+                    return;
+                }
+
+                if (m.availableQty <= 0) return;
+
+                const selectedCount = m.sns.filter(s => s.selected).length;
+
+                html += `
+                    <div class="card material-card shadow-none border ${currentMaterialIndex === index ? 'active' : ''}" onclick="openSnSelector(${index})">
+                        <div class="card-body p-3">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="flex-grow-1 overflow-hidden">
+                                    <h6 class="mb-1 fw-bold text-primary text-truncate">${m.material}</h6>
+                                    <p class="text-muted mb-1 small text-truncate">${m.desc}</p>
+                                    <div class="d-flex gap-2 align-items-center">
+                                        <span class="badge ${m.isParent ? 'bg-danger-subtle text-danger' : 'bg-secondary-subtle text-secondary'}">${m.isParent ? 'Parent' : 'Child'}</span>
+                                        <span class="small text-muted text-truncate"><i class="ri-file-list-3-line"></i> ${m.salesDoc}</span>
+                                    </div>
+                                </div>
+                                <div class="text-end ms-2">
+                                    <span class="badge bg-light text-dark border-light-subtle">${m.availableQty} Avail</span>
+                                    ${selectedCount > 0 ? `<div class="mt-2"><span class="badge bg-success shadow-sm">${selectedCount} Selected</span></div>` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            if (html === '') {
+                html = `
+                    <div class="text-center py-5">
+                        <i class="ri-search-2-line display-6 text-muted-em"></i>
+                        <p class="text-muted mt-2">No matching materials found</p>
+                    </div>
+                `;
+            }
+            $('#materialList').html(html);
+        }
+
+        function openSnSelector(index) {
+            currentMaterialIndex = index;
+            const m = masterData[index];
+
+            $('#modalMaterialName').text(m.material);
+            $('#modalMaterialDesc').text(m.desc);
+            $('#searchSn').val(''); // Reset search when opening
+
+            renderSnList();
+
+            $('#materialSnModal').modal('show');
+        }
+
+        function renderSnList(filter = '') {
+            const m = masterData[currentMaterialIndex];
+            let html = '';
+            let visibleCount = 0;
+
+            m.sns.forEach((sn, snIndex) => {
+                if (sn.status != 0) return;
+
+                if (filter && !sn.serialNumber.toLowerCase().includes(filter.toLowerCase())) {
+                    return;
+                }
+
+                visibleCount++;
+                html += `
+                    <div class="sn-checkbox-item">
+                        <div class="form-check w-100">
+                            <input class="form-check-input modal-sn-check pointer" type="checkbox" value="${snIndex}" id="sn_${currentMaterialIndex}_${snIndex}" ${sn.selected ? 'checked' : ''}>
+                            <label class="form-check-label w-100 ps-2 mb-0 pointer" for="sn_${currentMaterialIndex}_${snIndex}">
+                                ${sn.serialNumber}
+                            </label>
+                        </div>
+                    </div>
+                `;
+            });
+
+            if (visibleCount === 0) {
+                html = '<div class="p-4 text-center text-muted small">No SN found</div>';
+            }
+
+            $('#modalSnList').html(html);
+            $('#selectAllSn').prop('checked', m.sns.filter(s => s.status == 0 && !s.selected).length === 0);
+        }
+
+        function confirmSnSelection() {
+            const m = masterData[currentMaterialIndex];
+
+            m.sns.forEach(s => {
+                if (s.status == 0) s.selected = false;
+            });
+
+            $('.modal-sn-check:checked').each(function() {
+                const snIndex = $(this).val();
+                m.sns[snIndex].selected = true;
+            });
+
+            renderMaterials($('#searchMaterial').val());
+            $('#materialSnModal').modal('hide');
+            updateStats();
+        }
+
+        function updateStats() {
+            let total = 0;
+            masterData.forEach(m => {
+                total += m.sns.filter(s => s.status == 0).length;
+            });
+            $('#totalAvailableSN').text(total + ' SN Available');
+        }
+
+        function assignToStorage() {
+            if (selectedStorageId === null) {
+                Swal.fire({
+                    title: 'Storage Required',
+                    text: 'Please select a storage location using the 4 dropdowns above.',
+                    icon: 'warning',
+                    confirmButtonColor: '#405189'
+                });
+                return;
+            }
+
+            const selectedItems = [];
+            masterData.forEach(m => {
+                const selectedSns = m.sns.filter(s => s.selected && s.status == 0).map(s => s.serialNumber);
+                if (selectedSns.length > 0) {
+                    selectedItems.push({
+                        materialIndex: masterData.indexOf(m),
+                        material: m.material,
+                        desc: m.desc,
+                        salesDoc: m.salesDoc,
+                        item: m.item,
+                        sns: selectedSns,
+                        detail: m
+                    });
+                }
+            });
+
+            if (selectedItems.length === 0) {
+                Swal.fire({
+                    title: 'No Items Selected',
+                    text: 'Please select Serial Numbers from the materials list on the left.',
+                    icon: 'warning',
+                    confirmButtonColor: '#405189'
+                });
+                return;
+            }
+
+            const storage = storages.find(s => s.id === selectedStorageId);
+            let stageGroup = staging.find(st => st.storageId === selectedStorageId);
+
+            if (!stageGroup) {
+                stageGroup = {
+                    storageId: selectedStorageId,
+                    storageName: storage.name,
+                    items: []
+                };
+                staging.push(stageGroup);
+            }
+
+            selectedItems.forEach(item => {
+                let existingItem = stageGroup.items.find(si => si.material === item.material && si.salesDoc === item
+                    .salesDoc);
+                if (existingItem) {
+                    existingItem.sns = Array.from(new Set([...existingItem.sns, ...item.sns]));
+                } else {
+                    stageGroup.items.push({
+                        ...item
+                    });
+                }
+
+                item.detail.sns.forEach(s => {
+                    if (item.sns.includes(s.serialNumber)) {
+                        s.status = 2; // Temporary staged status
+                        s.selected = false;
+                    }
+                });
+                item.detail.availableQty = item.detail.sns.filter(s => s.status == 0).length;
+            });
+
+            renderMaterials($('#searchMaterial').val());
+            renderStaging();
+            updateStats();
+
+            Toast.fire({
+                icon: 'success',
+                title: 'Assigned to storage'
+            });
+        }
+
+        function renderStaging() {
+            const btnConfirm = $('#btnConfirmPutAway');
+            const stagingList = $('#stagingList');
+
+            if (staging.length === 0) {
+                stagingList.removeClass('has-items');
+                stagingList.html(`
+                    <div class="text-center text-muted py-5" id="emptyStagingMsg">
+                        <i class="ri-inbox-archive-line display-4 text-light"></i>
+                        <p class="mt-2 mb-0">No items staged yet.</p>
+                        <small>Select SNs on the left and a Storage above to begin.</small>
+                    </div>
+                `);
+                btnConfirm.prop('disabled', true);
+                return;
+            }
+
+            stagingList.addClass('has-items');
+            btnConfirm.prop('disabled', false);
+
+            let html = '';
+            staging.forEach((group, gIndex) => {
+                html += `
+                    <div class="card border-0 shadow-sm mb-3 bg-white">
+                        <div class="card-header bg-primary-subtle border-0 py-2 d-flex justify-content-between align-items-center">
+                            <span class="fw-bold text-primary small"><i class="ri-archive-line me-1"></i> Box/Package - ${group.storageName}</span>
+                            <button class="btn btn-link btn-sm text-danger text-decoration-none py-0" onclick="removeStagingGroup(${gIndex})">
+                                <i class="ri-delete-bin-line"></i>
+                            </button>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-sm align-middle mb-0">
+                                    <thead class="table-light">
+                                        <tr class="small">
+                                            <th class="ps-3 py-1">Material</th>
+                                            <th class="text-center py-1">QTY</th>
+                                            <th class="py-1">SNs</th>
+                                            <th class="py-1"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="small">
+                `;
+
+                group.items.forEach((item, iIndex) => {
+                    html += `
+                        <tr>
+                            <td class="ps-3 py-2">
+                                <div class="fw-bold">${item.material}</div>
+                                <div class="text-muted smaller">${item.salesDoc}</div>
+                            </td>
+                            <td class="text-center fw-bold">${item.sns.length}</td>
+                            <td class="py-2">
+                                <div class="d-flex flex-wrap gap-1" style="max-width: 200px;">
+                                    ${item.sns.slice(0, 3).map(sn => `<span class="badge bg-light text-dark border-light-subtle">${sn}</span>`).join('')}
+                                    ${item.sns.length > 3 ? `<span class="badge bg-light text-muted border-light-subtle">+${item.sns.length - 3}</span>` : ''}
+                                </div>
+                            </td>
+                            <td class="text-end pe-2">
+                                <button class="btn btn-link btn-sm text-muted p-0" onclick="removeFromStaging(${gIndex}, ${iIndex})"><i class="ri-close-circle-line fs-16"></i></button>
+                            </td>
+                        </tr>
+                    `;
+                });
+
+                html += `
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            stagingList.html(html);
+        }
+
+        const Toast = Swal.mixin({
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 2000,
+            timerProgressBar: true
+        });
+
+        function removeStagingGroup(gIndex) {
+            const group = staging[gIndex];
+            group.items.forEach(item => {
+                item.detail.sns.forEach(s => {
+                    if (item.sns.includes(s.serialNumber)) {
+                        s.status = 0;
+                    }
+                });
+                item.detail.availableQty = item.detail.sns.filter(s => s.status == 0).length;
+            });
+            staging.splice(gIndex, 1);
+            renderMaterials($('#searchMaterial').val());
+            renderStaging();
+            updateStats();
+        }
+
+        function removeFromStaging(gIndex, iIndex) {
+            const group = staging[gIndex];
+            const item = group.items[iIndex];
+            item.detail.sns.forEach(s => {
+                if (item.sns.includes(s.serialNumber)) {
+                    s.status = 0;
+                }
+            });
+            item.detail.availableQty = item.detail.sns.filter(s => s.status == 0).length;
+
+            group.items.splice(iIndex, 1);
+            if (group.items.length === 0) {
+                staging.splice(gIndex, 1);
+            }
+
+            renderMaterials($('#searchMaterial').val());
+            renderStaging();
+            updateStats();
+        }
+
+        function clearStaging() {
+            staging.forEach((group) => {
+                group.items.forEach(item => {
+                    item.detail.sns.forEach(s => {
+                        if (item.sns.includes(s.serialNumber)) {
+                            s.status = 0;
+                        }
+                    });
+                    item.detail.availableQty = item.detail.sns.filter(s => s.status == 0).length;
+                });
+            });
+            staging = [];
+            renderMaterials($('#searchMaterial').val());
+            renderStaging();
+            updateStats();
+        }
+
         function processPutAway() {
-            Swal.fire({
-                title: "Are you sure?",
-                text: "Process Put Away",
-                icon: "warning",
-                showCancelButton: true,
-                customClass: {
-                    confirmButton: "btn btn-primary w-xs me-2 mt-2",
-                    cancelButton: "btn btn-danger w-xs mt-2"
-                },
-                confirmButtonText: "Yes, Process it!",
-                buttonsStyling: false,
-                showCloseButton: true
-            }).then(function(t) {
-                if (t.value) {
+            if (staging.length === 0) return;
 
-                    // Validation Products
-                    // Validation Products
-                    const master = JSON.parse(localStorage.getItem('master')) ?? [];
-                    // Removed validation for checking if all QTY is entered into box to allow Partial Put Away
-                    // master.forEach((item) => {
-                    //     if (parseInt(item.qty) !== parseInt(item.qtyPa)) {
-                    //         Swal.fire({
-                    //             title: 'Warning!',
-                    //             text: 'Not all QTY have been entered into the box',
-                    //             icon: 'warning'
-                    //         });
-                    //         return true;
-                    //     }
-                    // });
+            const boxes = staging.map((group, index) => {
+                const parents = [];
+                const children = [];
 
-                    // Validation Serial Number N/A
-                    const box = JSON.parse(localStorage.getItem('box')) ?? [];
-
-                    const updateSerialNumbers = (items) => {
-                        items.forEach(item => {
-                            item.forEach(subItem => {
-                                const qtySelect = Number(subItem.qtySelect);
-                                const serialNumberLength = subItem.serialNumber.length;
-
-                                if (qtySelect !== serialNumberLength) {
-                                    const missingQty = qtySelect - serialNumberLength;
-                                    subItem.serialNumber.push(...Array(missingQty).fill('N/A'));
-                                }
-
-                                subItem.serialNumber = subItem.serialNumber.map(sn => (sn ===
-                                    null || sn === '') ? 'N/A' : sn);
-                            });
-                        });
+                group.items.forEach(item => {
+                    const boxItem = {
+                        productId: item.detail.productId,
+                        purchaseOrderDetailId: item.detail.purchaseOrderDetailId,
+                        productPackageItemId: item.detail.id,
+                        qtySelect: item.sns.length,
+                        serialNumber: item.sns,
+                        salesDoc: item.salesDoc,
+                        item: item.item,
+                        material: item.material
                     };
 
-                    box.forEach(item => {
-                        updateSerialNumbers([item.parent, item.child]);
+                    if (item.detail.isParent) {
+                        parents.push(boxItem);
+                    } else {
+                        children.push(boxItem);
+                    }
+                });
 
-                        if (item.location === null || item.location === '') {
-                            Swal.fire({
-                                title: 'Warning!',
-                                text: 'Location cannot be empty',
-                                icon: 'warning'
-                            });
-                            return true;
+                return {
+                    boxNumber: index + 1,
+                    location: group.storageId,
+                    parent: parents,
+                    child: children
+                };
+            });
+
+            const productPackageId = new URLSearchParams(window.location.search).get('id');
+
+            Swal.fire({
+                title: 'Confirm Put Away',
+                text: `You are about to Put Away items into ${staging.length} different storage locations. Continue?`,
+                icon: 'info',
+                showCancelButton: true,
+                confirmButtonColor: '#405189',
+                cancelButtonColor: '#f06548',
+                confirmButtonText: 'Yes, Confirm All'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({
+                        title: 'Processing...',
+                        text: 'Please wait while we update inventory',
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading();
                         }
                     });
 
-                    // Insert ke Database
                     $.ajax({
                         url: '{{ route('inbound.put-away.store') }}',
                         method: 'POST',
                         data: {
                             _token: '{{ csrf_token() }}',
-                            box: box,
-                            productPackageId: '{{ request()->get('id') }}'
+                            box: boxes,
+                            productPackageId: productPackageId
                         },
-                        success: (res) => {
-                            if (res.status) {
+                        success: function(response) {
+                            if (response.status) {
                                 Swal.fire({
-                                    title: 'Success',
-                                    text: 'Put Away Product Success',
-                                    icon: 'success'
-                                }).then((e) => {
-                                    window.location.href = '/inbound/put-away/detail?id=' + res
-                                        .data;
+                                    title: 'Success!',
+                                    text: 'Inventory has been updated successfully.',
+                                    icon: 'success',
+                                    confirmButtonColor: '#405189'
+                                }).then(() => {
+                                    window.location.href = '{{ route('inbound.put-away') }}';
                                 });
                             } else {
-                                Swal.fire({
-                                    title: 'Error',
-                                    text: 'Put Away Product Failed',
-                                    icon: 'error'
-                                });
+                                Swal.fire('Error', response.message || 'Failed to process Put Away',
+                                    'error');
                             }
+                        },
+                        error: function() {
+                            Swal.fire('Error', 'Server error occurred during processing', 'error');
                         }
                     });
-                }
-            });
-        }
-
-        function changeMassQty(value) {
-            const addBox = JSON.parse(localStorage.getItem('addBox')) ?? [];
-            addBox.forEach((item) => {
-                item.qtySelect = value;
-            });
-            localStorage.setItem('addBox', JSON.stringify(addBox));
-            viewMasterProductModal();
-        }
-
-        function selectAllSN() {
-            const box = JSON.parse(localStorage.getItem('box')) ?? [];
-            const master = JSON.parse(localStorage.getItem('master')) ?? [];
-            const serialNumber = JSON.parse(localStorage.getItem('serialNumber')) ?? [];
-
-            const type = document.getElementById('boxSerialNumber_type').value;
-            const index = document.getElementById('boxSerialNumber_index').value;
-            const indexDetail = document.getElementById('boxSerialNumber_indexDetail').value;
-            const indexMaster = document.getElementById('boxSerialNumber_indexMaster').value;
-
-            // Determine Target Quantity
-            let targetQty = 0;
-            if (type === 'parent') {
-                targetQty = parseInt(box[index].parent[indexDetail].qtySelect);
-            } else {
-                targetQty = parseInt(box[index].child[indexDetail].qtySelect);
-            }
-
-            // Calculate needed amount
-            const neededParams = targetQty - serialNumber.length;
-
-            if (neededParams <= 0) {
-                Swal.fire({
-                    title: 'Warning!',
-                    text: 'Quantity is already full',
-                    icon: 'warning'
-                });
-                return;
-            }
-
-            // Get Available SNs from Master
-            const masterSNList = master[indexMaster].serialNumber;
-            // Find SNs that are NOT selected (status == 0)
-            const availableSNs = masterSNList.filter(sn => parseInt(sn.select) === 0);
-
-            if (availableSNs.length === 0) {
-                Swal.fire({
-                    title: 'Warning!',
-                    text: 'No more available serial numbers',
-                    icon: 'warning'
-                });
-                return;
-            }
-
-            // Take as many as needed or as many as available
-            const toAdd = availableSNs.slice(0, neededParams);
-            const addedCount = toAdd.length;
-
-            toAdd.forEach(snObj => {
-                // Add to Box SN list
-                serialNumber.push(snObj.serialNumber);
-
-                // Mark as selected in Master
-                // We need to find the specific object in the master array to update it
-                // Since filter returned references (or we iterate master again to be safe)
-                // Let's iterate master directly to find and update reference
-                const snInMaster = master[indexMaster].serialNumber.find(mSn => mSn ===
-                    snObj); // Check reference or content
-                if (snInMaster) snInMaster.select = 1;
-            });
-
-            // Save Updates
-            localStorage.setItem('serialNumber', JSON.stringify(serialNumber));
-            localStorage.setItem('master', JSON.stringify(master));
-
-            if (type === 'parent') {
-                box[index].parent[indexDetail].serialNumber = serialNumber;
-            } else {
-                box[index].child[indexDetail].serialNumber = serialNumber;
-            }
-            localStorage.setItem('box', JSON.stringify(box));
-
-            // Refresh Views
-            viewListSerialNumber();
-            viewSelectSnAvailable(indexMaster);
-
-            const sound = new Audio("{{ asset('assets/sound/scan.mp3') }}");
-            sound.play();
-
-            Swal.fire({
-                title: 'Success!',
-                text: `${addedCount} Serial Numbers added automatically.`,
-                icon: 'success',
-                timer: 1500,
-                showConfirmButton: false
-            });
-        }
-    </script>
-
-    <script>
-        function setLocation(id) {
-            document.getElementById('setLocationId').value = id;
-            $('#setLocationModal').modal('show');
-        }
-
-        function changeRaw(raw) {
-            $.ajax({
-                url: '{{ route('storage.find.area') }}',
-                method: 'GET',
-                data: {
-                    raw: raw
-                },
-                success: (res) => {
-                    const data = res.data;
-                    let html = '<option value="">-- Select Raw --</option>';
-
-                    data.forEach((item) => {
-                        html += `<option value="${item.area}">${item.area}</option>`;
-                    });
-
-                    document.getElementById('area').innerHTML = html;
-                }
-            });
-        }
-
-        function changeArea(area) {
-            $.ajax({
-                url: '{{ route('storage.find.rak') }}',
-                method: 'GET',
-                data: {
-                    raw: document.getElementById('raw').value,
-                    area: area
-                },
-                success: (res) => {
-                    const data = res.data;
-                    let html = '<option value="">-- Select Rak --</option>';
-
-                    data.forEach((item) => {
-                        html += `<option value="${item.rak}">${item.rak}</option>`;
-                    });
-
-                    document.getElementById('rak').innerHTML = html;
-                }
-            });
-        }
-
-        function changeRak(rak) {
-            $.ajax({
-                url: '{{ route('storage.find.bin') }}',
-                method: 'GET',
-                data: {
-                    raw: document.getElementById('raw').value,
-                    area: document.getElementById('area').value,
-                    rak: rak
-                },
-                success: (res) => {
-                    console.log(document.getElementById('raw').value)
-                    console.log(document.getElementById('area').value)
-                    console.log(document.getElementById('rak').value)
-                    const data = res.data;
-                    console.log(data);
-                    let html = '<option value="">-- Select Bin --</option>';
-
-                    data.forEach((item) => {
-                        html += `<option value="${item.id}">${item.bin}</option>`;
-                    });
-
-                    document.getElementById('bin').innerHTML = html;
                 }
             });
         }
