@@ -1055,6 +1055,34 @@ class InboundController extends Controller
         }
     }
 
+    public function qualityControlCancel(Request $request): \Illuminate\Http\RedirectResponse
+    {
+        try {
+            DB::beginTransaction();
+            Log::channel('inbound_qc_process')->info('Quality Control Cancel Process Started', ['id' => $request->query('id'), 'user_id' => Auth::id()]);
+
+            $id = $request->query('id');
+            $purchaseOrder = PurchaseOrder::find($id);
+
+            if (!$purchaseOrder) {
+                return back()->with('error', 'Purchase Order not found');
+            }
+
+            // Return status to 'new' (sent back to PO list for re-approval)
+            // Existing 'qty_qc' in PurchaseOrderDetail remains as is (partial receipt remains)
+            $purchaseOrder->status = 'new';
+            $purchaseOrder->save();
+
+            DB::commit();
+            return back()->with('success', 'Quality Control cancelled and returned to Purchase Order');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::channel('inbound_qc_process')->error('Quality Control Cancel Process Failed: ' . $e->getMessage());
+            Log::error($e->getMessage());
+            return back()->with('error', 'Failed to cancel Quality Control');
+        }
+    }
+
     public function qualityControlProcessCcw(Request $request): View
     {
         $purcDocDetail = PurchaseOrderDetail::where('purchase_order_id', $request->query('id'))

@@ -124,6 +124,7 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
             Route::get('/list', 'qualityControlList')->name('inbound.quality-control-list');
             Route::get('/process', 'qualityControlProcess')->name('inbound.quality-control-process');
             Route::post('/process', 'qualityControlStoreProcess')->name('inbound.quality-control-store-process');
+            Route::get('/cancel', 'qualityControlCancel')->name('inbound.quality-control-cancel');
 
             // CCW Process
             Route::get('/process-ccw', 'qualityControlProcessCcw')->name('inbound.quality-control-process-ccw');

@@ -139,6 +139,8 @@
                                                     class="btn btn-primary btn-sm">Process QC</a>
                                                 <a href="{{ route('inbound.quality-control-process-ccw', ['id' => $po->id]) }}"
                                                     class="btn btn-info btn-sm">Process QC CCW</a>
+                                                <a onclick="confirmCancel('{{ route('inbound.quality-control-cancel', ['id' => $po->id]) }}')"
+                                                    class="btn btn-danger btn-sm">Cancel</a>
                                             </div>
                                         </td>
                                     </tr>
@@ -203,5 +205,21 @@
             allowClear: true,
             width: '100%'
         });
+
+        function confirmCancel(url) {
+            Swal.fire({
+                title: 'Are you sure?',
+                text: "This will cancel the current Quality Control session and return it to Purchase Order list.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Yes, cancel it!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = url;
+                }
+            })
+        }
     </script>
 @endsection
