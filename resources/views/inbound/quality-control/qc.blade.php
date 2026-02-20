@@ -47,17 +47,17 @@
                         <div class="card-body">
                             <table class="table table-striped align-middle" id="masterMaterial">
                                 <thead>
-                                <tr>
-                                    <th>#</th>
-                                    <th>Sales Doc</th>
-                                    <th class="text-center">Item</th>
-                                    <th>Material</th>
-                                    <th>Desc</th>
-                                    <th>Hierarchy Desc</th>
-                                    <th class="text-center">QTY</th>
-                                    <th class="text-center">QTY QC</th>
-                                    <th>Action</th>
-                                </tr>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Sales Doc</th>
+                                        <th class="text-center">Item</th>
+                                        <th>Material</th>
+                                        <th>Desc</th>
+                                        <th>Hierarchy Desc</th>
+                                        <th class="text-center">QTY</th>
+                                        <th class="text-center">QTY QC</th>
+                                        <th>Action</th>
+                                    </tr>
                                 </thead>
                                 <tbody id="listItemMaster">
 
@@ -77,14 +77,14 @@
                         <div class="card-body">
                             <table class="table table-striped align-middle">
                                 <thead>
-                                <tr>
-                                    <th>#</th>
-                                    <th class="text-center">Item</th>
-                                    <th>Material</th>
-                                    <th style="width: 100px">QTY</th>
-                                    <th>Parent</th>
-                                    <th>Action</th>
-                                </tr>
+                                    <tr>
+                                        <th>#</th>
+                                        <th class="text-center">Item</th>
+                                        <th>Material</th>
+                                        <th style="width: 100px">QTY</th>
+                                        <th>Parent</th>
+                                        <th>Action</th>
+                                    </tr>
                                 </thead>
                                 <tbody id="listMapping">
 
@@ -108,19 +108,19 @@
                     <div class="card-table-responsive">
                         <table class="table table-striped align-middle">
                             <thead>
-                            <tr>
-                                <th>#</th>
-                                <th>Material</th>
-                                <th class="text-center">Parent</th>
-                                <th>PA Step</th>
-                                <th>Sales Doc</th>
-                                <th>Item</th>
-                                <th>Desc</th>
-                                <th>Hierarchy Desc</th>
-                                <th class="text-center">QTY</th>
-                                <th>Serial Number</th>
-                                <th>Action</th>
-                            </tr>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Material</th>
+                                    <th class="text-center">Parent</th>
+                                    <th>PA Step</th>
+                                    <th>Sales Doc</th>
+                                    <th>Item</th>
+                                    <th>Desc</th>
+                                    <th>Hierarchy Desc</th>
+                                    <th class="text-center">QTY</th>
+                                    <th>Serial Number</th>
+                                    <th>Action</th>
+                                </tr>
                             </thead>
                             <tbody id="listQualityControl">
 
@@ -133,7 +133,8 @@
     </div>
 
     <!-- Default Modals -->
-    <div id="detailSerialNumberModal" class="modal fade" tabindex="-1" aria-labelledby="myModalLabel" aria-hidden="true" style="display: none;">
+    <div id="detailSerialNumberModal" class="modal fade" tabindex="-1" aria-labelledby="myModalLabel" aria-hidden="true"
+        style="display: none;">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
@@ -186,10 +187,13 @@
                     <input type="hidden" id="detail_SN_productIndex">
 
                     <div class="mb-3">
-                        <input type="text" class="form-control" id="scanSerialNumber" placeholder="Scan Serial Number" autofocus>
+                        <input type="text" class="form-control" id="scanSerialNumber"
+                            placeholder="Scan Serial Number" autofocus>
                     </div>
 
-                    <div id="scanSerialNumberError" class="alert alert-danger alert-dismissible alert-label-icon label-arrow shadow fade show" role="alert" style="display: none">
+                    <div id="scanSerialNumberError"
+                        class="alert alert-danger alert-dismissible alert-label-icon label-arrow shadow fade show"
+                        role="alert" style="display: none">
                         <i class="ri-error-warning-line label-icon"></i>
                         <strong>Error</strong> - <span id="scanSerialNumberErrorMessage"></span>
                         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
@@ -197,7 +201,7 @@
 
                     <div class="mb-3">
                         <div class="row">
-                            <div class="col-8">
+                            <div class="col-6">
                                 <label class="form-label">Upload Excel Serial Number</label>
                                 <input type="file" class="form-control" id="uploadFileSN">
                             </div>
@@ -211,6 +215,12 @@
                                 <label class="form-label text-white">-</label>
                                 <div>
                                     <a class="btn btn-secondary w-100" onclick="addSerialNumberManual()">SN Manual</a>
+                                </div>
+                            </div>
+                            <div class="col-2">
+                                <label class="form-label text-white">-</label>
+                                <div>
+                                    <a class="btn btn-warning w-100" onclick="addSerialNumberNA()">SN N/A</a>
                                 </div>
                             </div>
                         </div>
@@ -237,7 +247,8 @@
         </div>
     </div>
 
-    <div id="serialNumberDirectOutboundModal" class="modal fade" tabindex="-1" aria-labelledby="myModalLabel" aria-hidden="true" style="display: none;">
+    <div id="serialNumberDirectOutboundModal" class="modal fade" tabindex="-1" aria-labelledby="myModalLabel"
+        aria-hidden="true" style="display: none;">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
@@ -290,10 +301,13 @@
                     <input type="hidden" id="detail_Direct_productIndex">
 
                     <div class="mb-3">
-                        <input type="text" class="form-control" id="scanSerialNumberDirect" placeholder="Scan Serial Number" autofocus>
+                        <input type="text" class="form-control" id="scanSerialNumberDirect"
+                            placeholder="Scan Serial Number" autofocus>
                     </div>
 
-                    <div id="scanSerialNumberDirectError" class="alert alert-danger alert-dismissible alert-label-icon label-arrow shadow fade show" role="alert" style="display: none;">
+                    <div id="scanSerialNumberDirectError"
+                        class="alert alert-danger alert-dismissible alert-label-icon label-arrow shadow fade show"
+                        role="alert" style="display: none;">
                         <i class="ri-error-warning-line label-icon"></i>
                         <strong>Error</strong> - <span id="scanSerialNumberDirectErrorMessage"></span>
                         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
@@ -304,7 +318,8 @@
                             <div class="col-2">
                                 <label class="form-label text-white">-</label>
                                 <div>
-                                    <a class="btn btn-secondary w-100" onclick="addSerialNumberManualDirect()">SN Manual</a>
+                                    <a class="btn btn-secondary w-100" onclick="addSerialNumberManualDirect()">SN
+                                        Manual</a>
                                 </div>
                             </div>
                         </div>
@@ -312,11 +327,11 @@
 
                     <table class="table table-striped align-middle">
                         <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>Serial Number</th>
-                            <th>Action</th>
-                        </tr>
+                            <tr>
+                                <th>#</th>
+                                <th>Serial Number</th>
+                                <th>Action</th>
+                            </tr>
                         </thead>
                         <tbody id="listDetailSerialNumberDirect">
 
@@ -341,6 +356,7 @@
         let serialNumberIndexProduct = null;
 
         loadMasterItem();
+
         function loadMasterItem() {
             const item = @json($products);
             localStorage.setItem('master', JSON.stringify(item));
@@ -743,8 +759,11 @@
             const qc = JSON.parse(localStorage.getItem('qc')) ?? [];
             const product = qc[index][indexProduct].SnDirect;
 
-            if ((qc[index][indexProduct].serialNumber.length + qc[index][indexProduct].SnDirect.length) === qc[index][indexProduct].qty) {
-                document.getElementById('scanSerialNumberDirectErrorMessage').innerText = "Serial number exceeds item quantity";
+            if ((qc[index][indexProduct].serialNumber.length + qc[index][indexProduct].SnDirect.length) === qc[index][
+                    indexProduct
+                ].qty) {
+                document.getElementById('scanSerialNumberDirectErrorMessage').innerText =
+                    "Serial number exceeds item quantity";
                 document.getElementById('scanSerialNumberDirectError').style.display = "block";
 
                 setTimeout(() => {
@@ -841,14 +860,18 @@
 
             const reader = new FileReader();
 
-            reader.onload = function (e) {
+            reader.onload = function(e) {
                 const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, { type: 'array' });
+                const workbook = XLSX.read(data, {
+                    type: 'array'
+                });
 
                 const firstSheetName = workbook.SheetNames[0];
                 const worksheet = workbook.Sheets[firstSheetName];
 
-                const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+                const jsonData = XLSX.utils.sheet_to_json(worksheet, {
+                    defval: ""
+                });
                 const serialNumber = [];
                 jsonData.forEach((row) => {
                     serialNumber.push(row["Serial Number"]);
@@ -1081,13 +1104,17 @@
                     // Validation  Serial Number N/A
                     qualityControl.forEach(group => {
                         group.forEach(product => {
-                            product.serialNumber = Array.isArray(product.serialNumber) ? product.serialNumber : [];
-                            product.SnDirect     = Array.isArray(product.SnDirect)     ? product.SnDirect     : [];
+                            product.serialNumber = Array.isArray(product.serialNumber) ? product
+                                .serialNumber : [];
+                            product.SnDirect = Array.isArray(product.SnDirect) ? product.SnDirect :
+                                [];
 
-                            product.serialNumber = product.serialNumber.map(v => (v == null || v === '' ? 'N/A' : v));
-                            product.SnDirect     = product.SnDirect.map(v => (v == null || v === '' ? 'N/A' : v));
+                            product.serialNumber = product.serialNumber.map(v => (v == null || v ===
+                                '' ? 'N/A' : v));
+                            product.SnDirect = product.SnDirect.map(v => (v == null || v === '' ?
+                                'N/A' : v));
 
-                            const qty   = Number(product.qty) || 0;
+                            const qty = Number(product.qty) || 0;
                             const qtySN = product.serialNumber.length + product.SnDirect.length;
 
                             for (let i = qtySN; i < qty; i++) {
@@ -1099,7 +1126,7 @@
                     $.ajax({
                         url: '{{ route('inbound.quality-control-store-process') }}',
                         method: 'POST',
-                        data:{
+                        data: {
                             _token: '{{ csrf_token() }}',
                             qualityControl: qualityControl,
                             purchaseOrderId: '{{ request()->get('id') }}',
@@ -1116,7 +1143,8 @@
                                     },
                                     buttonsStyling: false
                                 }).then(() => {
-                                    window.location.href = '{{ route('inbound.quality-control') }}';
+                                    window.location.href =
+                                        '{{ route('inbound.quality-control') }}';
                                 });
                             } else {
                                 Swal.fire({
@@ -1163,6 +1191,34 @@
             viewSerialNumber();
         }
 
+        function addSerialNumberNA() {
+            const serialNumber = JSON.parse(localStorage.getItem('serialNumber')) ?? [];
+            const qc = JSON.parse(localStorage.getItem('qc')) ?? [];
+
+            const index = document.getElementById('detail_SN_index').value;
+            const indexProduct = document.getElementById('detail_SN_productIndex').value;
+
+            const totalQty = parseInt(qc[index][indexProduct].qty);
+            const currentQty = serialNumber.length + qc[index][indexProduct].SnDirect.length;
+            const remainingQty = totalQty - currentQty;
+
+            if (remainingQty <= 0) {
+                Swal.fire({
+                    title: 'Warning!',
+                    text: 'All quantities have been assigned serial numbers',
+                    icon: 'warning'
+                });
+                return true;
+            }
+
+            for (let i = 0; i < remainingQty; i++) {
+                serialNumber.push("N/A");
+            }
+
+            localStorage.setItem('serialNumber', JSON.stringify(serialNumber));
+            viewSerialNumber();
+        }
+
         document.getElementById('scanSerialNumber').addEventListener('keydown', function(e) {
             if (e.key === "Enter") {
                 e.preventDefault();
@@ -1176,7 +1232,8 @@
 
                     const checkSN = serialNumber.find((item) => item === value);
                     if (checkSN != null) {
-                        document.getElementById('scanSerialNumberErrorMessage').innerText = "Serial number is already in the list";
+                        document.getElementById('scanSerialNumberErrorMessage').innerText =
+                            "Serial number is already in the list";
                         document.getElementById('scanSerialNumberError').style.display = "block";
 
                         setTimeout(() => {
@@ -1213,7 +1270,8 @@
                     document.getElementById('scanSerialNumber').value = "";
                     document.getElementById('scanSerialNumber').focus();
                 } else {
-                    document.getElementById('scanSerialNumberErrorMessage').innerText = "Serial number cannot be empty";
+                    document.getElementById('scanSerialNumberErrorMessage').innerText =
+                        "Serial number cannot be empty";
                     document.getElementById('scanSerialNumberError').style.display = "block";
 
                     setTimeout(() => {
@@ -1241,7 +1299,8 @@
 
                     const check = product.find((item) => item === value);
                     if (check != null) {
-                        document.getElementById('scanSerialNumberDirectErrorMessage').innerText = "Serial number is already in the list";
+                        document.getElementById('scanSerialNumberDirectErrorMessage').innerText =
+                            "Serial number is already in the list";
                         document.getElementById('scanSerialNumberDirectError').style.display = "block";
 
                         setTimeout(() => {
@@ -1257,7 +1316,9 @@
                         return true;
                     }
 
-                    const checkQTY = parseInt(qc[index][indexProduct].serialNumber.length) + parseInt(qc[index][indexProduct].SnDirect.length ?? []);
+                    const checkQTY = parseInt(qc[index][indexProduct].serialNumber.length) + parseInt(qc[index][
+                        indexProduct
+                    ].SnDirect.length ?? []);
                     if (checkQTY === parseInt(qc[index][indexProduct].qty)) {
                         Swal.fire({
                             title: 'Warning!',
@@ -1281,7 +1342,8 @@
 
                     viewListQC();
                 } else {
-                    document.getElementById('scanSerialNumberDirectErrorMessage').innerText = "Serial number cannot be empty";
+                    document.getElementById('scanSerialNumberDirectErrorMessage').innerText =
+                        "Serial number cannot be empty";
                     document.getElementById('scanSerialNumberDirectError').style.display = "block";
 
                     setTimeout(() => {
@@ -1298,53 +1360,3 @@
         });
     </script>
 @endsection
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
