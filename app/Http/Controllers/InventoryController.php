@@ -45,12 +45,18 @@ class InventoryController extends Controller
             ->when($request->query('salesDoc'), function ($query) use ($request) {
                 $query->where('sales_doc', $request->query('salesDoc'));
             })
+            ->when($request->query('serialNumber'), function ($query) use ($request) {
+                $query->whereHas('inventoryPackageItem.inventoryPackageItemSn', function ($q) use ($request) {
+                    $q->where('serial_number', 'LIKE', '%' . $request->query('serialNumber') . '%');
+                });
+            })
             ->select([
                 'sales_doc',
                 'purchase_order_detail_id'
             ])
             ->groupBy('sales_doc', 'purchase_order_detail_id')
-            ->paginate(10);
+            ->paginate(10)
+            ->appends($request->query());
 
         foreach ($inventory as $inv) {
             $queryInv = DB::table('inventory_detail')
@@ -1233,7 +1239,7 @@ class InventoryController extends Controller
         return view('mobile.inventory.aging-detail-list', compact('text', 'inventoryDetail', 'type'));
     }
 
-    public function downloadExcel(): StreamedResponse
+    public function downloadExcel(Request $request): StreamedResponse
     {
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
@@ -1255,6 +1261,24 @@ class InventoryController extends Controller
             ->leftJoin('customer', 'customer.id', '=', 'purchase_order.customer_id')
             ->where('inventory_detail.qty', '!=', 0)
             ->whereNotIn('inventory_detail.storage_id', [1, 2, 3, 4])
+            ->when($request->query('material'), function ($query) use ($request) {
+                $query->where('purchase_order_detail.material', $request->query('material'));
+            })
+            ->when($request->query('purcDoc'), function ($query) use ($request) {
+                $query->where('purchase_order.purc_doc', $request->query('purcDoc'));
+            })
+            ->when($request->query('salesDoc'), function ($query) use ($request) {
+                $query->where('purchase_order_detail.sales_doc', $request->query('salesDoc'));
+            })
+            ->when($request->query('serialNumber'), function ($query) use ($request) {
+                $query->whereExists(function ($q) use ($request) {
+                    $q->select(DB::raw(1))
+                        ->from('inventory_package_item')
+                        ->join('inventory_package_item_sn', 'inventory_package_item_sn.inventory_package_item_id', '=', 'inventory_package_item.id')
+                        ->whereColumn('inventory_package_item.id', 'inventory_detail.inventory_package_item_id')
+                        ->where('inventory_package_item_sn.serial_number', 'LIKE', '%' . $request->query('serialNumber') . '%');
+                });
+            })
             ->select([
                 'customer.name as client_name',
                 'purchase_order.purc_doc',
@@ -1519,7 +1543,7 @@ class InventoryController extends Controller
         return $pdf->stream('Box Product.pdf');
     }
 
-    public function downloadPdf(): \Illuminate\Http\Response
+    public function downloadPdf(Request $request): \Illuminate\Http\Response
     {
         $inventoryDetail = DB::table('inventory_detail')
             ->leftJoin('purchase_order_detail', 'purchase_order_detail.id', '=', 'inventory_detail.purchase_order_detail_id')
@@ -1527,6 +1551,24 @@ class InventoryController extends Controller
             ->leftJoin('customer', 'customer.id', '=', 'purchase_order.customer_id')
             ->where('inventory_detail.qty', '!=', 0)
             ->whereNotIn('inventory_detail.storage_id', [1, 2, 3, 4])
+            ->when($request->query('material'), function ($query) use ($request) {
+                $query->where('purchase_order_detail.material', $request->query('material'));
+            })
+            ->when($request->query('purcDoc'), function ($query) use ($request) {
+                $query->where('purchase_order.purc_doc', $request->query('purcDoc'));
+            })
+            ->when($request->query('salesDoc'), function ($query) use ($request) {
+                $query->where('purchase_order_detail.sales_doc', $request->query('salesDoc'));
+            })
+            ->when($request->query('serialNumber'), function ($query) use ($request) {
+                $query->whereExists(function ($q) use ($request) {
+                    $q->select(DB::raw(1))
+                        ->from('inventory_package_item')
+                        ->join('inventory_package_item_sn', 'inventory_package_item_sn.inventory_package_item_id', '=', 'inventory_package_item.id')
+                        ->whereColumn('inventory_package_item.id', 'inventory_detail.inventory_package_item_id')
+                        ->where('inventory_package_item_sn.serial_number', 'LIKE', '%' . $request->query('serialNumber') . '%');
+                });
+            })
             ->select([
                 'customer.name as client_name',
                 'purchase_order.purc_doc',

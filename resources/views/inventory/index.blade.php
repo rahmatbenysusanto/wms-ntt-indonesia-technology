@@ -21,9 +21,10 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <h4 class="card-title mb-0">Product List</h4>
                         <div class="d-flex gap-2">
-                            <a href="{{ route('inventory.download-excel') }}" class="btn btn-success btn-sm">Download
+                            <a href="{{ route('inventory.download-excel', request()->query()) }}"
+                                class="btn btn-success btn-sm">Download
                                 Excel</a>
-                            <a href="{{ route('inventory.download-pdf') }}" class="btn btn-pdf btn-sm"
+                            <a href="{{ route('inventory.download-pdf', request()->query()) }}" class="btn btn-pdf btn-sm"
                                 target="_blank">Download PDF</a>
                         </div>
                     </div>
@@ -50,6 +51,12 @@
                                             {{ $product->material }}</option>
                                     @endforeach
                                 </select>
+                            </div>
+                            <div class="col-2">
+                                <label class="form-label">Serial Number</label>
+                                <input type="text" class="form-control"
+                                    value="{{ request()->get('serialNumber', null) }}" name="serialNumber"
+                                    placeholder="Serial Number">
                             </div>
                             <div class="col-2">
                                 <label class="form-label text-white">-</label>
