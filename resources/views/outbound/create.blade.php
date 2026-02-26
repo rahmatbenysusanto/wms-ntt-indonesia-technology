@@ -439,7 +439,9 @@
                             <td>${item?.salesDoc ?? ''}</td>
                             <td class="text-center fw-bold">${item?.qty ?? 0}</td>
                             <td><input type="number" class="form-control" onchange="changeQtySelect(${index}, this.value)" value="${item?.qtySelect ?? 0}"></td>
-                            <td><a class="btn btn-info btn-sm" onclick="openSerialNumberModal(${index})">Serial Number</a></td>
+                            <td>
+                                <a class="btn ${(parseInt(item?.qtySelect || 0) > 0 && (item?.serialNumber || []).length === parseInt(item?.qtySelect)) ? 'btn-success' : 'btn-info'} btn-sm" onclick="openSerialNumberModal(${index})">Serial Number</a>
+                            </td>
                             <td><a class="btn btn-danger btn-sm" onclick="deleteProduct(${index})">Delete</a></td>
                         </tr>
                     `;
@@ -613,6 +615,7 @@
                 elAvail.innerHTML = dataSN;
             }
             filterSN();
+            await viewProductOutbound();
         }
 
         window.filterSN = function filterSN() {
