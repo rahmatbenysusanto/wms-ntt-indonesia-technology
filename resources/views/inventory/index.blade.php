@@ -97,7 +97,11 @@
                                         <td class="text-center fw-bold">{{ number_format($item->qty) }}</td>
                                         <td>
                                             <a href="{{ route('inventory.indexDetail', ['salesDoc' => $item->sales_doc, 'id' => $item->product_id]) }}"
-                                                class="btn btn-info btn-sm">Detail</a>
+                                                class="btn btn-info btn-sm" title="View Detail"><i
+                                                    class="ri-eye-line"></i></a>
+                                            <a href="{{ route('inventory.download-product-pdf', ['id' => $item->purchase_order_detail_id, 'salesDoc' => $item->sales_doc]) }}"
+                                                class="btn btn-danger btn-sm" target="_blank" title="Download QR PDF"><i
+                                                    class="ri-qr-code-line"></i></a>
                                         </td>
                                     </tr>
                                 @endforeach

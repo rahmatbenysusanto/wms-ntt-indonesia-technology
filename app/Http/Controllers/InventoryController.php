@@ -14,6 +14,7 @@ use App\Models\PurchaseOrderDetail;
 use App\Models\Storage;
 use App\Models\TransferLocation;
 use Barryvdh\DomPDF\Facade\Pdf;
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -1783,5 +1784,71 @@ class InventoryController extends Controller
         }
 
         return view('mobile.inventory.movement-detail', compact('cycleCount'));
+    }
+
+    public function downloadProductPdf(Request $request)
+    {
+        $id = $request->query('id'); // purchase_order_detail_id
+        $salesDoc = $request->query('salesDoc');
+
+        $item = DB::table('purchase_order_detail')
+            ->leftJoin('purchase_order', 'purchase_order_detail.purchase_order_id', '=', 'purchase_order.id')
+            ->leftJoin('customer', 'purchase_order.customer_id', '=', 'customer.id')
+            ->where('purchase_order_detail.id', $id)
+            ->where('purchase_order_detail.sales_doc', $salesDoc)
+            ->select([
+                'purchase_order_detail.*',
+                'purchase_order.purc_doc',
+                'customer.name as client_name'
+            ])
+            ->first();
+
+        if (!$item) {
+            return redirect()->back()->with('error', 'Data not found');
+        }
+
+        $url = route('inventory.show-material', ['id' => $id]);
+        $qrcode = base64_encode(QrCode::format('png')->size(200)->margin(1)->generate($url));
+
+        $data = [
+            'item' => $item,
+            'qrcode' => $qrcode
+        ];
+
+        $pdf = Pdf::loadView('pdf.product-qr', $data)->setPaper([0, 0, 300, 300], 'portrait');
+        return $pdf->stream('QR-Code-' . $item->material . '.pdf');
+    }
+
+    public function showMaterial($id)
+    {
+        $item = DB::table('purchase_order_detail')
+            ->leftJoin('purchase_order', 'purchase_order_detail.purchase_order_id', '=', 'purchase_order.id')
+            ->leftJoin('customer', 'purchase_order.customer_id', '=', 'customer.id')
+            ->where('purchase_order_detail.id', $id)
+            ->select([
+                'purchase_order_detail.*',
+                'purchase_order.purc_doc',
+                'customer.name as client_name'
+            ])
+            ->first();
+
+        if (!$item) {
+            abort(404, 'Material data not found');
+        }
+
+        $stock = DB::table('inventory_detail')
+            ->where('purchase_order_detail_id', $id)
+            ->whereNotIn('storage_id', [1, 2, 3, 4])
+            ->sum('qty');
+
+        $serialNumbers = DB::table('inventory_package_item_sn')
+            ->join('inventory_package_item', 'inventory_package_item_sn.inventory_package_item_id', '=', 'inventory_package_item.id')
+            ->join('inventory_package', 'inventory_package_item.inventory_package_id', '=', 'inventory_package.id')
+            ->where('inventory_package_item.purchase_order_detail_id', $id)
+            ->where('inventory_package_item_sn.qty', '>', 0)
+            ->whereNotIn('inventory_package.storage_id', [1, 2, 3, 4])
+            ->pluck('inventory_package_item_sn.serial_number');
+
+        return view('inventory.show-material', compact('item', 'stock', 'serialNumbers'));
     }
 }

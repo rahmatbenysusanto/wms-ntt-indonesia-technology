@@ -188,6 +188,9 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
         Route::get('/aging/download-pdf', 'downloadPdfAging')->name('inventory.aging.download-pdf');
         Route::get('/box/download-excel', 'downloadExcelBox')->name('inventory.box.report-excel');
         Route::get('/box/download-pdf', 'downloadPdfBox')->name('inventory.box.report-pdf');
+
+        // Download Product PDF
+        Route::get('/download-product-pdf', 'downloadProductPdf')->name('inventory.download-product-pdf');
     });
 
     Route::prefix('/general-room')->controller(GeneralRoomController::class)->group(function () {
@@ -335,3 +338,4 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
 });
 
 Route::get('/compare-sap-ccw', [InboundController::class, 'compareSapCcw'])->name('compare-sap-ccw');
+Route::get('/inventory/show-material/{id}', [InventoryController::class, 'showMaterial'])->name('inventory.show-material');
