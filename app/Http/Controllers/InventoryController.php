@@ -267,6 +267,19 @@ class InventoryController extends Controller
 
     public function cycleCount(Request $request): View
     {
+        $dateRange = $request->query('date_range');
+        $startDate = null;
+        $endDate = null;
+
+        if ($dateRange) {
+            $dates = explode(' to ', $dateRange);
+            $startDate = $dates[0];
+            $endDate = isset($dates[1]) ? $dates[1] : $dates[0];
+        } else {
+            $startDate = $request->query('startDate', $request->query('date', date('Y-m-d')));
+            $endDate = $request->query('endDate', $request->query('date', date('Y-m-d')));
+        }
+
         $cycleCount = InventoryHistory::with('purchaseOrder.customer', 'purchaseOrderDetail', 'user', 'inventoryPackageItem.inventoryPackage', 'inventoryPackageItem.inventoryPackage.storage')
             ->whereHas('purchaseOrder', function ($purchaseOrder) use ($request) {
                 if ($request->query('purcDoc')) {
@@ -285,21 +298,23 @@ class InventoryController extends Controller
             ->when($request->query('type'), function ($q) use ($request) {
                 $q->where('type',  $request->query('type'));
             })
-            ->whereDate('created_at', $request->query('date', date('Y-m-d')))
+            ->whereBetween('created_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59'])
             ->latest()
             ->paginate(10)
             ->appends([
-                'purcDoc'  => $request->query('purcDoc'),
-                'salesDoc' => $request->query('salesDoc'),
-                'material' => $request->query('material'),
-                'type'     => $request->query('type'),
-                'date'     => $request->query('date', date('Y-m-d'))
+                'purcDoc'    => $request->query('purcDoc'),
+                'salesDoc'   => $request->query('salesDoc'),
+                'material'   => $request->query('material'),
+                'type'       => $request->query('type'),
+                'date_range' => $dateRange,
+                'startDate'  => $startDate,
+                'endDate'    => $endDate
             ]);
 
         $products = Product::all();
 
         $title = 'Cycle Count';
-        return view('inventory.cycle-count', compact('title', 'cycleCount', 'products'));
+        return view('inventory.cycle-count', compact('title', 'cycleCount', 'products', 'startDate', 'endDate', 'dateRange'));
     }
 
     public function cycleCountDetail(Request $request): View

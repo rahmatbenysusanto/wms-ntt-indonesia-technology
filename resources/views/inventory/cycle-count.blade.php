@@ -61,9 +61,10 @@
                                 </select>
                             </div>
                             <div class="col-2">
-                                <label class="form-label">Date</label>
-                                <input type="date" class="form-control" name="date"
-                                    value="{{ request()->get('date', date('Y-m-d')) }}">
+                                <label class="form-label">Date Range</label>
+                                <input type="text" class="form-control" name="date_range" id="date_range"
+                                    value="{{ request()->get('date_range', $startDate . ($startDate != $endDate ? ' to ' . $endDate : '')) }}"
+                                    placeholder="Select date range...">
                             </div>
                             <div class="col-2">
                                 <label class="form-label text-white">-</label>
@@ -197,18 +198,23 @@
                     <form action="{{ route('inventory.cycle-count.download-pdf') }}" method="GET">
                         <div class="mb-3">
                             <label class="form-label">Start Date</label>
-                            <input type="date" class="form-control" name="startDate" id="startDate">
+                            <input type="date" class="form-control" name="startDate" id="startDatePdf"
+                                value="{{ $startDate }}">
                         </div>
                         <div class="mb-3">
                             <label class="form-label">End Date</label>
-                            <input type="date" class="form-control" name="endDate" id="endDate">
+                            <input type="date" class="form-control" name="endDate" id="endDatePdf"
+                                value="{{ $endDate }}">
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Type</label>
                             <select class="form-control" name="type">
-                                <option value="all">All</option>
-                                <option value="inbound">Inbound</option>
-                                <option value="outbound">Outbound</option>
+                                <option value="all" {{ request()->get('type') == 'all' ? 'selected' : '' }}>All
+                                </option>
+                                <option value="inbound" {{ request()->get('type') == 'inbound' ? 'selected' : '' }}>
+                                    Inbound</option>
+                                <option value="outbound" {{ request()->get('type') == 'outbound' ? 'selected' : '' }}>
+                                    Outbound</option>
                             </select>
                         </div>
                         <div class="d-flex justify-content-end">
@@ -234,18 +240,23 @@
                     <form action="{{ route('inventory.cycle-count.download-excel') }}" method="GET">
                         <div class="mb-3">
                             <label class="form-label">Start Date</label>
-                            <input type="date" class="form-control" name="startDate" id="startDate">
+                            <input type="date" class="form-control" name="startDate" id="startDateExcel"
+                                value="{{ $startDate }}">
                         </div>
                         <div class="mb-3">
                             <label class="form-label">End Date</label>
-                            <input type="date" class="form-control" name="endDate" id="endDate">
+                            <input type="date" class="form-control" name="endDate" id="endDateExcel"
+                                value="{{ $endDate }}">
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Type</label>
                             <select class="form-control" name="type">
-                                <option value="all">All</option>
-                                <option value="inbound">Inbound</option>
-                                <option value="outbound">Outbound</option>
+                                <option value="all" {{ request()->get('type') == 'all' ? 'selected' : '' }}>All
+                                </option>
+                                <option value="inbound" {{ request()->get('type') == 'inbound' ? 'selected' : '' }}>
+                                    Inbound</option>
+                                <option value="outbound" {{ request()->get('type') == 'outbound' ? 'selected' : '' }}>
+                                    Outbound</option>
                             </select>
                         </div>
                         <div class="d-flex justify-content-end">
@@ -260,6 +271,8 @@
 @endsection
 
 @section('js')
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script>
         function downloadPDF() {
             $('#download-pdf-modal').modal('show');
@@ -274,6 +287,12 @@
                 placeholder: "-- Select Material --",
                 allowClear: true,
                 width: '100%'
+            });
+
+            flatpickr("#date_range", {
+                mode: "range",
+                dateFormat: "Y-m-d",
+                defaultDate: "{{ request()->get('date_range') }}"
             });
         });
     </script>
