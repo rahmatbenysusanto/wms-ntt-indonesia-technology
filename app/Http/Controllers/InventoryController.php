@@ -380,12 +380,12 @@ class InventoryController extends Controller
             $sheet->setCellValue('F' . $column, data_get($item, 'purchaseOrderDetail.prod_hierarchy_desc', ''));
             $sheet->setCellValue('G' . $column, (string) $item->qty);
 
-            if (in_array($item->inventoryPackageItem->inventoryPackage->storage->id, [2, 3, 4])) {
-                $storage = $item->inventoryPackageItem->inventoryPackage->storage->raw;
-            } else if ($item->inventoryPackageItem->inventoryPackage->storage->id == 1) {
+            if (in_array($item->inventoryPackageItem?->inventoryPackage?->storage?->id, [2, 3, 4])) {
+                $storage = $item->inventoryPackageItem?->inventoryPackage?->storage?->raw;
+            } else if ($item->inventoryPackageItem?->inventoryPackage?->storage?->id == 1) {
                 $storage = 'Cross Docking';
             } else {
-                $storage = $item->inventoryPackageItem->inventoryPackage->storage->raw . ' - ' . $item->inventoryPackageItem->inventoryPackage->storage->area . ' - ' . $item->inventoryPackageItem->inventoryPackage->storage->rak . ' - ' . $item->inventoryPackageItem->inventoryPackage->storage->bin;
+                $storage = $item->inventoryPackageItem?->inventoryPackage?->storage?->raw . ' - ' . $item->inventoryPackageItem?->inventoryPackage?->storage?->area . ' - ' . $item->inventoryPackageItem?->inventoryPackage?->storage?->rak . ' - ' . $item->inventoryPackageItem?->inventoryPackage?->storage?->bin;
             }
 
             $sheet->setCellValue('H' . $column, $storage);

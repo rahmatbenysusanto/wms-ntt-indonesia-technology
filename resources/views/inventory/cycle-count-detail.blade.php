@@ -72,15 +72,16 @@
                                     <td class="fw-bold">Storage Loc</td>
                                     <td class="fw-bold ps-3">:</td>
                                     <td class="ps-1">
-                                        @if (in_array($cycleCount->inventoryPackageItem->inventoryPackage->storage->id, [2, 3, 4]))
-                                            <b>{{ $cycleCount->inventoryPackageItem->inventoryPackage->storage->raw }}</b>
+                                        @if (in_array($cycleCount->inventoryPackageItem?->inventoryPackage?->storage?->id, [2, 3, 4]))
+                                            <b>{{ $cycleCount->inventoryPackageItem?->inventoryPackage?->storage?->raw }}</b>
                                         @else
-                                            <b>{{ $cycleCount->inventoryPackageItem->inventoryPackage->storage->raw }}</b> -
-                                            <b>{{ $cycleCount->inventoryPackageItem->inventoryPackage->storage->area }}</b>
+                                            <b>{{ $cycleCount->inventoryPackageItem?->inventoryPackage?->storage?->raw }}</b>
                                             -
-                                            <b>{{ $cycleCount->inventoryPackageItem->inventoryPackage->storage->rak }}</b>
+                                            <b>{{ $cycleCount->inventoryPackageItem?->inventoryPackage?->storage?->area }}</b>
                                             -
-                                            <b>{{ $cycleCount->inventoryPackageItem->inventoryPackage->storage->bin }}</b>
+                                            <b>{{ $cycleCount->inventoryPackageItem?->inventoryPackage?->storage?->rak }}</b>
+                                            -
+                                            <b>{{ $cycleCount->inventoryPackageItem?->inventoryPackage?->storage?->bin }}</b>
                                         @endif
                                     </td>
                                 </tr>

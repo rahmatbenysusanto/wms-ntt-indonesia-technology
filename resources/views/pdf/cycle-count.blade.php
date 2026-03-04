@@ -121,7 +121,7 @@
                         <td>{{ $item->purchaseOrder->customer->name ?? '-' }}</td>
                         <td>
                             <div>{{ $item->purchaseOrder->purc_doc }}</div>
-                            @if ($item->inventoryPackageItem->inventoryPackage->storage->id == 1)
+                            @if ($item->inventoryPackageItem?->inventoryPackage?->storage?->id == 1)
                                 <b>Cross Docking</b>
                             @endif
                         </td>
@@ -131,15 +131,15 @@
                         <td>{{ $item->purchaseOrderDetail->prod_hierarchy_desc }}</td>
                         <td style="width: 5%; text-align: center;">{{ number_format($item->qty) }}</td>
                         <td>
-                            @if (in_array($item->inventoryPackageItem->inventoryPackage->storage->id, [2, 3, 4]))
-                                <b>{{ $item->inventoryPackageItem->inventoryPackage->storage->raw }}</b>
-                            @elseif($item->inventoryPackageItem->inventoryPackage->storage->id == 1)
+                            @if (in_array($item->inventoryPackageItem?->inventoryPackage?->storage?->id, [2, 3, 4]))
+                                <b>{{ $item->inventoryPackageItem?->inventoryPackage?->storage?->raw }}</b>
+                            @elseif($item->inventoryPackageItem?->inventoryPackage?->storage?->id == 1)
                                 <b>Cross Docking</b>
                             @else
-                                <b>{{ $item->inventoryPackageItem->inventoryPackage->storage->raw }}</b> -
-                                <b>{{ $item->inventoryPackageItem->inventoryPackage->storage->area }}</b> -
-                                <b>{{ $item->inventoryPackageItem->inventoryPackage->storage->rak }}</b> -
-                                <b>{{ $item->inventoryPackageItem->inventoryPackage->storage->bin }}</b>
+                                <b>{{ $item->inventoryPackageItem?->inventoryPackage?->storage?->raw }}</b> -
+                                <b>{{ $item->inventoryPackageItem?->inventoryPackage?->storage?->area }}</b> -
+                                <b>{{ $item->inventoryPackageItem?->inventoryPackage?->storage?->rak }}</b> -
+                                <b>{{ $item->inventoryPackageItem?->inventoryPackage?->storage?->bin }}</b>
                             @endif
                         </td>
                         <td style="width: 5%; text-align: center;">{{ $item->type }}</td>
