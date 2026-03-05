@@ -349,7 +349,7 @@ class InventoryController extends Controller
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
 
-        $cycleCount = InventoryHistory::with('purchaseOrder.customer', 'purchaseOrderDetail.purchaseOrder', 'outbound', 'inventoryPackageItem.inventoryPackage', 'inventoryPackageItem.inventoryPackage.storage')
+        $cycleCount = InventoryHistory::with('purchaseOrder.customer', 'purchaseOrder.vendor', 'purchaseOrderDetail.purchaseOrder', 'outbound', 'inventoryPackageItem.inventoryPackage', 'inventoryPackageItem.inventoryPackage.storage')
             ->whereBetween('created_at', [$request->get('startDate') . ' 00:00:00', $request->get('endDate') . ' 23:59:59']);
 
         if ($request->get('type') != 'all') {
@@ -414,9 +414,19 @@ class InventoryController extends Controller
             $serials = json_decode($item->serial_number ?: '[]', true) ?: [];
             $snList = count($serials) > 0 ? $serials : ['-'];
 
+            $customerName = data_get($item, 'purchaseOrderDetail.customer_name');
+            if (!$customerName || $customerName == '-') {
+                $customerName = data_get($item, 'purchaseOrder.customer.name', '-');
+            }
+
+            $vendorName = data_get($item, 'purchaseOrderDetail.vendor_name');
+            if (!$vendorName || $vendorName == '-') {
+                $vendorName = data_get($item, 'purchaseOrder.vendor.name', '-');
+            }
+
             foreach ($snList as $sn) {
-                $sheet->setCellValue('A' . $column, data_get($item, 'purchaseOrderDetail.customer_name', '-'));
-                $sheet->setCellValue('B' . $column, data_get($item, 'purchaseOrderDetail.vendor_name', '-'));
+                $sheet->setCellValue('A' . $column, (string)$customerName);
+                $sheet->setCellValue('B' . $column, (string)$vendorName);
                 $sheet->setCellValue('C' . $column, data_get($item, 'purchaseOrderDetail.purchaseOrder.purc_doc', '-'));
                 $sheet->setCellValue('D' . $column, data_get($item, 'purchaseOrderDetail.sales_doc', '-'));
                 $sheet->setCellValue('E' . $column, data_get($item, 'purchaseOrderDetail.item', '-'));
@@ -1905,5 +1915,202 @@ class InventoryController extends Controller
             ->pluck('inventory_package_item_sn.serial_number');
 
         return view('inventory.show-material', compact('item', 'stock', 'serialNumbers'));
+    }
+
+    public function reportPo(Request $request): View
+    {
+        $query = DB::table('purchase_order_detail')
+            ->leftJoin('purchase_order', 'purchase_order_detail.purchase_order_id', '=', 'purchase_order.id')
+            ->leftJoin('customer', 'purchase_order.customer_id', '=', 'customer.id');
+
+        if ($request->query('purcDoc')) {
+            $query->where('purchase_order.purc_doc', 'LIKE', '%' . $request->query('purcDoc') . '%');
+        }
+
+        if ($request->query('material')) {
+            $query->where('purchase_order_detail.material', 'LIKE', '%' . $request->query('material') . '%');
+        }
+
+        if ($request->query('client')) {
+            $query->where('customer.id', $request->query('client'));
+        }
+
+        $report = $query->select([
+            'purchase_order.purc_doc',
+            'purchase_order_detail.id as po_detail_id',
+            'purchase_order_detail.material',
+            'purchase_order_detail.po_item_desc',
+            'purchase_order_detail.po_item_qty',
+            'customer.name as customer_name'
+        ])
+            ->latest('purchase_order_detail.created_at')
+            ->paginate(10)
+            ->appends($request->query());
+
+        foreach ($report as $item) {
+            // Count In Stock
+            $item->in_stock = DB::table('inventory_detail')
+                ->where('purchase_order_detail_id', $item->po_detail_id)
+                ->sum('qty');
+
+            // Count Out Stock (Outbound)
+            $item->out_stock = DB::table('inventory_history')
+                ->where('purchase_order_detail_id', $item->po_detail_id)
+                ->where('type', 'outbound')
+                ->sum('qty');
+        }
+
+        $products = Product::all();
+        $customers = Customer::all();
+        $title = 'Report PO';
+        return view('inventory.report-po', compact('title', 'report', 'products', 'customers'));
+    }
+
+    public function reportPoDownloadExcel(Request $request): StreamedResponse
+    {
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+
+        $query = DB::table('purchase_order_detail')
+            ->leftJoin('purchase_order', 'purchase_order_detail.purchase_order_id', '=', 'purchase_order.id')
+            ->leftJoin('customer', 'purchase_order.customer_id', '=', 'customer.id');
+
+        if ($request->query('purcDoc')) {
+            $query->where('purchase_order.purc_doc', 'LIKE', '%' . $request->query('purcDoc') . '%');
+        }
+
+        if ($request->query('material')) {
+            $query->where('purchase_order_detail.material', 'LIKE', '%' . $request->query('material') . '%');
+        }
+
+        if ($request->query('client')) {
+            $query->where('customer.id', $request->query('client'));
+        }
+
+        $report = $query->select([
+            'purchase_order.purc_doc',
+            'purchase_order_detail.id as po_detail_id',
+            'purchase_order_detail.material',
+            'purchase_order_detail.po_item_desc',
+            'purchase_order_detail.po_item_qty',
+            'customer.name as customer_name'
+        ])
+            ->latest('purchase_order_detail.created_at')
+            ->get();
+
+        $sheet->setCellValue('A1', 'No');
+        $sheet->setCellValue('B1', 'Client');
+        $sheet->setCellValue('C1', 'Purc Doc');
+        $sheet->setCellValue('D1', 'Material');
+        $sheet->setCellValue('E1', 'PO Item Desc');
+        $sheet->setCellValue('F1', 'PO Qty');
+        $sheet->setCellValue('G1', 'In Stock');
+        $sheet->setCellValue('H1', 'Out Stock');
+
+        $column = 2;
+        foreach ($report as $index => $item) {
+            $in_stock = DB::table('inventory_detail')
+                ->where('purchase_order_detail_id', $item->po_detail_id)
+                ->sum('qty');
+
+            $out_stock = DB::table('inventory_history')
+                ->where('purchase_order_detail_id', $item->po_detail_id)
+                ->where('type', 'outbound')
+                ->sum('qty');
+
+            $sheet->setCellValue('A' . $column, $index + 1);
+            $sheet->setCellValue('B' . $column, $item->customer_name);
+            $sheet->setCellValue('C' . $column, $item->purc_doc);
+            $sheet->setCellValue('D' . $column, $item->material);
+            $sheet->setCellValue('E' . $column, $item->po_item_desc);
+            $sheet->setCellValue('F' . $column, $item->po_item_qty);
+            $sheet->setCellValue('G' . $column, (string)$in_stock);
+            $sheet->setCellValue('H' . $column, (string)$out_stock);
+            $column++;
+        }
+
+        $writer = new Xlsx($spreadsheet);
+
+        $response = new StreamedResponse(function () use ($writer) {
+            $writer->save('php://output');
+        });
+
+        $fileName = 'Report PO ' . date('Y-m-d H:i:s') . '.xlsx';
+        $response->headers->set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        $response->headers->set('Content-Disposition', "attachment;filename=\"$fileName\"");
+        $response->headers->set('Cache-Control', 'max-age=0');
+
+        return $response;
+    }
+
+    public function reportPoDetailInStock(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $id = $request->get('id');
+        $data = DB::table('inventory_package_item_sn')
+            ->join('inventory_package_item', 'inventory_package_item_sn.inventory_package_item_id', '=', 'inventory_package_item.id')
+            ->join('inventory_package', 'inventory_package_item.inventory_package_id', '=', 'inventory_package.id')
+            ->where('inventory_package_item.purchase_order_detail_id', $id)
+            ->where('inventory_package_item_sn.qty', '>', 0)
+            ->whereNotIn('inventory_package.storage_id', [1, 2, 3, 4])
+            ->select([
+                'inventory_package_item_sn.serial_number',
+                'inventory_package_item_sn.qty'
+            ])
+            ->get();
+
+        return response()->json([
+            'status' => true,
+            'data'   => $data
+        ]);
+    }
+
+    public function reportPoDetailOutStock(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $id = $request->get('id');
+        $data = DB::table('inventory_history')
+            ->where('purchase_order_detail_id', $id)
+            ->where('type', 'outbound')
+            ->select('serial_number', 'qty')
+            ->get();
+
+        $result = [];
+        foreach ($data as $row) {
+            $serials = json_decode($row->serial_number ?: '[]', true) ?: [];
+            if (!is_array($serials)) {
+                $serials = [$serials];
+            }
+            $serials = array_filter($serials);
+
+            if (count($serials) > 0) {
+                // If there are specific SNs, we list them (usually 1 qty each if listed)
+                // But to be safe and match quantity, we'll group them.
+                // In this system, usually if SNs are provided, they match the movement.
+                foreach ($serials as $sn) {
+                    $result[] = [
+                        'serial_number' => $sn,
+                        'qty' => 1
+                    ];
+                }
+
+                // If reported qty is more than SNs provided
+                if ($row->qty > count($serials)) {
+                    $result[] = [
+                        'serial_number' => 'N/A (No SN recorded)',
+                        'qty' => $row->qty - count($serials)
+                    ];
+                }
+            } else {
+                // No SNs at all for this movement
+                $result[] = [
+                    'serial_number' => 'N/A',
+                    'qty' => $row->qty
+                ];
+            }
+        }
+
+        return response()->json([
+            'status' => true,
+            'data'   => $result
+        ]);
     }
 }

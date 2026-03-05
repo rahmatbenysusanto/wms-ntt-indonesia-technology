@@ -165,6 +165,11 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
         Route::get('/cycle-count/download/pdf', 'cycleCountDownloadPDF')->name('inventory.cycle-count.download-pdf');
         Route::get('/cycle-count/download/excel', 'cycleCountDownloadExcel')->name('inventory.cycle-count.download-excel');
 
+        Route::get('/report-po', 'reportPo')->name('inventory.report-po');
+        Route::get('/report-po/download/excel', 'reportPoDownloadExcel')->name('inventory.report-po.download-excel');
+        Route::get('/report-po/detail-in-stock', 'reportPoDetailInStock')->name('inventory.report-po.detail-in-stock');
+        Route::get('/report-po/detail-out-stock', 'reportPoDetailOutStock')->name('inventory.report-po.detail-out-stock');
+
         Route::post('/change-type', 'changeTypeProduct')->name('inventory.change.type.product');
         Route::get('/change-box', 'changeBox')->name('inventory.change.box');
         Route::post('/change-box-store', 'changeBoxStore')->name('inventory.change.box.post');
