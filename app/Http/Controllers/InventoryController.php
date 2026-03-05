@@ -349,7 +349,7 @@ class InventoryController extends Controller
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
 
-        $cycleCount = InventoryHistory::with('purchaseOrder.customer', 'purchaseOrderDetail', 'inventoryPackageItem.inventoryPackage', 'inventoryPackageItem.inventoryPackage.storage')
+        $cycleCount = InventoryHistory::with('purchaseOrder.customer', 'purchaseOrderDetail.purchaseOrder', 'outbound', 'inventoryPackageItem.inventoryPackage', 'inventoryPackageItem.inventoryPackage.storage')
             ->whereBetween('created_at', [$request->get('startDate') . ' 00:00:00', $request->get('endDate') . ' 23:59:59']);
 
         if ($request->get('type') != 'all') {
@@ -358,28 +358,34 @@ class InventoryController extends Controller
 
         $cycleCount = $cycleCount->get();
 
-        $sheet->setCellValue('A1', 'Client');
-        $sheet->setCellValue('B1', 'Purc Doc');
-        $sheet->setCellValue('C1', 'Sales Doc');
-        $sheet->setCellValue('D1', 'Material');
-        $sheet->setCellValue('E1', 'PO Item Desc');
-        $sheet->setCellValue('F1', 'Prod Hierarchy Desc');
-        $sheet->setCellValue('G1', 'QTY');
-        $sheet->setCellValue('H1', 'Storage Location');
-        $sheet->setCellValue('I1', 'Type');
-        $sheet->setCellValue('J1', 'Date');
-        $sheet->setCellValue('K1', 'Serial Number');
+        $sheet->setCellValue('A1', 'Customer name');
+        $sheet->setCellValue('B1', 'Vendor name');
+        $sheet->setCellValue('C1', 'Pur. Doc.');
+        $sheet->setCellValue('D1', 'Sales Doc');
+        $sheet->setCellValue('E1', 'Item');
+        $sheet->setCellValue('F1', 'Material');
+        $sheet->setCellValue('G1', 'PO Item Desc');
+        $sheet->setCellValue('H1', 'Prod Hierarchy Desc');
+        $sheet->setCellValue('I1', 'Acc Ass Cat');
+        $sheet->setCellValue('J1', 'Stor Loc');
+        $sheet->setCellValue('K1', 'SLoc Desc');
+        $sheet->setCellValue('L1', 'Valuation');
+        $sheet->setCellValue('M1', 'PO Itm Qty');
+        $sheet->setCellValue('N1', 'Net Price');
+        $sheet->setCellValue('O1', 'Crcy');
+        $sheet->setCellValue('P1', 'Created On');
+        $sheet->setCellValue('Q1', 'QTY');
+        $sheet->setCellValue('R1', 'Storage Location');
+        $sheet->setCellValue('S1', 'Type');
+        $sheet->setCellValue('T1', 'Date');
+        $sheet->setCellValue('U1', 'Serial Number');
+        $sheet->setCellValue('V1', 'Ref Number');
+        $sheet->setCellValue('W1', 'Deliv Loc');
+        $sheet->setCellValue('X1', 'Deliv Dest');
+        $sheet->setCellValue('Y1', 'Delivery Note Number');
 
         $column = 2;
         foreach ($cycleCount as $item) {
-            $sheet->setCellValue('A' . $column, data_get($item, 'purchaseOrder.customer.name', '-'));
-            $sheet->setCellValue('B' . $column, data_get($item, 'purchaseOrderDetail.purchaseOrder.purc_doc', ''));
-            $sheet->setCellValue('C' . $column, data_get($item, 'purchaseOrderDetail.sales_doc', ''));
-            $sheet->setCellValue('D' . $column, data_get($item, 'purchaseOrderDetail.material', ''));
-            $sheet->setCellValue('E' . $column, data_get($item, 'purchaseOrderDetail.po_item_desc', ''));
-            $sheet->setCellValue('F' . $column, data_get($item, 'purchaseOrderDetail.prod_hierarchy_desc', ''));
-            $sheet->setCellValue('G' . $column, (string) $item->qty);
-
             if (in_array($item->inventoryPackageItem?->inventoryPackage?->storage?->id, [2, 3, 4])) {
                 $storage = $item->inventoryPackageItem?->inventoryPackage?->storage?->raw;
             } else if ($item->inventoryPackageItem?->inventoryPackage?->storage?->id == 1) {
@@ -388,19 +394,53 @@ class InventoryController extends Controller
                 $storage = $item->inventoryPackageItem?->inventoryPackage?->storage?->raw . ' - ' . $item->inventoryPackageItem?->inventoryPackage?->storage?->area . ' - ' . $item->inventoryPackageItem?->inventoryPackage?->storage?->rak . ' - ' . $item->inventoryPackageItem?->inventoryPackage?->storage?->bin;
             }
 
-            $sheet->setCellValue('H' . $column, $storage);
-            $sheet->setCellValue('I' . $column, (string) $item->type);
-            $sheet->setCellValue('J' . $column, optional($item->created_at)->format('Y-m-d H:i:s') ?? '');
+            if ($item->type == 'inbound') {
+                $refNumber = $item->inventoryPackageItem?->inventoryPackage?->number ?? '-';
+                $delivLoc = '-';
+                $delivDest = '-';
+                $deliveryNoteNumber = '-';
+            } elseif ($item->type == 'outbound') {
+                $refNumber = $item->outbound?->number ?? '-';
+                $delivLoc = $item->outbound?->deliv_loc ?? '-';
+                $delivDest = $item->outbound?->deliv_dest ?? '-';
+                $deliveryNoteNumber = $item->outbound?->delivery_note_number ?? '-';
+            } else {
+                $refNumber = '-';
+                $delivLoc = '-';
+                $delivDest = '-';
+                $deliveryNoteNumber = '-';
+            }
 
             $serials = json_decode($item->serial_number ?: '[]', true) ?: [];
+            $snList = count($serials) > 0 ? $serials : ['-'];
 
-            if (count($serials) === 0) {
+            foreach ($snList as $sn) {
+                $sheet->setCellValue('A' . $column, data_get($item, 'purchaseOrderDetail.customer_name', '-'));
+                $sheet->setCellValue('B' . $column, data_get($item, 'purchaseOrderDetail.vendor_name', '-'));
+                $sheet->setCellValue('C' . $column, data_get($item, 'purchaseOrderDetail.purchaseOrder.purc_doc', '-'));
+                $sheet->setCellValue('D' . $column, data_get($item, 'purchaseOrderDetail.sales_doc', '-'));
+                $sheet->setCellValue('E' . $column, data_get($item, 'purchaseOrderDetail.item', '-'));
+                $sheet->setCellValue('F' . $column, data_get($item, 'purchaseOrderDetail.material', '-'));
+                $sheet->setCellValue('G' . $column, data_get($item, 'purchaseOrderDetail.po_item_desc', '-'));
+                $sheet->setCellValue('H' . $column, data_get($item, 'purchaseOrderDetail.prod_hierarchy_desc', '-'));
+                $sheet->setCellValue('I' . $column, data_get($item, 'purchaseOrderDetail.acc_ass_cat', '-'));
+                $sheet->setCellValue('J' . $column, data_get($item, 'purchaseOrderDetail.stor_loc', '-'));
+                $sheet->setCellValue('K' . $column, data_get($item, 'purchaseOrderDetail.sloc_desc', '-'));
+                $sheet->setCellValue('L' . $column, data_get($item, 'purchaseOrderDetail.valuation', '-'));
+                $sheet->setCellValue('M' . $column, (string) data_get($item, 'purchaseOrderDetail.po_item_qty', 0));
+                $sheet->setCellValue('N' . $column, (string) data_get($item, 'purchaseOrderDetail.net_order_price', 0));
+                $sheet->setCellValue('O' . $column, data_get($item, 'purchaseOrderDetail.currency', '-'));
+                $sheet->setCellValue('P' . $column, data_get($item, 'purchaseOrderDetail.price_date', '-'));
+                $sheet->setCellValue('Q' . $column, (string) $item->qty);
+                $sheet->setCellValue('R' . $column, $storage);
+                $sheet->setCellValue('S' . $column, (string) $item->type);
+                $sheet->setCellValue('T' . $column, optional($item->created_at)->format('Y-m-d H:i:s') ?? '');
+                $sheet->setCellValue('U' . $column, (string) $sn);
+                $sheet->setCellValue('V' . $column, $refNumber);
+                $sheet->setCellValue('W' . $column, $delivLoc);
+                $sheet->setCellValue('X' . $column, $delivDest);
+                $sheet->setCellValue('Y' . $column, $deliveryNoteNumber);
                 $column++;
-            } else {
-                foreach ($serials as $sn) {
-                    $sheet->setCellValue('K' . $column, (string) $sn);
-                    $column++;
-                }
             }
         }
 
