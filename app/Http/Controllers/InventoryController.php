@@ -1919,51 +1919,49 @@ class InventoryController extends Controller
 
     public function reportPo(Request $request): View
     {
-        $query = DB::table('purchase_order_detail')
-            ->leftJoin('purchase_order', 'purchase_order_detail.purchase_order_id', '=', 'purchase_order.id')
-            ->leftJoin('customer', 'purchase_order.customer_id', '=', 'customer.id');
+        $purcDoc = $request->query('purcDoc');
+        $report = collect();
+        $summary = null;
 
-        if ($request->query('purcDoc')) {
-            $query->where('purchase_order.purc_doc', 'LIKE', '%' . $request->query('purcDoc') . '%');
+        if ($purcDoc) {
+            $query = DB::table('purchase_order_detail')
+                ->leftJoin('purchase_order', 'purchase_order_detail.purchase_order_id', '=', 'purchase_order.id')
+                ->leftJoin('customer', 'purchase_order.customer_id', '=', 'customer.id')
+                ->where('purchase_order.purc_doc', $purcDoc);
+
+            $report = $query->select([
+                'purchase_order.purc_doc',
+                'purchase_order_detail.id as po_detail_id',
+                'purchase_order_detail.material',
+                'purchase_order_detail.po_item_desc',
+                'purchase_order_detail.po_item_qty',
+                'customer.name as customer_name'
+            ])
+                ->get();
+
+            foreach ($report as $item) {
+                // Count In Stock (Total in inventory_detail)
+                $item->in_stock = DB::table('inventory_detail')
+                    ->where('purchase_order_detail_id', $item->po_detail_id)
+                    ->sum('qty');
+
+                // Count Out Stock (Outbound)
+                $item->out_stock = DB::table('inventory_history')
+                    ->where('purchase_order_detail_id', $item->po_detail_id)
+                    ->where('type', 'outbound')
+                    ->sum('qty');
+            }
+
+            $summary = [
+                'total_po' => $report->sum('po_item_qty'),
+                'total_stock' => $report->sum('in_stock'),
+                'total_outbound' => $report->sum('out_stock'),
+            ];
         }
 
-        if ($request->query('material')) {
-            $query->where('purchase_order_detail.material', 'LIKE', '%' . $request->query('material') . '%');
-        }
-
-        if ($request->query('client')) {
-            $query->where('customer.id', $request->query('client'));
-        }
-
-        $report = $query->select([
-            'purchase_order.purc_doc',
-            'purchase_order_detail.id as po_detail_id',
-            'purchase_order_detail.material',
-            'purchase_order_detail.po_item_desc',
-            'purchase_order_detail.po_item_qty',
-            'customer.name as customer_name'
-        ])
-            ->latest('purchase_order_detail.created_at')
-            ->paginate(10)
-            ->appends($request->query());
-
-        foreach ($report as $item) {
-            // Count In Stock
-            $item->in_stock = DB::table('inventory_detail')
-                ->where('purchase_order_detail_id', $item->po_detail_id)
-                ->sum('qty');
-
-            // Count Out Stock (Outbound)
-            $item->out_stock = DB::table('inventory_history')
-                ->where('purchase_order_detail_id', $item->po_detail_id)
-                ->where('type', 'outbound')
-                ->sum('qty');
-        }
-
-        $products = Product::all();
-        $customers = Customer::all();
+        $purchaseOrders = DB::table('purchase_order')->select('id', 'purc_doc')->orderBy('purc_doc', 'asc')->get();
         $title = 'Report PO';
-        return view('inventory.report-po', compact('title', 'report', 'products', 'customers'));
+        return view('inventory.report-po', compact('title', 'report', 'purchaseOrders', 'purcDoc', 'summary'));
     }
 
     public function reportPoDownloadExcel(Request $request): StreamedResponse
@@ -1971,20 +1969,14 @@ class InventoryController extends Controller
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
 
+        $purcDoc = $request->query('purcDoc');
+
         $query = DB::table('purchase_order_detail')
             ->leftJoin('purchase_order', 'purchase_order_detail.purchase_order_id', '=', 'purchase_order.id')
             ->leftJoin('customer', 'purchase_order.customer_id', '=', 'customer.id');
 
-        if ($request->query('purcDoc')) {
-            $query->where('purchase_order.purc_doc', 'LIKE', '%' . $request->query('purcDoc') . '%');
-        }
-
-        if ($request->query('material')) {
-            $query->where('purchase_order_detail.material', 'LIKE', '%' . $request->query('material') . '%');
-        }
-
-        if ($request->query('client')) {
-            $query->where('customer.id', $request->query('client'));
+        if ($purcDoc) {
+            $query->where('purchase_order.purc_doc', $purcDoc);
         }
 
         $report = $query->select([
@@ -1999,13 +1991,12 @@ class InventoryController extends Controller
             ->get();
 
         $sheet->setCellValue('A1', 'No');
-        $sheet->setCellValue('B1', 'Client');
-        $sheet->setCellValue('C1', 'Purc Doc');
-        $sheet->setCellValue('D1', 'Material');
-        $sheet->setCellValue('E1', 'PO Item Desc');
-        $sheet->setCellValue('F1', 'PO Qty');
-        $sheet->setCellValue('G1', 'In Stock');
-        $sheet->setCellValue('H1', 'Out Stock');
+        $sheet->setCellValue('B1', 'Purc Doc');
+        $sheet->setCellValue('C1', 'Material');
+        $sheet->setCellValue('D1', 'PO Item Desc');
+        $sheet->setCellValue('E1', 'PO Qty');
+        $sheet->setCellValue('F1', 'In Stock');
+        $sheet->setCellValue('G1', 'Outbound');
 
         $column = 2;
         foreach ($report as $index => $item) {
@@ -2019,13 +2010,12 @@ class InventoryController extends Controller
                 ->sum('qty');
 
             $sheet->setCellValue('A' . $column, $index + 1);
-            $sheet->setCellValue('B' . $column, $item->customer_name);
-            $sheet->setCellValue('C' . $column, $item->purc_doc);
-            $sheet->setCellValue('D' . $column, $item->material);
-            $sheet->setCellValue('E' . $column, $item->po_item_desc);
-            $sheet->setCellValue('F' . $column, $item->po_item_qty);
-            $sheet->setCellValue('G' . $column, (string)$in_stock);
-            $sheet->setCellValue('H' . $column, (string)$out_stock);
+            $sheet->setCellValue('B' . $column, $item->purc_doc);
+            $sheet->setCellValue('C' . $column, $item->material);
+            $sheet->setCellValue('D' . $column, $item->po_item_desc);
+            $sheet->setCellValue('E' . $column, $item->po_item_qty);
+            $sheet->setCellValue('F' . $column, (string)$in_stock);
+            $sheet->setCellValue('G' . $column, (string)$out_stock);
             $column++;
         }
 

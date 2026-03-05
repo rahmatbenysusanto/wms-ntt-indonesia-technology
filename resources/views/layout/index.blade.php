@@ -321,18 +321,18 @@
                                                     data-key="t-analytics"> Transfer Location </a>
                                             </li>
                                         @endif
-                                        @if (Session::get('userHasMenu')->contains('Cycle Count'))
-                                            <li class="nav-item">
-                                                <a href="{{ route('inventory.cycle-count') }}"
-                                                    class="nav-link {{ $title == 'Cycle Count' ? 'active' : '' }}"
-                                                    data-key="t-analytics"> Cycle Count </a>
-                                            </li>
-                                        @endif
                                         @if (Session::get('userHasMenu')->contains('Report PO'))
                                             <li class="nav-item">
                                                 <a href="{{ route('inventory.report-po') }}"
                                                     class="nav-link {{ $title == 'Report PO' ? 'active' : '' }}"
                                                     data-key="t-analytics"> Report PO </a>
+                                            </li>
+                                        @endif
+                                        @if (Session::get('userHasMenu')->contains('Cycle Count'))
+                                            <li class="nav-item">
+                                                <a href="{{ route('inventory.cycle-count') }}"
+                                                    class="nav-link {{ $title == 'Cycle Count' ? 'active' : '' }}"
+                                                    data-key="t-analytics"> Cycle Count </a>
                                             </li>
                                         @endif
                                     </ul>
