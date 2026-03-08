@@ -686,7 +686,8 @@
             const products = await kvGet('salesDocProduct', []) ?? [];
             for (const product of products) {
                 const q = parseInt(product?.qtySelect || 0);
-                if (q !== 0 && q !== parseInt((product?.serialNumber || []).length)) {
+                const hasSN = (product?.dataSN || []).length > 0;
+                if (q !== 0 && hasSN && q !== parseInt((product?.serialNumber || []).length)) {
                     await Swal.fire({
                         title: 'Warning!',
                         text: 'Select serial number as many as QTY Out',

@@ -245,7 +245,23 @@ class OutboundController extends Controller
             Log::channel('outbound')->info('Outbound Store Process Started', ['user_id' => Auth::id()]);
 
             $products = $request->post('products');
-            $customer = Customer::find($request->post('customerId'));
+            $customerId = $request->post('customerId');
+            $customer = $customerId ? Customer::find($customerId) : null;
+
+            if (!$customer) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Customer non-existent or not selected'
+                ]);
+            }
+
+            if (empty($products)) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Product list cannot be empty'
+                ]);
+            }
+
             $qty_item = 0;
             $qty = 0;
             $salesDocs = [];
@@ -257,7 +273,7 @@ class OutboundController extends Controller
 
             $outbound = Outbound::create([
                 'customer_id'   => $customer->id,
-                'purc_doc'      => $products[0]['purcDoc'],
+                'purc_doc'      => $products[0]['purcDoc'] ?? '',
                 'sales_docs'    => json_encode([]),
                 'outbound_date' => $request->post('deliveryDate'),
                 'number'        => 'INV-' . date('ymdHis') . str_pad(rand(0, 999), 3, '0', STR_PAD_LEFT),
@@ -273,7 +289,7 @@ class OutboundController extends Controller
             ]);
 
             foreach ($products as $product) {
-                if ($product['disable'] == 0 && $product['qtySelect'] != 0 && $product['qtySelect'] <= $product['qty']) {
+                if ($product['disable'] == 0 && ($product['qtySelect'] ?? 0) != 0 && ($product['qtySelect'] ?? 0) <= $product['qty']) {
                     // Insert Outbound Detail
                     $outboundDetail = OutboundDetail::create([
                         'outbound_id'               => $outbound->id,
@@ -305,11 +321,13 @@ class OutboundController extends Controller
 
                     // Decrement Inventory
                     $inventory = Inventory::where('purchase_order_id', $product['purchaseOrderId'])->where('type', 'inv')->first();
-                    Inventory::where('id', $inventory->id)->decrement('stock', $product['qtySelect']);
-                    InventoryDetail::where('inventory_package_item_id', $product['inventoryPackageItemId'])->where('inventory_id', $inventory->id)->decrement('qty', $product['qtySelect']);
+                    if ($inventory) {
+                        Inventory::where('id', $inventory->id)->decrement('stock', $product['qtySelect']);
+                        InventoryDetail::where('inventory_package_item_id', $product['inventoryPackageItemId'])->where('inventory_id', $inventory->id)->decrement('qty', $product['qtySelect']);
+                    }
 
                     // Inventory History
-                    InventoryHistory::create([
+                    $inventoryHistory = InventoryHistory::create([
                         'purchase_order_id'         => $product['purchaseOrderId'],
                         'purchase_order_detail_id'  => $product['purchaseOrderDetailId'],
                         'outbound_id'               => $outbound->id,
@@ -351,10 +369,11 @@ class OutboundController extends Controller
                         break;
                 }
 
-                $checkInventory = Inventory::where('purchase_order_id', $products[0]['purchaseOrderId'])->where('type', $type)->first();
+                $firstProduct = $products[0];
+                $checkInventory = Inventory::where('purchase_order_id', $firstProduct['purchaseOrderId'])->where('type', $type)->first();
                 if ($checkInventory == null) {
                     Inventory::create([
-                        'purchase_order_id' => $products[0]['purchaseOrderId'],
+                        'purchase_order_id' => $firstProduct['purchaseOrderId'],
                         'stock'             => $qty,
                         'type'              => $type,
                     ]);
@@ -362,9 +381,9 @@ class OutboundController extends Controller
                     Inventory::where('id', $checkInventory->id)->increment('stock', $qty);
                 }
 
-                $purchaseOrder = PurchaseOrder::find($products[0]['purchaseOrderId']);
+                $purchaseOrder = PurchaseOrder::find($firstProduct['purchaseOrderId']);
                 // Store Inventory Package
-                $findInventoryPackage = InventoryPackage::find($products[0]['inventoryPackageId']);
+                $findInventoryPackage = InventoryPackage::find($firstProduct['inventoryPackageId']);
                 $inventoryPackage = InventoryPackage::create([
                     'purchase_order_id'         => $purchaseOrder->id,
                     'storage_id'                => $storage,
@@ -373,12 +392,12 @@ class OutboundController extends Controller
                     'qty_item'                  => $qty_item,
                     'qty'                       => $qty,
                     'sales_docs'                => json_encode(array_unique($salesDocs)),
-                    'product_package_id'        => $findInventoryPackage->product_package_id,
+                    'product_package_id'        => $findInventoryPackage?->product_package_id,
                     'created_by'                => Auth::id()
                 ]);
 
                 foreach ($products as $product) {
-                    if ($product['disable'] == 0 && $product['qtySelect'] != 0 && $product['qtySelect'] <= $product['qty']) {
+                    if ($product['disable'] == 0 && ($product['qtySelect'] ?? 0) != 0 && ($product['qtySelect'] ?? 0) <= $product['qty']) {
                         $inventoryPackageItem = InventoryPackageItem::find($product['inventoryPackageItemId']);
                         $purchaseOrderDetail = PurchaseOrderDetail::find($inventoryPackageItem->purchase_order_detail_id);
 
@@ -417,7 +436,7 @@ class OutboundController extends Controller
                                 'storage_id'                => $storage,
                                 'inventory_package_item_id' => $inventoryPackageItem->id,
                                 'sales_doc'                 => $product['salesDoc'],
-                                'qty'                       => 1,
+                                'qty'                       => $product['qtySelect'],
                                 'aging_date'                => $productAging->aging_date,
                             ]);
                         } else {
