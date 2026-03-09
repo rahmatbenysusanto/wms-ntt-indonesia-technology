@@ -22,7 +22,8 @@ class Outbound extends Model
         'created_by',
         'note',
         'delivery_date',
-        'delivery_note_number'
+        'delivery_note_number',
+        'ntt_dn'
     ];
 
     public function outboundDetail(): \Illuminate\Database\Eloquent\Relations\HasMany

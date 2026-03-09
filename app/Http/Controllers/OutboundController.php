@@ -285,6 +285,7 @@ class OutboundController extends Controller
                 'deliv_dest'    => $request->post('deliveryDest'),
                 'delivery_date' => $request->post('deliveryDate'),
                 'delivery_note_number' => $deliveryNoteNumber,
+                'ntt_dn'        => $request->post('nttDn'),
                 'created_by'    => Auth::id()
             ]);
 

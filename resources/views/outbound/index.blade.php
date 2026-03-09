@@ -98,6 +98,7 @@
                                 <tr>
                                     <th>#</th>
                                     <th>Deliv Note Number</th>
+                                    <th>NTT DN</th>
                                     <th>Purc Doc</th>
                                     <th>Sales Doc</th>
                                     <th>Client</th>
@@ -116,6 +117,7 @@
                                     <tr>
                                         <td>{{ $outbound->firstItem() + $index }}</td>
                                         <td>{{ $out->delivery_note_number }}</td>
+                                        <td>{{ $out->ntt_dn }}</td>
                                         <td>{{ $out->purc_doc }}</td>
                                         <td>
                                             @foreach (json_decode($out->sales_docs) as $item)

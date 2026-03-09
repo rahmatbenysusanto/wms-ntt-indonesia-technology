@@ -55,6 +55,10 @@
                             <input type="text" class="form-control" id="deliveryNoteNumber"
                                 placeholder="Delivery Note Number">
                         </div>
+                        <div class="col-6 mb-3">
+                            <label class="form-label">NTT DN</label>
+                            <input type="text" class="form-control" id="nttDn" placeholder="NTT DN - Optional">
+                        </div>
                     </div>
                 </div>
             </div>
@@ -164,8 +168,8 @@
                                 <a class="btn btn-danger btn-sm" onclick="pilihSemuaSN()">Pilih Semua SN</a>
                             </div>
                             <div class="mb-2">
-                                <input type="text" class="form-control" id="searchSN" placeholder="Search Serial Number"
-                                    onkeyup="filterSN()">
+                                <input type="text" class="form-control" id="searchSN"
+                                    placeholder="Search Serial Number" onkeyup="filterSN()">
                             </div>
                             <table class="table table-striped align-middle">
                                 <thead>
@@ -708,6 +712,7 @@
                     deliveryDest: document.getElementById('deliveryDest')?.value,
                     deliveryDate: document.getElementById('deliveryDate')?.value ?? '',
                     deliveryNoteNumber: document.getElementById('deliveryNoteNumber')?.value ?? '',
+                    nttDn: document.getElementById('nttDn')?.value ?? '',
                 },
                 success: async (res) => {
                     if (res?.status) {
