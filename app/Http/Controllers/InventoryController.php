@@ -13,6 +13,7 @@ use App\Models\Product;
 use App\Models\PurchaseOrderDetail;
 use App\Models\Storage;
 use App\Models\TransferLocation;
+use App\Models\SnChangeLog;
 use Barryvdh\DomPDF\Facade\Pdf;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use Carbon\Carbon;
@@ -2267,5 +2268,151 @@ class InventoryController extends Controller
             'status' => true,
             'data'   => $result
         ]);
+    }
+
+    // =====================================================
+    // FITUR: UPDATE SERIAL NUMBER N/A
+    // =====================================================
+
+    /**
+     * Tampilkan daftar box (InventoryPackage) yang memiliki SN N/A.
+     */
+    public function snUpdate(Request $request): View
+    {
+        $query = InventoryPackage::with('purchaseOrder.customer', 'storage')
+            ->whereNotIn('storage_id', [1, 2, 3, 4])
+            ->where('qty', '!=', 0)
+            ->whereHas('inventoryPackageItem.inventoryPackageItemSn', function ($q) {
+                $q->whereRaw('UPPER(TRIM(serial_number)) = ?', ['N/A']);
+            });
+
+        if ($request->query('paNumber')) {
+            $query->where('number', 'LIKE', '%' . $request->query('paNumber') . '%');
+        }
+
+        if ($request->query('purcDoc')) {
+            $query->whereHas('purchaseOrder', function ($q) use ($request) {
+                $q->where('purc_doc', 'LIKE', '%' . $request->query('purcDoc') . '%');
+            });
+        }
+
+        $boxes = $query->latest()->paginate(15)->appends($request->query());
+
+        // Hitung jumlah SN N/A per box
+        foreach ($boxes as $box) {
+            $box->na_count = DB::table('inventory_package_item_sn')
+                ->join('inventory_package_item', 'inventory_package_item_sn.inventory_package_item_id', '=', 'inventory_package_item.id')
+                ->where('inventory_package_item.inventory_package_id', $box->id)
+                ->whereRaw('UPPER(TRIM(inventory_package_item_sn.serial_number)) = ?', ['N/A'])
+                ->count();
+        }
+
+        $title = 'Update Serial Number';
+        return view('inventory.sn-update.index', compact('title', 'boxes'));
+    }
+
+    /**
+     * Tampilkan detail box beserta semua SN-nya untuk diedit.
+     */
+    public function snUpdateDetail(Request $request): View
+    {
+        $inventoryPackage = InventoryPackage::with(
+            'purchaseOrder.customer',
+            'storage',
+            'inventoryPackageItem.purchaseOrderDetail',
+            'inventoryPackageItem.inventoryPackageItemSn'
+        )->findOrFail($request->query('id'));
+
+        $items = $inventoryPackage->inventoryPackageItem;
+
+        // Hitung total SN N/A di box ini
+        $naCount = 0;
+        foreach ($items as $item) {
+            foreach ($item->inventoryPackageItemSn as $sn) {
+                if (strtoupper(trim($sn->serial_number)) === 'N/A') {
+                    $naCount++;
+                }
+            }
+        }
+
+        // Ambil semua SN ID dalam box ini untuk load log
+        $snIds = DB::table('inventory_package_item_sn')
+            ->join('inventory_package_item', 'inventory_package_item_sn.inventory_package_item_id', '=', 'inventory_package_item.id')
+            ->where('inventory_package_item.inventory_package_id', $inventoryPackage->id)
+            ->pluck('inventory_package_item_sn.id');
+
+        $changeLogs = SnChangeLog::with('user')
+            ->whereIn('inventory_package_item_sn_id', $snIds)
+            ->latest()
+            ->get();
+
+        $title = 'Update Serial Number';
+        return view('inventory.sn-update.detail', compact(
+            'title', 'inventoryPackage', 'items', 'naCount', 'changeLogs'
+        ));
+    }
+
+    /**
+     * Simpan perubahan SN N/A dan rekam ke log.
+     */
+    public function snUpdateStore(Request $request): \Illuminate\Http\JsonResponse
+    {
+        try {
+            DB::beginTransaction();
+            Log::channel('inventory_sn_update')->info('SN Update Started', [
+                'inventory_package_id' => $request->post('inventory_package_id'),
+                'user_id' => Auth::id(),
+            ]);
+
+            $updates = $request->post('sn_updates', []);
+            $inventoryPackageId = $request->post('inventory_package_id');
+            $updatedCount = 0;
+
+            foreach ($updates as $snId => $data) {
+                $newSN = trim($data['new_serial_number'] ?? '');
+                $oldSN = $data['old_serial_number'] ?? 'N/A';
+                $inventoryPackageItemId = $data['inventory_package_item_id'] ?? null;
+                $notes = $data['notes'] ?? null;
+
+                if (empty($newSN)) continue;
+
+                // Update SN di inventory_package_item_sn
+                InventoryPackageItemSN::where('id', $snId)->update([
+                    'serial_number' => $newSN,
+                ]);
+
+                // Rekam log perubahan
+                SnChangeLog::create([
+                    'inventory_package_item_sn_id' => $snId,
+                    'inventory_package_id'          => $inventoryPackageId,
+                    'inventory_package_item_id'     => $inventoryPackageItemId,
+                    'old_serial_number'             => $oldSN,
+                    'new_serial_number'             => $newSN,
+                    'notes'                         => $notes,
+                    'changed_by'                    => Auth::id(),
+                ]);
+
+                $updatedCount++;
+            }
+
+            DB::commit();
+            Log::channel('inventory_sn_update')->info('SN Update Success', [
+                'updated_count' => $updatedCount,
+                'user_id' => Auth::id(),
+            ]);
+
+            return response()->json([
+                'status'  => true,
+                'message' => "$updatedCount Serial Number berhasil diperbarui.",
+            ]);
+        } catch (\Exception $err) {
+            DB::rollBack();
+            Log::channel('inventory_sn_update')->error('SN Update Failed: ' . $err->getMessage());
+            Log::error($err->getMessage());
+            return response()->json([
+                'status'  => false,
+                'message' => 'Terjadi kesalahan: ' . $err->getMessage(),
+            ]);
+        }
     }
 }

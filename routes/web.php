@@ -196,6 +196,11 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
 
         // Download Product PDF
         Route::get('/download-product-pdf', 'downloadProductPdf')->name('inventory.download-product-pdf');
+
+        // Update Serial Number N/A
+        Route::get('/sn-update', 'snUpdate')->name('inventory.sn-update');
+        Route::get('/sn-update/detail', 'snUpdateDetail')->name('inventory.sn-update.detail');
+        Route::post('/sn-update/store', 'snUpdateStore')->name('inventory.sn-update.store');
     });
 
     Route::prefix('/general-room')->controller(GeneralRoomController::class)->group(function () {

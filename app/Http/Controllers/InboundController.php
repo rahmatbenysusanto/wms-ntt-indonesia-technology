@@ -707,8 +707,16 @@ class InboundController extends Controller
                     'sales_doc'
                 ]);
             },
-            'productPackageItemSn'
+            // Hanya load SN yang belum diproses (status != 1)
+            'productPackageItemSn' => function ($query) {
+                $query->where(function ($q) {
+                    $q->where('status', '!=', 1)
+                        ->orWhereNull('status');
+                });
+            }
         ])->where('product_package_id', $request->query('id'))
+            // Hanya ambil item yang masih ada sisa QTY yang belum di-PA
+            ->whereRaw('qty > COALESCE(qty_pa, 0)')
             ->get();
 
         $storage = Storage::whereNotNull('raw')->whereNotNull('area')->whereNotNull('rak')->whereNotNull('bin')->whereNull('deleted_at')->get();
@@ -915,16 +923,20 @@ class InboundController extends Controller
             // Inventory
             Inventory::where('id', $inventoryId)->increment('stock', $stock);
 
-            // Calculate total QTY processed for this ProductPackage
-            // Use ProductPackageItem to get the authoritative total expected quantity
-            $totalQtyPackage = ProductPackageItem::where('product_package_id', $productPackage->id)->sum('qty');
+            // Calculate total QTY yang perlu di-PA (exclude direct_outbound karena itu sudah langsung ke inventory)
+            $totalQtyPackage = ProductPackageItem::where('product_package_id', $productPackage->id)
+                ->where(function($q) {
+                    $q->whereNull('direct_outbound')->orWhere('direct_outbound', 0);
+                })->sum('qty');
 
-            // Check existing processed QTY + current stock
-            // Summing valid PutAway items from InventoryPackage
-            $processedQty = InventoryPackage::where('product_package_id', $productPackage->id)->sum('qty');
+            // Total QTY yang sudah berhasil di-PA (pakai qty_pa sebagai sumber kebenaran)
+            $processedQty = ProductPackageItem::where('product_package_id', $productPackage->id)
+                ->where(function($q) {
+                    $q->whereNull('direct_outbound')->orWhere('direct_outbound', 0);
+                })->sum('qty_pa');
 
             // If processed QTY >= Total Package QTY, mark as done.
-            if ($processedQty >= $totalQtyPackage) {
+            if ($totalQtyPackage > 0 && $processedQty >= $totalQtyPackage) {
                 ProductPackage::where('id', $productPackage->id)->update([
                     'status'    => 'done'
                 ]);

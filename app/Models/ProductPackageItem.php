@@ -13,7 +13,8 @@ class ProductPackageItem extends Model
         'purchase_order_detail_id',
         'is_parent',
         'direct_outbound',
-        'qty'
+        'qty',
+        'qty_pa',
     ];
 
     public function product(): \Illuminate\Database\Eloquent\Relations\BelongsTo

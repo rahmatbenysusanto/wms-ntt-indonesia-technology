@@ -211,6 +211,13 @@ return [
             'days' => 14,
         ],
 
+        'inventory_sn_update' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/inventory/sn_update.log'),
+            'level' => 'debug',
+            'days' => 14,
+        ],
+
         'gr' => [
             'driver' => 'daily',
             'path' => storage_path('logs/gr/gr.log'),

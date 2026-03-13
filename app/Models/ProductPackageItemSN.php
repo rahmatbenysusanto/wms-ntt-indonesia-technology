@@ -10,5 +10,6 @@ class ProductPackageItemSN extends Model
     protected $fillable = [
         'product_package_item_id',
         'serial_number',
+        'status',
     ];
 }
