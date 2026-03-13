@@ -1,113 +1,72 @@
 <!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport"
-          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>Inbound</title>
-
-    <link href="{{ asset('assets/css/bootstrap.min.css') }}" rel="stylesheet" type="text/css" />
-    <link href="{{ asset('assets/css/icons.min.css') }}" rel="stylesheet" type="text/css" />
-    <link href="{{ asset('assets/css/app.min.css') }}" rel="stylesheet" type="text/css" />
-    <link href="{{ asset('assets/css/custom.min.css') }}" rel="stylesheet" type="text/css" />
-    <style>
-        .mobile-header {
-            padding-top: 12px;
-            padding-bottom: 12px;
-            background-color: #222163;
-        }
-    </style>
+    <title>Box – WMS Mobile</title>
+    @include('mobile.layout.app')
 </head>
-<body>
+<body class="bg-slate-50 pb-24">
 
-<div class="mobile-header">
-    <div class="container-fluid">
-        <div class="row">
-            <div class="col-2 d-flex align-items-center">
-                <a href="{{ route('dashboardMobile') }}" class="ps-3">
-                    <i class="mdi mdi-arrow-left-thin text-white" style="font-size: 32px"></i>
-                </a>
-            </div>
-            <div class="col-8 d-flex justify-content-center align-items-center">
-                <h5 class="mb-0 text-center text-white">Box</h5>
-            </div>
-            <div class="col-2">
-
-            </div>
-        </div>
+<header class="sticky top-0 z-40 bg-slate-800 shadow-md">
+    <div class="flex items-center px-4 h-14">
+        <a href="{{ route('dashboardMobile') }}" class="flex items-center justify-center w-9 h-9 rounded-xl bg-white/10 text-white">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" /></svg>
+        </a>
+        <h1 class="absolute left-1/2 -translate-x-1/2 text-white font-bold text-base">Box Inventory</h1>
     </div>
-</div>
+</header>
 
-<div class="container-fluid mt-4">
-    <div class="row">
-        <div class="col-12 mb-3">
-            <form action="{{ url()->current() }}" method="GET">
-                <div class="row gx-1">
-                    <div class="col-10">
-                        <input type="number" class="form-control w-100" name="search" placeholder="Search ...">
+<main class="px-4 pt-4 space-y-3">
+    {{-- Search --}}
+    <form action="{{ url()->current() }}" method="GET">
+        <div class="flex gap-2">
+            <input type="number" name="search" value="{{ request()->get('search') }}" placeholder="Cari nomor box..."
+                   class="flex-1 px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:border-brand-400 transition-all shadow-sm">
+            <button type="submit" class="px-4 py-2.5 bg-brand-400 hover:bg-brand-500 text-white rounded-xl text-sm font-semibold shadow-sm transition-all active:scale-[.98]">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" /></svg>
+            </button>
+        </div>
+    </form>
+
+    @forelse($box as $inv)
+        <a href="{{ route('inventory.box.detail.mobile', ['id' => $inv->id]) }}" class="block">
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 tap-card border-l-4 border-l-slate-600">
+                <div class="flex items-start justify-between mb-2">
+                    <div>
+                        <p class="font-bold text-slate-800 text-sm">{{ $inv->purchaseOrder?->purc_doc }}</p>
+                        <p class="text-xs text-slate-500 mt-0.5">No: {{ $inv->number }}</p>
                     </div>
-                    <div class="col-2">
-                        <button type="submit" class="btn btn-primary w-100">
-                            <i class="mdi mdi-search-web" style="font-size: 14px"></i>
-                        </button>
+                    <div class="text-right">
+                        <span class="text-xs font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">QTY: {{ number_format($inv->qty) }}</span>
                     </div>
                 </div>
-            </form>
-        </div>
-
-        <div class="col-12">
-            @foreach($box as $index => $inv)
-                <a href="{{ route('inventory.box.detail.mobile', ['id' => $inv->id]) }}">
-                    <div class="card p-2 mb-3">
-                        <div><b>Purc Doc: </b>{{ $inv->purchaseOrder->purc_doc }}</div>
-                        <div><b>Sales Doc: </b></div>
-                        <div><b>Number: </b>{{ $inv->number }}</div>
-                        <div><b>Reff: </b>{{ $inv->reff_number }}</div>
-                        <div><b>Storage: </b>{{ $inv->storage->raw }} - {{ $inv->storage->area }} - {{ $inv->storage->rak }} - {{ $inv->storage->bin }}</div>
-                        <div><b>QTY Item: </b>{{ number_format($inv->qty_item) }}</div>
-                        <div><b>QTY: </b>{{ number_format($inv->qty) }}</div>
-                    </div>
-                </a>
-            @endforeach
-
-            <div class="d-flex justify-content-end mt-2">
-                @if ($box->hasPages())
-                    <ul class="pagination">
-                        @if ($box->onFirstPage())
-                            <li class="disabled"><span>&laquo; Previous</span></li>
-                        @else
-                            <li><a href="{{ $box->previousPageUrl() }}&per_page={{ request('per_page', 10) }}" rel="prev">&laquo; Previous</a></li>
-                        @endif
-
-                        @foreach ($box->links()->elements as $element)
-                            @if (is_string($element))
-                                <li class="disabled"><span>{{ $element }}</span></li>
-                            @endif
-
-                            @if (is_array($element))
-                                @foreach ($element as $page => $url)
-                                    @if ($page == $box->currentPage())
-                                        <li class="active"><span>{{ $page }}</span></li>
-                                    @else
-                                        <li><a href="{{ $url }}&per_page={{ request('per_page', 10) }}">{{ $page }}</a></li>
-                                    @endif
-                                @endforeach
-                            @endif
-                        @endforeach
-
-                        @if ($box->hasMorePages())
-                            <li><a href="{{ $box->nextPageUrl() }}&per_page={{ request('per_page', 10) }}" rel="next">Next &raquo;</a></li>
-                        @else
-                            <li class="disabled"><span>Next &raquo;</span></li>
-                        @endif
-                    </ul>
-                @endif
-
+                <p class="text-xs text-slate-500">Reff: {{ $inv->reff_number }}</p>
+                <p class="text-xs text-slate-400 mt-1">Storage: {{ $inv->storage?->raw }} - {{ $inv->storage?->area }} - {{ $inv->storage?->rak }} - {{ $inv->storage?->bin }}</p>
             </div>
+        </a>
+    @empty
+        <div class="text-center py-16 text-slate-400">
+            <p class="text-sm font-medium">Tidak ada data box</p>
         </div>
-    </div>
-</div>
+    @endforelse
 
+    {{-- Pagination --}}
+    @if($box->hasPages())
+    <div class="flex items-center justify-center gap-2 pt-2 pb-2">
+        @if($box->onFirstPage())
+            <span class="px-4 py-2 text-xs font-semibold text-slate-400 bg-white border border-slate-200 rounded-xl opacity-50">‹ Back</span>
+        @else
+            <a href="{{ $box->previousPageUrl() }}&per_page={{ request('per_page', 10) }}" class="px-4 py-2 text-xs font-semibold text-brand-500 bg-white border border-brand-200 rounded-xl">‹ Back</a>
+        @endif
+        <span class="px-3 py-2 text-xs font-bold text-slate-700 bg-white border border-slate-200 rounded-xl">{{ $box->currentPage() }} / {{ $box->lastPage() }}</span>
+        @if($box->hasMorePages())
+            <a href="{{ $box->nextPageUrl() }}&per_page={{ request('per_page', 10) }}" class="px-4 py-2 text-xs font-semibold text-brand-500 bg-white border border-brand-200 rounded-xl">Next ›</a>
+        @else
+            <span class="px-4 py-2 text-xs font-semibold text-slate-400 bg-white border border-slate-200 rounded-xl opacity-50">Next ›</span>
+        @endif
+    </div>
+    @endif
+</main>
+
+@include('mobile.layout.menu')
 </body>
 </html>

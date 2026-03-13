@@ -715,9 +715,14 @@ class OutboundController extends Controller
         }
     }
 
-    public function downloadPdf(Request $request): \Illuminate\Http\Response
+    public function downloadPdf(Request $request): \Illuminate\Http\Response|\Illuminate\Http\RedirectResponse
     {
         $outbound = Outbound::with('customer', 'inventoryPackageItem', 'inventoryPackageItem.inventoryPackage', 'inventoryPackageItem.inventoryPackage.storage')->where('id', $request->query('id'))->first();
+
+        if (!$outbound) {
+            return back()->with('error', 'Outbound not found');
+        }
+
         $outboundDetail = OutboundDetail::with('inventoryPackageItem', 'inventoryPackageItem.purchaseOrderDetail', 'outboundDetailSN')->where('outbound_id', $request->query('id'))->get();
 
         $data = [
@@ -729,14 +734,18 @@ class OutboundController extends Controller
         return $pdf->stream('outbound ' . $outbound->delivery_note_number . '.pdf');
     }
 
-    public function downloadExcel(Request $request): StreamedResponse
+    public function downloadExcel(Request $request): StreamedResponse|\Illuminate\Http\RedirectResponse
     {
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
 
         $outbound = Outbound::with('customer')
             ->where('id', $request->query('id'))
-            ->firstOrFail();
+            ->first();
+
+        if (!$outbound) {
+            return back()->with('error', 'Outbound not found');
+        }
 
         $sheet->setCellValue('A1', 'From');
         $sheet->setCellValue('A2', 'NTT Global Technology');

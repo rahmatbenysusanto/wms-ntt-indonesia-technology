@@ -1590,9 +1590,14 @@ class InboundController extends Controller
         return view('mobile.inbound.detail-so', compact('purchaseOrderDetail', 'purchaseOrderId'));
     }
 
-    public function purchaseOrderDownloadExcel(Request $request): StreamedResponse
+    public function purchaseOrderDownloadExcel(Request $request): StreamedResponse|\Illuminate\Http\RedirectResponse
     {
         $purchaseOrder = PurchaseOrder::with('customer', 'user', 'vendor')->where('id', $request->query('id'))->first();
+
+        if (!$purchaseOrder) {
+            return back()->with('error', 'Purchase Order not found');
+        }
+
         $purchaseOrderDetail = PurchaseOrderDetail::where('purchase_order_id', $request->query('id'))->get();
 
         $spreadsheet = new Spreadsheet();
@@ -1605,10 +1610,10 @@ class InboundController extends Controller
         $sheet->setCellValue('A5', 'Created By');
 
         $sheet->setCellValue('B1', $purchaseOrder->purc_doc);
-        $sheet->setCellValue('B2', $purchaseOrder->vendor->name);
-        $sheet->setCellValue('B3', $purchaseOrder->customer->name);
+        $sheet->setCellValue('B2', $purchaseOrder->vendor?->name ?? '-');
+        $sheet->setCellValue('B3', $purchaseOrder->customer?->name ?? '-');
         $sheet->setCellValue('B4', $purchaseOrder->created_at);
-        $sheet->setCellValue('B5', $purchaseOrder->user->name);
+        $sheet->setCellValue('B5', $purchaseOrder->user?->name ?? '-');
 
         $sheet->setCellValue('A7', 'Sales Doc');
         $sheet->setCellValue('B7', 'Item');
@@ -1703,9 +1708,14 @@ class InboundController extends Controller
         $sheet->setCellValue('H' . $column, $detail->qty_qc);
     }
 
-    public function purchaseOrderDownloadPdf(Request $request): \Illuminate\Http\Response
+    public function purchaseOrderDownloadPdf(Request $request): \Illuminate\Http\Response|\Illuminate\Http\RedirectResponse
     {
         $purchaseOrder = PurchaseOrder::with('customer', 'user', 'vendor')->where('id', $request->query('id'))->first();
+
+        if (!$purchaseOrder) {
+            return back()->with('error', 'Purchase Order not found');
+        }
+
         $purchaseOrderDetail = PurchaseOrderDetail::where('purchase_order_id', $request->query('id'))->get();
 
         foreach ($purchaseOrderDetail as $detail) {

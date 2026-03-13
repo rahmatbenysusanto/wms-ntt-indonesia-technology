@@ -1,61 +1,67 @@
-<div class="container-fluid bg-white border-top fixed-bottom">
-    <div class="row text-center py-2">
-        <div class="col-3">
-            <a href="{{ route('inbound.index.mobile') }}" class="text-decoration-none text-dark d-block">
-                <i class="mdi mdi-download fs-4 d-block"></i>
-                <span class="small">Inbound</span>
-            </a>
-        </div>
-        <div class="col-3">
-            <a href="{{ route('inventory.index.mobile') }}" class="text-decoration-none text-dark d-block">
-                <i class="mdi mdi-archive fs-4 d-block"></i>
-                <span class="small">Inventory</span>
-            </a>
-        </div>
-        <div class="col-3">
-            <a href="{{ route('inventory.aging.mobile') }}" class="text-decoration-none text-dark d-block">
-                <i class="mdi mdi-timer-sand fs-4 d-block"></i>
-                <span class="small">Aging</span>
-            </a>
-        </div>
-        <div class="col-3">
-            <a href="{{ route('outbound.index.mobile') }}" class="text-decoration-none text-dark d-block">
-                <i class="mdi mdi-upload fs-4 d-block"></i>
-                <span class="small">Outbound</span>
-            </a>
-        </div>
+{{-- Bottom Navigation Bar --}}
+<nav class="bottom-nav fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-100 shadow-lg">
+    <div class="flex items-center justify-around py-2 px-1">
+        {{-- Inbound --}}
+        <a href="{{ route('inbound.index.mobile') }}"
+           class="flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl transition-all duration-200
+                  {{ request()->routeIs('inbound.*') ? 'text-brand-500' : 'text-slate-400 hover:text-brand-400' }}">
+            <div class="relative">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v13M5 21h14" />
+                </svg>
+                @if(request()->routeIs('inbound.*'))
+                    <span class="absolute -top-1 -right-1 w-2 h-2 bg-brand-400 rounded-full"></span>
+                @endif
+            </div>
+            <span class="text-[10px] font-semibold tracking-wide">Inbound</span>
+        </a>
+
+        {{-- Inventory --}}
+        <a href="{{ route('inventory.index.mobile') }}"
+           class="flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl transition-all duration-200
+                  {{ request()->routeIs('inventory.index.*') ? 'text-brand-500' : 'text-slate-400 hover:text-brand-400' }}">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10" />
+            </svg>
+            <span class="text-[10px] font-semibold tracking-wide">Inventory</span>
+        </a>
+
+        {{-- Aging --}}
+        <a href="{{ route('inventory.aging.mobile') }}"
+           class="flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl transition-all duration-200
+                  {{ request()->routeIs('inventory.aging.*') || request()->routeIs('dashboard.mobile.aging.*') ? 'text-brand-500' : 'text-slate-400 hover:text-brand-400' }}">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span class="text-[10px] font-semibold tracking-wide">Aging</span>
+        </a>
+
+        {{-- Outbound --}}
+        <a href="{{ route('outbound.index.mobile') }}"
+           class="flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl transition-all duration-200
+                  {{ request()->routeIs('outbound.*') ? 'text-brand-500' : 'text-slate-400 hover:text-brand-400' }}">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 21V8M5 3h14" />
+            </svg>
+            <span class="text-[10px] font-semibold tracking-wide">Outbound</span>
+        </a>
+
+        {{-- Movement --}}
+        <a href="{{ route('inventory.index.movement.mobile') }}"
+           class="flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl transition-all duration-200
+                  {{ request()->routeIs('inventory.index.movement.*') || request()->routeIs('inventory.indexDetail.movement.*') ? 'text-brand-500' : 'text-slate-400 hover:text-brand-400' }}">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+            </svg>
+            <span class="text-[10px] font-semibold tracking-wide">Movement</span>
+        </a>
     </div>
-</div>
+</nav>
 
-<script src="{{ asset('assets/libs/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
-<script src="{{ asset('assets/libs/simplebar/simplebar.min.js') }}"></script>
-<script src="{{ asset('assets/libs/node-waves/waves.min.js') }}"></script>
-<script src="{{ asset('assets/libs/feather-icons/feather.min.js') }}"></script>
-<script src="{{ asset('assets/js/pages/plugins/lord-icon-2.1.0.js') }}"></script>
-{{--<script src="{{ asset('assets/js/plugins.js') }}"></script>--}}
-<script src="{{ asset('assets/libs/apexcharts/apexcharts.min.js') }}"></script>
-<script src="{{ asset('assets/js/pages/dashboard-projects.init.js') }}"></script>
-<script src="{{ asset('assets/libs/sweetalert2/sweetalert2.min.js') }}"></script>
-<script src="{{ asset('assets/js/pages/sweetalerts.init.js') }}"></script>
-<script src="{{ asset('assets/js/app.js') }}"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+{{-- Keep jQuery & Bootstrap for modal & select2 support --}}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-
-<script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>
-<script src="https://cdn.datatables.net/responsive/2.2.9/js/dataTables.responsive.min.js"></script>
-<script src="https://cdn.datatables.net/buttons/2.2.2/js/dataTables.buttons.min.js"></script>
-<script src="https://cdn.datatables.net/buttons/2.2.2/js/buttons.print.min.js"></script>
-<script src="https://cdn.datatables.net/buttons/2.2.2/js/buttons.html5.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.3/jszip.min.js"></script>
-<script src="{{ asset('assets/js/pages/datatables.init.js') }}"></script>
-
-<script src="{{ asset('assets/libs/dropzone/dropzone-min.js') }}"></script>
-<script src="{{ asset('assets/libs/filepond/filepond.min.js') }}"></script>
-<script src="{{ asset('assets/libs/filepond-plugin-image-preview/filepond-plugin-image-preview.min.js') }}"></script>
-<script src="{{ asset('assets/libs/filepond-plugin-file-validate-size/filepond-plugin-file-validate-size.min.js') }}"></script>
-<script src="{{ asset('assets/libs/filepond-plugin-image-exif-orientation/filepond-plugin-image-exif-orientation.min.js') }}"></script>
-<script src="{{ asset('assets/libs/filepond-plugin-file-encode/filepond-plugin-file-encode.min.js') }}"></script>
-<script src="{{ asset('assets/js/pages/form-file-upload.init.js') }}"></script>
+<script src="{{ asset('assets/libs/apexcharts/apexcharts.min.js') }}"></script>

@@ -1,183 +1,54 @@
 <!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport"
-          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>Inbound</title>
-
-    <link href="{{ asset('assets/css/bootstrap.min.css') }}" rel="stylesheet" type="text/css" />
-    <link href="{{ asset('assets/css/icons.min.css') }}" rel="stylesheet" type="text/css" />
-    <link href="{{ asset('assets/css/app.min.css') }}" rel="stylesheet" type="text/css" />
-    <link href="{{ asset('assets/css/custom.min.css') }}" rel="stylesheet" type="text/css" />
-    <style>
-        .mobile-header {
-            padding-top: 8px;
-            padding-bottom: 8px;
-            background-color: #39BBBD;
-        }
-
-        .inventory-card {
-            font-size: 12px;
-            line-height: 1.4;
-            border-left: 4px solid #7F56D8;
-            border-radius: 6px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-        }
-
-        .inventory-card .badge {
-            font-size: 11px;
-            padding: 4px 8px;
-        }
-
-        .info-row {
-            margin-bottom: 2px;
-        }
-
-        @media (max-width: 576px) {
-            .inventory-card .card-body {
-                padding: 8px;
-            }
-        }
-
-        .pagination-footer {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            background: #fff; /* putih biar jelas */
-            border-top: 1px solid #ddd;
-            padding: 6px 0;
-            z-index: 1000;
-        }
-
-        .pagination .page-link {
-            font-size: 12px;
-            padding: 4px 8px;
-        }
-
-        body {
-            padding-bottom: 50px; /* kasih ruang supaya konten tidak ketutup footer */
-        }
-
-        .po-card {
-            font-size: 12px;
-            line-height: 1.4;
-            border-radius: 8px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-        }
-
-        .info-row {
-            margin-bottom: 2px;
-        }
-
-        .stat-card {
-            background-color: #FFFFFF;
-            border-radius: 8px;
-            padding: 15px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-        }
-
-        .stat-card .title {
-            font-size: 12px;
-            margin-bottom: 4px;
-            font-weight: 500;
-            color: #555;
-        }
-
-        .stat-card .stat-value {
-            font-size: 18px;
-            font-weight: bold;
-            color: #222;
-        }
-
-        .stat-card .stat-sub {
-            font-size: 12px;
-            color: #666;
-        }
-
-        @media (max-width: 576px) {
-            .po-card .card-body {
-                padding: 8px;
-            }
-        }
-
-    </style>
+    <title>Movement Detail – WMS Mobile</title>
+    @include('mobile.layout.app')
 </head>
-<body>
+<body class="bg-slate-50 pb-24">
 
-<div class="mobile-header">
-    <div class="container-fluid">
-        <div class="row">
-            <div class="col-2 d-flex align-items-center">
-                <a href="{{ route('inventory.index.movement.mobile') }}" class="ps-3">
-                    <i class="mdi mdi-arrow-left-thin text-white" style="font-size: 32px"></i>
-                </a>
-            </div>
-            <div class="col-8 d-flex justify-content-center align-items-center">
-                <h5 class="mb-0 text-center text-white">Movement Detail</h5>
-            </div>
-            <div class="col-2 d-flex align-items-center">
+<header class="sticky top-0 z-40 bg-brand-400 shadow-md shadow-brand-400/20">
+    <div class="flex items-center px-4 h-14">
+        <a href="{{ route('inventory.index.movement.mobile') }}" class="flex items-center justify-center w-9 h-9 rounded-xl bg-white/20 text-white">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" /></svg>
+        </a>
+        <h1 class="absolute left-1/2 -translate-x-1/2 text-white font-bold text-base">Movement Detail</h1>
+    </div>
+</header>
 
+<main class="px-4 pt-4 space-y-3 pb-4">
+    {{-- Product Info --}}
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-4">
+        <div class="flex items-center gap-3 mb-3">
+            <div class="w-10 h-10 rounded-xl bg-brand-50 flex items-center justify-center flex-shrink-0">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
+            </div>
+            <div>
+                <p class="text-[10px] text-slate-400 font-medium">Purc Doc / Sales Doc</p>
+                <p class="font-bold text-slate-800 text-sm">{{ $cycleCount->purchaseOrder->purc_doc }} / {{ $cycleCount->purchaseOrderDetail->sales_doc }}</p>
             </div>
         </div>
+        <p class="font-semibold text-slate-800 text-sm">{{ $cycleCount->purchaseOrderDetail->material }}</p>
+        <p class="text-xs text-slate-500 mt-0.5">{{ $cycleCount->purchaseOrderDetail->po_item_desc }}</p>
+        <p class="text-xs text-slate-400">{{ $cycleCount->purchaseOrderDetail->prod_hierarchy_desc }}</p>
     </div>
-</div>
 
-<div class="container-fluid mt-3">
-    <div class="row g-2">
-        <!-- PO Info -->
-        <div class="col-12">
-            <div class="card po-card">
-                <div class="card-body p-2">
-                    <div class="info-row"><b>Purc Doc:</b> {{ $cycleCount->purchaseOrder->purc_doc }}</div>
-                    <div class="info-row"><b>Sales Doc:</b> {{ $cycleCount->purchaseOrderDetail->sales_doc }}</div>
-                    <div class="info-row"><b>{{ $cycleCount->purchaseOrderDetail->material }}</b></div>
-                    <div class="info-row text-muted">{{ $cycleCount->purchaseOrderDetail->po_item_desc }}</div>
-                    <div class="info-row text-muted">{{ $cycleCount->purchaseOrderDetail->prod_hierarchy_desc }}</div>
+    {{-- Serial Numbers --}}
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-4">
+        <p class="text-xs font-bold text-slate-700 mb-3">Serial Numbers</p>
+        @php $serials = json_decode($cycleCount->serial_number) ?? []; @endphp
+        @forelse($serials as $sn)
+            <div class="flex items-center gap-2 py-2 border-b border-slate-50 last:border-0">
+                <div class="w-6 h-6 rounded-lg bg-brand-50 flex items-center justify-center flex-shrink-0">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 013.75 9.375v-4.5z" /></svg>
                 </div>
+                <p class="text-sm font-mono text-slate-800 font-semibold">{{ $sn }}</p>
             </div>
-        </div>
-
-        <div class="col-12">
-            <div class="card p-1">
-                <span class="fw-bold">Serial Number Stock</span>
-                <table class="table table-striped">
-                    @foreach(json_decode($cycleCount->serial_number) ?? [] as $serialNumber)
-                        <tr>
-                            <td>{{ $serialNumber }}</td>
-                        </tr>
-                    @endforeach
-                </table>
-            </div>
-        </div>
+        @empty
+            <p class="text-xs text-slate-400">Tidak ada serial number</p>
+        @endforelse
     </div>
-</div>
+</main>
 
-<div id="downloadReportModal" class="modal fade" tabindex="-1" aria-labelledby="myModalLabel" aria-hidden="true" style="display: none;">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="myModalLabel">Download Inventory Detail</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"> </button>
-            </div>
-            <div class="modal-body">
-                <div class="d-flex gap-2 justify-content-center">
-                    <a href="{{ route('inbound.purchase-order-download-pdf', ['id' => '']) }}" class="btn btn-pdf btn-sm">Download PDF</a>
-                    <a href="{{ route('inbound.purchase-order-download-excel', ['id' => '']) }}" class="btn btn-success btn-sm">Download Excel</a>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-@include('mobile.layout.js')
-<script>
-    function openDownloadModal() {
-        $('#downloadReportModal').modal('show');
-    }
-</script>
-
+@include('mobile.layout.menu')
 </body>
 </html>

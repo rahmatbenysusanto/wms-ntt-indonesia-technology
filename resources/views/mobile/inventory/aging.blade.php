@@ -1,249 +1,107 @@
 <!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport"
-          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>Inbound</title>
-
-    <link href="{{ asset('assets/css/bootstrap.min.css') }}" rel="stylesheet" type="text/css" />
-    <link href="{{ asset('assets/css/icons.min.css') }}" rel="stylesheet" type="text/css" />
-    <link href="{{ asset('assets/css/app.min.css') }}" rel="stylesheet" type="text/css" />
-    <link href="{{ asset('assets/css/custom.min.css') }}" rel="stylesheet" type="text/css" />
-    <style>
-        .mobile-header {
-            padding-top: 8px;
-            padding-bottom: 8px;
-            background-color: #39BBBD;
-        }
-
-        .card-partial {
-            border-left: 4px solid #4b38b3;
-            font-size: 12px;
-            border-radius: 8px;
-            box-shadow: 0 1px 4px rgba(0,0,0,0.08);
-        }
-
-        .card-partial .badge {
-            font-size: 10px;
-            padding: 4px 6px;
-            border-radius: 6px;
-        }
-
-        .card-partial .info-row {
-            margin-bottom: 2px;
-        }
-
-        a {
-            text-decoration: none;
-            color: inherit;
-        }
-
-        @media (max-width: 576px) {
-            .card-partial {
-                margin-bottom: 8px;
-            }
-        }
-
-        .btn-white {
-            background-color: transparent !important;
-            border: none;
-            box-shadow: none;
-        }
-    </style>
+    <title>Aging – WMS Mobile</title>
+    @include('mobile.layout.app')
 </head>
-<body>
+<body class="bg-slate-50 pb-24">
 
-    <div class="mobile-header">
-        <div class="row">
-            <div class="col-2 d-flex align-items-center">
-                <a href="{{ route('dashboardMobile') }}" class="ps-3">
-                    <i class="mdi mdi-arrow-left-thin text-white" style="font-size: 32px"></i>
-                </a>
-            </div>
-            <div class="col-8 d-flex justify-content-center align-items-center">
-                <h5 class="mb-0 text-center text-white">Aging</h5>
-            </div>
-            <div class="col-2">
+<header class="sticky top-0 z-40 bg-brand-400 shadow-md shadow-brand-400/20">
+    <div class="flex items-center px-4 h-14">
+        <a href="{{ route('dashboardMobile') }}" class="flex items-center justify-center w-9 h-9 rounded-xl bg-white/20 text-white">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" /></svg>
+        </a>
+        <h1 class="absolute left-1/2 -translate-x-1/2 text-white font-bold text-base">Inventory Aging</h1>
+    </div>
+</header>
 
+<main class="px-4 pt-4 space-y-3 pb-4">
+    {{-- Aging Cards --}}
+    @php
+        $agingItems = [
+            ['type'=>1, 'label'=>'1 – 90 Hari',   'color'=>'bg-emerald-400', 'textColor'=>'text-emerald-700', 'bg'=>'bg-emerald-50', 'qty'=>$agingType1->qty, 'total'=>$agingType1->total],
+            ['type'=>2, 'label'=>'91 – 180 Hari',  'color'=>'bg-amber-400',  'textColor'=>'text-amber-700',  'bg'=>'bg-amber-50',  'qty'=>$agingType2->qty, 'total'=>$agingType2->total],
+            ['type'=>3, 'label'=>'181 – 365 Hari', 'color'=>'bg-orange-400', 'textColor'=>'text-orange-700', 'bg'=>'bg-orange-50', 'qty'=>$agingType3->qty, 'total'=>$agingType3->total],
+            ['type'=>4, 'label'=>'> 365 Hari',     'color'=>'bg-red-500',    'textColor'=>'text-red-700',    'bg'=>'bg-red-50',    'qty'=>$agingType4->qty, 'total'=>$agingType4->total],
+        ];
+    @endphp
+
+    @foreach($agingItems as $aging)
+        <a href="{{ route('dashboard.mobile.aging.detail', ['type' => $aging['type']]) }}" class="block">
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 tap-card overflow-hidden relative">
+                <div class="absolute left-0 top-0 bottom-0 w-1 {{ $aging['color'] }}"></div>
+                <div class="pl-3 flex items-center justify-between">
+                    <div>
+                        <p class="font-bold text-slate-800 text-sm">{{ $aging['label'] }}</p>
+                        <p class="text-xs text-slate-500 mt-1 font-medium">$ {{ number_format($aging['total'], 2) }}</p>
+                    </div>
+                    <div class="text-right">
+                        <span class="inline-flex items-center justify-center px-4 py-2 rounded-2xl {{ $aging['bg'] }} {{ $aging['textColor'] }} font-bold text-lg">
+                            {{ number_format($aging['qty']) }}
+                        </span>
+                        <p class="text-[10px] text-slate-400 mt-1 font-medium">QTY →</p>
+                    </div>
+                </div>
             </div>
+        </a>
+    @endforeach
+
+    {{-- Download --}}
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-4">
+        <p class="text-xs font-bold text-slate-600 mb-3 uppercase tracking-wider">Download Summary</p>
+        <div class="grid grid-cols-2 gap-2">
+            @foreach($agingItems as $aging)
+            <div class="bg-slate-50 rounded-xl p-2">
+                <p class="text-[10px] text-slate-500 font-medium mb-1.5">{{ $aging['label'] }}</p>
+                <div class="flex gap-1.5">
+                    <a href="{{ route('inventory.aging.detail.pdf', ['type' => $aging['type']]) }}"
+                       class="flex-1 text-center text-[10px] font-bold bg-red-100 text-red-600 py-1 rounded-lg hover:bg-red-200 transition-colors">PDF</a>
+                    <a href="{{ route('inventory.aging.detail.excel', ['type' => $aging['type']]) }}"
+                       class="flex-1 text-center text-[10px] font-bold bg-emerald-100 text-emerald-600 py-1 rounded-lg hover:bg-emerald-200 transition-colors">XLS</a>
+                </div>
+            </div>
+            @endforeach
         </div>
     </div>
 
-    <div class="container-fluid mt-3">
-        <div class="row">
-            <div class="col-12">
-                <div class="card p-1">
-                    <table class="table table-striped align-middle">
-                        <thead>
-                        <tr>
-                            <th>Aging Date</th>
-                            <th>Total Price</th>
-                            <th class="text-center">Total QTY</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        <tr>
-                            <td>1 - 90 Day</td>
-                            <td>$ {{ number_format($agingType1->total, 2) }}</td>
-                            <td class="text-center fw-bold">
-                                <a href="{{ route('dashboard.mobile.aging.detail', ['type' => 1]) }}" class="btn btn-white w-100 text-black">{{ number_format($agingType1->qty) }}</a>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>91 - 180 Day</td>
-                            <td>$ {{ number_format($agingType2->total, 2) }}</td>
-                            <td class="text-center fw-bold">
-                                <a href="{{ route('dashboard.mobile.aging.detail', ['type' => 2]) }}" class="btn btn-white w-100 text-black">{{ number_format($agingType2->qty) }}</a>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>181 - 365 Day</td>
-                            <td>$ {{ number_format($agingType3->total, 2) }}</td>
-                            <td class="text-center fw-bold">
-                                <a href="{{ route('dashboard.mobile.aging.detail', ['type' => 3]) }}" class="btn btn-white w-100 text-black">{{ number_format($agingType3->qty) }}</a>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>> 365 Day</td>
-                            <td>$ {{ number_format($agingType4->total, 2) }}</td>
-                            <td class="text-center fw-bold">
-                                <a href="{{ route('dashboard.mobile.aging.detail', ['type' => 4]) }}" class="btn btn-white w-100 text-black">{{ number_format($agingType4->qty) }}</a>
-                            </td>
-                        </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            <div class="col-12">
-                <div class="card p-2">
-                    <h6 class="mb-0">Aging By QTY</h6>
-                    <div id="simple_pie_chart" data-colors='["--vz-primary", "--vz-success", "--vz-warning", "--vz-danger", "--vz-info"]' class="apex-charts" dir="ltr"></div>
-                </div>
-            </div>
-            <div class="col-12" style="margin-bottom: 80px">
-                <div class="card p-2">
-                    <h6 class="mb-0">Aging By Total Price</h6>
-                    <div id="agingByTotalPrice" data-colors='["--vz-primary", "--vz-success", "--vz-warning", "--vz-danger", "--vz-info"]' class="apex-charts" dir="ltr"></div>
-                </div>
-            </div>
-        </div>
+    {{-- Charts --}}
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-4">
+        <p class="text-sm font-bold text-slate-700 mb-3">Distribusi QTY</p>
+        <div id="simple_pie_chart" data-colors='["--vz-primary", "--vz-success", "--vz-warning", "--vz-danger"]'></div>
     </div>
 
-    @include('mobile.layout.menu')
-    @include('mobile.layout.js')
-    <script>
-        function getChartColorsArray(id) {
-            const el = document.getElementById(id);
-            if (!el) return null;
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-4">
+        <p class="text-sm font-bold text-slate-700 mb-3">Distribusi Nominal</p>
+        <div id="agingByTotalPrice" data-colors='["--vz-primary", "--vz-success", "--vz-warning", "--vz-danger"]'></div>
+    </div>
+</main>
 
-            let colors = el.getAttribute("data-colors");
-            colors = JSON.parse(colors);
+@include('mobile.layout.menu')
 
-            return colors.map(function (value) {
-                let t = value.replace(" ", "");
-                if (t.indexOf(",") === -1) {
-                    return getComputedStyle(document.documentElement).getPropertyValue(t) || t;
-                } else {
-                    let parts = value.split(",");
-                    if (parts.length === 2) {
-                        return "rgba(" + getComputedStyle(document.documentElement).getPropertyValue(parts[0]) + "," + parts[1] + ")";
-                    }
-                    return t;
-                }
-            });
-        }
+<script>
+    function makeChart(id, series, labels) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        new ApexCharts(el, {
+            series: series,
+            chart: { height: 220, type: 'pie' },
+            labels: labels,
+            legend: { position: 'bottom', fontSize: '11px' },
+            dataLabels: { dropShadow: { enabled: false } },
+            colors: ['#22a3a5', '#f59e0b', '#f97316', '#ef4444'],
+            tooltip: { y: { formatter: v => v.toLocaleString() } }
+        }).render();
+    }
 
-        let chartPieBasicColors = getChartColorsArray("simple_pie_chart");
-
-        if (chartPieBasicColors) {
-            let options = {
-                series: [
-                    Number('{{ $agingType1->qty }}'),
-                    Number('{{ $agingType2->qty }}'),
-                    Number('{{ $agingType3->qty }}'),
-                    Number('{{ $agingType4->qty }}')
-                ],
-                chart: {
-                    height: 235,
-                    type: "pie"
-                },
-                labels: ["1 - 90 Day", "91 - 180 Day", "181 - 360 Day", "> 360 Day"],
-                legend: {
-                    position: "bottom"
-                },
-                dataLabels: {
-                    dropShadow: {
-                        enabled: false
-                    }
-                },
-                colors: chartPieBasicColors
-            };
-
-            let chart = new ApexCharts(document.querySelector("#simple_pie_chart"), options);
-            chart.render();
-        }
-
-        let chartPieTotalPrice = getChartColorsArray("agingByTotalPrice");
-
-        if (chartPieTotalPrice) {
-            let options = {
-                series: [
-                    Number('{{ $agingType1->total }}'),
-                    Number('{{ $agingType2->total }}'),
-                    Number('{{ $agingType3->total }}'),
-                    Number('{{ $agingType4->total }}')
-                ],
-                chart: {
-                    height: 235,
-                    type: "pie"
-                },
-                labels: ["1 - 90 Day", "91 - 180 Day", "181 - 360 Day", "> 360 Day"],
-                legend: {
-                    position: "bottom"
-                },
-                dataLabels: {
-                    dropShadow: {
-                        enabled: false
-                    }
-                },
-                tooltip: {
-                    y: {
-                        formatter: function (value) {
-                            return value.toLocaleString();
-                        }
-                    }
-                },
-                colors: chartPieBasicColors
-            };
-
-            let chart = new ApexCharts(document.querySelector("#agingByTotalPrice"), options);
-            chart.render();
-        }
-    </script>
-
-    <script>
-        function getChartAgingPrice(id) {
-            const el = document.getElementById(id);
-            if (!el) return null;
-
-            let colors = el.getAttribute("data-colors");
-            colors = JSON.parse(colors);
-
-            return colors.map(function (value) {
-                let t = value.replace(" ", "");
-                if (t.indexOf(",") === -1) {
-                    return getComputedStyle(document.documentElement).getPropertyValue(t) || t;
-                } else {
-                    let parts = value.split(",");
-                    if (parts.length === 2) {
-                        return "rgba(" + getComputedStyle(document.documentElement).getPropertyValue(parts[0]) + "," + parts[1] + ")";
-                    }
-                    return t;
-                }
-            });
-        }
-    </script>
+    const labels = ['1-90 Hari', '91-180 Hari', '181-365 Hari', '>365 Hari'];
+    makeChart('simple_pie_chart',
+        [{{ $agingType1->qty }}, {{ $agingType2->qty }}, {{ $agingType3->qty }}, {{ $agingType4->qty }}],
+        labels
+    );
+    makeChart('agingByTotalPrice',
+        [{{ $agingType1->total }}, {{ $agingType2->total }}, {{ $agingType3->total }}, {{ $agingType4->total }}],
+        labels
+    );
+</script>
 </body>
 </html>
