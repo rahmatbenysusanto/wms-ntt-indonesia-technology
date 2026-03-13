@@ -132,7 +132,36 @@
             </div>
             @if($boxes->hasPages())
                 <div class="card-footer bg-white border-0">
-                    {{ $boxes->appends(request()->query())->links() }}
+                    <div class="d-flex justify-content-end mt-2">
+                        <ul class="pagination">
+                            @if ($boxes->onFirstPage())
+                                <li class="disabled"><span>&laquo; Previous</span></li>
+                            @else
+                                <li><a href="{{ $boxes->previousPageUrl() }}" rel="prev">&laquo; Previous</a></li>
+                            @endif
+
+                            @foreach ($boxes->links()->elements as $element)
+                                @if (is_string($element))
+                                    <li class="disabled"><span>{{ $element }}</span></li>
+                                @endif
+                                @if (is_array($element))
+                                    @foreach ($element as $page => $url)
+                                        @if ($page == $boxes->currentPage())
+                                            <li class="active"><span>{{ $page }}</span></li>
+                                        @else
+                                            <li><a href="{{ $url }}">{{ $page }}</a></li>
+                                        @endif
+                                    @endforeach
+                                @endif
+                            @endforeach
+
+                            @if ($boxes->hasMorePages())
+                                <li><a href="{{ $boxes->nextPageUrl() }}" rel="next">Next &raquo;</a></li>
+                            @else
+                                <li class="disabled"><span>Next &raquo;</span></li>
+                            @endif
+                        </ul>
+                    </div>
                 </div>
             @endif
         </div>
