@@ -282,15 +282,15 @@
                             </li>
                         @endif
 
-                        @if (Session::get('userHasMenu', collect())->intersect(['Produk List', 'Produk Aging', 'Box List', 'Transfer Location', 'Cycle Count', 'Report PO', 'Update SN'])->isNotEmpty())
+                        @if (Session::get('userHasMenu', collect())->intersect(['Produk List', 'Produk Aging', 'Box List', 'Storage Inventory', 'Transfer Location', 'Cycle Count', 'Report PO', 'Update SN', 'Inventory History'])->isNotEmpty())
                             <li class="nav-item">
-                                <a class="nav-link menu-link {{ in_array($title, ['Inventory', 'Cycle Count', 'Transfer Location', 'Inventory Box', 'Inventory Aging', 'Report PO', 'Update Serial Number']) ? 'active' : '' }}"
+                                <a class="nav-link menu-link {{ in_array($title, ['Inventory', 'Cycle Count', 'Transfer Location', 'Inventory Box', 'Inventory Aging', 'Report PO', 'Update Serial Number', 'Storage Inventory', 'Storage Inventory Detail', 'Inventory History']) ? 'active' : '' }}"
                                     href="#sidebarInventory" data-bs-toggle="collapse" role="button"
                                     aria-expanded="false" aria-controls="sidebarInventory">
                                     <i class="mdi mdi-package-variant"></i> <span
                                         data-key="t-dashboards">Inventory</span>
                                 </a>
-                                <div class="collapse menu-dropdown {{ in_array($title, ['Inventory', 'Cycle Count', 'Transfer Location', 'Inventory Box', 'Inventory Aging', 'Update Serial Number']) ? 'show' : '' }}"
+                                <div class="collapse menu-dropdown {{ in_array($title, ['Inventory', 'Cycle Count', 'Transfer Location', 'Inventory Box', 'Inventory Aging', 'Update Serial Number', 'Storage Inventory', 'Storage Inventory Detail', 'Inventory History']) ? 'show' : '' }}"
                                     id="sidebarInventory">
                                     <ul class="nav nav-sm flex-column">
                                         @if (Session::get('userHasMenu')->contains('Produk List'))
@@ -312,6 +312,13 @@
                                                 <a href="{{ route('inventory.box') }}"
                                                     class="nav-link {{ $title == 'Inventory Box' ? 'active' : '' }}"
                                                     data-key="t-analytics"> Box List </a>
+                                            </li>
+                                        @endif
+                                        @if (Session::get('userHasMenu')->contains('Storage Inventory'))
+                                            <li class="nav-item">
+                                                <a href="{{ route('inventory.storage-inventory') }}"
+                                                    class="nav-link {{ $title == 'Storage Inventory' ? 'active' : '' }}"
+                                                    data-key="t-analytics"> Storage Inventory </a>
                                             </li>
                                         @endif
                                         @if (Session::get('userHasMenu')->contains('Transfer Location'))
@@ -340,6 +347,13 @@
                                                 <a href="{{ route('inventory.sn-update') }}"
                                                     class="nav-link {{ $title == 'Update Serial Number' ? 'active' : '' }}"
                                                     data-key="t-analytics"> Update SN </a>
+                                            </li>
+                                        @endif
+                                        @if (Session::get('userHasMenu')->contains('Inventory History'))
+                                            <li class="nav-item">
+                                                <a href="{{ route('inventory.history') }}"
+                                                    class="nav-link {{ $title == 'Inventory History' ? 'active' : '' }}"
+                                                    data-key="t-analytics"> Inventory History </a>
                                             </li>
                                         @endif
                                     </ul>

@@ -248,6 +248,53 @@ class InventoryController extends Controller
         return view('inventory.box.detail', compact('title', 'products'));
     }
 
+    public function storageInventory(Request $request): View
+    {
+        $storage = Storage::query()
+            ->whereNotIn('id', [1, 2, 3, 4])
+            ->whereNull('deleted_at')
+            ->when($request->query('raw'), function ($q) use ($request) {
+                $q->where('raw', 'LIKE', '%' . $request->query('raw') . '%');
+            })
+            ->when($request->query('area'), function ($q) use ($request) {
+                $q->where('area', 'LIKE', '%' . $request->query('area') . '%');
+            })
+            ->when($request->query('rak'), function ($q) use ($request) {
+                $q->where('rak', 'LIKE', '%' . $request->query('rak') . '%');
+            })
+            ->when($request->query('bin'), function ($q) use ($request) {
+                $q->where('bin', 'LIKE', '%' . $request->query('bin') . '%');
+            })
+            ->orderBy('raw')
+            ->orderBy('area')
+            ->orderBy('rak')
+            ->orderBy('bin')
+            ->paginate(10);
+
+        foreach ($storage as $s) {
+            $s->total_qty = DB::table('inventory_detail')
+                ->where('storage_id', $s->id)
+                ->sum('qty');
+        }
+
+        $title = 'Storage Inventory';
+        return view('inventory.storage-inventory', compact('title', 'storage'));
+    }
+
+    public function storageInventoryDetail(Request $request): View
+    {
+        $storageId = $request->query('id');
+        $storage = Storage::find($storageId);
+
+        $inventory = InventoryDetail::with(['purchaseOrderDetail.purchaseOrder.customer', 'inventoryPackageItem.inventoryPackage'])
+            ->where('storage_id', $storageId)
+            ->where('qty', '>', 0)
+            ->get();
+
+        $title = 'Storage Inventory Detail';
+        return view('inventory.storage-inventory-detail', compact('title', 'inventory', 'storage'));
+    }
+
     public function detail(Request $request): View
     {
         $inventoryDetail = DB::table('inventory_detail')
@@ -2414,5 +2461,56 @@ class InventoryController extends Controller
                 'message' => 'Terjadi kesalahan: ' . $err->getMessage(),
             ]);
         }
+    }
+
+    public function inventoryHistory(Request $request): View
+    {
+        $dateRange = $request->query('date_range');
+        $startDate = null;
+        $endDate = null;
+
+        if ($dateRange) {
+            $dates = explode(' to ', $dateRange);
+            $startDate = $dates[0];
+            $endDate = isset($dates[1]) ? $dates[1] : $dates[0];
+        } else {
+            $startDate = $request->query('startDate', date('Y-m-01'));
+            $endDate = $request->query('endDate', date('Y-m-d'));
+        }
+
+        $history = InventoryHistory::with(['purchaseOrder.customer', 'purchaseOrderDetail', 'user', 'outbound', 'inventoryPackageItem.inventoryPackage.storage'])
+            ->where('type', 'outbound')
+            ->whereHas('purchaseOrder', function ($query) use ($request) {
+                if ($request->query('purcDoc')) {
+                    $query->where('purc_doc', 'LIKE', '%' . $request->query('purcDoc') . '%');
+                }
+            })
+            ->whereHas('purchaseOrderDetail', function ($query) use ($request) {
+                if ($request->query('salesDoc')) {
+                    $query->where('sales_doc', 'LIKE', '%' . $request->query('salesDoc') . '%');
+                }
+                if ($request->query('material')) {
+                    $query->where('product_id', $request->query('material'));
+                }
+            })
+            ->when($request->query('serialNumber'), function ($query) use ($request) {
+                $query->where('serial_number', 'LIKE', '%' . $request->query('serialNumber') . '%');
+            })
+            ->whereBetween('created_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59'])
+            ->latest()
+            ->paginate(10)
+            ->appends([
+                'purcDoc'      => $request->query('purcDoc'),
+                'salesDoc'     => $request->query('salesDoc'),
+                'material'     => $request->query('material'),
+                'serialNumber' => $request->query('serialNumber'),
+                'date_range'   => $request->query('date_range'),
+                'startDate'    => $startDate,
+                'endDate'      => $endDate,
+            ]);
+
+        $products = Product::all();
+        $title = 'Inventory History';
+        return view('inventory.inventory-history', compact('title', 'history', 'products', 'startDate', 'endDate', 'dateRange'));
     }
 }

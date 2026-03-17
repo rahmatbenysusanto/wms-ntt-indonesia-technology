@@ -158,7 +158,10 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
         Route::get('/aging', 'aging')->name('inventory.aging');
         Route::get('/box', 'box')->name('inventory.box');
         Route::get('/box-detail', 'boxDetail')->name('inventory.box.detail');
+        Route::get('/storage-inventory', 'storageInventory')->name('inventory.storage-inventory');
+        Route::get('/storage-inventory-detail', 'storageInventoryDetail')->name('inventory.storage-inventory.detail');
         Route::get('/detail', 'detail')->name('inventory.detail');
+        Route::get('/history', 'inventoryHistory')->name('inventory.history');
 
         Route::get('/cycle-count', 'cycleCount')->name('inventory.cycle-count');
         Route::get('/cycle-count-detail', 'cycleCountDetail')->name('inventory.cycle-count-detail');
