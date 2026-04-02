@@ -924,7 +924,7 @@ class OutboundController extends Controller
         $year = $now->year;
 
         // Find the count of outbounds in the current month with this pattern
-        $pattern = "%-TKS-WMS-{$monthShort}-{$romanMonth}-{$year}";
+        $pattern = "%-TKS-WMS-INV-{$monthShort}-{$romanMonth}-{$year}";
         $count = Outbound::where('delivery_note_number', 'like', $pattern)->count();
         $nextNumber = $count + 1;
 
