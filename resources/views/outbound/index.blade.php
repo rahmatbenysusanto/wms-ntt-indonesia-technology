@@ -101,6 +101,7 @@
                                     <th>NTT DN</th>
                                     <th>Purc Doc</th>
                                     <th>Sales Doc</th>
+                                    <th>Koli</th>
                                     <th>Client</th>
                                     <th>Deliv Loc</th>
                                     <th class="text-center">Deliv Dest</th>
@@ -123,6 +124,11 @@
                                             @foreach (json_decode($out->sales_docs) as $item)
                                                 <div>{{ $item }}</div>
                                             @endforeach
+                                        </td>
+                                        <td class="text-center">
+                                            <input type="number" class="form-control form-control-sm text-center"
+                                                id="koli-{{ $out->id }}" value="{{ $out->koli }}"
+                                                onchange="updateKoli('{{ $out->id }}', this.value)">
                                         </td>
                                         <td>{{ $out->customer->name }}</td>
                                         <td>{{ $out->deliv_loc }}</td>
@@ -222,6 +228,36 @@
 
 @section('js')
     <script>
+        function updateKoli(id, koli) {
+            $.ajax({
+                url: '{{ route('outbound.update-koli') }}',
+                method: 'POST',
+                data: {
+                    _token: '{{ csrf_token() }}',
+                    id: id,
+                    koli: koli
+                },
+                success: (res) => {
+                    if (res.status) {
+                        toast('Success!', 'Koli updated successfully!', 'success');
+                    }
+                }
+            });
+        }
+
+        function toast(title, text, icon) {
+            Swal.fire({
+                title: title,
+                text: text,
+                icon: icon,
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 3000,
+                timerProgressBar: true,
+            });
+        }
+
         function confirmCancel(url) {
             Swal.fire({
                 title: 'Are you sure?',

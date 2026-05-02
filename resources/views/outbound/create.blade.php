@@ -59,6 +59,10 @@
                             <label class="form-label">NTT DN</label>
                             <input type="text" class="form-control" id="nttDn" placeholder="NTT DN - Optional">
                         </div>
+                        <div class="col-6 mb-3">
+                            <label class="form-label">Jumlah Koli</label>
+                            <input type="number" class="form-control" id="koli" placeholder="Jumlah Koli - Optional">
+                        </div>
                     </div>
                 </div>
             </div>
@@ -713,6 +717,7 @@
                     deliveryDate: document.getElementById('deliveryDate')?.value ?? '',
                     deliveryNoteNumber: document.getElementById('deliveryNoteNumber')?.value ?? '',
                     nttDn: document.getElementById('nttDn')?.value ?? '',
+                    koli: document.getElementById('koli')?.value ?? '',
                 },
                 success: async (res) => {
                     if (res?.status) {

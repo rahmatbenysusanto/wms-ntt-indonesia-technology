@@ -150,6 +150,11 @@
                             {{ implode(', ', $so) }}
                         </td>
                     </tr>
+                    <tr>
+                        <td>Koli</td>
+                        <td>:</td>
+                        <td>{{ $outbound->koli ?? '-' }}</td>
+                    </tr>
                 </table>
             </div>
         </div>

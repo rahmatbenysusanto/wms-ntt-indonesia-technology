@@ -99,6 +99,7 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
             Route::get('/upload', 'purchaseOrderUpload')->name('inbound.purchase-order-upload');
             Route::post('/upload', 'purchaseOrderUploadProcess')->name('inbound.purchase-order-upload-process');
             Route::post('/update-status', 'changeStatusPurchaseOrder')->name('inbound.changeStatusPurchaseOrder');
+            Route::post('/update-koli', 'updateKoli')->name('inbound.update-koli');
 
             Route::get('/download-excel', 'purchaseOrderDownloadExcel')->name('inbound.purchase-order-download-excel');
             Route::get('/download-pdf', 'purchaseOrderDownloadPdf')->name('inbound.purchase-order-download-pdf');
@@ -272,6 +273,7 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
         Route::post('/create', 'store')->name('outbound.store');
         Route::get('/detail', 'detail')->name('outbound.detail');
         Route::get('/cancel', 'cancel')->name('outbound.cancel');
+        Route::post('/update-koli', 'updateKoli')->name('outbound.update-koli');
 
         Route::get('/return', 'return')->name('outbound.return');
         Route::get('/return/get-products', 'returnGetProducts')->name('outbound.return.get-products');

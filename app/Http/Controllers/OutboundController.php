@@ -286,6 +286,7 @@ class OutboundController extends Controller
                 'delivery_date' => $request->post('deliveryDate'),
                 'delivery_note_number' => $deliveryNoteNumber,
                 'ntt_dn'        => $request->post('nttDn'),
+                'koli'          => $request->post('koli'),
                 'created_by'    => Auth::id()
             ]);
 
@@ -915,6 +916,16 @@ class OutboundController extends Controller
     }
 
     public function reportDownloadExcel(Request $request) {}
+
+    public function updateKoli(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $outbound = Outbound::find($request->post('id'));
+        if ($outbound) {
+            $outbound->update(['koli' => $request->post('koli')]);
+            return response()->json(['status' => true]);
+        }
+        return response()->json(['status' => false], 404);
+    }
 
     private function generateDeliveryNoteNumber()
     {

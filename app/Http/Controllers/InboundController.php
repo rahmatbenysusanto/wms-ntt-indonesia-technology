@@ -1788,6 +1788,16 @@ class InboundController extends Controller
         }
     }
 
+    public function updateKoli(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $po = PurchaseOrder::find($request->post('id'));
+        if ($po) {
+            $po->update(['koli' => $request->post('koli')]);
+            return response()->json(['status' => true]);
+        }
+        return response()->json(['status' => false], 404);
+    }
+
     public function ccwDraftLoad(Request $request): \Illuminate\Http\JsonResponse
     {
         $data = PurchaseOrder::where('id', $request->input('purchaseOrderId'))->first();

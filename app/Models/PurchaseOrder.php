@@ -18,6 +18,7 @@ class PurchaseOrder extends Model
         'item_qty',
         'status',
         'created_by',
+        'koli',
     ];
 
     public function purchaseOrderDetail(): HasMany

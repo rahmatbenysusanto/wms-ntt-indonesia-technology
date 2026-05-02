@@ -82,6 +82,7 @@
                                     <th class="text-center">Sales Docs Qty</th>
                                     <th class="text-center">Material Qty</th>
                                     <th class="text-center">Item Qty</th>
+                                    <th class="text-center">Koli</th>
                                     <th class="text-center">Status</th>
                                     <th>PO Created Date</th>
                                     <th>Po Created By</th>
@@ -106,6 +107,11 @@
                                             <br>
                                             <small class="text-danger">(Sisa:
                                                 {{ number_format($po->item_qty - $po->total_qc) }})</small>
+                                        </td>
+                                        <td class="text-center">
+                                            <input type="number" class="form-control form-control-sm text-center"
+                                                id="koli-{{ $po->id }}" value="{{ $po->koli }}"
+                                                onchange="updateKoli('{{ $po->id }}', this.value)">
                                         </td>
                                         <td class="text-center">
                                             @switch($po->status)
@@ -194,6 +200,36 @@
 
 @section('js')
     <script>
+        function updateKoli(id, koli) {
+            $.ajax({
+                url: '{{ route('inbound.update-koli') }}',
+                method: 'POST',
+                data: {
+                    _token: '{{ csrf_token() }}',
+                    id: id,
+                    koli: koli
+                },
+                success: (res) => {
+                    if (res.status) {
+                        toast('Success!', 'Koli updated successfully!', 'success');
+                    }
+                }
+            });
+        }
+
+        function toast(title, text, icon) {
+            Swal.fire({
+                title: title,
+                text: text,
+                icon: icon,
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 3000,
+                timerProgressBar: true,
+            });
+        }
+
         $('.select2Vendor').select2({
             placeholder: "-- Select Vendor --",
             allowClear: true,

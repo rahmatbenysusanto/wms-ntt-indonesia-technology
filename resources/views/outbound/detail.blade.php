@@ -50,6 +50,11 @@
                             <td class="fw-bold ps-3">:</td>
                             <td class="ps-1">{{ $outbound->user->name }}</td>
                         </tr>
+                        <tr>
+                            <td class="fw-bold">Jumlah Koli</td>
+                            <td class="fw-bold ps-3">:</td>
+                            <td class="ps-1">{{ $outbound->koli ?? '-' }}</td>
+                        </tr>
                     </table>
                 </div>
             </div>

@@ -94,6 +94,11 @@
                 <td>:</td>
                 <td>{{ $purchaseOrder->user->name }}</td>
             </tr>
+            <tr>
+                <td style="font-weight: bold">Jumlah Koli</td>
+                <td>:</td>
+                <td>{{ $purchaseOrder->koli ?? '-' }}</td>
+            </tr>
         </table>
     </section>
 
