@@ -62,7 +62,7 @@
                             </div>
                             <div class="col-2">
                                 <label class="form-label">Client</label>
-                                <select class="form-control" name="client">
+                                <select class="form-control select2Client" name="client">
                                     <option value="">-- Select Client --</option>
                                     @foreach ($customer as $item)
                                         <option value="{{ $item->id }}"
@@ -228,6 +228,12 @@
 
 @section('js')
     <script>
+        $('.select2Client').select2({
+            placeholder: '-- Select Client --',
+            allowClear: true,
+            width: '100%'
+        });
+
         function updateKoli(id, koli) {
             $.ajax({
                 url: '{{ route('outbound.update-koli') }}',

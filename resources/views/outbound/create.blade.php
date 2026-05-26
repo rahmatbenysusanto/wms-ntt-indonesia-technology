@@ -26,7 +26,7 @@
                     <div class="row">
                         <div class="col-6 mb-3">
                             <label class="form-label">Customer</label>
-                            <select class="form-control" id="customerId">
+                            <select class="form-control select2Customer" id="customerId">
                                 <option value="">-- Select Customer --</option>
                                 @foreach ($customer as $item)
                                     <option value="{{ $item->id }}">{{ $item->name }}</option>
@@ -293,6 +293,13 @@
 
         // ====================== Boot ======================
         $(document).ready(async function() {
+            // Select2
+            $('.select2Customer').select2({
+                placeholder: '-- Select Customer --',
+                allowClear: true,
+                width: '100%'
+            });
+
             // simpan data server ke IndexedDB
             try {
                 const salesDocServer = @json($salesDoc);
