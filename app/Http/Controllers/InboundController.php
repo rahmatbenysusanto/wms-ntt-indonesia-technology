@@ -658,8 +658,17 @@ class InboundController extends Controller
             ->paginate(10);
 
         foreach ($putAway as $product) {
-            $productPackageItemParent = ProductPackageItem::with('product')->where('product_package_id', $product->id)->where('is_parent', 1)->first();
-            $productPackageItem = ProductPackageItem::with('purchaseOrderDetail')->where('product_package_id', $product->id)->get();
+            $productPackageItemParent = ProductPackageItem::with('product')
+                ->where('product_package_id', $product->id)
+                ->where('is_parent', 1)
+                ->where(function ($q) {
+                    $q->whereNull('direct_outbound')->orWhere('direct_outbound', 0);
+                })
+                ->first();
+
+            $productPackageItem = ProductPackageItem::with('purchaseOrderDetail')
+                ->where('product_package_id', $product->id)
+                ->get();
 
             $sales_docs = [];
             foreach ($productPackageItem as $item) {
@@ -670,8 +679,27 @@ class InboundController extends Controller
             $product->sales_doc = array_unique($sales_docs);
             $product->product = $productPackageItemParent;
 
-            $product->parent = ProductPackageItem::where('product_package_id', $product->id)->where('is_parent', 1)->sum('qty');
-            $product->qty_pa = ProductPackageItem::where('product_package_id', $product->id)->sum('qty_pa');
+            // Only count items that need Put Away (exclude direct_outbound / cross-docking)
+            $product->parent = ProductPackageItem::where('product_package_id', $product->id)
+                ->where('is_parent', 1)
+                ->where(function ($q) {
+                    $q->whereNull('direct_outbound')->orWhere('direct_outbound', 0);
+                })
+                ->sum('qty');
+
+            // Total qty yang perlu di-PA (exclude direct outbound)
+            $product->pa_qty_total = ProductPackageItem::where('product_package_id', $product->id)
+                ->where(function ($q) {
+                    $q->whereNull('direct_outbound')->orWhere('direct_outbound', 0);
+                })
+                ->sum('qty');
+
+            // Total qty yang sudah di-PA (exclude direct outbound)
+            $product->qty_pa = ProductPackageItem::where('product_package_id', $product->id)
+                ->where(function ($q) {
+                    $q->whereNull('direct_outbound')->orWhere('direct_outbound', 0);
+                })
+                ->sum('qty_pa');
         }
 
         $title = 'Put Away';
@@ -717,6 +745,10 @@ class InboundController extends Controller
         ])->where('product_package_id', $request->query('id'))
             // Hanya ambil item yang masih ada sisa QTY yang belum di-PA
             ->whereRaw('qty > COALESCE(qty_pa, 0)')
+            // Exclude direct outbound items (cross-docking) — sudah masuk inventory via QC
+            ->where(function ($q) {
+                $q->whereNull('direct_outbound')->orWhere('direct_outbound', 0);
+            })
             ->get();
 
         $storage = Storage::whereNotNull('raw')->whereNotNull('area')->whereNotNull('rak')->whereNotNull('bin')->whereNull('deleted_at')->get();
@@ -985,6 +1017,11 @@ class InboundController extends Controller
             $hasProcessedAny = false;
 
             foreach ($items as $item) {
+                // Skip direct outbound items — they bypass PA and already in inventory
+                if ($item->direct_outbound) {
+                    continue;
+                }
+
                 // Calculate quantity to cancel (Total assigned - Already Put Away)
                 $qtyToCancel = $item->qty - $item->qty_pa;
 

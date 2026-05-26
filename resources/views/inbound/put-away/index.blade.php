@@ -93,7 +93,7 @@
                                             <small class="text-success">(PA: {{ number_format($item->qty_pa) }})</small>
                                             <br>
                                             <small class="text-danger">(Sisa:
-                                                {{ number_format($item->qty - $item->qty_pa) }})</small>
+                                                {{ number_format($item->pa_qty_total - $item->qty_pa) }})</small>
                                         </td>
                                         <td class="text-center">
                                             @if ($item->status == 'open')

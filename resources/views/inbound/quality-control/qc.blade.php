@@ -781,6 +781,8 @@
 
             product.push("");
 
+            qc[index][indexProduct].qtyDirect = product.length;
+
             localStorage.setItem('qc', JSON.stringify(qc));
             viewSerialNumberDirect();
         }
@@ -1330,6 +1332,8 @@
                     }
 
                     product.push(value);
+
+                    qc[index][indexProduct].qtyDirect = product.length;
 
                     localStorage.setItem('qc', JSON.stringify(qc));
                     viewSerialNumberDirect();
