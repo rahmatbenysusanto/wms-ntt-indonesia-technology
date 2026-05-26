@@ -151,7 +151,7 @@
                                                 <span class="badge bg-warning-subtle text-warning">Return</span>
                                             @endif
                                         </td>
-                                        <td>{{ \Carbon\Carbon::parse($out->created_at)->translatedFormat('d F Y H:i') }}
+                                        <td>{{ \Carbon\Carbon::parse($out->delivery_date)->translatedFormat('d F Y H:i') }}
                                         </td>
                                         <td>{{ $out->user->name }}</td>
                                         <td class="text-center">
