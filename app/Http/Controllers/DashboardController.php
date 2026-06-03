@@ -37,10 +37,10 @@ class DashboardController extends Controller
             ->when($request->query('purcDoc'), function ($query) use ($request) {
                 $query->where('purc_doc', 'LIKE', '%' . $request->query('purcDoc') . '%');
             })
-            ->whereHas('customer', function ($query) use ($request) {
-                if ($request->query('customer') != null) {
-                    $query->where('name', 'LIKE', '%' . $request->query('customer') . '%');
-                }
+            ->when($request->query('client'), function ($query) use ($request) {
+                $query->whereHas('customer', function ($q) use ($request) {
+                    $q->where('name', 'LIKE', '%' . $request->query('client') . '%');
+                });
             })
             ->latest()
             ->paginate(10);
@@ -60,8 +60,25 @@ class DashboardController extends Controller
 
         $customer = Customer::all();
 
+        // Summary data
+        $totalPO = PurchaseOrder::whereIn('status', ['process', 'done', 'close', 'open'])->count();
+        $totalQtyPO = DB::table('purchase_order_detail')->sum('qty_qc');
+        $totalQtyPOAll = DB::table('purchase_order_detail')->sum('po_item_qty');
+        $totalStockAll = DB::table('inventory')->where('type', 'inv')->sum('stock');
+
+        // PO by Customer chart data
+        $poByCustomer = PurchaseOrder::selectRaw('c.name, COUNT(po.id) as total_po, SUM(pod.qty_qc) as total_qty')
+            ->from('purchase_order as po')
+            ->leftJoin('customer as c', 'c.id', '=', 'po.customer_id')
+            ->leftJoin('purchase_order_detail as pod', 'pod.purchase_order_id', '=', 'po.id')
+            ->whereIn('po.status', ['process', 'done', 'close', 'open'])
+            ->groupBy('c.id', 'c.name')
+            ->orderByDesc('total_po')
+            ->limit(10)
+            ->get();
+
         $title = 'Dashboard PO';
-        return view('dashboard.po.index', compact('title', 'listPO', 'customer'));
+        return view('dashboard.po.index', compact('title', 'listPO', 'customer', 'totalPO', 'totalQtyPO', 'totalQtyPOAll', 'totalStockAll', 'poByCustomer'));
     }
 
     public function dashboardDetail(Request $request): View
@@ -213,7 +230,7 @@ class DashboardController extends Controller
     {
         $queryAging = DB::table('inventory_detail')
             ->leftJoin('purchase_order_detail', 'purchase_order_detail.id', '=', 'inventory_detail.purchase_order_detail_id')
-            ->where('qty', '!=', 0);
+            ->where('inventory_detail.qty', '!=', 0);
 
         $agingType1 = (clone $queryAging)->whereBetween('inventory_detail.aging_date', [Carbon::now()->subDays(90)->startOfDay(), Carbon::now()->subDays(0)->endOfDay()])
             ->select([
@@ -243,8 +260,42 @@ class DashboardController extends Controller
             ])
             ->first();
 
+        // Summary stats
+        $totalAgingQty = ($agingType1->qty ?? 0) + ($agingType2->qty ?? 0) + ($agingType3->qty ?? 0) + ($agingType4->qty ?? 0);
+        $totalAgingValue = ($agingType1->total ?? 0) + ($agingType2->total ?? 0) + ($agingType3->total ?? 0) + ($agingType4->total ?? 0);
+
+        // Aging trend by month (last 12 months)
+        $agingTrend = DB::table('inventory_detail')
+            ->leftJoin('purchase_order_detail', 'purchase_order_detail.id', '=', 'inventory_detail.purchase_order_detail_id')
+            ->where('inventory_detail.qty', '!=', 0)
+            ->where('inventory_detail.aging_date', '>=', now()->subMonths(12))
+            ->selectRaw("
+                DATE_FORMAT(inventory_detail.aging_date, '%Y-%m') as month,
+                SUM(inventory_detail.qty) as total_qty,
+                SUM(inventory_detail.qty * purchase_order_detail.net_order_price) as total_value
+            ")
+            ->groupBy('month')
+            ->orderBy('month')
+            ->get();
+
+        // Storage aging breakdown
+        $storageAging = DB::table('inventory_detail')
+            ->leftJoin('purchase_order_detail', 'purchase_order_detail.id', '=', 'inventory_detail.purchase_order_detail_id')
+            ->leftJoin('storage', 'storage.id', '=', 'inventory_detail.storage_id')
+            ->where('inventory_detail.qty', '!=', 0)
+            ->whereNotNull('storage.raw')
+            ->selectRaw("
+                CONCAT(storage.raw, ' - ', storage.area, ' - ', storage.rak, ' - ', storage.bin) as storage_name,
+                SUM(inventory_detail.qty) as total_qty,
+                SUM(inventory_detail.qty * purchase_order_detail.net_order_price) as total_value
+            ")
+            ->groupBy('storage.id', 'storage.raw', 'storage.area', 'storage.rak', 'storage.bin')
+            ->orderByDesc('total_value')
+            ->limit(10)
+            ->get();
+
         $title = 'Dashboard Aging';
-        return view('dashboard.aging.index', compact('title', 'agingType1', 'agingType2', 'agingType3', 'agingType4'));
+        return view('dashboard.aging.index', compact('title', 'agingType1', 'agingType2', 'agingType3', 'agingType4', 'totalAgingQty', 'totalAgingValue', 'agingTrend', 'storageAging'));
     }
 
     public function dashboardAgingDetail(Request $request): View
@@ -477,8 +528,66 @@ class DashboardController extends Controller
 
         $customers = Customer::all();
 
+        // Summary stats
+        $totalOutbound = Outbound::where('type', 'outbound')->count();
+        $totalOutboundQty = Outbound::where('type', 'outbound')->sum('qty');
+        $outboundThisMonth = Outbound::where('type', 'outbound')
+            ->whereMonth('created_at', now()->month)
+            ->whereYear('created_at', now()->year)
+            ->count();
+        $outboundValueThisMonth = DB::table('outbound')
+            ->leftJoin('outbound_detail', 'outbound_detail.outbound_id', '=', 'outbound.id')
+            ->leftJoin('inventory_package_item', 'inventory_package_item.id', '=', 'outbound_detail.inventory_package_item_id')
+            ->leftJoin('purchase_order_detail', 'purchase_order_detail.id', '=', 'inventory_package_item.purchase_order_detail_id')
+            ->where('outbound.type', 'outbound')
+            ->whereMonth('outbound.created_at', now()->month)
+            ->whereYear('outbound.created_at', now()->year)
+            ->sum(DB::raw('outbound_detail.qty * purchase_order_detail.net_order_price'));
+
+        // Monthly outbound trend
+        $monthlyOutbound = DB::table('outbound')
+            ->where('type', 'outbound')
+            ->where('created_at', '>=', now()->subMonths(11))
+            ->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as month, SUM(qty) as total_qty, COUNT(*) as total_orders")
+            ->groupBy('month')
+            ->orderBy('month')
+            ->get()
+            ->keyBy('month');
+
+        // Fill missing months
+        $monthlyTrend = [];
+        $cursor = now()->subMonths(11)->startOfMonth();
+        for ($i = 0; $i < 12; $i++) {
+            $ym = $cursor->format('Y-m');
+            $data = $monthlyOutbound->get($ym);
+            $monthlyTrend[] = [
+                'month'       => $cursor->format('M y'),
+                'ym'          => $ym,
+                'total_qty'   => (int) ($data->total_qty ?? 0),
+                'total_orders' => (int) ($data->total_orders ?? 0),
+            ];
+            $cursor->addMonth();
+        }
+
+        // Outbound by destination
+        $byDestination = DB::table('outbound')
+            ->where('type', 'outbound')
+            ->selectRaw('deliv_dest, COUNT(*) as total, SUM(qty) as total_qty')
+            ->groupBy('deliv_dest')
+            ->get();
+
+        // Outbound by customer (top 10)
+        $byCustomer = DB::table('outbound')
+            ->leftJoin('customer', 'customer.id', '=', 'outbound.customer_id')
+            ->where('outbound.type', 'outbound')
+            ->selectRaw('customer.name, COUNT(*) as total_orders, SUM(outbound.qty) as total_qty')
+            ->groupBy('customer.id', 'customer.name')
+            ->orderByDesc('total_qty')
+            ->limit(10)
+            ->get();
+
         $title = 'Dashboard Outbound';
-        return view('dashboard.outbound.index', compact('title', 'outbound', 'customers'));
+        return view('dashboard.outbound.index', compact('title', 'outbound', 'customers', 'totalOutbound', 'totalOutboundQty', 'outboundThisMonth', 'outboundValueThisMonth', 'monthlyTrend', 'byDestination', 'byCustomer'));
     }
 
     public function dashboardOutboundDetail(Request $request): View

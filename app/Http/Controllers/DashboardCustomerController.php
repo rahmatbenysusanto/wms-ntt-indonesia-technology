@@ -7,6 +7,7 @@ use App\Models\Outbound;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderDetail;
 use App\Models\Storage;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
@@ -18,7 +19,7 @@ class DashboardCustomerController extends Controller
     {
         $customer = Customer::all();
 
-        $title = 'Dashboard Customer';
+        $title = 'Dashboard';
         return view('dashboard-customer.index', compact('title', 'customer'));
     }
 
@@ -66,22 +67,16 @@ class DashboardCustomerController extends Controller
 
     public function cardJson(Request $request): JsonResponse
     {
+        $customerId = $request->get('customer');
+
         $totalPO = PurchaseOrder::whereIn('status', ['new', 'open'])
-            ->when($request->get('customer'), function ($query) use ($request) {
-                if ($request->get('customer') != '') {
-                    $query->where('customer_id', $request->get('customer'));
-                }
-            })
+            ->when($customerId, fn($q) => $q->where('customer_id', $customerId))
             ->count();
 
         $totalParent = DB::table('inventory_package_item')
             ->leftJoin('inventory_package', 'inventory_package_item.inventory_package_id', '=', 'inventory_package.id')
             ->leftJoin('purchase_order', 'purchase_order.id', '=', 'inventory_package.purchase_order_id')
-            ->when($request->get('customer'), function ($query) use ($request) {
-                if ($request->get('customer') != '') {
-                    $query->where('purchase_order.customer_id', $request->get('customer'));
-                }
-            })
+            ->when($customerId, fn($q) => $q->where('purchase_order.customer_id', $customerId))
             ->where('inventory_package_item.is_parent', 1)
             ->sum('inventory_package_item.qty');
 
@@ -89,21 +84,13 @@ class DashboardCustomerController extends Controller
             ->leftJoin('purchase_order_detail', 'purchase_order_detail.purchase_order_id', '=', 'purchase_order.id')
             ->whereIn('purchase_order.status', ['new', 'open'])
             ->where('purchase_order_detail.status', 'new')
-            ->when($request->get('customer'), function ($query) use ($request) {
-                if ($request->get('customer') != '') {
-                    $query->where('purchase_order.customer_id', $request->get('customer'));
-                }
-            })
+            ->when($customerId, fn($q) => $q->where('purchase_order.customer_id', $customerId))
             ->count();
 
         $totalStock = DB::table('inventory')
             ->leftJoin('purchase_order', 'purchase_order.id', '=', 'inventory.purchase_order_id')
             ->where('inventory.type', 'inv')
-            ->when($request->get('customer'), function ($query) use ($request) {
-                if ($request->get('customer') != '') {
-                    $query->where('purchase_order.customer_id', $request->get('customer'));
-                }
-            })
+            ->when($customerId, fn($q) => $q->where('purchase_order.customer_id', $customerId))
             ->sum('stock');
 
         $totalPrice = DB::table('inventory_detail as idt')
@@ -111,22 +98,69 @@ class DashboardCustomerController extends Controller
             ->leftJoin('purchase_order as po', 'po.id', '=', 'pod.purchase_order_id')
             ->whereNotIn('idt.storage_id', [1,2,3,4])
             ->where('idt.qty', '!=', 0)
-            ->when($request->get('customer'), function ($q) use ($request) {
-                $q->where('po.customer_id', $request->get('customer'));
-            })
+            ->when($customerId, fn($q) => $q->where('po.customer_id', $customerId))
             ->selectRaw('COALESCE(SUM(idt.qty * COALESCE(pod.net_order_price,0)),0) as total')
             ->value('total');
 
+        // Additional stats
+        $totalCustomers = Customer::count();
+        $totalStorageBins = Storage::whereNotNull('raw')->whereNotNull('area')->whereNotNull('rak')->whereNotNull('bin')->count();
+        $totalOutboundMonth = DB::table('outbound')
+            ->where('type', 'outbound')
+            ->whereMonth('created_at', now()->month)
+            ->whereYear('created_at', now()->year)
+            ->when($customerId, fn($q) => $q->where('customer_id', $customerId))
+            ->sum('qty');
+
+        $totalVendors = DB::table('vendor')->count();
 
         return response()->json([
             'status'    => true,
             'data'      => [
-                'totalPO'       => $totalPO,
-                'totalSO'       => $totalSO,
-                'totalStock'    => $totalStock,
-                'totalPrice'    => $totalPrice,
-                'totalParent'   => $totalParent,
+                'totalPO'           => $totalPO,
+                'totalSO'           => $totalSO,
+                'totalStock'        => $totalStock,
+                'totalPrice'        => $totalPrice,
+                'totalParent'       => $totalParent,
+                'totalCustomers'    => $totalCustomers,
+                'totalVendors'      => $totalVendors,
+                'totalStorageBins'  => $totalStorageBins,
+                'totalOutboundMonth' => $totalOutboundMonth,
             ]
+        ]);
+    }
+
+    public function topCustomersJson(): JsonResponse
+    {
+        $topCustomers = DB::table('inventory_detail as idt')
+            ->leftJoin('purchase_order_detail as pod', 'pod.id', '=', 'idt.purchase_order_detail_id')
+            ->leftJoin('purchase_order as po', 'po.id', '=', 'pod.purchase_order_id')
+            ->leftJoin('customer as c', 'c.id', '=', 'po.customer_id')
+            ->whereNotIn('idt.storage_id', [1,2,3,4])
+            ->where('idt.qty', '!=', 0)
+            ->selectRaw('c.name, COALESCE(SUM(idt.qty * COALESCE(pod.net_order_price,0)),0) as total_value')
+            ->groupBy('c.id', 'c.name')
+            ->orderByDesc('total_value')
+            ->limit(10)
+            ->get();
+
+        return response()->json([
+            'status' => true,
+            'data'   => $topCustomers,
+        ]);
+    }
+
+    public function recentOutboundJson(): JsonResponse
+    {
+        $recent = Outbound::with('customer:id,name')
+            ->where('type', 'outbound')
+            ->latest()
+            ->limit(8)
+            ->get(['id', 'purc_doc', 'delivery_note_number', 'sales_doc', 'customer_id', 'qty', 'delivery_date', 'created_at']);
+
+        return response()->json([
+            'status' => true,
+            'data'   => $recent,
         ]);
     }
 

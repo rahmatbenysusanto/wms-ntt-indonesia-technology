@@ -47,6 +47,8 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
         Route::get('/', 'index')->name('customer.dashboard');
         Route::get('/card-json', 'cardJson')->name('customer.card.json');
         Route::get('/monthly-stock', 'monthlyStock')->name('customer.monthly.stock');
+        Route::get('/top-customers', 'topCustomersJson')->name('customer.top.customers');
+        Route::get('/recent-outbound', 'recentOutboundJson')->name('customer.recent.outbound');
 
         Route::get('/inbound', 'inbound')->name('customer.inbound');
         Route::get('/inbound/detail', 'inboundDetail')->name('customer.inbound.detail');

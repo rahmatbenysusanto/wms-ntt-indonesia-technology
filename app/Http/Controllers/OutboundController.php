@@ -70,17 +70,23 @@ class OutboundController extends Controller
             ->when($request->query('client'), function ($query) use ($request) {
                 $query->where('customer_id', $request->query('client'));
             })
+            ->when($request->query('serialNumber'), function ($query) use ($request) {
+                $query->whereHas('outboundDetail.outboundDetailSN', function ($q) use ($request) {
+                    $q->where('serial_number', 'LIKE', '%' . $request->query('serialNumber') . '%');
+                });
+            })
             ->when($request->query('start'), function ($query) use ($request) {
                 $query->whereBetween('outbound_date', [$request->query('start'), $request->query('end')]);
             })
             ->latest()
             ->paginate(10)
             ->appends([
-                'start'     => $request->query('start'),
-                'end'       => $request->query('end'),
-                'purcDoc'   => $request->query('purcDoc'),
-                'salesDoc'  => $request->query('salesDoc'),
-                'client'    => $request->query('client'),
+                'start'         => $request->query('start'),
+                'end'           => $request->query('end'),
+                'purcDoc'       => $request->query('purcDoc'),
+                'salesDoc'      => $request->query('salesDoc'),
+                'client'        => $request->query('client'),
+                'serialNumber'  => $request->query('serialNumber'),
             ]);
 
         $customer = Customer::all();

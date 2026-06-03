@@ -49,18 +49,18 @@
                 </div>
                 <div class="card-body">
                     <form action="{{ url()->current() }}" method="GET">
-                        <div class="row">
-                            <div class="col-2">
+                        <div class="row g-2">
+                            <div class="col-md-2">
                                 <label class="form-label">Purc Doc</label>
                                 <input type="text" class="form-control" name="purcDoc"
                                     value="{{ request()->get('purcDoc') }}" placeholder="Purc Doc ...">
                             </div>
-                            <div class="col-2">
+                            <div class="col-md-2">
                                 <label class="form-label">Sales Doc</label>
                                 <input type="text" class="form-control" name="salesDoc"
                                     value="{{ request()->get('salesDoc') }}" placeholder="Sales Doc ...">
                             </div>
-                            <div class="col-2">
+                            <div class="col-md-2">
                                 <label class="form-label">Client</label>
                                 <select class="form-control select2Client" name="client">
                                     <option value="">-- Select Client --</option>
@@ -71,21 +71,25 @@
                                     @endforeach
                                 </select>
                             </div>
-                            <div class="col-2">
+                            <div class="col-md-2">
+                                <label class="form-label">Serial Number</label>
+                                <input type="text" class="form-control" name="serialNumber"
+                                    value="{{ request()->get('serialNumber') }}" placeholder="Serial Number ...">
+                            </div>
+                            <div class="col-md-2">
                                 <label class="form-label">Start Date</label>
                                 <input type="date" class="form-control" name="start"
                                     value="{{ request()->get('start', date('Y-m-01')) }}">
                             </div>
-                            <div class="col-2">
+                            <div class="col-md-2">
                                 <label class="form-label">End Date</label>
                                 <input type="date" class="form-control" name="end"
                                     value="{{ request()->get('end', date('Y-m-d')) }}">
                             </div>
-                            <div class="col-2">
-                                <label class="form-label text-white">-</label>
-                                <div class="d-flex gap-2">
-                                    <button type="submit" class="btn btn-primary">Search</button>
-                                    <a href="{{ url()->current() }}" class="btn btn-danger">Clear</a>
+                            <div class="col-12">
+                                <div class="d-flex gap-2 justify-content-end">
+                                    <button type="submit" class="btn btn-primary btn-sm px-3"><i class="ri-search-line me-1"></i>Search</button>
+                                    <a href="{{ route('outbound.index') }}" class="btn btn-soft-danger btn-sm px-3"><i class="ri-close-line me-1"></i>Clear</a>
                                 </div>
                             </div>
                         </div>
