@@ -314,6 +314,7 @@
 
             masterData = products.map((p, index) => {
                 const sns = p.product_package_item_sn.map(sn => ({
+                    id: sn.id,
                     serialNumber: sn.serial_number,
                     status: sn.status ?? 0,
                     selected: false
@@ -556,6 +557,7 @@
             const selectedItems = [];
             masterData.forEach(m => {
                 const selectedSns = m.sns.filter(s => s.selected && s.status == 0).map(s => s.serialNumber);
+                const selectedSnIds = m.sns.filter(s => s.selected && s.status == 0).map(s => s.id);
                 if (selectedSns.length > 0) {
                     selectedItems.push({
                         materialIndex: masterData.indexOf(m),
@@ -564,6 +566,7 @@
                         salesDoc: m.salesDoc,
                         item: m.item,
                         sns: selectedSns,
+                        snIds: selectedSnIds,
                         detail: m
                     });
                 }
@@ -773,6 +776,7 @@
                         productPackageItemId: item.detail.id,
                         qtySelect: item.sns.length,
                         serialNumber: item.sns,
+                        snIds: item.snIds || [],
                         salesDoc: item.salesDoc,
                         item: item.item,
                         material: item.material

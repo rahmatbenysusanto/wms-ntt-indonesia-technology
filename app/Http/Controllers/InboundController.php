@@ -886,10 +886,11 @@ class InboundController extends Controller
                     // Update Product Package Item QTY PA
                     ProductPackageItem::where('id', $parent['productPackageItemId'])->increment('qty_pa', $parent['qtySelect']);
 
-                    // Update Status Serial Number
-                    ProductPackageItemSn::whereIn('serial_number', $parent['serialNumber'] ?? [])
-                        ->where('product_package_item_id', $parent['productPackageItemId'])
-                        ->update(['status' => 1]);
+                    // Update Status Serial Number — pakai ID biar aman (tidak bergantung ke value SN)
+                    if (!empty($parent['snIds'])) {
+                        ProductPackageItemSn::whereIn('id', $parent['snIds'])
+                            ->update(['status' => 1]);
+                    }
                 }
 
                 foreach ($box['child'] ?? [] as $child) {
@@ -937,10 +938,11 @@ class InboundController extends Controller
                     // Update Product Package Item QTY PA
                     ProductPackageItem::where('id', $child['productPackageItemId'])->increment('qty_pa', $child['qtySelect']);
 
-                    // Update Status Serial Number
-                    ProductPackageItemSn::whereIn('serial_number', $child['serialNumber'] ?? [])
-                        ->where('product_package_item_id', $child['productPackageItemId'])
-                        ->update(['status' => 1]);
+                    // Update Status Serial Number — pakai ID biar aman
+                    if (!empty($child['snIds'])) {
+                        ProductPackageItemSn::whereIn('id', $child['snIds'])
+                            ->update(['status' => 1]);
+                    }
                 }
 
                 InventoryPackage::where('id', $inventoryPackage->id)->update([
