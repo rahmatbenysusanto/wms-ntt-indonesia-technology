@@ -718,8 +718,11 @@ class InboundController extends Controller
     {
         $products = ProductPackage::with('productPackageItem', 'productPackageItem.purchaseOrderDetail', 'productPackageItem.productPackageItemSn', 'purchaseOrder')->where('id', $request->query('id'))->get();
 
+        // Load InventoryPackage notes yang sudah dibuat untuk PA ini
+        $inventoryPackages = InventoryPackage::where('product_package_id', $request->query('id'))->get();
+
         $title = 'Put Away';
-        return view('inbound.put-away.detail-open', compact('title', 'products'));
+        return view('inbound.put-away.detail-open', compact('title', 'products', 'inventoryPackages'));
     }
 
     public function putAwayProcess(Request $request): View

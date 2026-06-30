@@ -20,6 +20,14 @@
                 <div class="card-header">
                     <h4 class="card-title mb-0">List Item</h4>
                 </div>
+                @php
+                    $paNote = $products->first()->note ?? null;
+                @endphp
+                <div class="alert alert-info border-0 rounded-0 mb-0 px-4 py-2 d-flex align-items-center gap-2">
+                    <i class="ri-sticky-note-line fs-18"></i>
+                    <strong>PA Note:</strong>
+                    <span class="{{ $paNote ? '' : 'text-muted fst-italic' }}">{{ $paNote ?: '—' }}</span>
+                </div>
                 <div class="card-body">
                     <div class="table-responsive">
                         <table class="table table-striped align-middle">
@@ -295,6 +303,11 @@
 
             if ('{{ $products[0]->return }}' === '1') {
                 addRow('Return Note', '{{ $products[0]->note }}');
+            } else {
+                const paNote = '{{ $products[0]->note }}';
+                if (paNote && paNote !== '') {
+                    addRow('PA Note', paNote);
+                }
             }
 
             container.appendChild(qrWrapper);

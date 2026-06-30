@@ -20,6 +20,21 @@
                 <div class="card-header">
                     <h4 class="card-title mb-0">List Item</h4>
                 </div>
+                @if ($inventoryPackages->isNotEmpty())
+                    @foreach ($inventoryPackages as $invPkg)
+                        <div class="alert alert-info border-0 rounded-0 mb-0 px-4 py-2 d-flex align-items-center gap-2">
+                            <i class="ri-sticky-note-line fs-18"></i>
+                            <strong>PA Note (Box {{ $invPkg->reff_number }}):</strong>
+                            <span class="{{ $invPkg->note ? '' : 'text-muted fst-italic' }}">{{ $invPkg->note ?: '—' }}</span>
+                        </div>
+                    @endforeach
+                @else
+                    <div class="alert alert-light border-0 rounded-0 mb-0 px-4 py-2 d-flex align-items-center gap-2">
+                        <i class="ri-sticky-note-line fs-18 text-muted"></i>
+                        <strong class="text-muted">PA Note:</strong>
+                        <span class="text-muted fst-italic">Belum ada box diproses</span>
+                    </div>
+                @endif
                 <div class="card-body">
                     <div class="table-responsive">
                         <table class="table table-striped align-middle">
