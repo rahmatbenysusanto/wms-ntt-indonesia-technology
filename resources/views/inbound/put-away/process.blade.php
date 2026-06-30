@@ -224,6 +224,14 @@
                         </div>
 
                         <div class="mt-4">
+                            <div class="mb-3">
+                                <label class="form-label fw-medium" for="noteRemarks">
+                                    <i class="ri-sticky-note-line me-1"></i>Remarks / Notes
+                                </label>
+                                <textarea class="form-control border-light-subtle bg-light" id="noteRemarks"
+                                    rows="2" placeholder="Add remarks or notes for this Put Away..."></textarea>
+                                <small class="text-muted">This note will be attached to the PA box and all products within it.</small>
+                            </div>
                             <button class="btn btn-primary btn-lg w-100 fw-bold shadow transition-all"
                                 id="btnConfirmPutAway" onclick="processPutAway()" disabled>
                                 <i class="ri-checkbox-circle-line me-1"></i> Confirm Put Away
@@ -818,13 +826,16 @@
                         }
                     });
 
+                    const noteRemarks = $('#noteRemarks').val().trim();
+
                     $.ajax({
                         url: '{{ route('inbound.put-away.store') }}',
                         method: 'POST',
                         data: {
                             _token: '{{ csrf_token() }}',
                             box: boxes,
-                            productPackageId: productPackageId
+                            productPackageId: productPackageId,
+                            note: noteRemarks
                         },
                         success: function(response) {
                             if (response.status) {

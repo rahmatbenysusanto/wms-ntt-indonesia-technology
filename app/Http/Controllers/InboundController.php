@@ -802,7 +802,7 @@ class InboundController extends Controller
     {
         try {
             DB::beginTransaction();
-            Log::channel('inbound_put_away_store')->info('Put Away Store Process Started', ['package_id' => $request->post('productPackageId'), 'user_id' => Auth::id()]);
+            Log::channel('inbound_put_away_store')->info('Put Away Store Process Started', ['package_id' => $request->post('productPackageId'), 'user_id' => Auth::id(), 'note' => $request->post('note')]);
 
             $listBox = $request->post('box');
             $putAwayNumber = 'PA-' . date('ymdHis') . rand(111, 999);
@@ -838,6 +838,7 @@ class InboundController extends Controller
                     'qty'                   => 0,
                     'sales_docs'            => json_encode([]),
                     'product_package_id'    => $productPackage->id,
+                    'note'                  => $request->post('note'),
                     'created_by'            => Auth::id()
                 ]);
 
@@ -847,7 +848,8 @@ class InboundController extends Controller
                         'product_id'                => $parent['productId'],
                         'purchase_order_detail_id'  => $parent['purchaseOrderDetailId'],
                         'is_parent'                 => 1,
-                        'qty'                       => $parent['qtySelect']
+                        'qty'                       => $parent['qtySelect'],
+                        'note'                      => $request->post('note')
                     ]);
 
                     foreach ($parent['serialNumber'] ?? [] as $serialNumber) {
@@ -900,6 +902,7 @@ class InboundController extends Controller
                         'purchase_order_detail_id'  => $child['purchaseOrderDetailId'],
                         'is_parent'                 => 0,
                         'qty'                       => $child['qtySelect'],
+                        'note'                      => $request->post('note')
                     ]);
 
                     foreach ($child['serialNumber'] ?? [] as $serialNumber) {

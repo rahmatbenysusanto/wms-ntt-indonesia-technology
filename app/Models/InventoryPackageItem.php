@@ -14,6 +14,7 @@ class InventoryPackageItem extends Model
         'is_parent',
         'direct_outbound',
         'qty',
+        'note',
         'inventory_item_id'
     ];
 
