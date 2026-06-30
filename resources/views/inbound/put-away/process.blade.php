@@ -603,10 +603,13 @@
             }
 
             selectedItems.forEach(item => {
-                let existingItem = stageGroup.items.find(si => si.material === item.material && si.salesDoc === item
-                    .salesDoc);
+                // Gunakan detail.id (productPackageItemId) sebagai unique key
+                // agar item dari ProductPackageItem berbeda tidak digabung —
+                // mencegah qty_pa increment di item yang salah & snIds hilang.
+                let existingItem = stageGroup.items.find(si => si.detail.id === item.detail.id);
                 if (existingItem) {
                     existingItem.sns = Array.from(new Set([...existingItem.sns, ...item.sns]));
+                    existingItem.snIds = Array.from(new Set([...(existingItem.snIds || []), ...(item.snIds || [])]));
                 } else {
                     stageGroup.items.push({
                         ...item

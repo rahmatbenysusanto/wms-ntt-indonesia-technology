@@ -885,13 +885,36 @@ class InboundController extends Controller
                     $qtyItem++;
                     $qty += $parent['qtySelect'];
 
-                    // Update Product Package Item QTY PA
-                    ProductPackageItem::where('id', $parent['productPackageItemId'])->increment('qty_pa', $parent['qtySelect']);
+                    // Update Product Package Item QTY PA (dengan safety guard)
+                    $ppiParent = ProductPackageItem::find($parent['productPackageItemId']);
+                    if ($ppiParent) {
+                        $maxIncrement = max(0, ($ppiParent->qty ?? 0) - ($ppiParent->qty_pa ?? 0));
+                        $safeQty = min($parent['qtySelect'], $maxIncrement);
 
-                    // Update Status Serial Number — pakai ID biar aman (tidak bergantung ke value SN)
-                    if (!empty($parent['snIds'])) {
-                        ProductPackageItemSn::whereIn('id', $parent['snIds'])
-                            ->update(['status' => 1]);
+                        if ($safeQty > 0) {
+                            ProductPackageItem::where('id', $parent['productPackageItemId'])
+                                ->increment('qty_pa', $safeQty);
+
+                            // Update Status Serial Number — hanya SN yang masih belum diproses
+                            if (!empty($parent['snIds'])) {
+                                ProductPackageItemSn::whereIn('id', $parent['snIds'])
+                                    ->where(function ($q) {
+                                        $q->where('status', '!=', 1)
+                                            ->orWhereNull('status');
+                                    })
+                                    ->update(['status' => 1]);
+                            }
+                        }
+
+                        if ($safeQty < $parent['qtySelect']) {
+                            Log::channel('inbound_put_away_store')->warning('Parent qty_pa capped', [
+                                'productPackageItemId' => $parent['productPackageItemId'],
+                                'requested' => $parent['qtySelect'],
+                                'applied'   => $safeQty,
+                                'max_qty'   => $ppiParent->qty,
+                                'curr_pa'   => $ppiParent->qty_pa
+                            ]);
+                        }
                     }
                 }
 
@@ -938,13 +961,36 @@ class InboundController extends Controller
                     $qtyItem++;
                     $qty += $child['qtySelect'];
 
-                    // Update Product Package Item QTY PA
-                    ProductPackageItem::where('id', $child['productPackageItemId'])->increment('qty_pa', $child['qtySelect']);
+                    // Update Product Package Item QTY PA (dengan safety guard)
+                    $ppiChild = ProductPackageItem::find($child['productPackageItemId']);
+                    if ($ppiChild) {
+                        $maxIncrement = max(0, ($ppiChild->qty ?? 0) - ($ppiChild->qty_pa ?? 0));
+                        $safeQty = min($child['qtySelect'], $maxIncrement);
 
-                    // Update Status Serial Number — pakai ID biar aman
-                    if (!empty($child['snIds'])) {
-                        ProductPackageItemSn::whereIn('id', $child['snIds'])
-                            ->update(['status' => 1]);
+                        if ($safeQty > 0) {
+                            ProductPackageItem::where('id', $child['productPackageItemId'])
+                                ->increment('qty_pa', $safeQty);
+
+                            // Update Status Serial Number — hanya SN yang masih belum diproses
+                            if (!empty($child['snIds'])) {
+                                ProductPackageItemSn::whereIn('id', $child['snIds'])
+                                    ->where(function ($q) {
+                                        $q->where('status', '!=', 1)
+                                            ->orWhereNull('status');
+                                    })
+                                    ->update(['status' => 1]);
+                            }
+                        }
+
+                        if ($safeQty < $child['qtySelect']) {
+                            Log::channel('inbound_put_away_store')->warning('Child qty_pa capped', [
+                                'productPackageItemId' => $child['productPackageItemId'],
+                                'requested' => $child['qtySelect'],
+                                'applied'   => $safeQty,
+                                'max_qty'   => $ppiChild->qty,
+                                'curr_pa'   => $ppiChild->qty_pa
+                            ]);
+                        }
                     }
                 }
 
