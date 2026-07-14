@@ -110,7 +110,7 @@ class OutboundController extends Controller
 
     public function getItemBySalesDoc(Request $request): \Illuminate\Http\JsonResponse
     {
-        $products = InventoryPackage::with('storage', 'inventoryPackageItem', 'inventoryPackageItem.purchaseOrderDetail', 'inventoryPackageItem.inventoryPackageItemSn', 'inventoryPackageItem.purchaseOrderDetail', 'purchaseOrder')
+        $products = InventoryPackage::with('storage', 'inventoryPackageItem', 'inventoryPackageItem.purchaseOrderDetail', 'inventoryPackageItem.inventoryPackageItemSn', 'purchaseOrder')
             ->where('id', $request->get('id'))
             ->first();
 
@@ -297,7 +297,10 @@ class OutboundController extends Controller
             ]);
 
             foreach ($products as $product) {
-                if ($product['disable'] == 0 && ($product['qtySelect'] ?? 0) != 0 && ($product['qtySelect'] ?? 0) <= $product['qty']) {
+                $prodDisable = $product['disable'] ?? 1;
+                $prodQtySelect = (int)($product['qtySelect'] ?? 0);
+                $prodQty = (int)($product['qty'] ?? 0);
+                if ($prodDisable === 0 && $prodQtySelect > 0 && $prodQtySelect <= $prodQty) {
                     // Insert Outbound Detail
                     $outboundDetail = OutboundDetail::create([
                         'outbound_id'               => $outbound->id,
@@ -306,21 +309,31 @@ class OutboundController extends Controller
                     ]);
 
                     $serialNumber = [];
+                    $snBulkData = [];
+                    $snBulkIds = [];
+                    $now = now();
                     foreach ($product['serialNumber'] ?? [] as $sn) {
-                        OutboundDetailSN::create([
+                        $snBulkData[] = [
                             'outbound_detail_id'        => $outboundDetail->id,
                             'inventory_package_item_id' => $product['inventoryPackageItemId'],
                             'serial_number'             => $sn['serialNumber'],
-                        ]);
-
-                        InventoryPackageItemSN::where('inventory_package_item_id', $product['inventoryPackageItemId'])
-                            ->where('serial_number', $sn['serialNumber'])
-                            ->where('id', $sn['id'])
-                            ->update([
-                                'qty' => 0
-                            ]);
-
+                            'created_at'                => $now,
+                            'updated_at'                => $now,
+                        ];
+                        $snBulkIds[] = $sn['id'];
                         $serialNumber[] = $sn['serialNumber'];
+                    }
+
+                    // Bulk insert OutboundDetailSN
+                    if (!empty($snBulkData)) {
+                        OutboundDetailSN::insert($snBulkData);
+                    }
+
+                    // Bulk update InventoryPackageItemSN → qty = 0
+                    if (!empty($snBulkIds)) {
+                        InventoryPackageItemSN::whereIn('id', $snBulkIds)
+                            ->where('inventory_package_item_id', $product['inventoryPackageItemId'])
+                            ->update(['qty' => 0]);
                     }
 
                     // Decrement Stock
@@ -353,10 +366,14 @@ class OutboundController extends Controller
                 }
             }
 
+            if ($qty_item == 0) {
+                throw new \Exception('No valid products with qty > 0 to process');
+            }
+
             Outbound::where('id', $outbound->id)->update([
                 'qty_item'      => $qty_item,
                 'qty'           => $qty,
-                'sales_docs'    => json_encode(array_unique($salesDocs)),
+                'sales_docs'    => json_encode(array_values(array_unique($salesDocs))),
             ]);
 
             if ($request->post('deliveryDest') != 'client') {
@@ -375,13 +392,22 @@ class OutboundController extends Controller
                         $type = 'spare';
                         $storage = 4;
                         break;
+                    default:
+                        throw new \Exception('Invalid delivery destination: ' . $request->post('deliveryDest'));
                 }
 
-                $firstProduct = $products[0];
-                $checkInventory = Inventory::where('purchase_order_id', $firstProduct['purchaseOrderId'])->where('type', $type)->first();
+                // Cari produk valid pertama untuk referensi room inventory
+                $firstValidProduct = collect($products)->first(fn($p) =>
+                    ($p['disable'] ?? 1) == 0 && ($p['qtySelect'] ?? 0) > 0
+                );
+                if (!$firstValidProduct) {
+                    throw new \Exception('No valid product found for room inventory reference');
+                }
+
+                $checkInventory = Inventory::where('purchase_order_id', $firstValidProduct['purchaseOrderId'])->where('type', $type)->first();
                 if ($checkInventory == null) {
                     Inventory::create([
-                        'purchase_order_id' => $firstProduct['purchaseOrderId'],
+                        'purchase_order_id' => $firstValidProduct['purchaseOrderId'],
                         'stock'             => $qty,
                         'type'              => $type,
                     ]);
@@ -389,9 +415,12 @@ class OutboundController extends Controller
                     Inventory::where('id', $checkInventory->id)->increment('stock', $qty);
                 }
 
-                $purchaseOrder = PurchaseOrder::find($firstProduct['purchaseOrderId']);
+                $purchaseOrder = PurchaseOrder::find($firstValidProduct['purchaseOrderId']);
+                if (!$purchaseOrder) {
+                    throw new \Exception('PurchaseOrder not found: ' . $firstValidProduct['purchaseOrderId']);
+                }
                 // Store Inventory Package
-                $findInventoryPackage = InventoryPackage::find($firstProduct['inventoryPackageId']);
+                $findInventoryPackage = InventoryPackage::find($firstValidProduct['inventoryPackageId']);
                 $inventoryPackage = InventoryPackage::create([
                     'purchase_order_id'         => $purchaseOrder->id,
                     'storage_id'                => $storage,
@@ -399,47 +428,70 @@ class OutboundController extends Controller
                     'reff_number'               => '',
                     'qty_item'                  => $qty_item,
                     'qty'                       => $qty,
-                    'sales_docs'                => json_encode(array_unique($salesDocs)),
+                    'sales_docs'                => json_encode(array_values(array_unique($salesDocs))),
                     'product_package_id'        => $findInventoryPackage?->product_package_id,
                     'created_by'                => Auth::id()
                 ]);
 
                 foreach ($products as $product) {
-                    if ($product['disable'] == 0 && ($product['qtySelect'] ?? 0) != 0 && ($product['qtySelect'] ?? 0) <= $product['qty']) {
-                        $inventoryPackageItem = InventoryPackageItem::find($product['inventoryPackageItemId']);
-                        $purchaseOrderDetail = PurchaseOrderDetail::find($inventoryPackageItem->purchase_order_detail_id);
+                    $prodDisable = $product['disable'] ?? 1;
+                    $prodQtySelect = (int)($product['qtySelect'] ?? 0);
+                    $prodQty = (int)($product['qty'] ?? 0);
+                    if ($prodDisable === 0 && $prodQtySelect > 0 && $prodQtySelect <= $prodQty) {
+                        $oldPackageItem = InventoryPackageItem::find($product['inventoryPackageItemId']);
+                        if (!$oldPackageItem) {
+                            throw new \Exception('InventoryPackageItem not found: ' . $product['inventoryPackageItemId']);
+                        }
+                        $purchaseOrderDetail = PurchaseOrderDetail::find($oldPackageItem->purchase_order_detail_id);
+                        if (!$purchaseOrderDetail) {
+                            throw new \Exception('PurchaseOrderDetail not found: ' . $oldPackageItem->purchase_order_detail_id);
+                        }
 
-                        $findInventoryPackageItem = InventoryPackageItem::find($product['inventoryPackageItemId']);
                         $inventoryPackageItem = InventoryPackageItem::create([
                             'inventory_package_id'      => $inventoryPackage->id,
-                            'product_id'                => $inventoryPackageItem->product_id,
+                            'product_id'                => $oldPackageItem->product_id,
                             'purchase_order_detail_id'  => $purchaseOrderDetail->id,
-                            'is_parent'                 => $findInventoryPackageItem->is_parent,
+                            'is_parent'                 => $oldPackageItem->is_parent,
                             'direct_outbound'           => 0,
                             'qty'                       => $product['qtySelect']
                         ]);
 
+                        $snBulkData = [];
+                        $now = now();
                         foreach ($product['serialNumber'] ?? [] as $serialNumber) {
-                            InventoryPackageItemSN::create([
+                            $snBulkData[] = [
                                 'inventory_package_item_id' => $inventoryPackageItem->id,
                                 'serial_number'             => $serialNumber['serialNumber'],
-                                'qty'                       => 1
-                            ]);
+                                'qty'                       => 1,
+                                'created_at'                => $now,
+                                'updated_at'                => $now,
+                            ];
+                        }
+                        // Bulk insert InventoryPackageItemSN
+                        if (!empty($snBulkData)) {
+                            InventoryPackageItemSN::insert($snBulkData);
                         }
 
                         // Inventory Detail
                         $productAging = InventoryDetail::where('inventory_package_item_id', $product['inventoryPackageItemId'])
                             ->where('purchase_order_detail_id', $product['purchaseOrderDetailId'])
                             ->first();
+                        if (!$productAging) {
+                            throw new \Exception('Inventory detail (aging) not found for purchase_order_detail_id: ' . $product['purchaseOrderDetailId']);
+                        }
                         $checkInventoryDetail = InventoryDetail::where('storage_id', $storage)
                             ->where('purchase_order_detail_id', $product['purchaseOrderDetailId'])
                             ->where('inventory_package_item_id', $inventoryPackageItem->id)
                             ->whereDate('aging_date', Carbon::parse($productAging->aging_date)->format('Y-m-d'))
                             ->first();
                         if ($checkInventoryDetail == null) {
-                            $inventory = Inventory::where('purchase_order_id', $product['purchaseOrderId'])->where('type', $type)->first();
+                            // Cari/cek inventory room — reuse dari atas jika PO-nya sama
+                            $roomInventory = Inventory::firstOrCreate(
+                                ['purchase_order_id' => $product['purchaseOrderId'], 'type' => $type],
+                                ['stock' => 0]
+                            );
                             InventoryDetail::create([
-                                'inventory_id'              => $inventory->id,
+                                'inventory_id'              => $roomInventory->id,
                                 'purchase_order_detail_id'  => $product['purchaseOrderDetailId'],
                                 'storage_id'                => $storage,
                                 'inventory_package_item_id' => $inventoryPackageItem->id,
@@ -466,6 +518,7 @@ class OutboundController extends Controller
             Log::error($err->getLine());
             return response()->json([
                 'status' => false,
+                'message' => $err->getMessage(),
             ]);
         }
     }

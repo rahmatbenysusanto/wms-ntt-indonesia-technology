@@ -313,7 +313,7 @@ class SpareRoomController extends Controller
             Outbound::where('id', $outbound->id)->update([
                 'qty_item'      => $qty_item,
                 'qty'           => $qty,
-                'sales_docs'    => json_encode(array_unique($salesDocs)),
+                'sales_docs'    => json_encode(array_values(array_unique($salesDocs))),
             ]);
 
             // Outbound To PM Room or Spare Room
@@ -493,7 +493,7 @@ class SpareRoomController extends Controller
             Outbound::where('id', $outbound->id)->update([
                 'qty_item'      => $qty_item,
                 'qty'           => $qty,
-                'sales_docs'    => json_encode(array_unique($salesDocs)),
+                'sales_docs'    => json_encode(array_values(array_unique($salesDocs))),
             ]);
 
             // Insert QTY To Inventory
@@ -504,7 +504,7 @@ class SpareRoomController extends Controller
                 'reff_number'           => $request->post('boxName'),
                 'qty'                   => $qty,
                 'qty_item'              => $qty_item,
-                'sales_docs'            => json_encode(array_unique($salesDocs)),
+                'sales_docs'            => json_encode(array_values(array_unique($salesDocs))),
                 'note'                  => $request->post('note'),
                 'return'                => 1,
                 'return_from'           => 'spare',

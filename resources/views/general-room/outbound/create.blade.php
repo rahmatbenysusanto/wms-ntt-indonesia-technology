@@ -128,7 +128,30 @@
                 <div class="modal-body">
                     <div class="row">
                         <div class="col-6">
-                            <h4 class="card-title mb-2">Data Serial Number</h4>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h4 class="card-title mb-0">Data Serial Number</h4>
+                                <div>
+                                    <a class="btn btn-warning btn-sm me-1" onclick="togglePasteSN()" id="btnTogglePaste">
+                                        <i class="ri-paste-line"></i> Paste SN
+                                    </a>
+                                    <a class="btn btn-danger btn-sm" onclick="pilihSemuaSN()">Pilih Semua SN</a>
+                                </div>
+                            </div>
+                            <div id="pasteSNArea" class="mb-2 d-none">
+                                <div class="input-group mb-2">
+                                    <textarea class="form-control" id="pasteSNList" rows="4"
+                                        placeholder="Paste SN dari Excel&#10;1 baris = 1 SN"></textarea>
+                                    <button class="btn btn-success" type="button" onclick="pilihSNbyPaste()"
+                                        style="border-top-left-radius: 0; border-bottom-left-radius: 0;">
+                                        <i class="ri-check-double-line"></i> Cocokkan & Pilih
+                                    </button>
+                                </div>
+                                <small class="text-muted">Paste SN (1 baris per SN), otomatis dicocokkan</small>
+                            </div>
+                            <div class="mb-2">
+                                <input type="text" class="form-control" id="searchSN"
+                                    placeholder="Search Serial Number" onkeyup="filterSN()">
+                            </div>
                             <table class="table table-striped align-middle">
                                 <thead>
                                 <tr>
@@ -185,7 +208,10 @@
 
             salesDoc.forEach((item) => {
                 let salesDoc = '';
-                (JSON.parse(item.sales_docs) ?? []).forEach((detail) => {
+                // Parse sales_docs: handle both array ["a","b"] dan object {"0":"a","2":"b"}
+                let sdList = [];
+                try { const p = JSON.parse(item.sales_docs); sdList = Array.isArray(p) ? p : Object.values(p); } catch {}
+                sdList.forEach((detail) => {
                     salesDoc += `<div>${detail}</div>`;
                 });
 
@@ -415,7 +441,97 @@
 
             document.getElementById('listDataOutboundSN').innerHTML = serialNumber;
             document.getElementById('listDataSN').innerHTML = dataSN;
+            filterSN();
         }
+
+        window.togglePasteSN = function togglePasteSN() {
+            const area = document.getElementById('pasteSNArea');
+            const btn = document.getElementById('btnTogglePaste');
+            if (!area) return;
+            const isHidden = area.classList.contains('d-none');
+            area.classList.toggle('d-none', !isHidden);
+            btn.classList.toggle('btn-warning', !isHidden);
+            btn.classList.toggle('btn-secondary', isHidden);
+            if (isHidden) document.getElementById('pasteSNList')?.focus();
+        };
+
+        window.pilihSemuaSN = function pilihSemuaSN() {
+            const index = document.getElementById('idModal')?.value;
+            if (index == null) return;
+            const products = JSON.parse(localStorage.getItem('salesDocProduct')) ?? [];
+            const product = products[index];
+            if (!product) return;
+            product.serialNumber = product.serialNumber || [];
+            const searchInput = document.getElementById('searchSN');
+            const filter = searchInput ? searchInput.value.toUpperCase() : '';
+            (product.dataSN ?? []).forEach((item) => {
+                if (filter && item.serialNumber.toUpperCase().indexOf(filter) === -1) return;
+                if (parseInt(item.select) === 0) {
+                    item.select = 1;
+                    product.serialNumber.push(item);
+                }
+            });
+            localStorage.setItem('salesDocProduct', JSON.stringify(products));
+            viewSerialNumberReload(index);
+        };
+
+        window.filterSN = function filterSN() {
+            const input = document.getElementById('searchSN');
+            if (!input) return;
+            const filter = input.value.toUpperCase();
+            const tbody = document.getElementById("listDataSN");
+            if (!tbody) return;
+            const tr = tbody.getElementsByTagName("tr");
+            for (let i = 0; i < tr.length; i++) {
+                const td = tr[i].getElementsByTagName("td")[0];
+                if (td) {
+                    const txtValue = td.textContent || td.innerText;
+                    tr[i].style.display = txtValue.toUpperCase().indexOf(filter) > -1 ? "" : "none";
+                }
+            }
+        };
+
+        window.pilihSNbyPaste = function pilihSNbyPaste() {
+            const index = document.getElementById('idModal')?.value;
+            if (index == null) return;
+            const raw = document.getElementById('pasteSNList')?.value;
+            if (!raw || !raw.trim()) {
+                Swal.fire({ title: 'Info', text: 'Paste daftar SN terlebih dahulu', icon: 'info' });
+                return;
+            }
+            const pastedSNs = raw.split('\n').map(s => s.trim()).filter(s => s.length > 0);
+            if (pastedSNs.length === 0) {
+                Swal.fire({ title: 'Info', text: 'Tidak ada SN yang ditemukan', icon: 'info' });
+                return;
+            }
+            const products = JSON.parse(localStorage.getItem('salesDocProduct')) ?? [];
+            const product = products[index];
+            if (!product) return;
+            product.serialNumber = product.serialNumber || [];
+            let matchCount = 0;
+            let notFound = [];
+            pastedSNs.forEach((pastedSN) => {
+                const found = (product.dataSN ?? []).find(item =>
+                    String(item.serialNumber).trim().toUpperCase() === pastedSN.toUpperCase()
+                );
+                if (found && parseInt(found.select) === 0) {
+                    found.select = 1;
+                    product.serialNumber.push(found);
+                    matchCount++;
+                } else if (!found) {
+                    notFound.push(pastedSN);
+                }
+            });
+            localStorage.setItem('salesDocProduct', JSON.stringify(products));
+            viewSerialNumberReload(index);
+            let msg = `${matchCount} SN berhasil dipilih`;
+            if (notFound.length > 0) {
+                msg += `<br><br><b>Tidak ditemukan (${notFound.length}):</b><br>` + notFound.slice(0, 20).join('<br>');
+                if (notFound.length > 20) msg += `<br>...dan ${notFound.length - 20} lainnya`;
+            }
+            Swal.fire({ title: 'Hasil Paste SN', html: msg, icon: matchCount > 0 ? 'success' : 'warning' });
+            document.getElementById('pasteSNList').value = '';
+        };
 
         function createOrder() {
             Swal.fire({

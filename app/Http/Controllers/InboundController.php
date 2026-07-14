@@ -596,7 +596,7 @@ class InboundController extends Controller
                     InventoryPackage::where('id', $inventoryPackage->id)->update([
                         'qty_item'          => $qtyItemDirect,
                         'qty'               => $qtyDirect,
-                        'sales_docs'        => json_encode(array_unique($salesDocsDirect)),
+                        'sales_docs'        => json_encode(array_values(array_unique($salesDocsDirect))),
                     ]);
                 }
             }
@@ -998,7 +998,7 @@ class InboundController extends Controller
                 }
 
                 InventoryPackage::where('id', $inventoryPackage->id)->update([
-                    'sales_docs'            => json_encode(array_unique($salesDocs)),
+                    'sales_docs'            => json_encode(array_values(array_unique($salesDocs))),
                     'qty_item'              => $qtyItem,
                     'qty'                   => $qty
                 ]);
@@ -1408,7 +1408,7 @@ class InboundController extends Controller
                 InventoryPackage::where('id', $inventoryPackage->id)->update([
                     'qty_item'  => $qtyItemDirect,
                     'qty'       => $qtyDirect,
-                    'sales_docs' => json_encode(array_unique($salesDocsDirect)),
+                    'sales_docs' => json_encode(array_values(array_unique($salesDocsDirect))),
                 ]);
             }
 

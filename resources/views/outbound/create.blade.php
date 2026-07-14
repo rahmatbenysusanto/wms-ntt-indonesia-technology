@@ -169,7 +169,23 @@
                         <div class="col-6">
                             <div class="d-flex justify-content-between align-items-center mb-3">
                                 <h4 class="card-title mb-2">Data Serial Number</h4>
-                                <a class="btn btn-danger btn-sm" onclick="pilihSemuaSN()">Pilih Semua SN</a>
+                                <div>
+                                    <a class="btn btn-warning btn-sm me-1" onclick="togglePasteSN()" id="btnTogglePaste">
+                                        <i class="ri-paste-line"></i> Paste SN
+                                    </a>
+                                    <a class="btn btn-danger btn-sm" onclick="pilihSemuaSN()">Pilih Semua SN</a>
+                                </div>
+                            </div>
+                            <div id="pasteSNArea" class="mb-2 d-none">
+                                <div class="input-group mb-2">
+                                    <textarea class="form-control" id="pasteSNList" rows="4"
+                                        placeholder="Paste SN dari Excel&#10;1 baris = 1 SN&#10;Contoh:&#10;SN001&#10;SN002&#10;SN003"></textarea>
+                                    <button class="btn btn-success" type="button" onclick="pilihSNbyPaste()"
+                                        style="border-top-left-radius: 0; border-bottom-left-radius: 0;">
+                                        <i class="ri-check-double-line"></i> Cocokkan & Pilih
+                                    </button>
+                                </div>
+                                <small class="text-muted">Paste SN (1 baris per SN), otomatis dicocokkan dari data di atas</small>
                             </div>
                             <div class="mb-2">
                                 <input type="text" class="form-control" id="searchSN"
@@ -262,6 +278,20 @@
                 try {
                     const parsed = JSON.parse(s);
                     if (Array.isArray(parsed)) return parsed.filter(v => v != null && v !== '').map(String);
+                    return [String(parsed)];
+                } catch {
+                    // lanjut ke pola lain
+                }
+            }
+
+            // kalau string tampak seperti JSON object → ambil values-nya
+            // (misal data rusak: {"0":"926316","4":"40552618","20":"40552617"})
+            if (s.startsWith('{') && s.endsWith('}')) {
+                try {
+                    const parsed = JSON.parse(s);
+                    if (typeof parsed === 'object' && !Array.isArray(parsed)) {
+                        return Object.values(parsed).filter(v => v != null && v !== '').map(String);
+                    }
                     return [String(parsed)];
                 } catch {
                     // lanjut ke pola lain
@@ -682,6 +712,82 @@
             await viewSerialNumberReload(index);
         };
 
+        window.togglePasteSN = function togglePasteSN() {
+            const area = document.getElementById('pasteSNArea');
+            const btn = document.getElementById('btnTogglePaste');
+            if (!area) return;
+            const isHidden = area.classList.contains('d-none');
+            area.classList.toggle('d-none', !isHidden);
+            btn.classList.toggle('btn-warning', !isHidden);
+            btn.classList.toggle('btn-secondary', isHidden);
+            if (isHidden) {
+                document.getElementById('pasteSNList')?.focus();
+            }
+        };
+
+        window.pilihSNbyPaste = async function pilihSNbyPaste() {
+            const index = document.getElementById('idModal')?.value;
+            if (index == null) return;
+
+            const raw = document.getElementById('pasteSNList')?.value;
+            if (!raw || !raw.trim()) {
+                Swal.fire({ title: 'Info', text: 'Paste daftar SN terlebih dahulu', icon: 'info' });
+                return;
+            }
+
+            // Split by newline, trim, hapus yang kosong
+            const pastedSNs = raw.split('\n')
+                .map(s => s.trim())
+                .filter(s => s.length > 0);
+
+            if (pastedSNs.length === 0) {
+                Swal.fire({ title: 'Info', text: 'Tidak ada SN yang ditemukan di paste', icon: 'info' });
+                return;
+            }
+
+            const products = await kvGet('salesDocProduct', []) ?? [];
+            const product = products[index];
+            if (!product) return;
+
+            product.serialNumber = product.serialNumber || [];
+
+            let matchCount = 0;
+            let notFound = [];
+
+            pastedSNs.forEach((pastedSN) => {
+                // Cari SN yang cocok di dataSN (case-insensitive)
+                const found = (product?.dataSN ?? []).find(item =>
+                    String(item.serialNumber).trim().toUpperCase() === pastedSN.toUpperCase()
+                );
+
+                if (found && parseInt(found.select) === 0) {
+                    found.select = 1;
+                    product.serialNumber.push(found);
+                    matchCount++;
+                } else if (!found) {
+                    notFound.push(pastedSN);
+                }
+            });
+
+            await kvSet('salesDocProduct', products);
+            await viewSerialNumberReload(index);
+
+            // Tampilkan hasil
+            let msg = `${matchCount} SN berhasil dipilih`;
+            if (notFound.length > 0) {
+                msg += `<br><br><b>Tidak ditemukan (${notFound.length}):</b><br>` + notFound.slice(0, 20).join('<br>');
+                if (notFound.length > 20) msg += `<br>...dan ${notFound.length - 20} lainnya`;
+            }
+            Swal.fire({
+                title: 'Hasil Paste SN',
+                html: msg,
+                icon: matchCount > 0 ? 'success' : 'warning'
+            });
+
+            // Kosongkan textarea
+            document.getElementById('pasteSNList').value = '';
+        };
+
         window.createOrder = async function createOrder() {
             const t = await Swal.fire({
                 title: "Are you sure?",
@@ -712,12 +818,18 @@
                 }
             }
 
+            // Hapus dataSN dari payload — tidak dipakai server & bikin payload membengkak
+            const payload = products.map(p => {
+                const { dataSN, ...rest } = p;
+                return rest;
+            });
+
             $.ajax({
                 url: '{{ route('outbound.store') }}',
                 method: 'POST',
                 data: {
                     _token: '{{ csrf_token() }}',
-                    products: products,
+                    products: payload,
                     delivLocation: document.getElementById('delivLocation')?.value,
                     customerId: document.getElementById('customerId')?.value,
                     deliveryDest: document.getElementById('deliveryDest')?.value,
@@ -737,16 +849,23 @@
                     } else {
                         Swal.fire({
                             title: 'Error',
-                            text: 'Create Order Failed',
+                            text: res?.message || 'Create Order Failed',
                             icon: 'error'
                         });
                     }
                 },
-                error: () => Swal.fire({
-                    title: 'Error',
-                    text: 'Request gagal',
-                    icon: 'error'
-                })
+                error: (xhr) => {
+                    let msg = 'Request gagal';
+                    try {
+                        const resp = JSON.parse(xhr.responseText);
+                        msg = resp?.message || msg;
+                    } catch {}
+                    Swal.fire({
+                        title: 'Error',
+                        text: msg,
+                        icon: 'error'
+                    });
+                }
             });
         };
     </script>

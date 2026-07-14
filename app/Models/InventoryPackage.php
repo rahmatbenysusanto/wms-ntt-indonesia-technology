@@ -22,6 +22,10 @@ class InventoryPackage extends Model
         'return_from'
     ];
 
+    protected $casts = [
+        'sales_docs' => 'array',
+    ];
+
     public function inventoryPackageItem(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(InventoryPackageItem::class, 'inventory_package_id', 'id');

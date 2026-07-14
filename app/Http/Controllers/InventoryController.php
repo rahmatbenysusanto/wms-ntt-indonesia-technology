@@ -2335,30 +2335,24 @@ class InventoryController extends Controller
                 'purchaseOrder.customer' => fn($q) => $q->select('id', 'name'),
                 'storage' => fn($q) => $q->select('id', 'raw', 'area', 'rak', 'bin'),
             ])
+            // Flat EXISTS dengan JOIN — bukan nested subquery
+            ->whereExists(function ($q) {
+                $q->select(DB::raw(1))
+                  ->from('inventory_package_item')
+                  ->join('inventory_package_item_sn', 'inventory_package_item_sn.inventory_package_item_id', '=', 'inventory_package_item.id')
+                  ->whereColumn('inventory_package_item.inventory_package_id', 'inventory_package.id')
+                  ->whereIn('inventory_package_item_sn.serial_number', ['N/A', 'n/a', 'N/a', 'n/A']);
+            })
+            // Count N/A per package — flat join, bukan correlated subquery
             ->addSelect([
                 'na_count' => InventoryPackageItemSN::query()
+                    ->selectRaw('COUNT(*)')
                     ->join('inventory_package_item', 'inventory_package_item_sn.inventory_package_item_id', '=', 'inventory_package_item.id')
                     ->whereColumn('inventory_package_item.inventory_package_id', 'inventory_package.id')
-                    ->where(function ($w) {
-                        $w->where('serial_number', 'N/A')
-                          ->orWhere('serial_number', 'n/a')
-                          ->orWhere('serial_number', 'N/a')
-                          ->orWhere('serial_number', 'n/A');
-                    })
-                    ->selectRaw('COUNT(*)'),
+                    ->whereIn('inventory_package_item_sn.serial_number', ['N/A', 'n/a', 'N/a', 'n/A']),
             ])
             ->whereNotIn('storage_id', [1, 2, 3, 4])
-            ->where('qty', '!=', 0)
-            ->where(function ($q) {
-                $q->whereHas('inventoryPackageItem.inventoryPackageItemSn', function ($q) {
-                    $q->where(function ($w) {
-                        $w->where('serial_number', 'N/A')
-                          ->orWhere('serial_number', 'n/a')
-                          ->orWhere('serial_number', 'N/a')
-                          ->orWhere('serial_number', 'n/A');
-                    });
-                });
-            });
+            ->where('qty', '!=', 0);
 
         if ($request->query('paNumber')) {
             $query->where('number', 'LIKE', '%' . $request->query('paNumber') . '%');
