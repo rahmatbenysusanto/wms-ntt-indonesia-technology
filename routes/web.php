@@ -207,6 +207,11 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
         Route::get('/sn-update', 'snUpdate')->name('inventory.sn-update');
         Route::get('/sn-update/detail', 'snUpdateDetail')->name('inventory.sn-update.detail');
         Route::post('/sn-update/store', 'snUpdateStore')->name('inventory.sn-update.store');
+
+        // Swap Serial Number (RMA)
+        Route::get('/swap-sn', 'swapSn')->name('inventory.swap-sn');
+        Route::get('/swap-sn/find-sn', 'swapSnFindSn')->name('inventory.swap-sn.find-sn');
+        Route::post('/swap-sn/store', 'swapSnStore')->name('inventory.swap-sn.store');
     });
 
     Route::prefix('/general-room')->controller(GeneralRoomController::class)->group(function () {

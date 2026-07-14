@@ -14,6 +14,7 @@ use App\Models\PurchaseOrderDetail;
 use App\Models\Storage;
 use App\Models\TransferLocation;
 use App\Models\SnChangeLog;
+use App\Models\SwapSnLog;
 use Barryvdh\DomPDF\Facade\Pdf;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use Carbon\Carbon;
@@ -2326,11 +2327,37 @@ class InventoryController extends Controller
      */
     public function snUpdate(Request $request): View
     {
-        $query = InventoryPackage::with('purchaseOrder.customer', 'storage')
+        $query = InventoryPackage::select([
+                'id', 'number', 'reff_number', 'purchase_order_id', 'storage_id', 'qty', 'created_at',
+            ])
+            ->with([
+                'purchaseOrder' => fn($q) => $q->select('id', 'purc_doc', 'customer_id'),
+                'purchaseOrder.customer' => fn($q) => $q->select('id', 'name'),
+                'storage' => fn($q) => $q->select('id', 'raw', 'area', 'rak', 'bin'),
+            ])
+            ->addSelect([
+                'na_count' => InventoryPackageItemSN::query()
+                    ->join('inventory_package_item', 'inventory_package_item_sn.inventory_package_item_id', '=', 'inventory_package_item.id')
+                    ->whereColumn('inventory_package_item.inventory_package_id', 'inventory_package.id')
+                    ->where(function ($w) {
+                        $w->where('serial_number', 'N/A')
+                          ->orWhere('serial_number', 'n/a')
+                          ->orWhere('serial_number', 'N/a')
+                          ->orWhere('serial_number', 'n/A');
+                    })
+                    ->selectRaw('COUNT(*)'),
+            ])
             ->whereNotIn('storage_id', [1, 2, 3, 4])
             ->where('qty', '!=', 0)
-            ->whereHas('inventoryPackageItem.inventoryPackageItemSn', function ($q) {
-                $q->whereRaw('UPPER(TRIM(serial_number)) = ?', ['N/A']);
+            ->where(function ($q) {
+                $q->whereHas('inventoryPackageItem.inventoryPackageItemSn', function ($q) {
+                    $q->where(function ($w) {
+                        $w->where('serial_number', 'N/A')
+                          ->orWhere('serial_number', 'n/a')
+                          ->orWhere('serial_number', 'N/a')
+                          ->orWhere('serial_number', 'n/A');
+                    });
+                });
             });
 
         if ($request->query('paNumber')) {
@@ -2345,15 +2372,6 @@ class InventoryController extends Controller
 
         $boxes = $query->latest()->paginate(15)->appends($request->query());
 
-        // Hitung jumlah SN N/A per box
-        foreach ($boxes as $box) {
-            $box->na_count = DB::table('inventory_package_item_sn')
-                ->join('inventory_package_item', 'inventory_package_item_sn.inventory_package_item_id', '=', 'inventory_package_item.id')
-                ->where('inventory_package_item.inventory_package_id', $box->id)
-                ->whereRaw('UPPER(TRIM(inventory_package_item_sn.serial_number)) = ?', ['N/A'])
-                ->count();
-        }
-
         $title = 'Update Serial Number';
         return view('inventory.sn-update.index', compact('title', 'boxes'));
     }
@@ -2363,32 +2381,28 @@ class InventoryController extends Controller
      */
     public function snUpdateDetail(Request $request): View
     {
-        $inventoryPackage = InventoryPackage::with(
-            'purchaseOrder.customer',
-            'storage',
-            'inventoryPackageItem.purchaseOrderDetail',
-            'inventoryPackageItem.inventoryPackageItemSn'
-        )->findOrFail($request->query('id'));
+        $inventoryPackage = InventoryPackage::with([
+            'purchaseOrder' => fn($q) => $q->select('id', 'purc_doc', 'customer_id'),
+            'purchaseOrder.customer' => fn($q) => $q->select('id', 'name'),
+            'storage' => fn($q) => $q->select('id', 'raw', 'area', 'rak', 'bin'),
+            'inventoryPackageItem' => fn($q) => $q->select('id', 'inventory_package_id', 'purchase_order_detail_id', 'is_parent'),
+            'inventoryPackageItem.purchaseOrderDetail' => fn($q) => $q->select('id', 'material', 'po_item_desc', 'sales_doc'),
+            'inventoryPackageItem.inventoryPackageItemSn' => fn($q) => $q->select('id', 'inventory_package_item_id', 'serial_number', 'qty'),
+        ])->findOrFail($request->query('id'), ['id', 'number', 'purchase_order_id', 'storage_id', 'qty']);
 
         $items = $inventoryPackage->inventoryPackageItem;
 
-        // Hitung total SN N/A di box ini
-        $naCount = 0;
-        foreach ($items as $item) {
-            foreach ($item->inventoryPackageItemSn as $sn) {
-                if (strtoupper(trim($sn->serial_number)) === 'N/A') {
-                    $naCount++;
-                }
-            }
-        }
+        // Hitung total SN N/A di box ini (dari data yg sudah di-load)
+        $naCount = $items->sum(fn($item) => $item->inventoryPackageItemSn->filter(
+            fn($sn) => strtoupper(trim($sn->serial_number)) === 'N/A'
+        )->count());
 
-        // Ambil semua SN ID dalam box ini untuk load log
-        $snIds = DB::table('inventory_package_item_sn')
-            ->join('inventory_package_item', 'inventory_package_item_sn.inventory_package_item_id', '=', 'inventory_package_item.id')
-            ->where('inventory_package_item.inventory_package_id', $inventoryPackage->id)
-            ->pluck('inventory_package_item_sn.id');
+        // Ambil semua SN ID dari relasi yang sudah di-load (tanpa query tambahan)
+        $snIds = $items->flatMap(fn($item) => $item->inventoryPackageItemSn->pluck('id'));
 
-        $changeLogs = SnChangeLog::with('user')
+        $changeLogs = SnChangeLog::with([
+            'user' => fn($q) => $q->select('id', 'name'),
+        ])
             ->whereIn('inventory_package_item_sn_id', $snIds)
             ->latest()
             ->get();
@@ -2456,6 +2470,185 @@ class InventoryController extends Controller
             DB::rollBack();
             Log::channel('inventory_sn_update')->error('SN Update Failed: ' . $err->getMessage());
             Log::error($err->getMessage());
+            return response()->json([
+                'status'  => false,
+                'message' => 'Terjadi kesalahan: ' . $err->getMessage(),
+            ]);
+        }
+    }
+
+    // =====================================================
+    // FITUR: SWAP SERIAL NUMBER (RMA)
+    // =====================================================
+
+    /**
+     * Halaman utama Swap SN — menampilkan riwayat swap + tombol buat swap baru.
+     */
+    public function swapSn(Request $request): View
+    {
+        $query = SwapSnLog::select(
+                'id', 'old_serial_number', 'new_serial_number', 'reason',
+                'changed_by', 'inventory_package_id', 'inventory_package_item_id', 'created_at'
+            )
+            ->with([
+                'user' => fn($q) => $q->select('id', 'name'),
+                'inventoryPackage' => fn($q) => $q->select('id', 'number'),
+                'inventoryPackageItem' => fn($q) => $q->select('id', 'purchase_order_detail_id', 'inventory_package_id'),
+                'inventoryPackageItem.purchaseOrderDetail' => fn($q) => $q->select('id', 'material'),
+            ]);
+
+        if ($request->query('paNumber')) {
+            $query->whereHas('inventoryPackage', function ($q) use ($request) {
+                $q->where('number', 'LIKE', '%' . $request->query('paNumber') . '%');
+            });
+        }
+
+        if ($request->query('purcDoc')) {
+            $query->whereHas('inventoryPackage.purchaseOrder', function ($q) use ($request) {
+                $q->where('purc_doc', 'LIKE', '%' . $request->query('purcDoc') . '%');
+            });
+        }
+
+        if ($request->query('oldSn')) {
+            $query->where('old_serial_number', 'LIKE', '%' . $request->query('oldSn') . '%');
+        }
+
+        if ($request->query('newSn')) {
+            $query->where('new_serial_number', 'LIKE', '%' . $request->query('newSn') . '%');
+        }
+
+        if ($request->query('date_range')) {
+            $dates = explode(' to ', $request->query('date_range'));
+            $startDate = trim($dates[0]) . ' 00:00:00';
+            $endDate = (isset($dates[1]) ? trim($dates[1]) : trim($dates[0])) . ' 23:59:59';
+            $query->whereBetween('created_at', [$startDate, $endDate]);
+        }
+
+        $logs = $query->latest()->paginate(15)->appends($request->query());
+
+        $title = 'Swap Serial Number';
+        return view('inventory.swap-sn.index', compact('title', 'logs'));
+    }
+
+    /**
+     * AJAX: Cari detail barang berdasarkan serial number.
+     */
+    public function swapSnFindSn(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $serialNumber = $request->query('serial_number');
+        if (empty($serialNumber)) {
+            return response()->json(['status' => false, 'message' => 'Serial number tidak boleh kosong.']);
+        }
+
+        $sn = InventoryPackageItemSN::where('serial_number', $serialNumber)->first();
+        if (!$sn) {
+            return response()->json(['status' => false, 'message' => 'Serial number tidak ditemukan di sistem.']);
+        }
+
+        if ($sn->qty == 0) {
+            return response()->json(['status' => false, 'message' => 'Serial number ini sudah tidak aktif (qty 0).']);
+        }
+
+        $item = InventoryPackageItem::with([
+            'purchaseOrderDetail',
+            'inventoryPackage.purchaseOrder.customer',
+            'inventoryPackage.storage'
+        ])->where('id', $sn->inventory_package_item_id)->first();
+
+        if (!$item || !$item->inventoryPackage) {
+            return response()->json(['status' => false, 'message' => 'Data produk tidak ditemukan.']);
+        }
+
+        $storage = $item->inventoryPackage->storage
+            ? ($item->inventoryPackage->storage->raw . ' | ' . $item->inventoryPackage->storage->area . ' | ' . $item->inventoryPackage->storage->rak . ' | ' . $item->inventoryPackage->storage->bin)
+            : '-';
+
+        return response()->json([
+            'status' => true,
+            'data' => [
+                'sn_id'                      => $sn->id,
+                'serial_number'              => $sn->serial_number,
+                'inventory_package_item_id'  => $item->id,
+                'inventory_package_id'       => $item->inventory_package_id,
+                'material'                   => $item->purchaseOrderDetail->material ?? '-',
+                'po_item_desc'               => $item->purchaseOrderDetail->po_item_desc ?? '-',
+                'pa_number'                  => $item->inventoryPackage->number ?? '-',
+                'purc_doc'                   => $item->inventoryPackage->purchaseOrder->purc_doc ?? '-',
+                'customer'                   => $item->inventoryPackage->purchaseOrder->customer->name ?? '-',
+                'storage'                    => $storage,
+                'is_parent'                  => $item->is_parent,
+                'sales_doc'                  => $item->purchaseOrderDetail->sales_doc ?? '-',
+            ]
+        ]);
+    }
+
+    /**
+     * Simpan swap SN dan rekam ke log.
+     */
+    public function swapSnStore(Request $request): \Illuminate\Http\JsonResponse
+    {
+        try {
+            DB::beginTransaction();
+
+            $snId = $request->post('sn_id');
+            $newSN = trim($request->post('new_serial_number', ''));
+            $oldSN = $request->post('old_serial_number', '');
+            $inventoryPackageItemId = $request->post('inventory_package_item_id');
+            $inventoryPackageId = $request->post('inventory_package_id');
+            $reason = $request->post('reason');
+
+            if (empty($newSN)) {
+                return response()->json(['status' => false, 'message' => 'Serial number baru tidak boleh kosong.']);
+            }
+
+            if ($newSN === $oldSN) {
+                return response()->json(['status' => false, 'message' => 'SN baru sama dengan SN lama, tidak ada perubahan.']);
+            }
+
+            // Cek duplikat SN
+            $exists = InventoryPackageItemSN::where('serial_number', $newSN)
+                ->where('id', '!=', $snId)
+                ->exists();
+            if ($exists) {
+                return response()->json([
+                    'status'  => false,
+                    'message' => "Serial Number '$newSN' sudah digunakan oleh produk lain."
+                ]);
+            }
+
+            // Update SN
+            InventoryPackageItemSN::where('id', $snId)->update([
+                'serial_number' => $newSN,
+            ]);
+
+            // Rekam log
+            SwapSnLog::create([
+                'inventory_package_item_sn_id' => $snId,
+                'inventory_package_id'         => $inventoryPackageId,
+                'inventory_package_item_id'    => $inventoryPackageItemId,
+                'old_serial_number'            => $oldSN,
+                'new_serial_number'            => $newSN,
+                'reference_serial_number'      => $oldSN,
+                'reason'                       => $reason,
+                'changed_by'                   => Auth::id(),
+            ]);
+
+            DB::commit();
+
+            Log::channel('inventory_sn_update')->info('Swap SN Success', [
+                'sn_id' => $snId,
+                'old_sn' => $oldSN,
+                'new_sn' => $newSN,
+                'user_id' => Auth::id(),
+            ]);
+
+            return response()->json([
+                'status'  => true,
+                'message' => "Serial Number berhasil di-swap dari <strong>$oldSN</strong> ke <strong>$newSN</strong>.",
+            ]);
+        } catch (\Exception $err) {
+            DB::rollBack();
+            Log::channel('inventory_sn_update')->error('Swap SN Failed: ' . $err->getMessage());
             return response()->json([
                 'status'  => false,
                 'message' => 'Terjadi kesalahan: ' . $err->getMessage(),
