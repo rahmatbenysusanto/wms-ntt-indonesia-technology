@@ -297,7 +297,7 @@ class OutboundController extends Controller
             ]);
 
             foreach ($products as $product) {
-                $prodDisable = $product['disable'] ?? 1;
+                $prodDisable = (int)($product['disable'] ?? 1);
                 $prodQtySelect = (int)($product['qtySelect'] ?? 0);
                 $prodQty = (int)($product['qty'] ?? 0);
                 if ($prodDisable === 0 && $prodQtySelect > 0 && $prodQtySelect <= $prodQty) {
@@ -434,7 +434,7 @@ class OutboundController extends Controller
                 ]);
 
                 foreach ($products as $product) {
-                    $prodDisable = $product['disable'] ?? 1;
+                    $prodDisable = (int)($product['disable'] ?? 1);
                     $prodQtySelect = (int)($product['qtySelect'] ?? 0);
                     $prodQty = (int)($product['qty'] ?? 0);
                     if ($prodDisable === 0 && $prodQtySelect > 0 && $prodQtySelect <= $prodQty) {
