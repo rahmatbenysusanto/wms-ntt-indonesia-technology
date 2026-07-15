@@ -404,7 +404,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
     <script src="https://unpkg.com/dexie@4/dist/dexie.js"></script>
-    <script src="https://unpkg.com/dexie@4/dist/dexie.js"></script>
     <script>
         // ================================
         // Dexie (IndexedDB) KV Helpers
@@ -692,7 +691,7 @@
             const compare = await storage.getJSON('compare', []);
             const serialNumber = compare[index].salesDoc[indexSalesDoc].snDirect;
 
-            if ((serialNumber.length + compare[index].salesDoc[indexSalesDoc].serialNumber.length) === compare[index]
+            if ((serialNumber.length + compare[index].salesDoc[indexSalesDoc].serialNumber.length) >= compare[index]
                 .salesDoc[indexSalesDoc].qty) {
                 document.getElementById('scanSerialNumberDirectErrorMessage').innerText =
                     'Serial number exceeds item quantity';
@@ -711,7 +710,6 @@
 
             await storage.setJSON('compare', compare);
             await viewSerialNumberDirectOutbound(index, indexSalesDoc);
-            await viewCompareSAPCCW();
         }
 
         async function changeSNDirect(indexSN, value) {
@@ -725,7 +723,6 @@
 
             await storage.setJSON('compare', compare);
             await viewSerialNumberDirectOutbound(index, indexSalesDoc);
-            await viewCompareSAPCCW();
         }
 
         async function generateNADirect() {
@@ -755,7 +752,6 @@
             salesDoc.qtyDirect = serialNumber.length;
             await storage.setJSON('compare', compare);
             await viewSerialNumberDirectOutbound(index, indexSalesDoc);
-            await viewCompareSAPCCW();
         }
 
         // ================================
@@ -1155,7 +1151,7 @@
                 const indexSalesDoc = document.getElementById('detailSN_index_sales_doc').value;
                 const compare = await storage.getJSON('compare', []);
 
-                if (serialNumber.length === toInt(compare[index].salesDoc[indexSalesDoc].qty)) {
+                if (serialNumber.length >= toInt(compare[index].salesDoc[indexSalesDoc].qty)) {
                     Swal.fire({
                         title: 'Warning!',
                         text: 'Jumlah Serial Number tidak boleh lebih dari QTY',
@@ -1215,7 +1211,7 @@
             const compare = await storage.getJSON('compare', []);
             let serialNumber = await storage.getJSON('serialNumber', []);
 
-            if (serialNumber.length === toInt(compare[index].salesDoc[indexSalesDoc].qty)) {
+            if (serialNumber.length >= toInt(compare[index].salesDoc[indexSalesDoc].qty)) {
                 Swal.fire({
                     title: 'Warning!',
                     text: 'Jumlah Serial Number tidak boleh lebih dari QTY',
@@ -1230,7 +1226,6 @@
             await storage.setJSON('serialNumber', serialNumber);
 
             await viewSerialNumber(index, indexSalesDoc);
-            await viewCompareSAPCCW();
         }
 
         async function generateNA() {
@@ -1262,7 +1257,6 @@
             await storage.setJSON('serialNumber', serialNumber);
 
             await viewSerialNumber(index, indexSalesDoc);
-            await viewCompareSAPCCW();
         }
 
         async function deleteSerialNumber(index, indexSalesDoc, indexDetail, sn) {
@@ -1283,7 +1277,6 @@
             await storage.setJSON('ccw', ccw);
 
             await viewSerialNumber(index, indexSalesDoc);
-            await viewCompareSAPCCW();
         }
 
         async function changeSerialNumber(index, indexSalesDoc, indexDetail, value) {
@@ -1297,7 +1290,6 @@
             await storage.setJSON('serialNumber', serialNumber);
 
             await viewSerialNumber(index, indexSalesDoc);
-            await viewCompareSAPCCW();
         }
 
         // ================================
@@ -1397,29 +1389,37 @@
 
                 // Validation Serial Number & Sales Doc
                 const compare = await storage.getJSON('compare', []);
+                const errors = [];
                 let totalProcessed = 0;
+                let skippedCount = 0;
+
                 for (const item of compare) {
-                    if (toInt(item.qty) !== toInt(item.qtyAdd) || (item.salesDoc || []).length === 0)
+                    const itemName = item.itemName || `Line ${item.lineNumber}`;
+                    const qtyMatch = toInt(item.qty) === toInt(item.qtyAdd);
+                    const hasSalesDoc = (item.salesDoc || []).length > 0;
+
+                    if (!qtyMatch || !hasSalesDoc) {
+                        skippedCount++;
+                        if (!qtyMatch && !hasSalesDoc) {
+                            errors.push(`"${itemName}" — QTY belum sesuai dan belum ada Sales Doc`);
+                        } else if (!qtyMatch) {
+                            errors.push(`"${itemName}" — QTY Outbound (${item.qtyAdd}) belum sesuai QTY PO (${item.qty})`);
+                        } else {
+                            errors.push(`"${itemName}" — Belum ada Sales Doc dipilih`);
+                        }
                         continue;
+                    }
+
                     for (const salesDoc of (item.salesDoc || [])) {
-                        // Produk harus memiliki Sales Doc (sudah ada dalam array salesDoc)
-                        // dan harus memiliki Serial Number yang lengkap sesuai QTY
                         if (!salesDoc.salesDoc) {
-                            Swal.fire({
-                                title: 'Warning!',
-                                text: `Sales Doc belum terpilih untuk ${item.itemName}.`,
-                                icon: 'warning'
-                            });
-                            return true;
+                            errors.push(`"${itemName}" — Sales Doc belum terisi`);
+                            continue;
                         }
 
-                        if ((salesDoc.serialNumber.length + salesDoc.snDirect.length) !== salesDoc.qty) {
-                            Swal.fire({
-                                title: 'Warning!',
-                                text: `Serial number untuk ${item.itemName} / ${salesDoc.salesDoc} belum lengkap. (Dibutuhkan: ${salesDoc.qty})`,
-                                icon: 'warning'
-                            });
-                            return true;
+                        const snCount = (salesDoc.serialNumber || []).length + (salesDoc.snDirect || []).length;
+                        if (snCount !== salesDoc.qty) {
+                            errors.push(`"${itemName}" / ${salesDoc.salesDoc} — SN belum lengkap (${snCount}/${salesDoc.qty})`);
+                            continue;
                         }
 
                         // Pastikan Serial Number yang kosong diisi dengan N/A
@@ -1432,11 +1432,32 @@
                     }
                 }
 
+                if (errors.length > 0) {
+                    // Tampilkan max 5 error pertama biar gk kepanjangan
+                    const displayErrors = errors.slice(0, 5);
+                    let msg = displayErrors.join('\n');
+                    if (errors.length > 5) msg += `\n...dan ${errors.length - 5} error lainnya`;
+                    Swal.fire({
+                        title: `Validasi Gagal (${errors.length} error)`,
+                        text: msg,
+                        icon: 'warning',
+                        customClass: {
+                            confirmButton: 'btn btn-primary w-xs mt-2'
+                        },
+                        buttonsStyling: false
+                    });
+                    return true;
+                }
+
                 if (totalProcessed === 0) {
                     Swal.fire({
-                        title: 'Warning!',
-                        text: 'Belum ada produk yang diproses (Sales Doc & SN wajib diisi).',
-                        icon: 'warning'
+                        title: 'Tidak Ada Data Diproses',
+                        text: 'Semua item tidak memenuhi syarat. Pastikan setiap item: 1) QTY Outbound = QTY PO, 2) Sales Doc terpilih, 3) Serial Number lengkap.',
+                        icon: 'warning',
+                        customClass: {
+                            confirmButton: 'btn btn-primary w-xs mt-2'
+                        },
+                        buttonsStyling: false
                     });
                     return true;
                 }
@@ -1476,7 +1497,7 @@
                                 } else {
                                     Swal.fire({
                                         title: 'Error!',
-                                        text: 'Quality Control Failed!',
+                                        text: res?.message || 'Quality Control gagal diproses di server.',
                                         icon: 'error',
                                         confirmButtonText: 'OK',
                                         customClass: {
@@ -1485,6 +1506,23 @@
                                         buttonsStyling: false
                                     });
                                 }
+                            },
+                            error: (xhr) => {
+                                let msg = 'Terjadi kesalahan koneksi ke server.';
+                                try {
+                                    const resp = JSON.parse(xhr.responseText);
+                                    if (resp?.message) msg = resp.message;
+                                } catch (_) {}
+                                Swal.fire({
+                                    title: 'Error Server!',
+                                    text: msg,
+                                    icon: 'error',
+                                    confirmButtonText: 'OK',
+                                    customClass: {
+                                        confirmButton: 'btn btn-primary w-xs mt-2'
+                                    },
+                                    buttonsStyling: false
+                                });
                             }
                         });
                     }
@@ -1538,7 +1576,7 @@
             const compare = await storage.getJSON('compare', []);
             let serialNumber = await storage.getJSON('serialNumber', []);
 
-            if (serialNumber.length === toInt(compare[index].salesDoc[indexSalesDoc].qty)) {
+            if (serialNumber.length >= toInt(compare[index].salesDoc[indexSalesDoc].qty)) {
                 Swal.fire({
                     title: 'Warning!',
                     text: 'qty serial number exceeds qty product',
@@ -1585,7 +1623,6 @@
                 input.value = '';
                 input.focus();
             }
-            await viewCompareSAPCCW();
         }
 
         // ================================
@@ -1614,7 +1651,7 @@
             const compare = await storage.getJSON('compare', []);
             let serialNumber = await storage.getJSON('serialNumber', []);
 
-            if (serialNumber.length === toInt(compare[index].salesDoc[indexSalesDoc].qty)) {
+            if (serialNumber.length >= toInt(compare[index].salesDoc[indexSalesDoc].qty)) {
                 Swal.fire({
                     title: 'Warning!',
                     text: 'qty serial number exceeds qty product',
@@ -1647,7 +1684,6 @@
             await viewSerialNumber(index, indexSalesDoc);
             this.value = '';
             this.focus();
-            await viewCompareSAPCCW();
         });
 
         document.getElementById('scanSerialNumberDirect')?.addEventListener('keydown', async function(e) {
@@ -1687,7 +1723,7 @@
             }
 
             const checkQTY = serialNumber.length + compare[index].salesDoc[indexSalesDoc].serialNumber.length;
-            if (checkQTY === toInt(compare[index].salesDoc[indexSalesDoc].qty)) {
+            if (checkQTY >= toInt(compare[index].salesDoc[indexSalesDoc].qty)) {
                 Swal.fire({
                     title: 'Warning!',
                     text: 'qty serial number exceeds qty product',
@@ -1705,19 +1741,46 @@
             new Audio("{{ asset('assets/sound/scan.mp3') }}").play();
             this.value = '';
             this.focus();
-            await viewCompareSAPCCW();
         });
 
         // ================================
         // Pilih semua SN available
         // ================================
         async function pilihSemuaSN() {
-            const ccw = await storage.getJSON('ccw', []);
+            const index = document.getElementById('detailSN_index').value;
+            const indexSalesDoc = document.getElementById('detailSN_index_sales_doc').value;
             const indexCCW = document.getElementById('detailSN_ccw_index').value;
-            const list = (ccw[indexCCW]?.snAvailable || []);
-            for (const item of list) {
-                if (item.status === true) await selectSnAvailable(item.serialNumber);
+            if (index == null || indexSalesDoc == null) return;
+
+            const [compare, serialNumber, ccw] = await Promise.all([
+                storage.getJSON('compare', []),
+                storage.getJSON('serialNumber', []),
+                storage.getJSON('ccw', [])
+            ]);
+
+            const salesDoc = compare[index]?.salesDoc?.[indexSalesDoc];
+            if (!salesDoc) return;
+
+            const targetQty = toInt(salesDoc.qty);
+            const available = (ccw[indexCCW]?.snAvailable || []).filter(item => item.status === true);
+
+            for (const item of available) {
+                if (serialNumber.length >= targetQty) break;
+                if (!serialNumber.find(i => i === item.serialNumber)) {
+                    serialNumber.push(item.serialNumber);
+                    item.status = false;
+                }
             }
+
+            salesDoc.serialNumber = serialNumber;
+
+            await Promise.all([
+                storage.setJSON('compare', compare),
+                storage.setJSON('serialNumber', serialNumber),
+                storage.setJSON('ccw', ccw)
+            ]);
+
+            await viewSerialNumber(index, indexSalesDoc);
         }
 
         // ================================
@@ -1868,5 +1931,14 @@
         //         }
         //     } catch (_) {}
         // }, 60000);
+
+        // ================================
+        // Modal close -> refresh main table sekali
+        // ================================
+        if (typeof $ !== 'undefined') {
+            $('#detailSerialNumberModal, #serialNumberDirectOutboundModal').on('hidden.bs.modal', function () {
+                viewCompareSAPCCW();
+            });
+        }
     </script>
 @endsection

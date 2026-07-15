@@ -1206,12 +1206,24 @@ class InboundController extends Controller
             Log::channel('inbound_qc_process')->info('QC CCW Store Process Started', ['po_id' => $request->post('purchaseOrderId'), 'user_id' => Auth::id()]);
 
             $fileName = $request->post('fileName');
-            $path = storage_path('app/private/json_uploads/' . $fileName);
+            if (empty($fileName)) {
+                throw new \Exception('File data QC tidak ditemukan. Silakan upload file CCW terlebih dahulu.');
+            }
+            // Security: pastikan file benar-benar ada di direktori json_uploads
+            $safeName = basename($fileName);
+            $path = storage_path('app/private/json_uploads/' . $safeName);
+            if (!file_exists($path)) {
+                throw new \Exception('File JSON tidak ditemukan. Silakan upload ulang file CCW.');
+            }
             $compare = json_decode(file_get_contents($path), true);
-            $purchaseOrder = PurchaseOrder::find($request->post('purchaseOrderId'));
+            if (empty($compare)) {
+                throw new \Exception('Data file CCW kosong. Tidak ada item yang bisa diproses.');
+            }
 
-            $grouped = [];
-            $parents = [];
+            $purchaseOrder = PurchaseOrder::find($request->post('purchaseOrderId'));
+            if (!$purchaseOrder) {
+                throw new \Exception('Purchase Order tidak ditemukan. Silakan refresh halaman.');
+            }
 
             foreach ($compare as $i => $item) {
                 foreach ($item['salesDoc'] as $j => $so) {
@@ -1252,6 +1264,16 @@ class InboundController extends Controller
             $qty = 0;
             $directOutbound = false;
 
+            // Preload PurchaseOrderDetail (N+1 → 1 query) — setelah manual SO dibuat
+            $poDetailIds = [];
+            foreach ($compare as $item) {
+                if (empty($item['salesDoc'])) continue;
+                foreach ($item['salesDoc'] as $so) {
+                    if (!empty($so['id'])) $poDetailIds[] = $so['id'];
+                }
+            }
+            $poDetails = PurchaseOrderDetail::whereIn('id', array_unique($poDetailIds))->get()->keyBy('id');
+
             foreach ($compare as $item) {
                 if ((int)($item['qty'] ?? 0) !== (int)($item['qtyAdd'] ?? 0) || empty($item['salesDoc'])) {
                     continue;
@@ -1263,7 +1285,8 @@ class InboundController extends Controller
                 $isParent = preg_match('/^\d+\.0$/', $item['lineNumber']);
 
                 foreach ($item['salesDoc'] as $so) {
-                    $purchaseOrderDetail = PurchaseOrderDetail::find($so['id']);
+                    $purchaseOrderDetail = $poDetails->get($so['id']);
+                    if (!$purchaseOrderDetail) continue;
                     $productPackageItem = ProductPackageItem::create([
                         'product_package_id'        => $productPackage->id,
                         'product_id'                => $purchaseOrderDetail->product_id,
@@ -1272,12 +1295,17 @@ class InboundController extends Controller
                         'qty'                       => $so['qty'],
                     ]);
 
+                    $snBulkData = [];
                     foreach ($so['serialNumber'] ?? [] as $serialNumber) {
-                        $snValue = !empty($serialNumber) ? $serialNumber : "N/A";
-                        ProductPackageItemSN::create([
+                        $snBulkData[] = [
                             'product_package_item_id'  => $productPackageItem->id,
-                            'serial_number'            => $snValue,
-                        ]);
+                            'serial_number'            => !empty($serialNumber) ? $serialNumber : "N/A",
+                            'created_at'               => now(),
+                            'updated_at'               => now(),
+                        ];
+                    }
+                    if (!empty($snBulkData)) {
+                        ProductPackageItemSN::insert($snBulkData);
                     }
 
                     $newQtyQc = ($purchaseOrderDetail->qty_qc ?? 0) + $so['qty'];
@@ -1292,6 +1320,10 @@ class InboundController extends Controller
                     $qty_item++;
                     $qty += $so['qty'];
                 }
+            }
+
+            if ($qty_item === 0) {
+                throw new \Exception('Tidak ada item yang dapat diproses. Pastikan setiap item sudah memiliki Sales Doc dan QTY terisi dengan benar.');
             }
 
             ProductPackage::where('id', $productPackage->id)->update([
@@ -1335,13 +1367,19 @@ class InboundController extends Controller
                                     'qty'                       => $salesDoc['qtyDirect'],
                                 ]);
 
-                                // Serial Number
+                                // Serial Number (bulk insert)
+                                $snDirectBulk = [];
                                 foreach ($salesDoc['snDirect'] ?? [] as $serialNumber) {
-                                    InventoryPackageItemSN::create([
+                                    $snDirectBulk[] = [
                                         'inventory_package_item_id' => $inventoryPackageItem->id,
                                         'serial_number'             => $serialNumber,
-                                        'qty'                       => 1
-                                    ]);
+                                        'qty'                       => 1,
+                                        'created_at'                => now(),
+                                        'updated_at'                => now(),
+                                    ];
+                                }
+                                if (!empty($snDirectBulk)) {
+                                    InventoryPackageItemSN::insert($snDirectBulk);
                                 }
 
                                 // Inventory
@@ -1397,7 +1435,7 @@ class InboundController extends Controller
                                     'created_by'                    => Auth::id()
                                 ]);
 
-                                $qtyDirect = $salesDoc['qtyDirect'];
+                                $qtyDirect += $salesDoc['qtyDirect'];
                                 $qtyItemDirect++;
                                 $salesDocsDirect[] = $salesDoc['salesDoc'];
                             }
@@ -1436,7 +1474,8 @@ class InboundController extends Controller
             Log::error($err->getMessage());
             Log::error($err->getLine());
             return response()->json([
-                'status' => false
+                'status' => false,
+                'message' => $err->getMessage(),
             ]);
         }
     }
@@ -1453,13 +1492,8 @@ class InboundController extends Controller
 
         $file->storeAs('json_uploads', $fileName);
 
-        $data = json_decode(file_get_contents($file), true);
-        $total = is_array($data) ? count($data) : 0;
-
         return response()->json([
             'fileName'  => $fileName,
-            'total'     => $total,
-            'data'      => $data,
         ]);
     }
 
