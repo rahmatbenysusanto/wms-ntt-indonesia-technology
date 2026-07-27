@@ -93,7 +93,7 @@ class InboundController extends Controller
                     // pastikan key ada & tipe aman
                     return [
                         'purc_doc'        => trim((string)($r['purc_doc'] ?? '')),
-                        'sales_doc'       => $r['sales_doc'] ?? null,
+                        'sales_doc'       => !empty($r['sales_doc']) ? trim((string)$r['sales_doc']) : null,
                         'item'            => trim((string)($r['item'] ?? '')),
                         'material'        => trim((string)($r['material'] ?? '')),
                         'po_item_desc'    => trim((string)($r['po_item_desc'] ?? '')),
@@ -207,6 +207,18 @@ class InboundController extends Controller
      * @throws GuzzleException
      */
 
+    /**
+     * Generate random 6-digit Sales Doc yang unik
+     */
+    private function generateSalesDoc(): string
+    {
+        do {
+            $salesDoc = str_pad((string) rand(0, 999999), 6, '0', STR_PAD_LEFT);
+        } while (PurchaseOrderDetail::where('sales_doc', $salesDoc)->exists());
+
+        return $salesDoc;
+    }
+
     private function storePurchaseOrderDetail($checkPO, mixed $item): void
     {
         $checkProduct = Product::where('material', $item['material'])->first();
@@ -261,7 +273,7 @@ class InboundController extends Controller
             'product_id'            => $productId,
             'status'                => 'new',
             'qty_quality_control'   => 0,
-            'sales_doc'             => $item['sales_doc'] ?? null,
+            'sales_doc'             => !empty($item['sales_doc']) ? $item['sales_doc'] : $this->generateSalesDoc(),
             'item'                  => $item['item'] ?? null,
             'material'              => $item['material'] ?? null,
             'po_item_desc'          => $item['po_item_desc'] ?? null,
@@ -1241,7 +1253,7 @@ class InboundController extends Controller
                             'purchase_order_id' => $request->post('purchaseOrderId'),
                             'product_id'        => $product->id,
                             'status'            => 'new',
-                            'sales_doc'         => $so['salesDoc'] ?? null,
+                            'sales_doc'         => !empty($so['salesDoc']) ? $so['salesDoc'] : $this->generateSalesDoc(),
                             'item'              => 0,
                             'material'          => $so['sap']['material'] ?? null,
                             'po_item_desc'      => $so['sap']['poItemDesc'] ?? null,
