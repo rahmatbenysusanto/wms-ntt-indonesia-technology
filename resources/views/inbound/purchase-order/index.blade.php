@@ -21,6 +21,7 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <h4 class="card-title mb-0">List Purchase Order</h4>
                         <div class="d-flex gap-2">
+                            <a href="{{ route('inbound.purchase-order-create') }}" class="btn btn-success">Create Manual PO</a>
                             <a href="{{ route('inbound.edit-purchase-order') }}" class="btn btn-warning">Edit Purchase
                                 Order</a>
                             <a href="{{ route('inbound.purchase-order-upload') }}" class="btn btn-info">Upload PO Excel</a>

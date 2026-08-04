@@ -100,6 +100,7 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
             Route::get('/detail', 'purchaseOrderDetail')->name('inbound.purchase-order-detail');
             Route::get('/upload', 'purchaseOrderUpload')->name('inbound.purchase-order-upload');
             Route::post('/upload', 'purchaseOrderUploadProcess')->name('inbound.purchase-order-upload-process');
+            Route::get('/create', 'purchaseOrderManualCreate')->name('inbound.purchase-order-create');
             Route::post('/update-status', 'changeStatusPurchaseOrder')->name('inbound.changeStatusPurchaseOrder');
             Route::post('/update-koli', 'updateKoli')->name('inbound.update-koli');
 

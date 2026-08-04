@@ -78,6 +78,14 @@ class InboundController extends Controller
         return view('inbound.purchase-order.upload', compact('title'));
     }
 
+    public function purchaseOrderManualCreate(): View
+    {
+        $title = "Create Purchase Order (Manual)";
+        $vendors = Vendor::orderBy('name')->get();
+        $customers = Customer::orderBy('name')->get();
+        return view('inbound.purchase-order.create', compact('title', 'vendors', 'customers'));
+    }
+
     /**
      * @throws GuzzleException
      */
