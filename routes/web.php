@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AiChatController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DashboardController;
@@ -310,6 +311,13 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
             Route::get('/convert', 'pendingConvert')->name('outbound.pending.convert');
             Route::post('/converted', 'pendingConverted')->name('outbound.pending.converted');
         });
+    });
+
+    Route::prefix('/ai-chat')->controller(AiChatController::class)->group(function () {
+        Route::post('/send', 'sendMessage')->name('ai-chat.send');
+        Route::get('/conversations', 'conversations')->name('ai-chat.conversations');
+        Route::get('/messages/{conversationId}', 'messages')->name('ai-chat.messages');
+        Route::delete('/conversation/{conversationId}', 'deleteConversation')->name('ai-chat.delete');
     });
 
     Route::prefix('/user')->controller(UserController::class)->group(function () {
