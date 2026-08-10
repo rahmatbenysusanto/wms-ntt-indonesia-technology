@@ -1153,6 +1153,134 @@ class OutboundController extends Controller
         }
     }
 
+    public function pendingEdit(Request $request): View
+    {
+        $pendingOutbound = \App\Models\PendingOutbound::with('details')
+            ->where('id', $request->get('id'))
+            ->where('status', 'pending')
+            ->firstOrFail();
+
+        $salesDoc = InventoryPackage::with('purchaseOrder', 'storage', 'purchaseOrder.customer')
+            ->where('qty', '!=', 0)
+            ->whereNotIn('storage_id', [2, 3, 4])
+            ->get();
+
+        $customer = Customer::all();
+        $title = 'Pending Outbound';
+        return view('outbound.pending.create', compact('title', 'customer', 'salesDoc', 'pendingOutbound'));
+    }
+
+    public function pendingUpdate(Request $request): \Illuminate\Http\JsonResponse
+    {
+        try {
+            DB::beginTransaction();
+            Log::channel('outbound')->info('Pending Outbound Update Started', ['user_id' => Auth::id()]);
+
+            $pendingId = $request->post('pending_id');
+            $pendingOutbound = \App\Models\PendingOutbound::where('id', $pendingId)
+                ->where('status', 'pending')
+                ->first();
+
+            if (!$pendingOutbound) {
+                return response()->json([
+                    'status'  => false,
+                    'message' => 'Pending outbound not found or already processed',
+                ]);
+            }
+
+            $products = $request->post('products');
+            $customerId = $request->post('customerId');
+            $customer = $customerId ? Customer::find($customerId) : null;
+
+            if (!$customer) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Customer non-existent or not selected'
+                ]);
+            }
+
+            if (empty($products)) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Product list cannot be empty'
+                ]);
+            }
+
+            $qty_item = 0;
+            $qty = 0;
+            $salesDocs = [];
+
+            // Update header
+            $pendingOutbound->update([
+                'customer_id'           => $customer->id,
+                'purc_doc'              => $products[0]['purcDoc'] ?? '',
+                'delivery_date'         => $request->post('deliveryDate'),
+                'delivery_note_number'  => $request->post('deliveryNoteNumber'),
+                'ntt_dn'                => $request->post('nttDn'),
+                'deliv_loc'             => $request->post('delivLocation'),
+                'deliv_dest'            => $request->post('deliveryDest'),
+                'koli'                  => $request->post('koli'),
+                'note'                  => $request->post('note'),
+            ]);
+
+            // Delete old details
+            \App\Models\PendingOutboundDetail::where('pending_outbound_id', $pendingOutbound->id)->delete();
+
+            // Insert new details
+            foreach ($products as $product) {
+                $prodDisable = (int)($product['disable'] ?? 1);
+                $prodQtySelect = (int)($product['qtySelect'] ?? 0);
+                $prodQty = (int)($product['qty'] ?? 0);
+
+                if ($prodDisable === 0 && $prodQtySelect > 0 && $prodQtySelect <= $prodQty) {
+                    \App\Models\PendingOutboundDetail::create([
+                        'pending_outbound_id'       => $pendingOutbound->id,
+                        'purchase_order_detail_id'  => $product['purchaseOrderDetailId'] ?? null,
+                        'inventory_package_item_id' => $product['inventoryPackageItemId'] ?? null,
+                        'product_id'                => $product['productId'] ?? null,
+                        'sales_doc'                 => $product['salesDoc'] ?? '',
+                        'material'                  => $product['material'] ?? '',
+                        'item'                      => $product['item'] ?? '',
+                        'po_item_desc'              => $product['poItemDesc'] ?? '',
+                        'qty'                       => $prodQtySelect,
+                    ]);
+
+                    $qty_item++;
+                    $qty += $prodQtySelect;
+                    $salesDocs[] = $product['salesDoc'];
+                }
+            }
+
+            if ($qty_item == 0) {
+                throw new \Exception('No valid products with qty > 0 to process');
+            }
+
+            $pendingOutbound->update([
+                'qty_item'   => $qty_item,
+                'qty'        => $qty,
+                'sales_docs' => json_encode(array_values(array_unique($salesDocs))),
+            ]);
+
+            DB::commit();
+            Log::channel('outbound')->info('Pending Outbound Updated', ['id' => $pendingOutbound->id]);
+
+            return response()->json([
+                'status'  => true,
+                'message' => 'Pending outbound updated successfully',
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::channel('outbound')->error('Pending Outbound Update Failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return response()->json([
+                'status'  => false,
+                'message' => $e->getMessage(),
+            ]);
+        }
+    }
+
     public function pendingDetail(Request $request): \Illuminate\Http\JsonResponse
     {
         $pendingOutbound = \App\Models\PendingOutbound::with('details', 'customer', 'createdBy')

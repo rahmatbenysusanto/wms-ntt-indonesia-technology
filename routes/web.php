@@ -304,6 +304,8 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
             Route::get('/create', 'pendingCreate')->name('outbound.pending.create');
             Route::post('/store', 'pendingStore')->name('outbound.pending.store');
             Route::get('/detail', 'pendingDetail')->name('outbound.pending.detail');
+            Route::get('/edit', 'pendingEdit')->name('outbound.pending.edit');
+            Route::post('/update', 'pendingUpdate')->name('outbound.pending.update');
             Route::delete('/delete', 'pendingDestroy')->name('outbound.pending.destroy');
             Route::get('/convert', 'pendingConvert')->name('outbound.pending.convert');
             Route::post('/converted', 'pendingConverted')->name('outbound.pending.converted');

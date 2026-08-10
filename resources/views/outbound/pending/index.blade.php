@@ -93,15 +93,22 @@
                                         <td>{{ $item->created_at->format('d M Y H:i') }}</td>
                                         <td>
                                             <div class="d-flex gap-1">
-                                                <a class="btn btn-success btn-sm" onclick="convertPending({{ $item->id }})"
+                                                <a class="btn btn-success btn-sm"
+                                                    onclick="convertPending({{ $item->id }})"
                                                     title="Convert to Outbound">
                                                     <i class="mdi mdi-transfer-right"></i> Convert
+                                                </a>
+                                                <a class="btn btn-warning btn-sm"
+                                                    href="{{ route('outbound.pending.edit', ['id' => $item->id]) }}"
+                                                    title="Edit">
+                                                    <i class="mdi mdi-pencil"></i> Edit
                                                 </a>
                                                 <a class="btn btn-info btn-sm" onclick="viewDetail({{ $item->id }})"
                                                     title="View Detail">
                                                     <i class="mdi mdi-eye"></i>
                                                 </a>
-                                                <a class="btn btn-danger btn-sm" onclick="cancelPending({{ $item->id }})"
+                                                <a class="btn btn-danger btn-sm"
+                                                    onclick="cancelPending({{ $item->id }})"
                                                     title="Cancel">
                                                     <i class="mdi mdi-delete"></i>
                                                 </a>

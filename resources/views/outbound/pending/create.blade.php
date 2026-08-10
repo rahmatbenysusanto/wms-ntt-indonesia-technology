@@ -1,12 +1,15 @@
+@php
+    $isEdit = isset($pendingOutbound);
+@endphp
 @extends('layout.index')
-@section('title', 'Create Pending Outbound')
+@section('title', $isEdit ? 'Edit Pending Outbound' : 'Create Pending Outbound')
 @section('sizeBarSize', 'sm')
 
 @section('content')
     <div class="row">
         <div class="col-12">
             <div class="page-title-box d-sm-flex align-items-center justify-content-between">
-                <h4 class="mb-sm-0">Create Pending Outbound</h4>
+                <h4 class="mb-sm-0">{{ $isEdit ? 'Edit Pending Outbound' : 'Create Pending Outbound' }}</h4>
                 <div class="page-title-right">
                     <ol class="breadcrumb m-0">
                         <li class="breadcrumb-item"><a href="javascript: void(0);">Outbound</a></li>
@@ -29,43 +32,50 @@
                             <select class="form-control select2Customer" id="customerId">
                                 <option value="">-- Select Customer --</option>
                                 @foreach ($customer as $item)
-                                    <option value="{{ $item->id }}">{{ $item->name }}</option>
+                                    <option value="{{ $item->id }}"
+                                        {{ $isEdit && $pendingOutbound->customer_id == $item->id ? 'selected' : '' }}>
+                                        {{ $item->name }}</option>
                                 @endforeach
                             </select>
                         </div>
                         <div class="col-6 mb-3">
                             <label class="form-label">Delivery Location</label>
-                            <input type="text" class="form-control" id="delivLocation">
+                            <input type="text" class="form-control" id="delivLocation"
+                                value="{{ $isEdit ? $pendingOutbound->deliv_loc : '' }}">
                         </div>
                         <div class="col-6 mb-3">
                             <label class="form-label">Delivery Destination</label>
                             <select class="form-control" id="deliveryDest">
-                                <option value="client">Client</option>
-                                <option value="general room">General Room</option>
-                                <option value="pm room">PM Room</option>
-                                <option value="spare room">Spare Room</option>
+                                <option value="client" {{ $isEdit && $pendingOutbound->deliv_dest == 'client' ? 'selected' : '' }}>Client</option>
+                                <option value="general room" {{ $isEdit && $pendingOutbound->deliv_dest == 'general room' ? 'selected' : '' }}>General Room</option>
+                                <option value="pm room" {{ $isEdit && $pendingOutbound->deliv_dest == 'pm room' ? 'selected' : '' }}>PM Room</option>
+                                <option value="spare room" {{ $isEdit && $pendingOutbound->deliv_dest == 'spare room' ? 'selected' : '' }}>Spare Room</option>
                             </select>
                         </div>
                         <div class="col-6 mb-3">
                             <label class="form-label">Delivery Date</label>
-                            <input type="datetime-local" class="form-control" id="deliveryDate">
+                            <input type="datetime-local" class="form-control" id="deliveryDate"
+                                value="{{ $isEdit && $pendingOutbound->delivery_date ? $pendingOutbound->delivery_date->format('Y-m-d\TH:i') : '' }}">
                         </div>
                         <div class="col-6 mb-3">
                             <label class="form-label">Delivery Note Number</label>
                             <input type="text" class="form-control" id="deliveryNoteNumber"
-                                placeholder="Delivery Note Number">
+                                placeholder="Delivery Note Number"
+                                value="{{ $isEdit ? $pendingOutbound->delivery_note_number : '' }}">
                         </div>
                         <div class="col-6 mb-3">
                             <label class="form-label">NTT DN</label>
-                            <input type="text" class="form-control" id="nttDn" placeholder="NTT DN - Optional">
+                            <input type="text" class="form-control" id="nttDn" placeholder="NTT DN - Optional"
+                                value="{{ $isEdit ? $pendingOutbound->ntt_dn : '' }}">
                         </div>
                         <div class="col-6 mb-3">
                             <label class="form-label">Jumlah Koli</label>
-                            <input type="number" class="form-control" id="koli" placeholder="Jumlah Koli - Optional">
+                            <input type="number" class="form-control" id="koli" placeholder="Jumlah Koli - Optional"
+                                value="{{ $isEdit ? $pendingOutbound->koli : '' }}">
                         </div>
                         <div class="col-6 mb-3">
                             <label class="form-label">Note</label>
-                            <textarea class="form-control" id="note" rows="3" placeholder="Note - Optional"></textarea>
+                            <textarea class="form-control" id="note" rows="3" placeholder="Note - Optional">{{ $isEdit ? $pendingOutbound->note : '' }}</textarea>
                         </div>
                     </div>
                 </div>
@@ -100,9 +110,15 @@
                 <div class="card-header">
                     <div class="d-flex justify-content-between align-items-center">
                         <h4 class="card-title mb-0">List Product</h4>
-                        <a class="btn btn-warning btn-sm me-1" onclick="savePending()">
-                            <i class="mdi mdi-content-save"></i> Save as Pending
-                        </a>
+                        <div>
+                            @if ($isEdit)
+                                <input type="hidden" id="pendingId" value="{{ $pendingOutbound->id }}">
+                            @endif
+                            <a class="btn btn-warning btn-sm me-1" onclick="savePending()">
+                                <i class="mdi mdi-content-save"></i>
+                                {{ $isEdit ? 'Update Pending' : 'Save as Pending' }}
+                            </a>
+                        </div>
                     </div>
                 </div>
                 <div class="card-body">
@@ -190,6 +206,44 @@
                 await kvSet('salesDoc', @json($salesDoc));
             } catch (e) { console.error('Gagal simpan salesDoc:', e); }
             await viewSalesDoc();
+
+            @if ($isEdit)
+                // Pre-fill products from existing pending data
+                try {
+                    const existingProducts = @json($pendingOutbound->details);
+                    const products = [];
+                    existingProducts.forEach((detail) => {
+                        products.push({
+                            inventoryPackageId: null,
+                            inventoryPackageItemId: detail.inventory_package_item_id,
+                            purchaseOrderId: detail.purchase_order_detail?.purchase_order_id ?? null,
+                            purchaseOrderDetailId: detail.purchase_order_detail_id,
+                            isParent: 0,
+                            directOutbound: 0,
+                            qty: detail.qty,
+                            qtySelect: detail.qty,
+                            productId: detail.product_id,
+                            material: detail.material,
+                            poItemDesc: detail.po_item_desc,
+                            prodHierarchyDesc: '',
+                            salesDoc: detail.sales_doc,
+                            purcDoc: '{{ $pendingOutbound->purc_doc }}',
+                            serialNumber: [],
+                            number: '-',
+                            reffNumber: '-',
+                            loc: '-',
+                            storageId: 1,
+                            disable: 0,
+                            item: detail.item
+                        });
+                    });
+                    await kvSet('salesDocProduct', products);
+                    await viewProductOutbound();
+                    console.log('Pre-filled ' + products.length + ' products from pending #{{ $pendingOutbound->id }}');
+                } catch (e) {
+                    console.error('Failed to pre-fill products:', e);
+                }
+            @endif
         });
 
         async function viewSalesDoc() {
@@ -340,12 +394,13 @@
                 return;
             }
 
+            const isEdit = $('#pendingId').length > 0;
             const t = await Swal.fire({
-                title: "Save as Pending?",
-                text: "Data will be saved to the pending outbound list",
+                title: isEdit ? "Update Pending?" : "Save as Pending?",
+                text: isEdit ? "Pending outbound data will be updated." : "Data will be saved to the pending outbound list",
                 icon: "info",
                 showCancelButton: true,
-                confirmButtonText: "Yes, Save it!",
+                confirmButtonText: isEdit ? "Yes, Update it!" : "Yes, Save it!",
                 cancelButtonText: "No",
                 buttonsStyling: false,
                 showCloseButton: true
@@ -357,25 +412,36 @@
                 return rest;
             });
 
+            const url = isEdit
+                ? '{{ route('outbound.pending.update') }}'
+                : '{{ route('outbound.pending.store') }}';
+            const data = {
+                _token: '{{ csrf_token() }}',
+                products: payload,
+                delivLocation: $('#delivLocation').val(),
+                customerId: $('#customerId').val(),
+                deliveryDest: $('#deliveryDest').val(),
+                deliveryDate: $('#deliveryDate').val() ?? '',
+                deliveryNoteNumber: $('#deliveryNoteNumber').val() ?? '',
+                nttDn: $('#nttDn').val() ?? '',
+                koli: $('#koli').val() ?? '',
+                note: $('#note').val() ?? '',
+            };
+            if (isEdit) {
+                data.pending_id = $('#pendingId').val();
+            }
+
             $.ajax({
-                url: '{{ route('outbound.pending.store') }}',
+                url: url,
                 method: 'POST',
-                data: {
-                    _token: '{{ csrf_token() }}',
-                    products: payload,
-                    delivLocation: $('#delivLocation').val(),
-                    customerId: $('#customerId').val(),
-                    deliveryDest: $('#deliveryDest').val(),
-                    deliveryDate: $('#deliveryDate').val() ?? '',
-                    deliveryNoteNumber: $('#deliveryNoteNumber').val() ?? '',
-                    nttDn: $('#nttDn').val() ?? '',
-                    koli: $('#koli').val() ?? '',
-                    note: $('#note').val() ?? '',
-                },
+                data: data,
                 success: (res) => {
                     if (res?.status) {
-                        Swal.fire({ title: 'Success', text: 'Pending outbound saved successfully', icon: 'success' })
-                            .then(() => { window.location.href = '{{ route('outbound.pending.index') }}'; });
+                        Swal.fire({
+                            title: 'Success',
+                            text: isEdit ? 'Pending outbound updated successfully' : 'Pending outbound saved successfully',
+                            icon: 'success'
+                        }).then(() => { window.location.href = '{{ route('outbound.pending.index') }}'; });
                     } else {
                         Swal.fire({ title: 'Error', text: res?.message || 'Save failed', icon: 'error' });
                     }
