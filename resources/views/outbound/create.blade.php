@@ -869,4 +869,58 @@
             });
         };
     </script>
+
+    {{-- Pre-fill from Pending Outbound --}}
+    <script>
+        (function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const pendingId = urlParams.get('pending_id');
+            if (!pendingId) return;
+
+            const pendingData = sessionStorage.getItem('pendingOutboundConvert');
+            if (!pendingData) return;
+
+            try {
+                const d = JSON.parse(pendingData);
+                // Pre-fill header form fields
+                if (d.customer_id) $('#customerId').val(d.customer_id).trigger('change');
+                if (d.deliv_loc) $('#delivLocation').val(d.deliv_loc);
+                if (d.deliv_dest) $('#deliveryDest').val(d.deliv_dest);
+                if (d.delivery_date) $('#deliveryDate').val(d.delivery_date);
+                if (d.delivery_note_number) $('#deliveryNoteNumber').val(d.delivery_note_number);
+                if (d.ntt_dn) $('#nttDn').val(d.ntt_dn);
+                if (d.koli) $('#koli').val(d.koli);
+
+                // Intercept the createOrder function to also mark pending as converted after success
+                const originalCreateOrder = window.createOrder;
+                window.createOrder = async function() {
+                    // Store pending_id for marking after success
+                    window._pendingConvertId = pendingId;
+                    return originalCreateOrder();
+                };
+
+                // Intercept the AJAX success to mark pending as converted
+                $(document).ajaxSuccess(function(event, xhr, settings) {
+                    if (settings.url.includes('{{ route('outbound.store') }}') && window._pendingConvertId) {
+                        const pendingId = window._pendingConvertId;
+                        window._pendingConvertId = null;
+                        sessionStorage.removeItem('pendingOutboundConvert');
+                        // Mark as converted
+                        $.ajax({
+                            url: '{{ route('outbound.pending.converted') }}',
+                            method: 'POST',
+                            data: {
+                                _token: '{{ csrf_token() }}',
+                                id: pendingId
+                            }
+                        });
+                    }
+                });
+
+                console.log('Pending outbound data pre-filled from #' + pendingId);
+            } catch (e) {
+                console.error('Failed to pre-fill pending data:', e);
+            }
+        })();
+    </script>
 @endsection

@@ -370,18 +370,34 @@
 
                         @if (Session::get('userHasMenu')->contains('Order List'))
                             <li class="nav-item">
-                                <a class="nav-link menu-link {{ $title == 'Outbound' ? 'active' : '' }}"
+                                <a class="nav-link menu-link {{ in_array($title, ['Outbound', 'Pending Outbound']) ? 'active' : '' }}"
                                     href="#sidebarOutbound" data-bs-toggle="collapse" role="button"
                                     aria-expanded="false" aria-controls="sidebarOutbound">
                                     <i class="mdi mdi-package-up"></i> <span data-key="t-dashboards">Outbound</span>
+                                    @php
+                                        $pendingCount = \App\Models\PendingOutbound::where('status', 'pending')->count();
+                                    @endphp
+                                    @if ($pendingCount > 0)
+                                        <span class="badge bg-danger ms-1">{{ $pendingCount }}</span>
+                                    @endif
                                 </a>
-                                <div class="collapse menu-dropdown {{ $title == 'Outbound' ? 'show' : '' }}"
+                                <div class="collapse menu-dropdown {{ in_array($title, ['Outbound', 'Pending Outbound']) ? 'show' : '' }}"
                                     id="sidebarOutbound">
                                     <ul class="nav nav-sm flex-column">
                                         <li class="nav-item">
                                             <a href="{{ route('outbound.index') }}"
                                                 class="nav-link {{ $title == 'Outbound' ? 'active' : '' }}"
                                                 data-key="t-analytics"> Order List </a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a href="{{ route('outbound.pending.index') }}"
+                                                class="nav-link {{ $title == 'Pending Outbound' ? 'active' : '' }} d-flex align-items-center"
+                                                data-key="t-analytics">
+                                                Pending List
+                                                @if ($pendingCount > 0)
+                                                    <span class="badge bg-danger ms-2">{{ $pendingCount }}</span>
+                                                @endif
+                                            </a>
                                         </li>
                                     </ul>
                                 </div>

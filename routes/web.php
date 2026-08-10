@@ -297,6 +297,17 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
         Route::get('/download-pdf', 'downloadPdf')->name('outbound.download-pdf');
         Route::get('/report/download-pdf', 'reportDownloadPdf')->name('report.outbound.pdf');
         Route::get('/report/download-excel', 'reportDownloadExcel')->name('report.outbound.excel');
+
+        // Pending Outbound
+        Route::prefix('/pending')->group(function () {
+            Route::get('/', 'pendingIndex')->name('outbound.pending.index');
+            Route::get('/create', 'pendingCreate')->name('outbound.pending.create');
+            Route::post('/store', 'pendingStore')->name('outbound.pending.store');
+            Route::get('/detail', 'pendingDetail')->name('outbound.pending.detail');
+            Route::delete('/delete', 'pendingDestroy')->name('outbound.pending.destroy');
+            Route::get('/convert', 'pendingConvert')->name('outbound.pending.convert');
+            Route::post('/converted', 'pendingConverted')->name('outbound.pending.converted');
+        });
     });
 
     Route::prefix('/user')->controller(UserController::class)->group(function () {

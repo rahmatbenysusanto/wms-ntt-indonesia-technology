@@ -1019,4 +1019,296 @@ class OutboundController extends Controller
         ];
         return $romans[$month] ?? $month;
     }
-}
+
+    // ==================== PENDING OUTBOUND ====================
+
+    public function pendingIndex(Request $request): View
+    {
+        $pendingOutbounds = \App\Models\PendingOutbound::with('customer', 'createdBy')
+            ->where('status', 'pending')
+            ->when($request->query('purcDoc'), function ($query) use ($request) {
+                $query->where('purc_doc', 'like', '%' . $request->query('purcDoc') . '%');
+            })
+            ->when($request->query('client'), function ($query) use ($request) {
+                $query->where('customer_id', $request->query('client'));
+            })
+            ->latest()
+            ->paginate(10)
+            ->appends($request->query());
+
+        $customer = Customer::all();
+        $title = 'Pending Outbound';
+        return view('outbound.pending.index', compact('title', 'pendingOutbounds', 'customer'));
+    }
+
+    public function pendingCreate(): View
+    {
+        $salesDoc = InventoryPackage::with('purchaseOrder', 'storage', 'purchaseOrder.customer')
+            ->where('qty', '!=', 0)
+            ->whereNotIn('storage_id', [2, 3, 4])
+            ->get();
+
+        $customer = Customer::all();
+        $title = 'Pending Outbound';
+        return view('outbound.pending.create', compact('title', 'customer', 'salesDoc'));
+    }
+
+    public function pendingStore(Request $request): \Illuminate\Http\JsonResponse
+    {
+        try {
+            DB::beginTransaction();
+            Log::channel('outbound')->info('Pending Outbound Store Started', ['user_id' => Auth::id()]);
+
+            $products = $request->post('products');
+            $customerId = $request->post('customerId');
+            $customer = $customerId ? Customer::find($customerId) : null;
+
+            if (!$customer) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Customer non-existent or not selected'
+                ]);
+            }
+
+            if (empty($products)) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Product list cannot be empty'
+                ]);
+            }
+
+            $qty_item = 0;
+            $qty = 0;
+            $salesDocs = [];
+
+            $pendingOutbound = \App\Models\PendingOutbound::create([
+                'customer_id'           => $customer->id,
+                'purc_doc'              => $products[0]['purcDoc'] ?? '',
+                'sales_docs'            => json_encode([]),
+                'qty_item'              => 0,
+                'qty'                   => 0,
+                'delivery_date'         => $request->post('deliveryDate'),
+                'delivery_note_number'  => $request->post('deliveryNoteNumber'),
+                'ntt_dn'                => $request->post('nttDn'),
+                'deliv_loc'             => $request->post('delivLocation'),
+                'deliv_dest'            => $request->post('deliveryDest'),
+                'koli'                  => $request->post('koli'),
+                'note'                  => $request->post('note'),
+                'status'                => 'pending',
+                'created_by'            => Auth::id(),
+            ]);
+
+            foreach ($products as $product) {
+                $prodDisable = (int)($product['disable'] ?? 1);
+                $prodQtySelect = (int)($product['qtySelect'] ?? 0);
+                $prodQty = (int)($product['qty'] ?? 0);
+
+                if ($prodDisable === 0 && $prodQtySelect > 0 && $prodQtySelect <= $prodQty) {
+                    \App\Models\PendingOutboundDetail::create([
+                        'pending_outbound_id'       => $pendingOutbound->id,
+                        'purchase_order_detail_id'  => $product['purchaseOrderDetailId'] ?? null,
+                        'inventory_package_item_id' => $product['inventoryPackageItemId'] ?? null,
+                        'product_id'                => $product['productId'] ?? null,
+                        'sales_doc'                 => $product['salesDoc'] ?? '',
+                        'material'                  => $product['material'] ?? '',
+                        'item'                      => $product['item'] ?? '',
+                        'po_item_desc'              => $product['poItemDesc'] ?? '',
+                        'qty'                       => $prodQtySelect,
+                    ]);
+
+                    $qty_item++;
+                    $qty += $prodQtySelect;
+                    $salesDocs[] = $product['salesDoc'];
+                }
+            }
+
+            if ($qty_item == 0) {
+                throw new \Exception('No valid products with qty > 0 to process');
+            }
+
+            \App\Models\PendingOutbound::where('id', $pendingOutbound->id)->update([
+                'qty_item'   => $qty_item,
+                'qty'        => $qty,
+                'sales_docs' => json_encode(array_values(array_unique($salesDocs))),
+            ]);
+
+            DB::commit();
+            Log::channel('outbound')->info('Pending Outbound Stored', ['id' => $pendingOutbound->id]);
+
+            return response()->json([
+                'status'  => true,
+                'message' => 'Pending outbound saved successfully',
+                'data'    => $pendingOutbound,
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::channel('outbound')->error('Pending Outbound Store Failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return response()->json([
+                'status'  => false,
+                'message' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    public function pendingDetail(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $pendingOutbound = \App\Models\PendingOutbound::with('details', 'customer', 'createdBy')
+            ->where('id', $request->get('id'))
+            ->first();
+
+        if (!$pendingOutbound) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'Pending outbound not found',
+            ]);
+        }
+
+        return response()->json([
+            'status' => true,
+            'data'   => $pendingOutbound,
+        ]);
+    }
+
+    public function pendingDestroy(Request $request): \Illuminate\Http\JsonResponse
+    {
+        try {
+            $pendingOutbound = \App\Models\PendingOutbound::find($request->get('id'));
+
+            if (!$pendingOutbound) {
+                return response()->json([
+                    'status'  => false,
+                    'message' => 'Pending outbound not found',
+                ]);
+            }
+
+            if ($pendingOutbound->status !== 'pending') {
+                return response()->json([
+                    'status'  => false,
+                    'message' => 'Only pending items can be cancelled',
+                ]);
+            }
+
+            $pendingOutbound->update([
+                'status' => 'cancelled',
+            ]);
+
+            Log::channel('outbound')->info('Pending Outbound Cancelled', [
+                'id'     => $pendingOutbound->id,
+                'user_id' => Auth::id(),
+            ]);
+
+            return response()->json([
+                'status'  => true,
+                'message' => 'Pending outbound cancelled successfully',
+            ]);
+        } catch (\Exception $e) {
+            Log::channel('outbound')->error('Pending Outbound Cancel Failed', [
+                'error' => $e->getMessage(),
+            ]);
+            return response()->json([
+                'status'  => false,
+                'message' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    public function pendingConvert(Request $request): \Illuminate\Http\JsonResponse
+    {
+        try {
+            DB::beginTransaction();
+
+            $pendingOutbound = \App\Models\PendingOutbound::with('details')
+                ->where('id', $request->get('id'))
+                ->where('status', 'pending')
+                ->first();
+
+            if (!$pendingOutbound) {
+                return response()->json([
+                    'status'  => false,
+                    'message' => 'Pending outbound not found or already converted',
+                ]);
+            }
+
+            // Not actually converting here — just pass the data to the frontend.
+            // The frontend will redirect to outbound.create with the data pre-filled.
+            // Actual conversion (status → 'converted') happens after the real outbound is created.
+            // For now, mark it so the frontend knows it can proceed.
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Ready to convert',
+                'data'   => [
+                    'pending_id'             => $pendingOutbound->id,
+                    'customer_id'            => $pendingOutbound->customer_id,
+                    'deliv_loc'              => $pendingOutbound->deliv_loc,
+                    'deliv_dest'             => $pendingOutbound->deliv_dest,
+                    'delivery_date'          => $pendingOutbound->delivery_date?->format('Y-m-d\TH:i'),
+                    'delivery_note_number'   => $pendingOutbound->delivery_note_number,
+                    'ntt_dn'                 => $pendingOutbound->ntt_dn,
+                    'koli'                   => $pendingOutbound->koli,
+                    'details'                => $pendingOutbound->details->map(function ($d) {
+                        return [
+                            'inventory_package_item_id' => $d->inventory_package_item_id,
+                            'sales_doc'                 => $d->sales_doc,
+                            'material'                  => $d->material,
+                            'item'                      => $d->item,
+                            'po_item_desc'              => $d->po_item_desc,
+                            'qty'                       => $d->qty,
+                            'product_id'                => $d->product_id,
+                            'purchase_order_detail_id'  => $d->purchase_order_detail_id,
+                        ];
+                    }),
+                ],
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::channel('outbound')->error('Pending Outbound Convert Failed', [
+                'error' => $e->getMessage(),
+            ]);
+            return response()->json([
+                'status'  => false,
+                'message' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    public function pendingConverted(Request $request): \Illuminate\Http\JsonResponse
+    {
+        try {
+            $pendingOutbound = \App\Models\PendingOutbound::find($request->get('id'));
+
+            if (!$pendingOutbound) {
+                return response()->json([
+                    'status'  => false,
+                    'message' => 'Pending outbound not found',
+                ]);
+            }
+
+            $pendingOutbound->update([
+                'status'       => 'converted',
+                'converted_by' => Auth::id(),
+                'converted_at' => now(),
+            ]);
+
+            Log::channel('outbound')->info('Pending Outbound Marked as Converted', [
+                'id'     => $pendingOutbound->id,
+                'user_id' => Auth::id(),
+            ]);
+
+            return response()->json([
+                'status'  => true,
+                'message' => 'Pending outbound marked as converted',
+            ]);
+        } catch (\Exception $e) {
+            Log::channel('outbound')->error('Pending Outbound Converted Failed', [
+                'error' => $e->getMessage(),
+            ]);
+            return response()->json([
+                'status'  => false,
+                'message' => $e->getMessage(),
+            ]);
+        }
+    }
