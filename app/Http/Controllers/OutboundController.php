@@ -1312,3 +1312,4 @@ class OutboundController extends Controller
             ]);
         }
     }
+}
