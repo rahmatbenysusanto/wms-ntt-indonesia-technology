@@ -12,6 +12,7 @@ class ProductPackage extends Model
         'qty_item',
         'qty',
         'status',
+        'note',
         'created_by'
     ];
 

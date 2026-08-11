@@ -451,6 +451,7 @@ class InboundController extends Controller
                     'qty_item'          => count($products),
                     'qty'               => 0,
                     'status'            => 'open',
+                    'note'              => $request->post('note'),
                     'created_by'        => Auth::id(),
                 ]);
 
@@ -462,7 +463,8 @@ class InboundController extends Controller
                         'product_id'                => $purchaseOrderDetail->product_id,
                         'purchase_order_detail_id'  => $product['id'],
                         'is_parent'                 => $product['parent'],
-                        'qty'                       => $product['qty'] - $product['qtyDirect']
+                        'qty'                       => $product['qty'] - $product['qtyDirect'],
+                        'note'                      => $product['note'] ?? null,
                     ]);
 
                     foreach ($product['serialNumber'] ?? [] as $serialNumber) {
@@ -528,7 +530,8 @@ class InboundController extends Controller
                                 'purchase_order_detail_id'  => $product['id'],
                                 'is_parent'                 => $product['parent'],
                                 'direct_outbound'           => 1,
-                                'qty'                       => $qtyDirectSN
+                                'qty'                       => $qtyDirectSN,
+                                'note'                      => $product['note'] ?? null,
                             ]);
 
                             $inventoryPackageItem = InventoryPackageItem::create([
@@ -1277,6 +1280,7 @@ class InboundController extends Controller
                 'qty_item'          => 0,
                 'qty'               => 0,
                 'status'            => 'open',
+                'note'              => $request->post('note'),
                 'created_by'        => Auth::id()
             ]);
 
@@ -1313,6 +1317,7 @@ class InboundController extends Controller
                         'purchase_order_detail_id'  => $so['id'],
                         'is_parent'                 => $isParent ? 1 : 0,
                         'qty'                       => $so['qty'],
+                        'note'                      => $item['note'] ?? null,
                     ]);
 
                     $snBulkData = [];
@@ -1385,6 +1390,7 @@ class InboundController extends Controller
                                     'is_parent'                 => 0,
                                     'direct_outbound'           => 1,
                                     'qty'                       => $salesDoc['qtyDirect'],
+                                    'note'                      => $item['note'] ?? null,
                                 ]);
 
                                 // Serial Number (bulk insert)

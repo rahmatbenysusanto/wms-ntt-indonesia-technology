@@ -15,6 +15,7 @@ class ProductPackageItem extends Model
         'direct_outbound',
         'qty',
         'qty_pa',
+        'note',
     ];
 
     public function product(): \Illuminate\Database\Eloquent\Relations\BelongsTo

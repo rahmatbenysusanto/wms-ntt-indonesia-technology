@@ -101,7 +101,17 @@
                 <div class="card-header">
                     <div class="d-flex justify-content-between align-items-center">
                         <h4 class="card-title mb-0">Quality Control Items</h4>
-                        <a class="btn btn-primary" onclick="processQC()">Process Quality Control</a>
+                        <div class="d-flex gap-2 align-items-center">
+                            <a class="btn btn-primary" onclick="processQC()">Process Quality Control</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body border-bottom">
+                    <div class="row">
+                        <div class="col-12">
+                            <label class="form-label fw-bold">QC Note (Master)</label>
+                            <textarea class="form-control" id="noteMaster" rows="2" placeholder="Tambahkan note untuk QC ini..."></textarea>
+                        </div>
                     </div>
                 </div>
                 <div class="card-body">
@@ -119,6 +129,7 @@
                                     <th>Hierarchy Desc</th>
                                     <th class="text-center">QTY</th>
                                     <th>Serial Number</th>
+                                    <th>Note</th>
                                     <th>Action</th>
                                 </tr>
                             </thead>
@@ -569,6 +580,12 @@
             viewMappingList();
         }
 
+        function changeNoteProduct(index, indexProduct, value) {
+            const qc = JSON.parse(localStorage.getItem('qc')) ?? [];
+            qc[index][indexProduct].note = value;
+            localStorage.setItem('qc', JSON.stringify(qc));
+        }
+
         function deleteMappingItem(index, detailIndex) {
             const mapping = JSON.parse(localStorage.getItem('mapping')) ?? [];
             const products = JSON.parse(localStorage.getItem('master')) ?? [];
@@ -609,7 +626,8 @@
                     putAwayStep: 1,
                     parent: item.parent,
                     qtyDirect: 0,
-                    SnDirect: []
+                    SnDirect: [],
+                    note: ''
                 });
             });
 
@@ -653,6 +671,7 @@
                             <td>${product.type}</td>
                             <td class="text-center fw-bold">${product.qty}</td>
                             <td><a class="btn ${(parseInt(product.serialNumber.length) + parseInt(product.SnDirect.length ?? [])) === parseInt(product.qty) ? 'btn-success' : 'btn-info'} btn-sm" onclick="serialNumber(${index}, ${indexProduct})">Serial Number</a></td>
+                            <td><input type="text" class="form-control form-control-sm" value="${product.note || ''}" onchange="changeNoteProduct(${index}, ${indexProduct}, this.value)" placeholder="Note..."></td>
                             <td>${indexProduct === 0 ? `<a class="btn btn-danger btn-sm" onclick="deleteQC(${index})">Delete</a>` : ''}</td>
                         </tr>
                     `;
@@ -1132,6 +1151,7 @@
                             _token: '{{ csrf_token() }}',
                             qualityControl: qualityControl,
                             purchaseOrderId: '{{ request()->get('id') }}',
+                            note: document.getElementById('noteMaster').value,
                         },
                         success: (res) => {
                             if (res.status) {

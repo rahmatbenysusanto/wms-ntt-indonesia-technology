@@ -52,6 +52,14 @@
                         </div>
                     </div>
                 </div>
+                <div class="card-body border-bottom">
+                    <div class="row">
+                        <div class="col-12">
+                            <label class="form-label fw-bold">QC Note (Master)</label>
+                            <textarea class="form-control" id="noteMaster" rows="2" placeholder="Tambahkan note untuk QC CCW ini..."></textarea>
+                        </div>
+                    </div>
+                </div>
                 <div class="card-body">
                     <div class="table-responsive">
                         <table class="table table-striped align-middle" id="tableListProduct">
@@ -65,6 +73,7 @@
                                     <th>Item Desc</th>
                                     <th class="text-center">QTY</th>
                                     <th>Sales Doc</th>
+                                    <th>Note</th>
                                     <th>Action</th>
                                 </tr>
                             </thead>
@@ -502,6 +511,7 @@
                         listSalesDoc: [],
                         purchaseOrderDetailId: null,
                         putAwayStep: 1,
+                        note: '',
                         snAvailable: snList.map(sn => ({
                             serialNumber: sn,
                             status: true
@@ -620,6 +630,7 @@
           <td>${item.itemDesc}</td>
           <td class="text-center fw-bold">${item.qty}</td>
           <td><div class="d-flex flex-column gap-2">${htmlSalesDoc}</div></td>
+          <td><input type="text" class="form-control form-control-sm" value="${item.note || ''}" onchange="changeNoteCCW(${index}, this.value)" placeholder="Note..."></td>
           <td>
             <div class="d-flex gap-2">
                 ${(toInt(item.qty) === toInt(item.qtyAdd)) ? '' : `
@@ -955,6 +966,12 @@
                     });
                 }
             });
+        }
+
+        async function changeNoteCCW(index, value) {
+            const compare = await storage.getJSON('compare', []);
+            compare[index].note = value;
+            await storage.setJSON('compare', compare);
         }
 
         // ================================
@@ -1476,7 +1493,8 @@
                             data: {
                                 _token: '{{ csrf_token() }}',
                                 fileName: await storage.getJSON('fileName'),
-                                purchaseOrderId: '{{ request()->get('id') }}'
+                                purchaseOrderId: '{{ request()->get('id') }}',
+                                note: document.getElementById('noteMaster').value,
                             },
                             success: (res) => {
                                 if (res.status) {
