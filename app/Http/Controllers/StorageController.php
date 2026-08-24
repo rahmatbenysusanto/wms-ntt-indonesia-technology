@@ -22,10 +22,12 @@ class StorageController extends Controller
     public function getArea(Request $request): \Illuminate\Http\JsonResponse
     {
         $area = Storage::where('raw', $request->get('raw'))
-            ->where('area', '!=', null)
-            ->where('rak', null)
-            ->where('bin', null)
+            ->whereNotNull('area')
+            ->whereNull('rak')
+            ->whereNull('bin')
             ->whereNull('deleted_at')
+            ->select('area')
+            ->distinct()
             ->get();
 
         return response()->json([
@@ -37,9 +39,11 @@ class StorageController extends Controller
     {
         $area = Storage::where('raw', $request->get('raw'))
             ->where('area', $request->get('area'))
-            ->where('rak', '!=', null)
-            ->where('bin', null)
+            ->whereNotNull('rak')
+            ->whereNull('bin')
             ->whereNull('deleted_at')
+            ->select('rak')
+            ->distinct()
             ->get();
 
         return response()->json([

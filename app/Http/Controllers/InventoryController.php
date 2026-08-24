@@ -531,7 +531,7 @@ class InventoryController extends Controller
             ->whereNotIn('storage_id', [1, 2, 3, 4])
             ->get();
 
-        $storageRaw = Storage::whereNull('area')->whereNull('rak')->whereNull('bin')->whereNotIn('id', [1, 2, 3, 4])->whereNull('deleted_at')->get();
+        $storageRaw = Storage::whereNull('area')->whereNull('rak')->whereNull('bin')->whereNotIn('id', [1, 2, 3, 4])->whereNull('deleted_at')->select('raw')->distinct()->get();
 
         $title = 'Transfer Location';
         return view('inventory.transfer-location.create', compact('title', 'listBox', 'storageRaw'));
@@ -641,11 +641,13 @@ class InventoryController extends Controller
             ->get();
 
         $storageRaw = Storage::where('raw', '!=', '-')
-            ->where('area', null)
-            ->where('rak', null)
-            ->where('bin', null)
+            ->whereNull('area')
+            ->whereNull('rak')
+            ->whereNull('bin')
             ->whereNotIn('id', [1, 2, 3, 4])
             ->whereNull('deleted_at')
+            ->select('raw')
+            ->distinct()
             ->get();
 
         $title = 'Inventory Box';

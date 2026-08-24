@@ -137,6 +137,9 @@ class GeneralRoomController extends Controller
             ->whereNull('area')
             ->whereNull('rak')
             ->whereNull('bin')
+            ->whereNull('deleted_at')
+            ->select('raw')
+            ->distinct()
             ->get();
 
         $salesDoc = InventoryPackage::with('purchaseOrder', 'storage')

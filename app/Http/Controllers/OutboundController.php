@@ -622,6 +622,9 @@ class OutboundController extends Controller
             ->whereNull('area')
             ->whereNull('rak')
             ->whereNull('bin')
+            ->whereNull('deleted_at')
+            ->select('raw')
+            ->distinct()
             ->get();
 
         $dataMasterBox = InventoryPackage::whereNotIn('storage_id', [1, 2, 3, 4])
