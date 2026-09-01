@@ -83,8 +83,8 @@
                                             @endforeach
                                         </td>
                                         <td>{{ $item->purchaseOrder->customer->name }}</td>
-                                        <td>{{ $item->product->product->material }}</td>
-                                        <td>{{ $item->product->product->po_item_desc }}</td>
+                                        <td>{{ $item->product?->product?->material ?? '-' }}</td>
+                                        <td>{{ $item->product?->product?->po_item_desc ?? '-' }}</td>
                                         <td class="text-center fw-bold">{{ number_format($item->qty_item) }}</td>
                                         <td class="text-center fw-bold">{{ number_format($item->parent) }}</td>
                                         <td class="text-center fw-bold">

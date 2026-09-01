@@ -689,6 +689,12 @@ class InboundController extends Controller
                 })
                 ->first();
 
+            if (!$productPackageItemParent) {
+                $productPackageItemParent = ProductPackageItem::with('product')
+                    ->where('product_package_id', $product->id)
+                    ->first();
+            }
+
             $productPackageItem = ProductPackageItem::with('purchaseOrderDetail')
                 ->where('product_package_id', $product->id)
                 ->get();
