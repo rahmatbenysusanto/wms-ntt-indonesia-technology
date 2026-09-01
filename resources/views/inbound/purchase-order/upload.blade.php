@@ -82,6 +82,9 @@
     {{-- Penting: JANGAN pakai defer, biar XLSX siap sebelum dipakai --}}
     <script src="{{ asset('assets/js/xlsx.full.min.js') }}"></script>
 
+    {{-- Pembersih baris kosong file SAP (harus dimuat setelah xlsx, sebelum dipakai) --}}
+    <script src="{{ asset('assets/js/excel-trim.js') }}"></script>
+
     <script>
         /* ================= Storage helper (Memory instead of sessionStorage) ================= */
         // SessionStorage memiliki limit (5-10MB). Untuk file besar, gunakan variabel global.
@@ -185,6 +188,10 @@
         /* ================= Konfigurasi preview (0 = tampilkan semua) ================= */
         const PREVIEW_LIMIT = 0;
 
+        /* ================= Batas keamanan parsing & import ================= */
+        const MAX_ROWS = 10000;         // baris maksimum yang diproses dari file Excel
+        const BATCH_TIMEOUT_MS = 120000; // timeout per batch ke server (ms)
+
         /* ================= Table render ================= */
         function renderTable(rows) {
             const tbody = document.getElementById("dataUploadFile");
@@ -245,6 +252,31 @@
             return '';
         }
 
+        /* Aman untuk disisipkan ke Swal html — jangan pernah render data user tanpa ini */
+        function escapeHtml(s) {
+            return String(s ?? '').replace(/[&<>"']/g, (ch) => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            })[ch]);
+        }
+
+        function colToNum(a) { let n = 0; for (const ch of a) n = n * 26 + (ch.charCodeAt(0) - 64); return n; }
+        function numToCol(n) { let s = ''; while (n > 0) { n--; s = String.fromCharCode(65 + (n % 26)) + s; n = Math.floor(n / 26); } return s; }
+
+        /* Potong ws['!ref'] ke batas sel yang benar-benar berisi data (scan key sel, instan) */
+        function trimSheetRef(ws) {
+            let maxR = 0, maxC = 0;
+            for (const k of Object.keys(ws)) {
+                if (k[0] === '!') continue; // skip '!ref', '!cols', '!merges', dll.
+                const m = k.match(/^([A-Z]+)(\d+)$/);
+                if (!m) continue;
+                const c = colToNum(m[1]), r = +m[2];
+                if (r > maxR) maxR = r;
+                if (c > maxC) maxC = c;
+            }
+            if (maxR > 0 && maxC > 0) ws['!ref'] = 'A1:' + numToCol(maxC) + maxR;
+            return ws;
+        }
+
         function mapRowByIndex(row, idx) {
             const materialRaw = row[idx['Material']];
             return {
@@ -296,13 +328,49 @@
                     // beri napas 1 frame biar spinner terlihat
                     await nextFrame();
 
-                    // Parse workbook
-                    const wb = XLSX.read(new Uint8Array(e.target.result), {
-                        type: 'array'
+                    // === 0) Bersihkan baris kosong file SAP + deteksi ukuran (cepat, non-blocking) ===
+                    // File export SAP sering mengklaim 1 juta baris padahal data hanya puluhan baris;
+                    // ExcelTrim membuang baris kosong itu dari XML SEBELUM parse → SheetJS jadi instan.
+                    let capInfo = null;
+                    try {
+                        capInfo = await ExcelTrim.prepare(e.target.result, MAX_ROWS);
+                    } catch (err) {
+                        console.warn('ExcelTrim.prepare gagal, lanjut parse langsung:', err);
+                    }
+
+                    let fileBuffer = e.target.result;
+                    if (capInfo && capInfo.firstDataRowBeyondCap) {
+                        closeProgressModal();
+                        const keep = await Swal.fire({
+                            title: 'File terlalu besar',
+                            html: `File memiliki data nyata sampai baris <b>${capInfo.firstDataRowBeyondCap.toLocaleString('id-ID')}</b>
+                                   (dimensi diklaim ${capInfo.declaredRows.toLocaleString('id-ID')} baris).<br>
+                                   Hanya <b>${MAX_ROWS.toLocaleString('id-ID')}</b> baris pertama yang akan diproses.<br>
+                                   <small>Jika ini bukan yang diinginkan, pilih Batal dan minta file dari SAP dengan data lebih sedikit.</small>`,
+                            icon: 'warning',
+                            showCancelButton: true,
+                            confirmButtonText: 'Lanjutkan',
+                            cancelButtonText: 'Batal',
+                            customClass: { confirmButton: "btn btn-primary w-xs me-2 mt-2", cancelButton: "btn btn-danger w-xs mt-2" },
+                            buttonsStyling: false
+                        });
+                        if (!keep.value) return;
+                        showBusyModal('Membaca & menyiapkan file…');
+                        await nextFrame();
+                    }
+                    if (capInfo) fileBuffer = capInfo.buffer;
+
+                    // === 1) Parse workbook — DIBATASI agar file dengan jutaan baris kosong tidak menggantung ===
+                    const wb = XLSX.read(new Uint8Array(fileBuffer), {
+                        type: 'array',
+                        sheetRows: MAX_ROWS // hentikan pembacaan baris di MAX_ROWS
                     });
                     const ws = wb.Sheets[wb.SheetNames[0]];
 
-                    // === 1) Baca sebagai JSON baris-objek (stabil), JANGAN 2D-array
+                    // === 1b) Potong !ref ke batas sel nyata (membuat sheet_to_json instan) ===
+                    trimSheetRef(ws);
+
+                    // === 1c) Baca sebagai JSON baris-objek (stabil), JANGAN 2D-array
                     const json = XLSX.utils.sheet_to_json(ws, {
                         defval: "", // kosong jadi string kosong (bukan undefined)
                         raw: true, // angka/tanggal tetap mentah, kita olah sendiri
@@ -367,6 +435,30 @@
                         created_on: pickHeader("created on")
                     };
 
+                    // === 2b) Validasi kolom WAJIB — dulu gagal diam-diam (nilai kosong), sekarang pesan jelas ===
+                    const REQUIRED_COLUMNS = [
+                        { key: 'purc_doc', label: 'Pur. Doc.', aliases: aliases['pur. doc.'] },
+                        { key: 'item', label: 'Item', aliases: aliases['item'] },
+                        { key: 'material', label: 'Material', aliases: aliases['material'] },
+                    ];
+                    const missing = REQUIRED_COLUMNS.filter(c => !H[c.key]);
+                    if (missing.length) {
+                        closeProgressModal();
+                        const foundHeaders = Object.keys(json[0] || {});
+                        const detail = missing.map(c =>
+                            `<div class="text-start mb-1">• Kolom <b>${escapeHtml(c.label)}</b> tidak ditemukan — nama yang diterima: ${c.aliases.map(a => `"${escapeHtml(a)}"`).join(', ')}</div>`
+                        ).join('');
+                        Swal.fire({
+                            title: 'Kolom wajib tidak ditemukan di file',
+                            html: `${detail}<hr class="my-2"><div class="text-start small text-muted">Header yang ditemukan di file:<br>${escapeHtml(foundHeaders.join(', ')) || '(tidak ada)'}</div>`,
+                            icon: 'error',
+                            confirmButtonText: 'OK',
+                            customClass: { confirmButton: "btn btn-primary w-xs mt-2" },
+                            buttonsStyling: false
+                        });
+                        return;
+                    }
+
                     // === 3) Baris valid = minimal ada isi di salah satu kolom KUNCI
                     const hasAny = (row, keys) => keys.some(k => {
                         const h = H[k];
@@ -388,16 +480,29 @@
                     const CHUNK = 1000;
                     const STEP_UPDATE = 200;
                     let done = 0;
+                    let skippedNoKey = 0, emptyMaterial = 0, badDates = 0;
 
                     for (let i = 0; i < dataRows.length; i++) {
                         const r = dataRows[i];
                         const get = (h) => (h && r[h] != null) ? r[h] : "";
 
+                        const purcDoc = get(H.purc_doc);
+                        const item = get(H.item);
+                        const matRaw = String(get(H.material)).replace(/\./g, "");
+                        const dateRaw = get(H.created_on);
+                        const isoDate = excelDateToISO(dateRaw);
+
+                        // Sama dengan filter server (baris tanpa Pur. Doc./Item dibuang) —
+                        // sekarang dihitung & dilaporkan, bukan dibuang diam-diam
+                        if (purcDoc === '' || item === '') { skippedNoKey++; continue; }
+                        if (matRaw === '') emptyMaterial++;
+                        if (String(dateRaw ?? '').trim() !== '' && isoDate === '') badDates++;
+
                         poCache.push({
-                            purc_doc: get(H.purc_doc),
+                            purc_doc: purcDoc,
                             sales_doc: get(H.sales_doc),
-                            item: get(H.item),
-                            material: String(get(H.material)).replace(/\./g, ""),
+                            item: item,
+                            material: matRaw,
                             po_item_desc: get(H.po_item_desc),
                             prod_hierarchy_desc: get(H.prod_hier),
                             acc_ass_cat: get(H.acc_ass_cat),
@@ -417,10 +522,7 @@
                                 return toNumber(v);
                             })(),
                             currency: get(H.crcy),
-                            date: (() => {
-                                const v = get(H.created_on);
-                                return excelDateToISO(v);
-                            })()
+                            date: isoDate
                         });
 
                         done++;
@@ -434,10 +536,29 @@
                     renderTable(poCache);
                     closeProgressModal();
 
+                    // === 7) Warning baris yang dilewati / nilai bermasalah (bukan diam-diam) ===
+                    const warnings = [];
+                    if (skippedNoKey) warnings.push(`${skippedNoKey.toLocaleString('id-ID')} baris dilewati karena kolom "Pur. Doc." atau "Item" kosong`);
+                    if (emptyMaterial) warnings.push(`${emptyMaterial.toLocaleString('id-ID')} baris memiliki kolom "Material" kosong — produk tidak akan dibuat`);
+                    if (badDates) warnings.push(`${badDates.toLocaleString('id-ID')} baris memiliki tanggal yang tidak terbaca — tanggal hari ini akan dipakai`);
+                    if (warnings.length) {
+                        Swal.fire({
+                            title: 'Perhatian sebelum import',
+                            html: warnings.map(w => `<div class="text-start mb-1">• ${escapeHtml(w)}</div>`).join(''),
+                            icon: 'warning',
+                            confirmButtonText: 'Lanjutkan Import',
+                            customClass: { confirmButton: "btn btn-primary w-xs mt-2" },
+                            buttonsStyling: false
+                        });
+                    }
+
                 } catch (err) {
                     console.error(err);
                     closeProgressModal();
-                    Swal.fire('Gagal', 'Parsing gagal. Pastikan format Excel benar.', 'error');
+                    Swal.fire('Gagal',
+                        'Parsing gagal. Pastikan format Excel benar.'
+                        + (err && err.message ? ' Detail: ' + err.message : ''),
+                        'error');
                 }
             };
 
@@ -446,19 +567,46 @@
         });
 
         /* ================= Import: kirim per-batch dari sessionStorage ================= */
-        async function sendBatchAjax(batch) {
-            const res = await fetch(`{{ route('inbound.purchase-order-upload-process') }}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                },
-                body: JSON.stringify({
-                    purchaseOrder: batch
-                })
-            });
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            return res.json();
+        async function sendBatchAjax(batch, batchNumber) {
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), BATCH_TIMEOUT_MS);
+            try {
+                const res = await fetch(`{{ route('inbound.purchase-order-upload-process') }}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    },
+                    body: JSON.stringify({
+                        purchaseOrder: batch
+                    }),
+                    signal: controller.signal
+                });
+                if (!res.ok) {
+                    // Ambil pesan error dari server (message + ai_message) — kini server mengirimkannya
+                    let message = `HTTP ${res.status}`;
+                    let aiMessage = null;
+                    try {
+                        const body = await res.json();
+                        if (body && body.message) message = body.message;
+                        if (body && body.ai_message) aiMessage = body.ai_message;
+                    } catch (ignored) { /* respons bukan JSON — pakai pesan default */ }
+                    const err = new Error(message);
+                    err.userMessage = message;
+                    err.aiMessage = aiMessage;
+                    throw err;
+                }
+                return res.json();
+            } catch (err) {
+                if (err.name === 'AbortError') {
+                    err.userMessage = `Batas waktu (${BATCH_TIMEOUT_MS / 1000} detik) terlampaui pada batch ${batchNumber}. Coba lagi.`;
+                } else if (!err.userMessage) {
+                    err.userMessage = `Koneksi terputus pada batch ${batchNumber}. Coba lagi.`;
+                }
+                throw err;
+            } finally {
+                clearTimeout(timer);
+            }
         }
 
         window.processImport = function() {
@@ -493,7 +641,7 @@
                 try {
                     for (let i = 0; i < total; i += batchSize) {
                         const batch = allData.slice(i, i + batchSize);
-                        await sendBatchAjax(batch);
+                        await sendBatchAjax(batch, Math.floor(i / batchSize) + 1);
                         sent += batch.length;
                         updateProgressModal(sent, total);
                         await nextFrame();
@@ -514,8 +662,17 @@
                     });
                 } catch (err) {
                     console.error(err);
-                    closeProgressModal();
-                    Swal.fire('Error', 'Import gagal pada salah satu batch.', 'error');
+                    closeProgressModal(); // selalu tutup modal progress pada error
+                    Swal.fire({
+                        title: 'Import Gagal',
+                        html: `<div class="text-start">${escapeHtml(err.userMessage || 'Import gagal pada salah satu batch.')}` +
+                            (err.aiMessage ? `<hr class="my-2"><div class="text-start small text-muted" style="white-space:pre-wrap">${escapeHtml(err.aiMessage)}</div>` : '') +
+                            `</div>`,
+                        icon: 'error',
+                        confirmButtonText: 'OK',
+                        customClass: { confirmButton: "btn btn-primary w-xs mt-2" },
+                        buttonsStyling: false
+                    });
                 }
             });
         };

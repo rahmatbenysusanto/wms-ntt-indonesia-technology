@@ -207,7 +207,28 @@ class InboundController extends Controller
             DB::rollBack();
             Log::channel('inbound_po')->error('PO Upload Process Failed: ' . $err->getMessage(), ['trace' => $err->getTraceAsString()]);
             Log::error($err->getMessage(), ['line' => $err->getLine(), 'trace' => $err->getTraceAsString()]);
-            return response()->json(['status' => 'error'], 400);
+
+            // Pesan yang aman & mudah dipahami user; detail teknis tetap di log
+            $message = $err instanceof \RuntimeException
+                ? $err->getMessage()
+                : 'Terjadi kesalahan tidak terduga saat memproses data. Tidak ada data yang disimpan. Coba lagi atau hubungi admin.';
+
+            $response = ['status' => 'error', 'message' => $message];
+
+            // AI penjelasan = lapisan tipis OPSIONAL. Hanya aktif jika DEEPSEEK_API_KEY terisi;
+            // kalau AI gagal → dilewati diam-diam, pesan deterministik tetap tampil ke user.
+            if (!empty(config('services.deepseek.api_key'))) {
+                try {
+                    $response['ai_message'] = app(\App\Services\AiChatService::class)->explainError(
+                        $err->getMessage(),
+                        ['rows' => is_array($request->post('purchaseOrder')) ? count($request->post('purchaseOrder')) : 0]
+                    );
+                } catch (\Throwable $aiErr) {
+                    Log::channel('inbound_po')->warning('AI explain skipped: ' . $aiErr->getMessage());
+                }
+            }
+
+            return response()->json($response, 400);
         }
     }
 
@@ -243,19 +264,28 @@ class InboundController extends Controller
             ->first();
 
         if ($checkCurrencyDate === null) {
-            $client = new Client(['base_uri' => 'https://api.frankfurter.app/']);
-
-            $res = $client->get($formattedDate, [
-                'query' => [
-                    'base'    => 'USD',
-                    'symbols' => 'IDR',
-                ]
+            $client = new Client([
+                'base_uri'        => 'https://api.frankfurter.app/',
+                'timeout'         => 5, // batasi tunggu respons — tanpa ini request bisa hang selamanya
+                'connect_timeout' => 5, // batasi koneksi (DNS/handshake)
             ]);
+
+            try {
+                $res = $client->get($formattedDate, [
+                    'query' => [
+                        'base'    => 'USD',
+                        'symbols' => 'IDR',
+                    ]
+                ]);
+            } catch (\Throwable $e) {
+                Log::channel('inbound_po')->warning('Frankfurter FX fetch failed: ' . $e->getMessage(), ['date' => $formattedDate]);
+                throw new \RuntimeException("Gagal mendapatkan kurs USD/IDR untuk tanggal {$formattedDate} dari API kurs. Coba lagi nanti.");
+            }
 
             $payload = json_decode((string) $res->getBody(), true);
 
             if (!isset($payload['rates']['IDR'])) {
-                throw new \RuntimeException('Rate USD→IDR tidak ditemukan dari Frankfurter');
+                throw new \RuntimeException("Kurs USD/IDR tidak tersedia untuk tanggal {$formattedDate} di API kurs. Periksa kembali tanggal di file Excel.");
             }
 
             $usdToIdr = (float) $payload['rates']['IDR'];

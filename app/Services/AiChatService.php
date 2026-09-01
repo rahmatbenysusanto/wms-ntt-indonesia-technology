@@ -657,6 +657,64 @@ Jangan menyebutkan "data query" atau istilah teknis database dalam jawabanmu.
 PROMPT;
     }
 
+    /**
+     * Jelaskan error teknis ke user non-teknis dalam Bahasa Indonesia yang ramah.
+     * Selalu mengembalikan teks aman; tidak pernah melempar exception.
+     * Tanpa DEEPSEEK_API_KEY → langsung return fallback (tidak ada panggilan AI).
+     */
+    public function explainError(string $technicalMessage, array $context = []): string
+    {
+        $fallback = 'Mohon coba lagi. Jika masalah berlanjut, hubungi administrator.';
+
+        if (empty($this->apiKey)) {
+            return $fallback; // AI belum dikonfigurasi — lewati cepat
+        }
+
+        try {
+            $response = Http::timeout(15)
+                ->withHeaders([
+                    'Authorization' => 'Bearer ' . $this->apiKey,
+                    'Content-Type'  => 'application/json',
+                ])
+                ->post($this->baseUrl . '/v1/chat/completions', [
+                    'model'       => $this->model,
+                    'messages'    => [
+                        ['role' => 'system', 'content' => $this->getExplainErrorPrompt()],
+                        ['role' => 'user', 'content' => json_encode([
+                            'error_teknis' => mb_strimwidth($technicalMessage, 0, 1000),
+                            'konteks'      => $context,
+                        ], JSON_UNESCAPED_UNICODE)],
+                    ],
+                    'temperature' => 0.2,
+                    'max_tokens'  => 200,
+                ]);
+
+            if ($response->successful()) {
+                $content = trim((string) $response->json('choices.0.message.content'));
+                if ($content !== '') {
+                    return $content;
+                }
+            }
+            Log::error('DeepSeek explainError failed', ['status' => $response->status(), 'body' => $response->body()]);
+        } catch (\Exception $e) {
+            Log::error('DeepSeek explainError error: ' . $e->getMessage());
+        }
+
+        return $fallback;
+    }
+
+    private function getExplainErrorPrompt(): string
+    {
+        return <<<PROMPT
+Kamu adalah asisten dukungan aplikasi Warehouse Management System untuk user non-teknis.
+User baru saja gagal meng-import file Excel Purchase Order (PO) di halaman "Upload PO".
+
+Tugasmu: jelaskan pesan error teknis berikut dalam Bahasa Indonesia yang ramah dan singkat (maksimal 2-3 kalimat).
+Struktur jawaban: (1) apa yang salah dalam bahasa awam — sebutkan nama kolom Excel bila relevan (mis. "Pur. Doc.", "Item", "Material"); (2) langkah perbaikan yang jelas.
+Larangan: jangan menyebut "exception", "trace", "SQL", "database", atau istilah pemrograman; jangan mengarang penyebab yang tidak didukung oleh pesan error; jika pesan tidak jelas, cukup sarankan untuk coba lagi atau hubungi administrator.
+PROMPT;
+    }
+
     // ========================================================================
     // Helpers
     // ========================================================================
