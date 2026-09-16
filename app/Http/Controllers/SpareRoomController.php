@@ -660,17 +660,23 @@ class SpareRoomController extends Controller
         return $response;
     }
 
-    public function outboundDownloadPdf(Request $request): \Illuminate\Http\Response
+    public function outboundDownloadPdf(Request $request): \Illuminate\Http\Response|\Illuminate\Http\RedirectResponse
     {
         $outbound = Outbound::with('customer')->where('id', $request->query('id'))->first();
+
+        if (!$outbound) {
+            return back()->with('error', 'Outbound not found');
+        }
+
         $outboundDetail = OutboundDetail::with('inventoryPackageItem', 'inventoryPackageItem.purchaseOrderDetail', 'outboundDetailSN')->where('outbound_id', $request->query('id'))->get();
 
         $data = [
             'outbound'          => $outbound,
             'outboundDetail'    => $outboundDetail,
+            'roomType'          => 'Spare Room',
         ];
 
-        $pdf = Pdf::loadView('pdf.outbound', $data);
+        $pdf = Pdf::loadView('pdf.outbound', $data)->setPaper('A4', 'landscape')->setOption('isPhpEnabled', true);
         return $pdf->stream('outbound Spare Room '.$outbound->delivery_note_number.'.pdf');
     }
 

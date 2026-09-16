@@ -89,6 +89,11 @@
 
 <body>
     <section>
+        @if (!empty($roomType))
+            <div style="margin-bottom: 10px; font-size: 14px; font-weight: bold; color: #1a56db; text-transform: uppercase;">
+                [{{ $roomType }} Outbound]
+            </div>
+        @endif
         <div class="row">
             <div class="col-4">
                 <div><i>FROM</i></div>
