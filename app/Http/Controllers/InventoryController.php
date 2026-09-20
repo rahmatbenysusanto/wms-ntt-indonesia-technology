@@ -53,6 +53,12 @@ class InventoryController extends Controller
                     $q->where('serial_number', 'LIKE', '%' . $request->query('serialNumber') . '%');
                 });
             })
+            ->when($request->query('category') && in_array($request->query('category'), ['parent', 'child']), function ($query) use ($request) {
+                $isParent = $request->query('category') == 'parent' ? 1 : 0;
+                $query->whereHas('inventoryPackageItem', function ($q) use ($isParent) {
+                    $q->where('is_parent', $isParent);
+                });
+            })
             ->select([
                 'sales_doc',
                 'purchase_order_detail_id'
@@ -66,6 +72,7 @@ class InventoryController extends Controller
                 ->leftJoin('purchase_order_detail', 'inventory_detail.purchase_order_detail_id', '=', 'purchase_order_detail.id')
                 ->leftJoin('purchase_order', 'purchase_order_detail.purchase_order_id', '=', 'purchase_order.id')
                 ->leftJoin('customer', 'purchase_order.customer_id', '=', 'customer.id')
+                ->leftJoin('inventory_package_item', 'inventory_detail.inventory_package_item_id', '=', 'inventory_package_item.id')
                 ->where('inventory_detail.qty', '!=', 0)
                 ->where('inventory_detail.sales_doc', $inv->sales_doc)
                 ->where('inventory_detail.purchase_order_detail_id', $inv->purchase_order_detail_id)
@@ -77,6 +84,7 @@ class InventoryController extends Controller
                     'purchase_order_detail.prod_hierarchy_desc',
                     'purchase_order_detail.product_id',
                     'inventory_detail.qty',
+                    'inventory_package_item.is_parent',
                     'customer.name as client'
                 ])
                 ->get();
@@ -93,6 +101,7 @@ class InventoryController extends Controller
             $inv->prod_hierarchy_desc = $queryInv[0]->prod_hierarchy_desc;
             $inv->product_id = $queryInv[0]->product_id;
             $inv->client = $queryInv[0]->client;
+            $inv->is_parent = $queryInv[0]->is_parent ?? 0;
         }
 
         $products = Product::all();
@@ -1365,7 +1374,7 @@ class InventoryController extends Controller
         return view('mobile.inventory.aging-detail-list', compact('text', 'inventoryDetail', 'type'));
     }
 
-    public function downloadExcel(Request $request): StreamedResponse
+    public function downloadExcel(Request $request): \Symfony\Component\HttpFoundation\Response
     {
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
@@ -1376,15 +1385,17 @@ class InventoryController extends Controller
         $sheet->setCellValue('D1', 'Material');
         $sheet->setCellValue('E1', 'PO Item Desc');
         $sheet->setCellValue('F1', 'Prod Hierarchy Desc');
-        $sheet->setCellValue('G1', 'Stock');
-        $sheet->setCellValue('H1', 'Nominal USD');
-        $sheet->setCellValue('I1', 'Nominal IDR');
-        $sheet->setCellValue('J1', 'Serial Number');
+        $sheet->setCellValue('G1', 'Category');
+        $sheet->setCellValue('H1', 'Stock');
+        $sheet->setCellValue('I1', 'Nominal USD');
+        $sheet->setCellValue('J1', 'Nominal IDR');
+        $sheet->setCellValue('K1', 'Serial Number');
 
         $inventoryDetail = DB::table('inventory_detail')
             ->leftJoin('purchase_order_detail', 'purchase_order_detail.id', '=', 'inventory_detail.purchase_order_detail_id')
             ->leftJoin('purchase_order', 'purchase_order.id', '=', 'purchase_order_detail.purchase_order_id')
             ->leftJoin('customer', 'customer.id', '=', 'purchase_order.customer_id')
+            ->leftJoin('inventory_package_item', 'inventory_package_item.id', '=', 'inventory_detail.inventory_package_item_id')
             ->where('inventory_detail.qty', '!=', 0)
             ->whereNotIn('inventory_detail.storage_id', [1, 2, 3, 4])
             ->when($request->query('material'), function ($query) use ($request) {
@@ -1399,11 +1410,15 @@ class InventoryController extends Controller
             ->when($request->query('serialNumber'), function ($query) use ($request) {
                 $query->whereExists(function ($q) use ($request) {
                     $q->select(DB::raw(1))
-                        ->from('inventory_package_item')
-                        ->join('inventory_package_item_sn', 'inventory_package_item_sn.inventory_package_item_id', '=', 'inventory_package_item.id')
-                        ->whereColumn('inventory_package_item.id', 'inventory_detail.inventory_package_item_id')
+                        ->from('inventory_package_item as ipi')
+                        ->join('inventory_package_item_sn', 'inventory_package_item_sn.inventory_package_item_id', '=', 'ipi.id')
+                        ->whereColumn('ipi.id', 'inventory_detail.inventory_package_item_id')
                         ->where('inventory_package_item_sn.serial_number', 'LIKE', '%' . $request->query('serialNumber') . '%');
                 });
+            })
+            ->when($request->query('category') && in_array($request->query('category'), ['parent', 'child']), function ($query) use ($request) {
+                $isParent = $request->query('category') == 'parent' ? 1 : 0;
+                $query->where('inventory_package_item.is_parent', $isParent);
             })
             ->select([
                 'customer.name as client_name',
@@ -1413,6 +1428,7 @@ class InventoryController extends Controller
                 'purchase_order_detail.material',
                 'purchase_order_detail.po_item_desc',
                 'purchase_order_detail.prod_hierarchy_desc',
+                DB::raw('MAX(inventory_package_item.is_parent) as is_parent'),
                 DB::raw('SUM(inventory_detail.qty) as qty'),
                 DB::raw('SUM(inventory_detail.qty * purchase_order_detail.net_order_price) as nominal'),
                 DB::raw('SUM(inventory_detail.qty * purchase_order_detail.price_idr) as nominalIDR'),
@@ -1439,15 +1455,18 @@ class InventoryController extends Controller
                 ])
                 ->get();
 
+            $category = $detail->is_parent ? 'Parent' : 'Child';
+
             $sheet->setCellValue('A' . $column, $detail->client_name);
             $sheet->setCellValue('B' . $column, $detail->purc_doc);
             $sheet->setCellValue('C' . $column, $detail->sales_doc);
             $sheet->setCellValue('D' . $column, $detail->material);
             $sheet->setCellValue('E' . $column, $detail->po_item_desc);
             $sheet->setCellValue('F' . $column, $detail->prod_hierarchy_desc);
-            $sheet->setCellValue('G' . $column, $detail->qty);
-            $sheet->setCellValue('H' . $column, $detail->nominal);
-            $sheet->setCellValue('I' . $column, $detail->nominalIDR);
+            $sheet->setCellValue('G' . $column, $category);
+            $sheet->setCellValue('H' . $column, $detail->qty);
+            $sheet->setCellValue('I' . $column, $detail->nominal);
+            $sheet->setCellValue('J' . $column, $detail->nominalIDR);
 
             foreach ($serialNumber as $index => $serial) {
                 if ($index != 0) {
@@ -1460,22 +1479,30 @@ class InventoryController extends Controller
                     $sheet->setCellValue('G' . $column, '');
                     $sheet->setCellValue('H' . $column, '');
                     $sheet->setCellValue('I' . $column, '');
+                    $sheet->setCellValue('J' . $column, '');
                 }
-                $sheet->setCellValue('J' . $column, $serial->serial_number);
+                $sheet->setCellValue('K' . $column, $serial->serial_number);
                 $column++;
             }
         }
 
         $writer = new Xlsx($spreadsheet);
 
-        $response = new StreamedResponse(function () use ($writer) {
-            $writer->save('php://output');
-        });
+        $fileName = 'Report Inventory ' . date('Y-m-d H_i_s') . '.xlsx';
+        $tempFile = tempnam(sys_get_temp_dir(), 'inventory_report_') . '.xlsx';
+        $writer->save($tempFile);
 
-        $fileName = 'Report Inventory ' . date('Y-m-d H:i:s') . '.xlsx';
-        $response->headers->set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        $response->headers->set('Content-Disposition', "attachment;filename=\"$fileName\"");
-        $response->headers->set('Cache-Control', 'max-age=0');
+        $response = response()->download($tempFile, $fileName, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition' => "attachment;filename=\"$fileName\"",
+            'Cache-Control' => 'max-age=0',
+        ]);
+
+        register_shutdown_function(function () use ($tempFile) {
+            if (file_exists($tempFile)) {
+                unlink($tempFile);
+            }
+        });
 
         return $response;
     }
@@ -1675,6 +1702,7 @@ class InventoryController extends Controller
             ->leftJoin('purchase_order_detail', 'purchase_order_detail.id', '=', 'inventory_detail.purchase_order_detail_id')
             ->leftJoin('purchase_order', 'purchase_order.id', '=', 'purchase_order_detail.purchase_order_id')
             ->leftJoin('customer', 'customer.id', '=', 'purchase_order.customer_id')
+            ->leftJoin('inventory_package_item', 'inventory_package_item.id', '=', 'inventory_detail.inventory_package_item_id')
             ->where('inventory_detail.qty', '!=', 0)
             ->whereNotIn('inventory_detail.storage_id', [1, 2, 3, 4])
             ->when($request->query('material'), function ($query) use ($request) {
@@ -1689,11 +1717,15 @@ class InventoryController extends Controller
             ->when($request->query('serialNumber'), function ($query) use ($request) {
                 $query->whereExists(function ($q) use ($request) {
                     $q->select(DB::raw(1))
-                        ->from('inventory_package_item')
-                        ->join('inventory_package_item_sn', 'inventory_package_item_sn.inventory_package_item_id', '=', 'inventory_package_item.id')
-                        ->whereColumn('inventory_package_item.id', 'inventory_detail.inventory_package_item_id')
+                        ->from('inventory_package_item as ipi')
+                        ->join('inventory_package_item_sn', 'inventory_package_item_sn.inventory_package_item_id', '=', 'ipi.id')
+                        ->whereColumn('ipi.id', 'inventory_detail.inventory_package_item_id')
                         ->where('inventory_package_item_sn.serial_number', 'LIKE', '%' . $request->query('serialNumber') . '%');
                 });
+            })
+            ->when($request->query('category') && in_array($request->query('category'), ['parent', 'child']), function ($query) use ($request) {
+                $isParent = $request->query('category') == 'parent' ? 1 : 0;
+                $query->where('inventory_package_item.is_parent', $isParent);
             })
             ->select([
                 'customer.name as client_name',
@@ -1703,6 +1735,7 @@ class InventoryController extends Controller
                 'purchase_order_detail.material',
                 'purchase_order_detail.po_item_desc',
                 'purchase_order_detail.prod_hierarchy_desc',
+                DB::raw('MAX(inventory_package_item.is_parent) as is_parent'),
                 DB::raw('SUM(inventory_detail.qty) as stock'),
                 DB::raw('SUM(inventory_detail.qty * purchase_order_detail.net_order_price) as nominal'),
                 DB::raw('SUM(inventory_detail.qty * purchase_order_detail.price_idr) as nominalIDR'),

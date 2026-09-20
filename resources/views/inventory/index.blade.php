@@ -59,8 +59,16 @@
                                     placeholder="Serial Number">
                             </div>
                             <div class="col-2">
+                                <label class="form-label">Category</label>
+                                <select class="form-control" name="category">
+                                    <option value="all" {{ !request()->get('category') || request()->get('category') == 'all' ? 'selected' : '' }}>All</option>
+                                    <option value="parent" {{ request()->get('category') == 'parent' ? 'selected' : '' }}>Parent</option>
+                                    <option value="child" {{ request()->get('category') == 'child' ? 'selected' : '' }}>Child</option>
+                                </select>
+                            </div>
+                            <div class="col-2">
                                 <label class="form-label text-white">-</label>
-                                <div>
+                                <div class="d-flex gap-2">
                                     <button type="submit" class="btn btn-info">Search</button>
                                     <a href="{{ route('inventory.index') }}" class="btn btn-danger">Clear</a>
                                 </div>
@@ -80,6 +88,7 @@
                                     <th class="text-center">Item</th>
                                     <th>Material</th>
                                     <th>PO Item Desc</th>
+                                    <th>Category</th>
                                     <th class="text-center">Stock</th>
                                     <th>Action</th>
                                 </tr>
@@ -94,6 +103,13 @@
                                         <td class="text-center">{{ $item->purchaseOrderDetail->item }}</td>
                                         <td>{{ $item->material }}</td>
                                         <td>{{ $item->po_item_desc }}</td>
+                                        <td>
+                                            @if ($item->is_parent)
+                                                <span class="badge bg-primary">Parent</span>
+                                            @else
+                                                <span class="badge bg-info">Child</span>
+                                            @endif
+                                        </td>
                                         <td class="text-center fw-bold">{{ number_format($item->qty) }}</td>
                                         <td>
                                             <a href="{{ route('inventory.indexDetail', ['salesDoc' => $item->sales_doc, 'id' => $item->product_id]) }}"
