@@ -393,7 +393,7 @@ class InventoryController extends Controller
         return $pdf->stream('Cycle Count.pdf');
     }
 
-    public function cycleCountDownloadExcel(Request $request): StreamedResponse
+    public function cycleCountDownloadExcel(Request $request): \Symfony\Component\HttpFoundation\Response
     {
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
