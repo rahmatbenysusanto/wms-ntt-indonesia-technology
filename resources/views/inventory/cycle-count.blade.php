@@ -53,7 +53,7 @@
                             <div class="col-2">
                                 <label class="form-label">Type</label>
                                 <select class="form-control" name="type">
-                                    <option value="">-- Select Type --</option>
+                                    <option value="all" {{ !request()->get('type') || request()->get('type') == 'all' ? 'selected' : '' }}>All</option>
                                     <option value="inbound" {{ request()->get('type') == 'inbound' ? 'selected' : '' }}>
                                         Inbound</option>
                                     <option value="outbound" {{ request()->get('type') == 'outbound' ? 'selected' : '' }}>
@@ -89,6 +89,7 @@
                                 <th class="text-center">QTY</th>
                                 <th>Storage Loc</th>
                                 <th>Type</th>
+                                <th>Category</th>
                                 <th class="text-center">Serial Number</th>
                                 <th>Created By</th>
                                 <td>Date</td>
@@ -131,6 +132,17 @@
                                             <span class="badge bg-danger-subtle text-danger">Outbound</span>
                                         @else
                                             <span class="badge bg-success-subtle text-success">Inbound</span>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        @if ($item->inventoryPackageItem)
+                                            @if ($item->inventoryPackageItem->is_parent)
+                                                <span class="badge bg-primary">Parent</span>
+                                            @else
+                                                <span class="badge bg-info">Child</span>
+                                            @endif
+                                        @else
+                                            <span class="badge bg-secondary">-</span>
                                         @endif
                                     </td>
                                     <td class="text-center">

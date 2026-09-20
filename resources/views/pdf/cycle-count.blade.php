@@ -110,6 +110,7 @@
                     <th style="width: 5%; text-align: center;">QTY</th>
                     <th>Storage</th>
                     <th style="width: 7%; text-align: center;">Type</th>
+                    <th style="width: 7%; text-align: center;">Category</th>
                     <th>Date</th>
                     <th>Serial Number</th>
                 </tr>
@@ -143,6 +144,7 @@
                             @endif
                         </td>
                         <td style="width: 5%; text-align: center;">{{ $item->type }}</td>
+                        <td style="width: 7%; text-align: center;">{{ $item->inventoryPackageItem?->is_parent ? 'Parent' : 'Child' }}</td>
                         <td>{{ \Carbon\Carbon::parse($item->created_at)->translatedFormat('d F Y') }}</td>
                         <td>
                             @foreach (json_decode($item->serial_number) ?? [] as $serialNumber)

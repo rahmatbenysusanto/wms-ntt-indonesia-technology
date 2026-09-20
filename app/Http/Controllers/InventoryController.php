@@ -344,7 +344,7 @@ class InventoryController extends Controller
                     $purchaseOrderDetail->where('product_id', $request->query('material'));
                 }
             })
-            ->when($request->query('type'), function ($q) use ($request) {
+            ->when($request->query('type') && $request->query('type') != 'all', function ($q) use ($request) {
                 $q->where('type',  $request->query('type'));
             })
             ->whereBetween('created_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59'])
@@ -426,12 +426,13 @@ class InventoryController extends Controller
         $sheet->setCellValue('Q1', 'QTY');
         $sheet->setCellValue('R1', 'Storage Location');
         $sheet->setCellValue('S1', 'Type');
-        $sheet->setCellValue('T1', 'Date');
-        $sheet->setCellValue('U1', 'Serial Number');
-        $sheet->setCellValue('V1', 'Ref Number');
-        $sheet->setCellValue('W1', 'Deliv Loc');
-        $sheet->setCellValue('X1', 'Deliv Dest');
-        $sheet->setCellValue('Y1', 'Delivery Note Number');
+        $sheet->setCellValue('T1', 'Category');
+        $sheet->setCellValue('U1', 'Date');
+        $sheet->setCellValue('V1', 'Serial Number');
+        $sheet->setCellValue('W1', 'Ref Number');
+        $sheet->setCellValue('X1', 'Deliv Loc');
+        $sheet->setCellValue('Y1', 'Deliv Dest');
+        $sheet->setCellValue('Z1', 'Delivery Note Number');
 
         $column = 2;
         foreach ($cycleCount as $item) {
@@ -493,26 +494,34 @@ class InventoryController extends Controller
                 $sheet->setCellValue('Q' . $column, (string) $item->qty);
                 $sheet->setCellValue('R' . $column, $storage);
                 $sheet->setCellValue('S' . $column, (string) $item->type);
-                $sheet->setCellValue('T' . $column, optional($item->created_at)->format('Y-m-d H:i:s') ?? '');
-                $sheet->setCellValue('U' . $column, (string) $sn);
-                $sheet->setCellValue('V' . $column, $refNumber);
-                $sheet->setCellValue('W' . $column, $delivLoc);
-                $sheet->setCellValue('X' . $column, $delivDest);
-                $sheet->setCellValue('Y' . $column, $deliveryNoteNumber);
+                $sheet->setCellValue('T' . $column, $item->inventoryPackageItem?->is_parent ? 'Parent' : 'Child');
+                $sheet->setCellValue('U' . $column, optional($item->created_at)->format('Y-m-d H:i:s') ?? '');
+                $sheet->setCellValue('V' . $column, (string) $sn);
+                $sheet->setCellValue('W' . $column, $refNumber);
+                $sheet->setCellValue('X' . $column, $delivLoc);
+                $sheet->setCellValue('Y' . $column, $delivDest);
+                $sheet->setCellValue('Z' . $column, $deliveryNoteNumber);
                 $column++;
             }
         }
 
         $writer = new Xlsx($spreadsheet);
 
-        $response = new StreamedResponse(function () use ($writer) {
-            $writer->save('php://output');
-        });
+        $fileName = 'Report Cycle Count ' . date('Y-m-d H_i_s') . '.xlsx';
+        $tempFile = tempnam(sys_get_temp_dir(), 'cycle_count_') . '.xlsx';
+        $writer->save($tempFile);
 
-        $fileName = 'Report Cycle Count ' . date('Y-m-d H:i:s') . '.xlsx';
-        $response->headers->set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        $response->headers->set('Content-Disposition', "attachment;filename=\"$fileName\"");
-        $response->headers->set('Cache-Control', 'max-age=0');
+        $response = response()->download($tempFile, $fileName, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition' => "attachment;filename=\"$fileName\"",
+            'Cache-Control' => 'max-age=0',
+        ]);
+
+        register_shutdown_function(function () use ($tempFile) {
+            if (file_exists($tempFile)) {
+                unlink($tempFile);
+            }
+        });
 
         return $response;
     }

@@ -97,6 +97,21 @@
                                     </td>
                                 </tr>
                                 <tr>
+                                    <td class="fw-bold">Category</td>
+                                    <td class="fw-bold ps-3">:</td>
+                                    <td class="ps-1">
+                                        @if ($cycleCount->inventoryPackageItem)
+                                            @if ($cycleCount->inventoryPackageItem->is_parent)
+                                                <span class="badge bg-primary">Parent</span>
+                                            @else
+                                                <span class="badge bg-info">Child</span>
+                                            @endif
+                                        @else
+                                            <span class="badge bg-secondary">-</span>
+                                        @endif
+                                    </td>
+                                </tr>
+                                <tr>
                                     <td class="fw-bold">Created By</td>
                                     <td class="fw-bold ps-3">:</td>
                                     <td class="ps-1">{{ $cycleCount->user->name }}</td>
