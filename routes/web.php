@@ -311,6 +311,18 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
             Route::get('/convert', 'pendingConvert')->name('outbound.pending.convert');
             Route::post('/converted', 'pendingConverted')->name('outbound.pending.converted');
         });
+
+        // Packing List
+        Route::prefix('/packaging-list')->group(function () {
+            Route::get('/', 'packagingList')->name('outbound.packaging-list');
+            Route::get('/create', 'packagingListCreate')->name('outbound.packaging-list.create');
+            Route::get('/edit', 'packagingListCreate')->name('outbound.packaging-list.edit');
+            Route::post('/store', 'packagingListStore')->name('outbound.packaging-list.store');
+            Route::post('/update', 'packagingListUpdate')->name('outbound.packaging-list.update');
+            Route::post('/release', 'packagingListRelease')->name('outbound.packaging-list.release');
+            Route::delete('/delete', 'packagingListDestroy')->name('outbound.packaging-list.destroy');
+            Route::get('/download-pdf', 'packagingListDownloadPdf')->name('outbound.packaging-list.download-pdf');
+        });
     });
 
     Route::prefix('/ai-chat')->controller(AiChatController::class)->group(function () {

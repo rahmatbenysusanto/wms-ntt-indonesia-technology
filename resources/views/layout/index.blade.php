@@ -406,6 +406,16 @@
                             </li>
                         @endif
 
+                        @if (Session::get('userHasMenu')->contains('Order List'))
+                            <li class="nav-item">
+                                <a href="{{ route('outbound.packaging-list') }}"
+                                    class="nav-link {{ $title == 'Packing List' ? 'active' : '' }}">
+                                    <i class="mdi mdi-package-variant-closed"></i>
+                                    <span data-key="t-packaging-list">Packing List</span>
+                                </a>
+                            </li>
+                        @endif
+
                         @if (Session::get('userHasMenu', collect())->intersect([
                                     'General Room Inventory',
                                     'General Room Outbound',

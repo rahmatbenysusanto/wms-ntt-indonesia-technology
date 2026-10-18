@@ -18,6 +18,8 @@ use App\Models\InventoryPackageItemSN;
 use App\Models\InventoryParent;
 use App\Models\InventoryParentDetail;
 use App\Models\Outbound;
+use App\Models\PackingList;
+use App\Models\PackingListDetail;
 use App\Models\OutboundDetail;
 use App\Models\OutboundDetailSN;
 use App\Models\OutboundSerialNumber;
@@ -1054,6 +1056,234 @@ class OutboundController extends Controller
         $customer = Customer::all();
         $title = 'Pending Outbound';
         return view('outbound.pending.create', compact('title', 'customer', 'salesDoc'));
+    }
+
+    public function packagingList(Request $request): View
+    {
+        $packingLists = PackingList::with('customer', 'createdBy', 'updatedBy', 'releasedBy')
+            ->when($request->get('client'), fn($q, $v) => $q->where('customer_id', $v))
+            ->when($request->get('status'), fn($q, $v) => $q->where('status', $v))
+            ->latest()
+            ->paginate($request->get('per_page', 10))
+            ->appends($request->query());
+
+        $customer = Customer::all();
+        $title = 'Packing List';
+        return view('outbound.packaging-list', compact('title', 'packingLists', 'customer'));
+    }
+
+    public function packagingListCreate(Request $request): View
+    {
+        $salesDoc = InventoryPackage::with('purchaseOrder', 'storage', 'purchaseOrder.customer')
+            ->where('qty', '!=', 0)
+            ->whereNotIn('storage_id', [2, 3, 4])
+            ->get();
+
+        $customer = Customer::all();
+
+        $packingList = null;
+        if ($request->get('id')) {
+            $packingList = PackingList::with('details')
+                ->where('id', $request->get('id'))
+                ->where('status', 'draft')
+                ->firstOrFail();
+        }
+
+        $title = 'Packing List';
+        return view('outbound.packaging-list-create', compact('title', 'customer', 'salesDoc', 'packingList'));
+    }
+
+    /**
+     * Build packing_list_details rows from posted products (shared by store/update).
+     */
+    private function buildPackagingDetails(array $products): array
+    {
+        $rows = [];
+        foreach ($products as $p) {
+            if ((int)($p['disable'] ?? 1) !== 0) continue;
+            $qty = (int)($p['qtySelect'] ?? 0);
+            if ($qty <= 0) continue;
+
+            $rows[] = [
+                'purchase_order_detail_id' => $p['purchaseOrderDetailId'] ?? null,
+                'inventory_package_item_id' => $p['inventoryPackageItemId'] ?? null,
+                'product_id' => $p['productId'] ?? null,
+                'sales_doc' => $p['salesDoc'] ?? null,
+                'material' => $p['material'] ?? null,
+                'item' => $p['item'] ?? null,
+                'po_item_desc' => $p['poItemDesc'] ?? null,
+                'qty' => $qty,
+            ];
+        }
+        return $rows;
+    }
+
+    public function packagingListStore(Request $request): \Illuminate\Http\JsonResponse
+    {
+        try {
+            DB::beginTransaction();
+            Log::channel('outbound')->info('Packing List Store Started', ['user_id' => Auth::id()]);
+
+            $request->validate([
+                'customerId' => 'nullable|integer',
+                'products' => 'required|array',
+            ]);
+
+            $customer = $request->post('customerId') ? Customer::find($request->post('customerId')) : null;
+            if (!$customer) {
+                return response()->json(['status' => false, 'message' => 'Customer non-existent or not selected']);
+            }
+
+            $rows = $this->buildPackagingDetails($request->post('products') ?? []);
+            if (empty($rows)) {
+                return response()->json(['status' => false, 'message' => 'Product list cannot be empty']);
+            }
+
+            $packingList = PackingList::create([
+                'customer_id' => $customer->id,
+                'sales_docs' => json_encode(collect($rows)->pluck('sales_doc')->filter()->unique()->values()->all()),
+                'qty_item' => count($rows),
+                'qty' => collect($rows)->sum('qty'),
+                'delivery_date' => $request->post('deliveryDate') ?: null,
+                'deliv_loc' => $request->post('delivLocation'),
+                'deliv_dest' => $request->post('deliveryDest'),
+                'note' => $request->post('note'),
+                'status' => 'draft',
+                'created_by' => Auth::id(),
+            ]);
+
+            $packingList->details()->createMany($rows);
+
+            DB::commit();
+            Log::channel('outbound')->info('Packing List Store Success', ['id' => $packingList->id]);
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Packing List saved as draft',
+                'id' => $packingList->id,
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::channel('outbound')->error('Packing List Store Failed', ['error' => $e->getMessage()]);
+            return response()->json(['status' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    public function packagingListUpdate(Request $request): \Illuminate\Http\JsonResponse
+    {
+        try {
+            DB::beginTransaction();
+            Log::channel('outbound')->info('Packing List Update Started', ['user_id' => Auth::id()]);
+
+            $packingList = PackingList::where('id', $request->post('packing_id'))
+                ->where('status', 'draft')
+                ->first();
+            if (!$packingList) {
+                return response()->json(['status' => false, 'message' => 'Packing list not found or already released']);
+            }
+
+            $request->validate([
+                'customerId' => 'nullable|integer',
+                'products' => 'required|array',
+            ]);
+
+            $customer = $request->post('customerId') ? Customer::find($request->post('customerId')) : null;
+            if (!$customer) {
+                return response()->json(['status' => false, 'message' => 'Customer non-existent or not selected']);
+            }
+
+            $rows = $this->buildPackagingDetails($request->post('products') ?? []);
+            if (empty($rows)) {
+                return response()->json(['status' => false, 'message' => 'Product list cannot be empty']);
+            }
+
+            $packingList->details()->delete();
+            $packingList->details()->createMany($rows);
+
+            $packingList->update([
+                'customer_id' => $customer->id,
+                'sales_docs' => json_encode(collect($rows)->pluck('sales_doc')->filter()->unique()->values()->all()),
+                'qty_item' => count($rows),
+                'qty' => collect($rows)->sum('qty'),
+                'delivery_date' => $request->post('deliveryDate') ?: null,
+                'deliv_loc' => $request->post('delivLocation'),
+                'deliv_dest' => $request->post('deliveryDest'),
+                'note' => $request->post('note'),
+                'updated_by' => Auth::id(),
+            ]);
+
+            DB::commit();
+            Log::channel('outbound')->info('Packing List Update Success', ['id' => $packingList->id]);
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Packing List draft updated',
+                'id' => $packingList->id,
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::channel('outbound')->error('Packing List Update Failed', ['error' => $e->getMessage()]);
+            return response()->json(['status' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    public function packagingListRelease(Request $request): \Illuminate\Http\JsonResponse
+    {
+        try {
+            $packingList = PackingList::where('id', $request->post('id'))
+                ->where('status', 'draft')
+                ->first();
+            if (!$packingList) {
+                return response()->json(['status' => false, 'message' => 'Packing list not found or already released']);
+            }
+
+            $packingList->update([
+                'status' => 'released',
+                'released_by' => Auth::id(),
+                'released_at' => now(),
+            ]);
+
+            Log::channel('outbound')->info('Packing List Released', ['id' => $packingList->id, 'user_id' => Auth::id()]);
+
+            return response()->json(['status' => true, 'message' => 'Packing List released successfully']);
+        } catch (\Exception $e) {
+            return response()->json(['status' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    public function packagingListDestroy(Request $request): \Illuminate\Http\JsonResponse
+    {
+        try {
+            $packingList = PackingList::where('id', $request->get('id'))
+                ->where('status', 'draft')
+                ->first();
+            if (!$packingList) {
+                return response()->json(['status' => false, 'message' => 'Packing list not found or already released']);
+            }
+
+            $packingList->details()->delete();
+            $packingList->delete();
+
+            return response()->json(['status' => true, 'message' => 'Packing List draft deleted']);
+        } catch (\Exception $e) {
+            return response()->json(['status' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    public function packagingListDownloadPdf(Request $request): \Illuminate\Http\Response|\Illuminate\Http\RedirectResponse
+    {
+        $packingList = PackingList::with('customer', 'details', 'createdBy', 'releasedBy')
+            ->where('id', $request->query('id'))
+            ->first();
+
+        if (!$packingList) {
+            return back()->with('error', 'Packing List not found');
+        }
+
+        $pdf = Pdf::loadView('pdf.packing-list', ['packingList' => $packingList])
+            ->setPaper('a4', 'landscape');
+
+        return $pdf->stream('packing-list-' . $packingList->id . '.pdf');
     }
 
     public function pendingStore(Request $request): \Illuminate\Http\JsonResponse
