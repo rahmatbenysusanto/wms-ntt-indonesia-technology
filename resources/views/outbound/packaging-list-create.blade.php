@@ -375,7 +375,6 @@
                 data: { id },
                 success: async (res) => {
                     try {
-                        const existing = await kvGet('salesDocProduct', []) ?? [];
                         const products = [];
 
                         (res?.data?.inventory_package_item ?? []).forEach((product) => {
@@ -409,8 +408,7 @@
                             });
                         });
 
-                        // keep previously added rows, append the new ones
-                        await kvSet('salesDocProduct', existing.concat(products));
+                        await kvSet('salesDocProduct', products);
                         await viewProductPacking();
                     } catch (e) {
                         console.error('Gagal proses pilihSalesDoc:', e);
