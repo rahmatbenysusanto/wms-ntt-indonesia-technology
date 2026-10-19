@@ -1,7 +1,7 @@
 {
   "openapi": "3.0.3",
   "info": {
-    "title": "NTT Warehouse Integration API",
+    "title": "TKS Warehouse Integration API",
     "version": "1.0.0",
     "description": "Read-only API for client integration: Inbound (purchase orders), Outbound, and Inventory.\n\nBase URL: `{APP_URL}/api/v1`\n\nAll endpoints require the `X-API-Key` header."
   },

@@ -1272,7 +1272,13 @@ class OutboundController extends Controller
 
     public function packagingListDownloadPdf(Request $request): \Illuminate\Http\Response|\Illuminate\Http\RedirectResponse
     {
-        $packingList = PackingList::with('customer', 'details', 'createdBy', 'releasedBy')
+        $packingList = PackingList::with(
+            'customer',
+            'details.inventoryPackageItem.inventoryPackageItemSn',
+            'details.purchaseOrderDetail.purchaseOrder',
+            'createdBy',
+            'releasedBy'
+        )
             ->where('id', $request->query('id'))
             ->first();
 
@@ -1281,7 +1287,7 @@ class OutboundController extends Controller
         }
 
         $pdf = Pdf::loadView('pdf.packing-list', ['packingList' => $packingList])
-            ->setPaper('a4', 'landscape');
+            ->setPaper('a4', 'portrait');
 
         return $pdf->stream('packing-list-' . $packingList->id . '.pdf');
     }
