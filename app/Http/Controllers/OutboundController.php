@@ -1083,7 +1083,7 @@ class OutboundController extends Controller
 
         $packingList = null;
         if ($request->get('id')) {
-            $packingList = PackingList::with('details')
+            $packingList = PackingList::with('details.inventoryPackageItem.inventoryPackageItemSn')
                 ->where('id', $request->get('id'))
                 ->where('status', 'draft')
                 ->firstOrFail();
@@ -1117,6 +1117,7 @@ class OutboundController extends Controller
                 'qty' => $qty,
                 'gross_weight' => $p['grossWeight'] ?? null,
                 'measurement' => $p['measurement'] ?? null,
+                'serial_numbers' => !empty($p['serialNumbers']) ? array_values((array) $p['serialNumbers']) : null,
             ];
         }
         return $rows;

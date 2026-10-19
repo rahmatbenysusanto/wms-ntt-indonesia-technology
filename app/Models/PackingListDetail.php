@@ -23,7 +23,15 @@ class PackingListDetail extends Model
         'qty',
         'gross_weight',
         'measurement',
+        'serial_numbers',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'serial_numbers' => 'array',
+        ];
+    }
 
     public function packingList(): BelongsTo
     {

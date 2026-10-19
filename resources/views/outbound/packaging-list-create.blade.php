@@ -151,6 +151,7 @@
                                     </select>
                                 </th>
                                 <th></th>
+                                <th></th>
                             </tr>
                             <tr>
                                 <th>Material</th>
@@ -164,12 +165,63 @@
                                 <th>Gross Wt (kg)</th>
                                 <th>Measurement (CM)</th>
                                 <th>QTY Packing</th>
+                                <th class="text-center">SN</th>
                                 <th>Action</th>
                             </tr>
                         </thead>
                         <tbody id="listProductPacking">
                         </tbody>
                     </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Serial Number Modal -->
+    <div id="serialNumberModal" class="modal fade" tabindex="-1" aria-hidden="true" style="display: none;">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Serial Number Product</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="snIndex">
+                    <div class="mb-2">
+                        QTY Packing: <b id="sn-qty">0</b> &nbsp;|&nbsp; SN dipilih: <b id="sn-picked">0</b>
+                    </div>
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h5 class="card-title mb-0">Data Serial Number</h5>
+                                <div>
+                                    <a class="btn btn-warning btn-sm me-1" onclick="togglePasteSN()">Paste SN</a>
+                                    <a class="btn btn-danger btn-sm" onclick="pilihSemuaSN()">Pilih Semua SN</a>
+                                </div>
+                            </div>
+                            <div id="pasteSNArea" class="mb-2 d-none">
+                                <textarea class="form-control mb-1" id="pasteSNList" rows="4"
+                                    placeholder="Paste SN dari Excel&#10;1 baris = 1 SN"></textarea>
+                                <button type="button" class="btn btn-success btn-sm" onclick="pilihSNPaste()">Cocokkan &amp; Pilih</button>
+                            </div>
+                            <input type="text" class="form-control mb-2" id="searchSN" placeholder="Search Serial Number" onkeyup="filterSN()">
+                            <table class="table table-striped align-middle">
+                                <thead>
+                                    <tr><th>Serial Number</th><th>Action</th></tr>
+                                </thead>
+                                <tbody id="listDataSN"></tbody>
+                            </table>
+                        </div>
+                        <div class="col-6">
+                            <h5 class="card-title mb-2">SN Dipilih (Packing List)</h5>
+                            <input type="text" class="form-control mb-2" id="snSearch" placeholder="Search SN dipilih" onkeyup="filterPickedSN()">
+                            <table class="table table-striped align-middle">
+                                <thead>
+                                    <tr><th>Serial Number</th><th>Action</th></tr>
+                                </thead>
+                                <tbody id="listDataOutboundSN"></tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -236,7 +288,12 @@
             const existingDetails = @json($isEdit ? $packingList->details : []);
 
             if (isEdit && existingDetails.length) {
-                const products = existingDetails.map(d => ({
+                const products = existingDetails.map(d => {
+                const picked = d.serial_numbers ?? [];
+                const dataSN = (d.inventory_package_item?.inventory_package_item_sn ?? [])
+                    .filter(sn => parseInt(sn?.qty) !== 0)
+                    .map(sn => ({ serialNumber: sn.serial_number, select: picked.includes(sn.serial_number) ? 1 : 0 }));
+                return {
                     inventoryPackageId: null,
                     inventoryPackageItemId: d.inventory_package_item_id,
                     purchaseOrderId: null,
@@ -260,8 +317,11 @@
                     loc: '',
                     storageId: null,
                     disable: 0,
-                    item: d.item
-                }));
+                    item: d.item,
+                    dataSN: dataSN,
+                    serialNumber: picked,
+                };
+            });
                 await kvSet('salesDocProduct', products);
             } else {
                 await kvDelete('salesDocProduct');
@@ -319,6 +379,10 @@
                         const products = [];
 
                         (res?.data?.inventory_package_item ?? []).forEach((product) => {
+                            const dataSN = [];
+                            (product?.inventory_package_item_sn ?? []).forEach((sn) => {
+                                if (parseInt(sn?.qty) !== 0) dataSN.push({ serialNumber: sn.serial_number, select: 0 });
+                            });
                             products.push({
                                 inventoryPackageId: product.inventory_package_id,
                                 inventoryPackageItemId: product.id,
@@ -339,7 +403,9 @@
                                 loc: `${res?.data?.storage?.raw ?? ''}-${res?.data?.storage?.area ?? ''}-${res?.data?.storage?.rak ?? ''}-${res?.data?.storage?.bin ?? ''}`,
                                 storageId: res?.data?.storage?.id,
                                 disable: 0,
-                                item: product.purchase_order_detail?.item
+                                item: product.purchase_order_detail?.item,
+                                dataSN: dataSN,
+                                serialNumber: [],
                             });
                         });
 
@@ -387,6 +453,10 @@
                             <td><input type="number" step="0.01" min="0" class="form-control" onchange="changeField(${index}, 'grossWeight', this.value)" value="${item?.grossWeight ?? ''}"></td>
                             <td><input type="text" class="form-control" placeholder="P x L x T" onchange="changeField(${index}, 'measurement', this.value)" value="${item?.measurement ?? ''}"></td>
                             <td><input type="number" class="form-control" onchange="changeQtySelect(${index}, this.value)" value="${item?.qtySelect ?? 0}"></td>
+                            <td class="text-center">
+                                <a class="btn ${parseInt(item?.qtySelect || 0) > 0 && (item?.serialNumber || []).length === parseInt(item?.qtySelect) ? 'btn-success' : 'btn-info'} btn-sm"
+                                    onclick="openSerialNumberModal(${index})">SN (${(item?.serialNumber || []).length}/${item?.qtySelect || 0})</a>
+                            </td>
                             <td><a class="btn btn-danger btn-sm" onclick="deleteProduct(${index})">Delete</a></td>
                         </tr>
                     `;
@@ -428,6 +498,159 @@
             await kvSet('salesDocProduct', products);
         };
 
+        async function pilihSN(index, snIndex) {
+            const products = await kvGet('salesDocProduct', []) ?? [];
+            const product = products[index];
+            if (!product) return;
+            const sn = product.dataSN?.[snIndex];
+            if (!sn || sn.select) return;
+            product.dataSN[snIndex].select = 1;
+            product.serialNumber.push(sn.serialNumber);
+            await kvSet('salesDocProduct', products);
+            await renderSerialNumber(index);
+        }
+
+        async function hapusSN(index, snIndex) {
+            const products = await kvGet('salesDocProduct', []) ?? [];
+            const product = products[index];
+            if (!product) return;
+            const sn = product.serialNumber?.[snIndex];
+            product.serialNumber.splice(snIndex, 1);
+            const found = (product.dataSN ?? []).find(d => d.serialNumber === sn);
+            if (found) found.select = 0;
+            await kvSet('salesDocProduct', products);
+            await renderSerialNumber(index);
+        }
+
+        async function renderSerialNumber(index) {
+            const products = await kvGet('salesDocProduct', []) ?? [];
+            const product = products[index];
+            if (!product) return;
+
+            document.getElementById('sn-qty').textContent = product.qtySelect || 0;
+            document.getElementById('sn-picked').textContent = (product.serialNumber ?? []).length;
+            document.getElementById('searchSN').value = '';
+            document.getElementById('snSearch').value = '';
+
+            let available = '';
+            (product.dataSN ?? []).forEach((sn, snIndex) => {
+                if (sn.select) return;
+                available += `
+                    <tr>
+                        <td>${sn.serialNumber ?? ''}</td>
+                        <td><a class="btn btn-info btn-sm" onclick="pilihSN(${index}, ${snIndex})">Pilih</a></td>
+                    </tr>`;
+            });
+            document.getElementById('listDataSN').innerHTML = available || '<tr><td colspan="2" class="text-center text-muted">Tidak ada SN tersedia</td></tr>';
+
+            let picked = '';
+            (product.serialNumber ?? []).forEach((sn, snIndex) => {
+                picked += `
+                    <tr>
+                        <td>${sn ?? ''}</td>
+                        <td><a class="btn btn-danger btn-sm" onclick="hapusSN(${index}, ${snIndex})">Hapus</a></td>
+                    </tr>`;
+            });
+            document.getElementById('listDataOutboundSN').innerHTML = picked || '<tr><td colspan="2" class="text-center text-muted">Belum ada SN dipilih</td></tr>';
+        }
+
+        async function refreshDataSN(index) {
+            const products = await kvGet('salesDocProduct', []) ?? [];
+            const product = products[index];
+            if (!product?.inventoryPackageId) return;
+            await new Promise((resolve) => {
+                $.ajax({
+                    url: '{{ route('outbound.sales-doc') }}',
+                    method: 'GET',
+                    data: { id: product.inventoryPackageId },
+                    success: async (res) => {
+                        const item = (res?.data?.inventory_package_item ?? [])
+                            .find(i => parseInt(i.id) === parseInt(product.inventoryPackageItemId));
+                        const picked = product.serialNumber ?? [];
+                        product.dataSN = (item?.inventory_package_item_sn ?? [])
+                            .filter(sn => parseInt(sn?.qty) !== 0)
+                            .map(sn => ({ serialNumber: sn.serial_number, select: picked.includes(sn.serial_number) ? 1 : 0 }));
+                        products[index] = product;
+                        await kvSet('salesDocProduct', products);
+                        resolve();
+                    },
+                    error: () => resolve()
+                });
+            });
+        }
+
+        window.openSerialNumberModal = async function openSerialNumberModal(index) {
+            const products = await kvGet('salesDocProduct', []) ?? [];
+            if (!products[index]) return;
+            document.getElementById('snIndex').value = index;
+            if (!products[index].serialNumber) products[index].serialNumber = [];
+            if (!Array.isArray(products[index].dataSN) || !products[index].dataSN.length) {
+                await refreshDataSN(index);
+            }
+            await renderSerialNumber(index);
+            new bootstrap.Modal(document.getElementById('serialNumberModal')).show();
+        };
+
+        window.filterSN = function filterSN() {
+            const q = (document.getElementById('searchSN').value || '').toLowerCase();
+            document.querySelectorAll('#listDataSN tr').forEach(tr => {
+                tr.style.display = (tr.textContent || '').toLowerCase().includes(q) ? '' : 'none';
+            });
+        };
+
+        window.filterPickedSN = function filterPickedSN() {
+            const q = (document.getElementById('snSearch').value || '').toLowerCase();
+            document.querySelectorAll('#listDataOutboundSN tr').forEach(tr => {
+                tr.style.display = (tr.textContent || '').toLowerCase().includes(q) ? '' : 'none';
+            });
+        };
+
+        window.pilihSemuaSN = async function pilihSemuaSN() {
+            const index = parseInt(document.getElementById('snIndex').value);
+            const products = await kvGet('salesDocProduct', []) ?? [];
+            const product = products[index];
+            if (!product) return;
+            const target = parseInt(product.qtySelect || 0);
+
+            (product.dataSN ?? []).forEach(sn => {
+                if (product.serialNumber.length >= target) return;
+                if (sn.select) return;
+                sn.select = 1;
+                product.serialNumber.push(sn.serialNumber);
+            });
+            await kvSet('salesDocProduct', products);
+            await renderSerialNumber(index);
+        };
+
+        window.pilihSNPaste = async function pilihSNPaste() {
+            const index = parseInt(document.getElementById('snIndex').value);
+            const products = await kvGet('salesDocProduct', []) ?? [];
+            const product = products[index];
+            if (!product) return;
+            const target = parseInt(product.qtySelect || 0);
+            const list = (document.getElementById('pasteSNList').value || '')
+                .split('\n').map(v => v.trim()).filter(v => v);
+            let notFound = [];
+
+            list.forEach(value => {
+                if (product.serialNumber.length >= target) return;
+                const sn = (product.dataSN ?? []).find(d => d.serialNumber === value);
+                if (!sn || sn.select) { notFound.push(value); return; }
+                sn.select = 1;
+                product.serialNumber.push(sn.serialNumber);
+            });
+            await kvSet('salesDocProduct', products);
+            document.getElementById('pasteSNList').value = '';
+            await renderSerialNumber(index);
+            if (notFound.length) {
+                Swal.fire({ title: 'SN tidak cocok', text: notFound.join(', '), icon: 'warning' });
+            }
+        };
+
+        window.togglePasteSN = function togglePasteSN() {
+            document.getElementById('pasteSNArea').classList.toggle('d-none');
+        };
+
         window.changeQtySelect = async function changeQtySelect(index, value) {
             const products = await kvGet('salesDocProduct', []) ?? [];
             if (!products[index]) return;
@@ -438,6 +661,7 @@
                 return;
             }
             products[index].qtySelect = newVal;
+            products[index].serialNumber = (products[index].serialNumber ?? []).slice(0, newVal);
             await kvSet('salesDocProduct', products);
             await viewProductPacking();
         };
@@ -462,7 +686,7 @@
 
             const payload = products.map(p => {
                 const { dataSN, serialNumber, ...rest } = p;
-                return rest;
+                return { ...rest, serialNumbers: serialNumber ?? [] };
             });
 
             const data = {

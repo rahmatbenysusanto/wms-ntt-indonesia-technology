@@ -102,7 +102,7 @@
                     <td class="c">{{ $detail->gross_weight ?? '-' }}</td>
                     <td class="c">{{ $detail->measurement ?: '-' }}</td>
                 </tr>
-                @php($serials = optional($detail->inventoryPackageItem)->inventoryPackageItemSn?->pluck('serial_number')->filter())
+                @php($serials = $detail->serial_numbers ?: optional($detail->inventoryPackageItem)->inventoryPackageItemSn?->pluck('serial_number')->filter())
                 <tr>
                     <td></td>
                     <td colspan="7" class="sn">S/N: ({{ $serials && $serials->isNotEmpty() ? $serials->implode(', ') : '-' }})</td>
