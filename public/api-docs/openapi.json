@@ -1,0 +1,416 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "NTT Warehouse Integration API",
+    "version": "1.0.0",
+    "description": "Read-only API for client integration: Inbound (purchase orders), Outbound, and Inventory.\n\nBase URL: `{APP_URL}/api/v1`\n\nAll endpoints require the `X-API-Key` header."
+  },
+  "servers": [
+    { "url": "/api/v1" }
+  ],
+  "security": [
+    { "ApiKeyAuth": [] }
+  ],
+  "components": {
+    "securitySchemes": {
+      "ApiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-API-Key"
+      }
+    },
+    "parameters": {
+      "page": {
+        "name": "page",
+        "in": "query",
+        "schema": { "type": "integer", "default": 1, "minimum": 1 }
+      },
+      "perPage": {
+        "name": "per_page",
+        "in": "query",
+        "schema": { "type": "integer", "default": 25, "maximum": 100 }
+      },
+      "dateFrom": {
+        "name": "date_from",
+        "in": "query",
+        "description": "YYYY-MM-DD",
+        "schema": { "type": "string", "format": "date" }
+      },
+      "dateTo": {
+        "name": "date_to",
+        "in": "query",
+        "description": "YYYY-MM-DD",
+        "schema": { "type": "string", "format": "date" }
+      },
+      "customerId": {
+        "name": "customer_id",
+        "in": "query",
+        "schema": { "type": "integer" }
+      }
+    },
+    "schemas": {
+      "Meta": {
+        "type": "object",
+        "properties": {
+          "current_page": { "type": "integer" },
+          "per_page": { "type": "integer" },
+          "total": { "type": "integer" },
+          "last_page": { "type": "integer" }
+        }
+      },
+      "Inbound": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "purc_doc": { "type": "string", "description": "Purchase document number" },
+          "status": { "type": "string" },
+          "sales_doc_qty": { "type": "integer" },
+          "material_qty": { "type": "integer" },
+          "item_qty": { "type": "integer" },
+          "koli": { "type": "integer", "nullable": true },
+          "created_at": { "type": "string", "format": "date-time" },
+          "customer": { "type": "string", "nullable": true },
+          "vendor": { "type": "string", "nullable": true },
+          "total_qc": { "type": "integer" },
+          "total_inbound": { "type": "integer" }
+        }
+      },
+      "Outbound": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "number": { "type": "string", "description": "Outbound document number" },
+          "purc_doc": { "type": "string" },
+          "type": { "type": "string", "example": "outbound" },
+          "status": { "type": "string", "example": "outbound" },
+          "outbound_date": { "type": "string", "format": "date-time" },
+          "delivery_date": { "type": "string", "nullable": true },
+          "delivery_note_number": { "type": "string", "nullable": true },
+          "ntt_dn": { "type": "string", "nullable": true },
+          "qty_item": { "type": "integer" },
+          "qty": { "type": "integer" },
+          "koli": { "type": "integer", "nullable": true },
+          "deliv_loc": { "type": "string", "nullable": true },
+          "deliv_dest": { "type": "string", "nullable": true },
+          "note": { "type": "string", "nullable": true },
+          "created_at": { "type": "string", "format": "date-time" },
+          "customer": { "type": "string", "nullable": true }
+        }
+      },
+      "Inventory": {
+        "type": "object",
+        "properties": {
+          "purchase_order_detail_id": { "type": "integer", "description": "Use as {purchaseOrderDetailId} for the inventory detail endpoint" },
+          "purc_doc": { "type": "string" },
+          "sales_doc": { "type": "string", "nullable": true },
+          "item": { "type": "integer", "nullable": true },
+          "material": { "type": "string" },
+          "po_item_desc": { "type": "string", "nullable": true },
+          "prod_hierarchy_desc": { "type": "string", "nullable": true },
+          "net_order_price": { "type": "number" },
+          "price_idr": { "type": "integer" },
+          "currency": { "type": "string", "nullable": true },
+          "customer": { "type": "string", "nullable": true },
+          "qty": { "type": "integer" },
+          "nominal": { "type": "number", "description": "qty * net_order_price" },
+          "nominal_idr": { "type": "number", "description": "qty * price_idr" },
+          "aging_date": { "type": "string", "format": "date-time", "nullable": true }
+        }
+      },
+      "InventoryLocation": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "qty": { "type": "integer" },
+          "aging_date": { "type": "string", "format": "date-time", "nullable": true },
+          "inventory_package_item_id": { "type": "integer" },
+          "is_parent": { "type": "boolean" },
+          "number": { "type": "string", "description": "PA / box number" },
+          "reff_number": { "type": "string", "nullable": true },
+          "return": { "type": "boolean" },
+          "return_from": { "type": "string", "nullable": true },
+          "storage_id": { "type": "integer" },
+          "raw": { "type": "string" },
+          "area": { "type": "string", "nullable": true },
+          "rak": { "type": "string", "nullable": true },
+          "bin": { "type": "string", "nullable": true },
+          "serial_numbers": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "message": { "type": "string" }
+        }
+      }
+    },
+    "responses": {
+      "Unauthorized": {
+        "description": "Missing or invalid X-API-Key",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" },
+            "example": { "message": "Unauthorized" }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "Resource not found",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" },
+            "example": { "message": "Not found" }
+          }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/inbound": {
+      "get": {
+        "summary": "List inbound purchase orders",
+        "tags": ["Inbound"],
+        "parameters": [
+          { "name": "purc_doc", "in": "query", "schema": { "type": "string" } },
+          { "name": "vendor_id", "in": "query", "schema": { "type": "integer" } },
+          { "$ref": "#/components/parameters/customerId" },
+          { "$ref": "#/components/parameters/dateFrom" },
+          { "$ref": "#/components/parameters/dateTo" },
+          { "$ref": "#/components/parameters/page" },
+          { "$ref": "#/components/parameters/perPage" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": { "type": "array", "items": { "$ref": "#/components/schemas/Inbound" } },
+                    "meta": { "$ref": "#/components/schemas/Meta" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/inbound/{id}": {
+      "get": {
+        "summary": "Inbound purchase order detail",
+        "tags": ["Inbound"],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Purchase order with line items",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "purchase_order": { "$ref": "#/components/schemas/Inbound" },
+                        "items": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": { "type": "integer" },
+                              "sales_doc": { "type": "string", "nullable": true },
+                              "item": { "type": "integer", "nullable": true },
+                              "material": { "type": "string" },
+                              "po_item_desc": { "type": "string", "nullable": true },
+                              "prod_hierarchy_desc": { "type": "string", "nullable": true },
+                              "qty_qc": { "type": "integer" },
+                              "po_item_qty": { "type": "integer", "nullable": true },
+                              "net_order_price": { "type": "number" },
+                              "currency": { "type": "string", "nullable": true }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/outbound": {
+      "get": {
+        "summary": "List outbound shipments",
+        "tags": ["Outbound"],
+        "parameters": [
+          { "name": "purc_doc", "in": "query", "schema": { "type": "string" } },
+          { "name": "number", "in": "query", "schema": { "type": "string" } },
+          { "name": "status", "in": "query", "schema": { "type": "string" } },
+          { "name": "serial_number", "in": "query", "schema": { "type": "string" } },
+          { "$ref": "#/components/parameters/customerId" },
+          { "$ref": "#/components/parameters/dateFrom" },
+          { "$ref": "#/components/parameters/dateTo" },
+          { "$ref": "#/components/parameters/page" },
+          { "$ref": "#/components/parameters/perPage" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": { "type": "array", "items": { "$ref": "#/components/schemas/Outbound" } },
+                    "meta": { "$ref": "#/components/schemas/Meta" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/outbound/{id}": {
+      "get": {
+        "summary": "Outbound detail with items and serial numbers",
+        "tags": ["Outbound"],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Outbound with line items",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "outbound": { "$ref": "#/components/schemas/Outbound" },
+                        "items": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": { "type": "integer" },
+                              "qty": { "type": "integer" },
+                              "is_parent": { "type": "boolean" },
+                              "purchase_order_detail_id": { "type": "integer" },
+                              "sales_doc": { "type": "string", "nullable": true },
+                              "item": { "type": "integer", "nullable": true },
+                              "material": { "type": "string" },
+                              "po_item_desc": { "type": "string", "nullable": true },
+                              "prod_hierarchy_desc": { "type": "string", "nullable": true },
+                              "net_order_price": { "type": "number" },
+                              "currency": { "type": "string", "nullable": true },
+                              "serial_numbers": {
+                                "type": "array",
+                                "items": { "type": "string" }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/inventory": {
+      "get": {
+        "summary": "List stock on hand (grouped per purchase order line)",
+        "description": "Excludes zero-quantity rows and internal storage locations (cross-dock, QC, PM, spare).",
+        "tags": ["Inventory"],
+        "parameters": [
+          { "name": "purc_doc", "in": "query", "schema": { "type": "string" } },
+          { "name": "sales_doc", "in": "query", "schema": { "type": "string" } },
+          { "name": "material", "in": "query", "schema": { "type": "string" } },
+          { "name": "serial_number", "in": "query", "schema": { "type": "string" } },
+          {
+            "name": "category",
+            "in": "query",
+            "schema": { "type": "string", "enum": ["parent", "child"] }
+          },
+          { "$ref": "#/components/parameters/customerId" },
+          { "$ref": "#/components/parameters/page" },
+          { "$ref": "#/components/parameters/perPage" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": { "type": "array", "items": { "$ref": "#/components/schemas/Inventory" } },
+                    "meta": { "$ref": "#/components/schemas/Meta" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/inventory/{purchaseOrderDetailId}": {
+      "get": {
+        "summary": "Inventory locations and serial numbers for one purchase order line",
+        "tags": ["Inventory"],
+        "parameters": [
+          {
+            "name": "purchaseOrderDetailId",
+            "in": "path",
+            "required": true,
+            "description": "`purchase_order_detail_id` from the /inventory list",
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Stock locations",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": { "type": "array", "items": { "$ref": "#/components/schemas/InventoryLocation" } }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    }
+  },
+  "tags": [
+    { "name": "Inbound", "description": "Incoming purchase orders and QC quantities" },
+    { "name": "Outbound", "description": "Outgoing shipments, delivery documents, serial numbers" },
+    { "name": "Inventory", "description": "Stock on hand, locations, serial numbers, aging" }
+  ]
+}

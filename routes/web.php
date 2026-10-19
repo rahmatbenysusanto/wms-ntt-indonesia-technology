@@ -17,6 +17,8 @@ use App\Http\Controllers\WarehouseController;
 use App\Http\Middleware\AuthLoginMiddleware;
 use Illuminate\Support\Facades\Route;
 
+Route::redirect('/api-docs', '/api-docs/index.html');
+
 Route::controller(AuthController::class)->group(function () {
     Route::get('/', 'login')->name('login');
     Route::post('/login', 'loginPost')->name('auth.login');
