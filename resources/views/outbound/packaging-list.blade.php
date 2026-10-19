@@ -68,6 +68,7 @@
                             <thead>
                                 <tr>
                                     <th>#</th>
+                                    <th>Doc No.</th>
                                     <th>Client</th>
                                     <th>Sales Doc</th>
                                     <th>QTY Item</th>
@@ -84,6 +85,7 @@
                                 @forelse ($packingLists as $index => $item)
                                     <tr>
                                         <td>{{ $packingLists->firstItem() + $index }}</td>
+                                        <td>{{ $item->doc_no ?? '-' }}</td>
                                         <td>{{ $item->customer->name ?? '-' }}</td>
                                         <td>
                                             @php
@@ -120,6 +122,11 @@
                                                         href="{{ route('outbound.packaging-list.edit', ['id' => $item->id]) }}"
                                                         title="Edit Draft">
                                                         <i class="mdi mdi-pencil"></i> Edit
+                                                    </a>
+                                                    <a class="btn btn-primary btn-sm"
+                                                        href="{{ route('outbound.packaging-list.download-pdf', ['id' => $item->id]) }}"
+                                                        target="_blank" title="Preview / Cetak PDF">
+                                                        <i class="mdi mdi-file-pdf-box"></i> PDF
                                                     </a>
                                                     <a class="btn btn-success btn-sm"
                                                         onclick="releasePacking({{ $item->id }})" title="Release">

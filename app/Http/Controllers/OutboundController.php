@@ -1112,7 +1112,11 @@ class OutboundController extends Controller
                 'material' => $p['material'] ?? null,
                 'item' => $p['item'] ?? null,
                 'po_item_desc' => $p['poItemDesc'] ?? null,
+                'part_number' => $p['partNumber'] ?? null,
+                'hs_code' => $p['hsCode'] ?? null,
                 'qty' => $qty,
+                'gross_weight' => $p['grossWeight'] ?? null,
+                'measurement' => $p['measurement'] ?? null,
             ];
         }
         return $rows;
@@ -1147,6 +1151,10 @@ class OutboundController extends Controller
                 'delivery_date' => $request->post('deliveryDate') ?: null,
                 'deliv_loc' => $request->post('delivLocation'),
                 'deliv_dest' => $request->post('deliveryDest'),
+                'dn_no' => $request->post('dnNo'),
+                'cust_po_no' => $request->post('custPoNo'),
+                'pic' => $request->post('pic'),
+                'ship_via' => $request->post('shipVia'),
                 'note' => $request->post('note'),
                 'status' => 'draft',
                 'created_by' => Auth::id(),
@@ -1208,6 +1216,10 @@ class OutboundController extends Controller
                 'delivery_date' => $request->post('deliveryDate') ?: null,
                 'deliv_loc' => $request->post('delivLocation'),
                 'deliv_dest' => $request->post('deliveryDest'),
+                'dn_no' => $request->post('dnNo'),
+                'cust_po_no' => $request->post('custPoNo'),
+                'pic' => $request->post('pic'),
+                'ship_via' => $request->post('shipVia'),
                 'note' => $request->post('note'),
                 'updated_by' => Auth::id(),
             ]);
@@ -1227,26 +1239,50 @@ class OutboundController extends Controller
         }
     }
 
+    /**
+     * Sequential doc number, e.g. No.05/PL-NTTIT/X/2026. Generated once at release.
+     */
+    private function packingListDocNo(PackingList $packingList): string
+    {
+        $roman = ['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'];
+        $date = $packingList->delivery_date ?? $packingList->created_at;
+        $suffix = '/PL-NTTIT/' . $roman[$date->month - 1] . '/' . $date->year;
+
+        $last = PackingList::whereNotNull('doc_no')
+            ->where('doc_no', 'like', 'No.%' . $suffix)
+            ->lockForUpdate()
+            ->pluck('doc_no')
+            ->map(fn ($no) => (int) substr($no, 3, strpos($no, '/') - 3))
+            ->max() ?? 0;
+
+        return 'No.' . str_pad((string) ($last + 1), 2, '0', STR_PAD_LEFT) . $suffix;
+    }
+
     public function packagingListRelease(Request $request): \Illuminate\Http\JsonResponse
     {
         try {
+            DB::beginTransaction();
             $packingList = PackingList::where('id', $request->post('id'))
                 ->where('status', 'draft')
                 ->first();
             if (!$packingList) {
+                DB::rollBack();
                 return response()->json(['status' => false, 'message' => 'Packing list not found or already released']);
             }
 
             $packingList->update([
+                'doc_no' => $packingList->doc_no ?: $this->packingListDocNo($packingList),
                 'status' => 'released',
                 'released_by' => Auth::id(),
                 'released_at' => now(),
             ]);
 
+            DB::commit();
             Log::channel('outbound')->info('Packing List Released', ['id' => $packingList->id, 'user_id' => Auth::id()]);
 
             return response()->json(['status' => true, 'message' => 'Packing List released successfully']);
         } catch (\Exception $e) {
+            DB::rollBack();
             return response()->json(['status' => false, 'message' => $e->getMessage()], 500);
         }
     }

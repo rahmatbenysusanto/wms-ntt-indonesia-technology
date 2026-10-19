@@ -11,6 +11,7 @@ class PackingList extends Model
     protected $table = 'packing_lists';
 
     protected $fillable = [
+        'doc_no',
         'customer_id',
         'sales_docs',
         'qty_item',
@@ -18,6 +19,10 @@ class PackingList extends Model
         'delivery_date',
         'deliv_loc',
         'deliv_dest',
+        'dn_no',
+        'cust_po_no',
+        'pic',
+        'ship_via',
         'note',
         'status',
         'created_by',

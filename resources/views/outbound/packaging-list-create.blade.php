@@ -60,6 +60,26 @@
                             <input type="datetime-local" class="form-control" id="deliveryDate"
                                 value="{{ $isEdit && $packingList->delivery_date ? $packingList->delivery_date->format('Y-m-d\TH:i') : '' }}">
                         </div>
+                        <div class="col-6 mb-3">
+                            <label class="form-label">DN No.</label>
+                            <input type="text" class="form-control" id="dnNo" placeholder="DN No."
+                                value="{{ $isEdit ? $packingList->dn_no : '' }}">
+                        </div>
+                        <div class="col-6 mb-3">
+                            <label class="form-label">Cust. PO No.</label>
+                            <input type="text" class="form-control" id="custPoNo" placeholder="Customer PO No."
+                                value="{{ $isEdit ? $packingList->cust_po_no : '' }}">
+                        </div>
+                        <div class="col-6 mb-3">
+                            <label class="form-label">PIC</label>
+                            <input type="text" class="form-control" id="pic" placeholder="PIC"
+                                value="{{ $isEdit ? $packingList->pic : '' }}">
+                        </div>
+                        <div class="col-6 mb-3">
+                            <label class="form-label">Ship Via</label>
+                            <input type="text" class="form-control" id="shipVia" placeholder="Ship Via"
+                                value="{{ $isEdit ? $packingList->ship_via : '' }}">
+                        </div>
                         <div class="col-12 mb-3">
                             <label class="form-label">Note</label>
                             <textarea class="form-control" id="note" rows="3" placeholder="Note - Optional">{{ $isEdit ? $packingList->note : '' }}</textarea>
@@ -118,6 +138,10 @@
                                 <th></th>
                                 <th></th>
                                 <th></th>
+                                <th></th>
+                                <th></th>
+                                <th></th>
+                                <th></th>
                                 <th>
                                     <select class="form-control" id="changeMassQTY" onchange="changeMassQTY(this.value)">
                                         <option value="0">-- Choose QTY --</option>
@@ -135,6 +159,10 @@
                                 <th>Box</th>
                                 <th>Sales Doc</th>
                                 <th class="text-center">QTY</th>
+                                <th>Part Number</th>
+                                <th>HS Code</th>
+                                <th>Gross Wt (kg)</th>
+                                <th>Measurement (CM)</th>
                                 <th>QTY Packing</th>
                                 <th>Action</th>
                             </tr>
@@ -220,6 +248,10 @@
                     productId: d.product_id,
                     material: d.material,
                     poItemDesc: d.po_item_desc,
+                    partNumber: d.part_number,
+                    hsCode: d.hs_code,
+                    grossWeight: d.gross_weight,
+                    measurement: d.measurement,
                     prodHierarchyDesc: '',
                     salesDoc: d.sales_doc,
                     purcDoc: '',
@@ -350,6 +382,10 @@
                             </td>
                             <td>${item?.salesDoc ?? ''}</td>
                             <td class="text-center fw-bold">${item?.qty ?? 0}</td>
+                            <td><input type="text" class="form-control" onchange="changeField(${index}, 'partNumber', this.value)" value="${item?.partNumber ?? ''}"></td>
+                            <td><input type="text" class="form-control" onchange="changeField(${index}, 'hsCode', this.value)" value="${item?.hsCode ?? ''}"></td>
+                            <td><input type="number" step="0.01" min="0" class="form-control" onchange="changeField(${index}, 'grossWeight', this.value)" value="${item?.grossWeight ?? ''}"></td>
+                            <td><input type="text" class="form-control" placeholder="P x L x T" onchange="changeField(${index}, 'measurement', this.value)" value="${item?.measurement ?? ''}"></td>
                             <td><input type="number" class="form-control" onchange="changeQtySelect(${index}, this.value)" value="${item?.qtySelect ?? 0}"></td>
                             <td><a class="btn btn-danger btn-sm" onclick="deleteProduct(${index})">Delete</a></td>
                         </tr>
@@ -383,6 +419,13 @@
             products[index].disable = 1;
             await kvSet('salesDocProduct', products);
             await viewProductPacking();
+        };
+
+        window.changeField = async function changeField(index, field, value) {
+            const products = await kvGet('salesDocProduct', []) ?? [];
+            if (!products[index]) return;
+            products[index][field] = value;
+            await kvSet('salesDocProduct', products);
         };
 
         window.changeQtySelect = async function changeQtySelect(index, value) {
@@ -429,6 +472,10 @@
                 delivLocation: $('#delivLocation').val(),
                 deliveryDest: $('#deliveryDest').val(),
                 deliveryDate: $('#deliveryDate').val() ?? '',
+                dnNo: $('#dnNo').val() ?? '',
+                custPoNo: $('#custPoNo').val() ?? '',
+                pic: $('#pic').val() ?? '',
+                shipVia: $('#shipVia').val() ?? '',
                 note: $('#note').val() ?? '',
             };
             if (isEdit) data.packing_id = $('#packingId').val();

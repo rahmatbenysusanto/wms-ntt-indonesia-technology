@@ -18,7 +18,11 @@ class PackingListDetail extends Model
         'material',
         'item',
         'po_item_desc',
+        'part_number',
+        'hs_code',
         'qty',
+        'gross_weight',
+        'measurement',
     ];
 
     public function packingList(): BelongsTo

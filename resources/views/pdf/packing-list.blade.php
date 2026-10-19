@@ -39,8 +39,7 @@
 @php
     $roman = ['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'];
     $docDate = $packingList->delivery_date ?? $packingList->created_at;
-    $docNo = 'No.' . str_pad((string) $packingList->id, 2, '0', STR_PAD_LEFT)
-        . '/PL-NTTIT/' . $roman[$docDate->month - 1] . '/' . $docDate->year;
+    $docNo = $packingList->doc_no ?? ('No.DRAFT/PL-NTTIT/' . $roman[$docDate->month - 1] . '/' . $docDate->year);
     $poNo = optional(optional(optional($packingList->details->first())->purchaseOrderDetail)->purchaseOrder)->purc_doc;
     $totalQty = $packingList->details->sum('qty');
     $totalBox = $packingList->details->sum(fn ($d) => $d->inventoryPackageItem?->qty ?? 0);
@@ -61,7 +60,7 @@
         <tr>
             <td class="addr">
                 <div class="lbl">DELIVER TO:</div>
-                <div>DN No. {{ $packingList->deliv_dest ?? '-' }}</div>
+                <div>DN No. {{ $packingList->dn_no ?? '-' }}</div>
                 <div>{{ $packingList->customer->name ?? '-' }}</div>
                 <div>{{ $packingList->deliv_loc ?? '-' }}</div>
                 <div>{{ $packingList->customer->kota ?? '-' }}, {{ $packingList->customer->kode_pos ?? '-' }}, {{ $packingList->customer->provinsi ?? '-' }}</div>
@@ -71,9 +70,9 @@
                 <div><span class="k">Reff</span>: {{ $packingList->note ?? '-' }}</div>
                 <div><span class="k">Date</span>: {{ $docDate->format('d-M-y') }}</div>
                 <div><span class="k">PO No.</span>: {{ $poNo ?? '-' }}</div>
-                <div><span class="k">Cust. PO No.</span>: -</div>
-                <div><span class="k">PIC</span>: -</div>
-                <div><span class="k">Ship Via</span>: -</div>
+                <div><span class="k">Cust. PO No.</span>: {{ $packingList->cust_po_no ?? '-' }}</div>
+                <div><span class="k">PIC</span>: {{ $packingList->pic ?? '-' }}</div>
+                <div><span class="k">Ship Via</span>: {{ $packingList->ship_via ?? '-' }}</div>
             </td>
         </tr>
     </table>
@@ -95,13 +94,13 @@
             @forelse ($packingList->details as $detail)
                 <tr>
                     <td class="c">{{ $loop->iteration }}</td>
-                    <td>{{ $detail->material ?? '-' }}</td>
-                    <td class="c">-</td>
+                    <td>{{ $detail->part_number ?: ($detail->material ?? '-') }}</td>
+                    <td class="c">{{ $detail->hs_code ?: '-' }}</td>
                     <td>{{ $detail->po_item_desc ?? '-' }}</td>
                     <td class="c">{{ $detail->qty }}</td>
                     <td class="c">{{ $detail->inventoryPackageItem?->qty ?? '-' }}</td>
-                    <td class="c">-</td>
-                    <td class="c">-</td>
+                    <td class="c">{{ $detail->gross_weight ?? '-' }}</td>
+                    <td class="c">{{ $detail->measurement ?: '-' }}</td>
                 </tr>
                 @php($serials = optional($detail->inventoryPackageItem)->inventoryPackageItemSn?->pluck('serial_number')->filter())
                 <tr>
