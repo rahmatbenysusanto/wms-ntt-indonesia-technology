@@ -111,6 +111,10 @@
                                                 };
                                             @endphp
                                             <span class="badge {{ $badge }}">{{ ucfirst($item->status) }}</span>
+                                            @if ($item->repacked_at)
+                                                <br>
+                                                <span class="badge bg-info mt-1">Repacked: {{ $item->koli_qty }} koli</span>
+                                            @endif
                                         </td>
                                         <td>{{ $item->createdBy->name ?? '-' }}</td>
                                         <td>{{ $item->updatedBy->name ?? '-' }}</td>
@@ -146,6 +150,18 @@
                                                         Released {{ $item->released_at?->format('d M Y H:i') ?? '-' }}
                                                         <br>by {{ $item->releasedBy->name ?? '-' }}
                                                     </span>
+                                                    <a class="btn btn-info btn-sm"
+                                                        onclick="openRepack({{ $item->id }}, {{ $item->koli_qty ?? 'null' }}, '{{ $item->repack_length }}', '{{ $item->repack_width }}', '{{ $item->repack_height }}', '{{ $item->repack_weight }}')"
+                                                        title="Input Repack / Koli Final">
+                                                        <i class="mdi mdi-package-variant"></i> Repack
+                                                    </a>
+                                                    @if ($item->repacked_at)
+                                                        <a class="btn btn-dark btn-sm"
+                                                            href="{{ route('outbound.packaging-list.download-pdf', ['id' => $item->id, 'mode' => 'final']) }}"
+                                                            target="_blank" title="Cetak PDF Final (Setelah Repack)">
+                                                            <i class="mdi mdi-file-pdf-box"></i> PDF Final
+                                                        </a>
+                                                    @endif
                                                 @endif
                                             </div>
                                         </td>
@@ -166,6 +182,46 @@
                     <div class="mt-3">
                         {{ $packingLists->appends(request()->query())->links() }}
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="repackModal" class="modal fade" tabindex="-1" aria-hidden="true" style="display: none;">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Repack Data (Koli Final)</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="repackId">
+                    <div class="mb-3">
+                        <label class="form-label">Jumlah Koli</label>
+                        <input type="number" min="1" class="form-control" id="repackKoli">
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-4">
+                            <label class="form-label">Panjang (cm)</label>
+                            <input type="number" step="0.01" min="0.01" class="form-control" id="repackLength">
+                        </div>
+                        <div class="col-4">
+                            <label class="form-label">Lebar (cm)</label>
+                            <input type="number" step="0.01" min="0.01" class="form-control" id="repackWidth">
+                        </div>
+                        <div class="col-4">
+                            <label class="form-label">Tinggi (cm)</label>
+                            <input type="number" step="0.01" min="0.01" class="form-control" id="repackHeight">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Total Berat (kg)</label>
+                        <input type="number" step="0.01" min="0.01" class="form-control" id="repackWeight">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="saveRepack()">Save</button>
                 </div>
             </div>
         </div>
@@ -238,6 +294,46 @@
                     },
                     error: () => Swal.fire({ title: 'Error', text: 'Request failed', icon: 'error' })
                 });
+            });
+        }
+
+        function openRepack(id, koli, length, width, height, weight) {
+            $('#repackId').val(id);
+            $('#repackKoli').val(koli ?? '');
+            $('#repackLength').val(length || '');
+            $('#repackWidth').val(width || '');
+            $('#repackHeight').val(height || '');
+            $('#repackWeight').val(weight || '');
+
+            new bootstrap.Modal(document.getElementById('repackModal')).show();
+        }
+
+        function saveRepack() {
+            $.ajax({
+                url: '{{ route('outbound.packaging-list.repack') }}',
+                method: 'POST',
+                data: {
+                    _token: '{{ csrf_token() }}',
+                    id: $('#repackId').val(),
+                    koli_qty: $('#repackKoli').val(),
+                    length: $('#repackLength').val(),
+                    width: $('#repackWidth').val(),
+                    height: $('#repackHeight').val(),
+                    weight: $('#repackWeight').val()
+                },
+                success: (res) => {
+                    if (res?.status) {
+                        Swal.fire({ title: 'Success', text: res.message, icon: 'success' })
+                            .then(() => location.reload());
+                    } else {
+                        Swal.fire({ title: 'Error', text: res.message, icon: 'error' });
+                    }
+                },
+                error: (xhr) => Swal.fire({
+                    title: 'Error',
+                    text: xhr.responseJSON?.message ?? 'Request failed',
+                    icon: 'error'
+                })
             });
         }
     </script>

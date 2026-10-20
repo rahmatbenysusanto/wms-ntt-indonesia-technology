@@ -1083,7 +1083,7 @@ class OutboundController extends Controller
 
         $packingList = null;
         if ($request->get('id')) {
-            $packingList = PackingList::with('details.inventoryPackageItem.inventoryPackageItemSn')
+            $packingList = PackingList::with('details')
                 ->where('id', $request->get('id'))
                 ->where('status', 'draft')
                 ->firstOrFail();
@@ -1117,7 +1117,6 @@ class OutboundController extends Controller
                 'qty' => $qty,
                 'gross_weight' => $p['grossWeight'] ?? null,
                 'measurement' => $p['measurement'] ?? null,
-                'serial_numbers' => !empty($p['serialNumbers']) ? array_values((array) $p['serialNumbers']) : null,
             ];
         }
         return $rows;
@@ -1288,6 +1287,50 @@ class OutboundController extends Controller
         }
     }
 
+    public function packagingListRepackStore(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $request->validate([
+            'id' => 'required|integer',
+            'koli_qty' => 'required|integer|min:1',
+            'length' => 'required|numeric|min:0.01',
+            'width' => 'required|numeric|min:0.01',
+            'height' => 'required|numeric|min:0.01',
+            'weight' => 'required|numeric|min:0.01',
+        ]);
+
+        try {
+            DB::beginTransaction();
+            Log::channel('outbound')->info('Packing List Repack Started', ['user_id' => Auth::id()]);
+
+            $packingList = PackingList::where('id', $request->post('id'))
+                ->where('status', 'released')
+                ->first();
+            if (!$packingList) {
+                DB::rollBack();
+                return response()->json(['status' => false, 'message' => 'Packing list not found or not released']);
+            }
+
+            $packingList->update([
+                'koli_qty' => $request->post('koli_qty'),
+                'repack_length' => $request->post('length'),
+                'repack_width' => $request->post('width'),
+                'repack_height' => $request->post('height'),
+                'repack_weight' => $request->post('weight'),
+                'repacked_at' => now(),
+                'repacked_by' => Auth::id(),
+            ]);
+
+            DB::commit();
+            Log::channel('outbound')->info('Packing List Repacked', ['id' => $packingList->id, 'user_id' => Auth::id()]);
+
+            return response()->json(['status' => true, 'message' => 'Repack data saved']);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::channel('outbound')->error('Packing List Repack Failed', ['error' => $e->getMessage()]);
+            return response()->json(['status' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
     public function packagingListDestroy(Request $request): \Illuminate\Http\JsonResponse
     {
         try {
@@ -1314,7 +1357,8 @@ class OutboundController extends Controller
             'details.inventoryPackageItem.inventoryPackageItemSn',
             'details.purchaseOrderDetail.purchaseOrder',
             'createdBy',
-            'releasedBy'
+            'releasedBy',
+            'repackedBy'
         )
             ->where('id', $request->query('id'))
             ->first();
@@ -1323,10 +1367,12 @@ class OutboundController extends Controller
             return back()->with('error', 'Packing List not found');
         }
 
-        $pdf = Pdf::loadView('pdf.packing-list', ['packingList' => $packingList])
+        $mode = $request->query('mode') === 'final' ? 'final' : 'original';
+
+        $pdf = Pdf::loadView('pdf.packing-list', compact('packingList', 'mode'))
             ->setPaper('a4', 'portrait');
 
-        return $pdf->stream('packing-list-' . $packingList->id . '.pdf');
+        return $pdf->stream('packing-list-' . $packingList->id . ($mode === 'final' ? '-final' : '') . '.pdf');
     }
 
     public function pendingStore(Request $request): \Illuminate\Http\JsonResponse

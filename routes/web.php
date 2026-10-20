@@ -322,6 +322,7 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
             Route::post('/store', 'packagingListStore')->name('outbound.packaging-list.store');
             Route::post('/update', 'packagingListUpdate')->name('outbound.packaging-list.update');
             Route::post('/release', 'packagingListRelease')->name('outbound.packaging-list.release');
+            Route::post('/repack', 'packagingListRepackStore')->name('outbound.packaging-list.repack');
             Route::delete('/delete', 'packagingListDestroy')->name('outbound.packaging-list.destroy');
             Route::get('/download-pdf', 'packagingListDownloadPdf')->name('outbound.packaging-list.download-pdf');
         });

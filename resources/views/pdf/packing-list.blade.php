@@ -8,7 +8,6 @@
         body { font-family: DejaVu Sans, sans-serif; font-size: 10px; color: #000; }
         .hd { width: 100%; border-collapse: collapse; }
         .hd td { vertical-align: top; }
-        .hd .logo { height: 46px; }
         .hd .right { text-align: right; }
         .hd h1 { margin: 0; font-size: 22px; font-weight: bold; }
         .hd .sub { font-size: 10px; }
@@ -31,7 +30,6 @@
         .sign td { width: 50%; vertical-align: bottom; }
         .sign .r { text-align: right; }
         .sign .space { height: 62px; }
-        .sign .logo { height: 38px; }
         .sign .name { font-weight: bold; font-size: 11px; }
     </style>
 </head>
@@ -43,14 +41,22 @@
     $poNo = optional(optional(optional($packingList->details->first())->purchaseOrderDetail)->purchaseOrder)->purc_doc;
     $totalQty = $packingList->details->sum('qty');
     $totalBox = $packingList->details->sum(fn ($d) => $d->inventoryPackageItem?->qty ?? 0);
+    $isFinal = ($mode ?? 'original') === 'final' && $packingList->repacked_at;
+    $fmt = fn ($v) => rtrim(rtrim(number_format((float) $v, 2, ',', ''), '0'), ',');
+    $dims = $isFinal
+        ? $fmt($packingList->repack_length) . ' x ' . $fmt($packingList->repack_width) . ' x ' . $fmt($packingList->repack_height)
+        : null;
 @endphp
     <table class="hd">
         <tr>
-            <td><img src="{{ public_path('assets/images/ntt-data-logo.png') }}" class="logo" alt="NTT DATA"></td>
+            <td></td>
             <td class="right">
                 <h1>PACKING LIST</h1>
                 <div class="sub">1 of 1</div>
                 <div class="sub">{{ $docNo }}</div>
+                @if ($isFinal)
+                    <div class="sub"><strong>FINAL (REPACKED)</strong></div>
+                @endif
             </td>
         </tr>
     </table>
@@ -77,6 +83,29 @@
         </tr>
     </table>
 
+    @if ($isFinal)
+        <table class="tbl" style="margin-bottom:10px">
+            <thead>
+                <tr>
+                    <th>Total Koli</th>
+                    <th>Pallet Dimension (P x L x T) /CM</th>
+                    <th>Total Weight /Kg</th>
+                    <th>Repacked At</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="c">{{ $packingList->koli_qty }}</td>
+                    <td class="c">{{ $dims }}</td>
+                    <td class="c">{{ number_format((float) $packingList->repack_weight, 2, ',', '.') }}</td>
+                    <td class="c">
+                        {{ $packingList->repacked_at->format('d-M-y H:i') }} / {{ $packingList->repackedBy->name ?? '-' }}
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    @endif
+
     <table class="tbl">
         <thead>
             <tr>
@@ -102,11 +131,6 @@
                     <td class="c">{{ $detail->gross_weight ?? '-' }}</td>
                     <td class="c">{{ $detail->measurement ?: '-' }}</td>
                 </tr>
-                @php($serials = $detail->serial_numbers ?: optional($detail->inventoryPackageItem)->inventoryPackageItemSn?->pluck('serial_number')->filter())
-                <tr>
-                    <td></td>
-                    <td colspan="7" class="sn">S/N: ({{ $serials && $serials->isNotEmpty() ? $serials->implode(', ') : '-' }})</td>
-                </tr>
             @empty
                 <tr><td colspan="8" class="c">No items</td></tr>
             @endforelse
@@ -114,7 +138,7 @@
         <tfoot>
             <tr>
                 <td colspan="3"></td>
-                <td>Shipment Weight : - kg</td>
+                <td>Shipment Weight : {{ $isFinal ? number_format((float) $packingList->repack_weight, 2, ',', '.') . ' kg' : '- kg' }}</td>
                 <td class="c">{{ $totalQty }}</td>
                 <td class="c">{{ $totalBox }}</td>
                 <td class="r">-</td>
@@ -123,14 +147,20 @@
         </tfoot>
     </table>
 
-    <div class="carton">Total Carton : {{ $totalBox }} Cartons</div>
+    <div class="carton">
+        @if ($isFinal)
+            Total Koli : {{ $packingList->koli_qty }} Koli &mdash; Pallet {{ $dims }} CM &mdash;
+            {{ number_format((float) $packingList->repack_weight, 2, ',', '.') }} Kg
+        @else
+            Total Carton : {{ $totalBox }} Cartons
+        @endif
+    </div>
 
     <table class="sign">
         <tr>
             <td></td>
             <td class="r">
                 <div class="space"></div>
-                <img src="{{ public_path('assets/images/ntt-data-logo.png') }}" class="logo" alt="NTT DATA">
                 <div class="name">PT NTT INDONESIA TECHNOLOGY</div>
                 <div>Logistic</div>
             </td>
