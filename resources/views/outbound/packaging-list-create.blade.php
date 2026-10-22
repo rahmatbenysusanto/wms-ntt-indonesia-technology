@@ -91,32 +91,50 @@
 
         <div class="col-4">
             <div class="card">
-                <div class="card-header">
-                    <h4 class="card-title mb-0">List Outbound</h4>
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="card-title mb-0">List Sumber</h4>
+                    <a class="btn btn-success btn-sm" onclick="pilihYangDicentang()">
+                        <i class="mdi mdi-check-all"></i> Pilih yang Dicentang
+                    </a>
                 </div>
                 <div class="card-body">
                     <table id="tabelSalesDoc" class="table table-striped align-middle">
                         <thead>
                             <tr>
+                                <th><input type="checkbox" id="checkAll" onchange="toggleCheckAll(this)"></th>
                                 <th>#</th>
-                                <th>Outbound</th>
+                                <th>Sumber</th>
+                                <th>Info</th>
                                 <th>Customer</th>
                                 <th>QTY</th>
-                                <th>Action</th>
                             </tr>
                         </thead>
                         <tbody id="listSalesDoc">
-                            @foreach ($outbounds as $idx => $ob)
+                            @foreach ($sourceList as $idx => $src)
                                 <tr>
+                                    <td>
+                                        <input type="checkbox" class="row-check"
+                                            data-source="{{ $src['source'] }}"
+                                            data-id="{{ $src['id'] }}"
+                                            data-customer-id="{{ $src['customer_id'] }}">
+                                    </td>
                                     <td>{{ $idx + 1 }}</td>
                                     <td>
-                                        <div><b>{{ $ob->number }}</b></div>
-                                        <div class="small text-muted">{{ $ob->purc_doc }}</div>
-                                        <div class="small text-muted">{{ $ob->outbound_date ? \Carbon\Carbon::parse($ob->outbound_date)->format('d M Y') : '' }}</div>
+                                        @if ($src['source'] === 'outbound')
+                                            <span class="badge bg-primary">Outbound</span>
+                                        @else
+                                            <span class="badge bg-success">Inventory</span>
+                                        @endif
                                     </td>
-                                    <td>{{ $ob->customer->name ?? '' }}</td>
-                                    <td>{{ $ob->qty }}</td>
-                                    <td><a class="btn btn-info btn-sm" onclick="pilihOutbound({{ $ob->id }}, {{ $ob->customer_id }})">Pilih</a></td>
+                                    <td>
+                                        <div><b>{{ $src['label'] }}</b></div>
+                                        <div class="small text-muted">{{ $src['sub'] }}</div>
+                                        <div class="small text-muted">
+                                            {{ $src['date'] ? \Carbon\Carbon::parse($src['date'])->format('d M Y') : '' }}
+                                        </div>
+                                    </td>
+                                    <td>{{ $src['customer_name'] }}</td>
+                                    <td>{{ $src['qty'] }}</td>
                                 </tr>
                             @endforeach
                         </tbody>
@@ -152,7 +170,6 @@
                                 <th></th>
                                 <th></th>
                                 <th></th>
-                                <th></th>
                                 <th>
                                     <select class="form-control" id="changeMassQTY" onchange="changeMassQTY(this.value)">
                                         <option value="0">-- Choose QTY --</option>
@@ -164,11 +181,10 @@
                                 <th></th>
                             </tr>
                             <tr>
-                                <th>Material</th>
+                                <th>Part Number</th>
                                 <th>Item</th>
                                 <th>Sales Doc</th>
                                 <th class="text-center">QTY</th>
-                                <th>Part Number</th>
                                 <th>HS Code</th>
                                 <th>Gross Wt (kg)</th>
                                 <th>Measurement (CM)</th>
@@ -191,62 +207,47 @@
     <script>
         const isEdit = {{ $isEdit ? 'true' : 'false' }};
         const db = new Dexie('PackingDB');
-        db.version(1).stores({
-            kv: 'key'
-        });
+        db.version(1).stores({ kv: 'key' });
 
-        async function kvSet(key, value) {
-            return db.kv.put({ key, value });
-        }
+        async function kvSet(key, value) { return db.kv.put({ key, value }); }
+        async function kvGet(key, fallback = null) { const row = await db.kv.get(key); return row ? row.value : fallback; }
+        async function kvDelete(key) { return db.kv.delete(key); }
 
-        async function kvGet(key, fallback = null) {
-            const row = await db.kv.get(key);
-            return row ? row.value : fallback;
-        }
-
-        async function kvDelete(key) {
-            return db.kv.delete(key);
-        }
-
-        function reinitSalesDocTable() {
+        function reinitTable() {
             const $tbl = $('#tabelSalesDoc');
             if ($.fn.DataTable && $.fn.DataTable.isDataTable($tbl)) $tbl.DataTable().destroy();
             if ($.fn.DataTable) $tbl.DataTable({ pageLength: 10, responsive: true, autoWidth: false });
         }
 
-        $(document).ready(async function() {
-            $('.select2Customer').select2({
-                placeholder: '-- Select Customer --',
-                allowClear: true,
-                width: '100%'
-            });
+        window.toggleCheckAll = function(el) {
+            document.querySelectorAll('.row-check').forEach(cb => cb.checked = el.checked);
+        };
 
-            reinitSalesDocTable();
+        $(document).ready(async function() {
+            $('.select2Customer').select2({ placeholder: '-- Select Customer --', allowClear: true, width: '100%' });
+            reinitTable();
 
             // Pre-fill products when editing a draft
             const existingDetails = @json($isEdit ? $packingList->details : []);
             const existingOutboundId = @json($isEdit && $packingList ? $packingList->outbound_id : null);
 
             if (isEdit && existingDetails.length) {
-                const products = existingDetails.map(d => {
-                    return {
-                        outboundDetailId: null,
-                        inventoryPackageItemId: d.inventory_package_item_id,
-                        purchaseOrderDetailId: d.purchase_order_detail_id,
-                        qty: d.qty,
-                        qtySelect: d.qty,
-                        productId: d.product_id,
-                        material: d.material,
-                        poItemDesc: d.po_item_desc,
-                        partNumber: d.part_number,
-                        hsCode: d.hs_code,
-                        grossWeight: d.gross_weight,
-                        measurement: d.measurement,
-                        salesDoc: d.sales_doc,
-                        item: d.item,
-                        disable: 0,
-                    };
-                });
+                const products = existingDetails.map(d => ({
+                    outboundDetailId: null,
+                    inventoryPackageItemId: d.inventory_package_item_id,
+                    purchaseOrderDetailId: d.purchase_order_detail_id,
+                    qty: d.qty,
+                    qtySelect: d.qty,
+                    productId: d.product_id,
+                    material: d.material,
+                    poItemDesc: d.po_item_desc,
+                    hsCode: d.hs_code,
+                    grossWeight: d.gross_weight,
+                    measurement: d.measurement,
+                    salesDoc: d.sales_doc,
+                    item: d.item,
+                    disable: 0,
+                }));
                 await kvSet('salesDocProduct', products);
                 await kvSet('selectedOutboundId', existingOutboundId);
             } else {
@@ -257,54 +258,93 @@
             await viewProductPacking();
         });
 
-        window.pilihOutbound = function pilihOutbound(outboundId, customerId) {
-            $.ajax({
-                url: '{{ route('outbound.packaging-list.outbound-items') }}',
-                method: 'GET',
-                data: { id: outboundId },
-                success: async (res) => {
-                    try {
-                        const outbound = res?.data;
-                        if (!outbound) {
-                            Swal.fire({ title: 'Error', text: 'Data outbound tidak ditemukan', icon: 'error' });
-                            return;
-                        }
-
-                        // Set customer sesuai outbound
-                        $('#customerId').val(customerId).trigger('change');
-
-                        const products = [];
-                        (outbound?.outbound_detail ?? []).forEach((detail) => {
-                            const pod = detail?.inventory_package_item?.purchase_order_detail;
-                            products.push({
-                                outboundDetailId: detail.id,
-                                inventoryPackageItemId: detail.inventory_package_item_id,
-                                purchaseOrderDetailId: detail?.purchase_order_detail_id ?? pod?.id ?? null,
-                                qty: detail.qty,
-                                qtySelect: detail.qty,
-                                productId: detail?.inventory_package_item?.product_id ?? null,
-                                material: pod?.material ?? '',
-                                poItemDesc: pod?.po_item_desc ?? '',
-                                salesDoc: pod?.sales_doc ?? '',
-                                item: pod?.item ?? '',
-                                partNumber: '',
-                                hsCode: '',
-                                grossWeight: '',
-                                measurement: '',
-                                disable: 0,
-                            });
-                        });
-
-                        await kvSet('salesDocProduct', products);
-                        await kvSet('selectedOutboundId', outboundId);
-                        await viewProductPacking();
-                    } catch (e) {
-                        console.error('Gagal proses pilihOutbound:', e);
-                        Swal.fire({ title: 'Error', text: 'Gagal memproses data', icon: 'error' });
-                    }
-                },
-                error: () => Swal.fire({ title: 'Error', text: 'Request gagal', icon: 'error' })
+        window.pilihYangDicentang = async function() {
+            const checked = [];
+            document.querySelectorAll('.row-check:checked').forEach(cb => {
+                checked.push({
+                    source: cb.dataset.source,
+                    id: cb.dataset.id,
+                    customerId: cb.dataset.customerId,
+                });
             });
+
+            if (!checked.length) {
+                Swal.fire({ title: 'Warning', text: 'Centang minimal 1 baris', icon: 'warning' });
+                return;
+            }
+
+            // Fetch semua items secara parallel
+            let results;
+            try {
+                results = await Promise.all(checked.map(item => {
+                    const url = item.source === 'outbound'
+                        ? '{{ route('outbound.packaging-list.outbound-items') }}'
+                        : '{{ route('outbound.packaging-list.inventory-items') }}';
+                    return $.get(url, { id: item.id });
+                }));
+            } catch (e) {
+                Swal.fire({ title: 'Error', text: 'Gagal fetch data', icon: 'error' });
+                return;
+            }
+
+            const allProducts = [];
+            results.forEach((res, i) => {
+                const src = checked[i];
+                if (src.source === 'outbound') {
+                    (res?.data?.outbound_detail ?? []).forEach(detail => {
+                        const pod = detail?.inventory_package_item?.purchase_order_detail;
+                        allProducts.push({
+                            outboundDetailId: detail.id,
+                            inventoryPackageItemId: detail.inventory_package_item_id,
+                            purchaseOrderDetailId: pod?.id ?? null,
+                            qty: detail.qty,
+                            qtySelect: detail.qty,
+                            productId: detail?.inventory_package_item?.product_id ?? null,
+                            material: pod?.material ?? '',
+                            poItemDesc: pod?.po_item_desc ?? '',
+                            salesDoc: pod?.sales_doc ?? '',
+                            item: pod?.item ?? '',
+                            hsCode: '',
+                            grossWeight: '',
+                            measurement: '',
+                            disable: 0,
+                            sourceType: 'outbound',
+                        });
+                    });
+                } else {
+                    (res?.data?.inventory_package_item ?? []).forEach(ipItem => {
+                        const pod = ipItem?.purchase_order_detail;
+                        allProducts.push({
+                            outboundDetailId: null,
+                            inventoryPackageItemId: ipItem.id,
+                            purchaseOrderDetailId: pod?.id ?? null,
+                            qty: ipItem.qty,
+                            qtySelect: ipItem.qty,
+                            productId: ipItem.product_id ?? null,
+                            material: pod?.material ?? '',
+                            poItemDesc: pod?.po_item_desc ?? '',
+                            salesDoc: pod?.sales_doc ?? '',
+                            item: pod?.item ?? '',
+                            hsCode: '',
+                            grossWeight: '',
+                            measurement: '',
+                            disable: 0,
+                            sourceType: 'inventory',
+                        });
+                    });
+                }
+            });
+
+            // Set customer dari item pertama
+            if (checked[0]?.customerId) {
+                $('#customerId').val(checked[0].customerId).trigger('change');
+            }
+
+            // Append ke existing products
+            const existing = await kvGet('salesDocProduct', []) ?? [];
+            await kvSet('salesDocProduct', [...existing, ...allProducts]);
+            await kvSet('selectedOutboundId', checked[0]?.id ?? null);
+            await viewProductPacking();
         };
 
         async function viewProductPacking() {
@@ -317,12 +357,11 @@
                         <tr>
                             <td>
                                 <div>${item?.material ?? ''}</div>
-                                <div>${item?.poItemDesc ?? ''}</div>
+                                <div class="small text-muted">${item?.poItemDesc ?? ''}</div>
                             </td>
                             <td>${item.item ?? ''}</td>
                             <td>${item?.salesDoc ?? ''}</td>
                             <td class="text-center fw-bold">${item?.qty ?? 0}</td>
-                            <td><input type="text" class="form-control" onchange="changeField(${index}, 'partNumber', this.value)" value="${item?.partNumber ?? ''}"></td>
                             <td><input type="text" class="form-control" onchange="changeField(${index}, 'hsCode', this.value)" value="${item?.hsCode ?? ''}"></td>
                             <td><input type="number" step="0.01" min="0" class="form-control" onchange="changeField(${index}, 'grossWeight', this.value)" value="${item?.grossWeight ?? ''}"></td>
                             <td><input type="text" class="form-control" placeholder="P x L x T" onchange="changeField(${index}, 'measurement', this.value)" value="${item?.measurement ?? ''}"></td>
@@ -343,7 +382,7 @@
             for (const item of products) {
                 if (parseInt(item?.disable) === 0) {
                     if (qtyValue > parseInt(item.qty)) {
-                        await Swal.fire({ icon: 'error', title: 'Qty tidak valid', text: 'Qty yang dipilih melebihi stok tersedia' });
+                        await Swal.fire({ icon: 'error', title: 'Qty tidak valid', text: 'Qty melebihi qty tersedia' });
                         return;
                     }
                     item.qtySelect = qtyValue;
@@ -373,7 +412,7 @@
             if (!products[index]) return;
             const newVal = parseInt(value || 0);
             if (newVal > parseInt(products[index]?.qty || 0)) {
-                Swal.fire({ title: 'Warning!', text: 'QTY packing melebihi qty outbound', icon: 'warning' });
+                Swal.fire({ title: 'Warning!', text: 'QTY packing melebihi qty tersedia', icon: 'warning' });
                 await viewProductPacking();
                 return;
             }
@@ -423,18 +462,14 @@
             if (isEdit) data.packing_id = $('#packingId').val();
 
             $.ajax({
-                url: isEdit ?
-                    '{{ route('outbound.packaging-list.update') }}' :
-                    '{{ route('outbound.packaging-list.store') }}',
+                url: isEdit
+                    ? '{{ route('outbound.packaging-list.update') }}'
+                    : '{{ route('outbound.packaging-list.store') }}',
                 method: 'POST',
                 data: data,
                 success: (res) => {
                     if (res?.status) {
-                        Swal.fire({
-                                title: 'Success',
-                                text: res?.message || 'Saved successfully',
-                                icon: 'success'
-                            })
+                        Swal.fire({ title: 'Success', text: res?.message || 'Saved successfully', icon: 'success' })
                             .then(() => { window.location.href = '{{ route('outbound.packaging-list') }}'; });
                     } else {
                         Swal.fire({ title: 'Error', text: res?.message || 'Save failed', icon: 'error' });

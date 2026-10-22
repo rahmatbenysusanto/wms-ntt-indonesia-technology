@@ -1075,12 +1075,41 @@ class OutboundController extends Controller
     public function packagingListCreate(Request $request): View
     {
         // Outbound yang sudah ter-outbound dan belum dibuatkan PL
-        $outbounds = Outbound::with('customer', 'user')
+        $outbounds = Outbound::with('customer')
             ->where('type', 'outbound')
             ->where('status', 'outbound')
             ->whereDoesntHave('packingList')
             ->latest()
-            ->get();
+            ->get()
+            ->map(fn($o) => [
+                'source'        => 'outbound',
+                'id'            => $o->id,
+                'label'         => $o->number,
+                'sub'           => $o->purc_doc,
+                'date'          => $o->outbound_date,
+                'customer_id'   => $o->customer_id,
+                'customer_name' => $o->customer->name ?? '',
+                'qty'           => $o->qty,
+            ]);
+
+        // InventoryPackage (barang di BO/inventory, qty > 0, bukan storage khusus)
+        $inventoryItems = InventoryPackage::with('purchaseOrder.customer')
+            ->where('qty', '!=', 0)
+            ->whereNotIn('storage_id', [2, 3, 4])
+            ->latest()
+            ->get()
+            ->map(fn($ip) => [
+                'source'        => 'inventory',
+                'id'            => $ip->id,
+                'label'         => $ip->number,
+                'sub'           => $ip->purchaseOrder->purc_doc ?? '',
+                'date'          => $ip->created_at,
+                'customer_id'   => $ip->purchaseOrder->customer_id ?? null,
+                'customer_name' => $ip->purchaseOrder->customer->name ?? '',
+                'qty'           => $ip->qty,
+            ]);
+
+        $sourceList = $outbounds->concat($inventoryItems)->sortByDesc('date')->values();
 
         $customer = Customer::all();
 
@@ -1091,18 +1120,29 @@ class OutboundController extends Controller
                 ->where('status', 'draft')
                 ->firstOrFail();
 
-            // Jika edit, tampilkan juga outbound milik PL ini
+            // Jika edit, tambahkan kembali outbound milik PL ini (sudah ter-exclude)
             if ($packingList->outbound_id) {
-                $currentOutbound = Outbound::with('customer', 'user')
-                    ->find($packingList->outbound_id);
-                if ($currentOutbound && !$outbounds->contains('id', $currentOutbound->id)) {
-                    $outbounds->prepend($currentOutbound);
+                $currentOutbound = Outbound::with('customer')->find($packingList->outbound_id);
+                if ($currentOutbound) {
+                    $entry = [
+                        'source'        => 'outbound',
+                        'id'            => $currentOutbound->id,
+                        'label'         => $currentOutbound->number,
+                        'sub'           => $currentOutbound->purc_doc,
+                        'date'          => $currentOutbound->outbound_date,
+                        'customer_id'   => $currentOutbound->customer_id,
+                        'customer_name' => $currentOutbound->customer->name ?? '',
+                        'qty'           => $currentOutbound->qty,
+                    ];
+                    if (!$sourceList->contains(fn($v) => $v['source'] === 'outbound' && $v['id'] === $currentOutbound->id)) {
+                        $sourceList->prepend($entry);
+                    }
                 }
             }
         }
 
         $title = 'Packing List';
-        return view('outbound.packaging-list-create', compact('title', 'customer', 'outbounds', 'packingList'));
+        return view('outbound.packaging-list-create', compact('title', 'customer', 'sourceList', 'packingList'));
     }
 
     public function packagingListOutboundItems(Request $request): \Illuminate\Http\JsonResponse
@@ -1117,6 +1157,16 @@ class OutboundController extends Controller
         }
 
         return response()->json(['data' => $outbound]);
+    }
+
+    public function packagingListInventoryItems(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $ip = InventoryPackage::with([
+            'inventoryPackageItem.purchaseOrderDetail',
+            'purchaseOrder.customer',
+        ])->find($request->get('id'));
+
+        return response()->json(['data' => $ip]);
     }
 
     /**
@@ -1138,7 +1188,7 @@ class OutboundController extends Controller
                 'material' => $p['material'] ?? null,
                 'item' => $p['item'] ?? null,
                 'po_item_desc' => $p['poItemDesc'] ?? null,
-                'part_number' => $p['partNumber'] ?? null,
+                'part_number' => $p['material'] ?? null, // Material is Part Number
                 'hs_code' => $p['hsCode'] ?? null,
                 'qty' => $qty,
                 'gross_weight' => $p['grossWeight'] ?? null,
