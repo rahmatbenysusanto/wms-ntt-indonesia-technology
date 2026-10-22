@@ -319,6 +319,7 @@ Route::middleware(AuthLoginMiddleware::class)->group(function () {
             Route::get('/', 'packagingList')->name('outbound.packaging-list');
             Route::get('/create', 'packagingListCreate')->name('outbound.packaging-list.create');
             Route::get('/edit', 'packagingListCreate')->name('outbound.packaging-list.edit');
+            Route::get('/outbound-items', 'packagingListOutboundItems')->name('outbound.packaging-list.outbound-items');
             Route::post('/store', 'packagingListStore')->name('outbound.packaging-list.store');
             Route::post('/update', 'packagingListUpdate')->name('outbound.packaging-list.update');
             Route::post('/release', 'packagingListRelease')->name('outbound.packaging-list.release');

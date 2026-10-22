@@ -46,4 +46,9 @@ class Outbound extends Model
     {
         return $this->belongsTo(InventoryPackageItem::class, 'inventory_package_item_id', 'id');
     }
+
+    public function packingList(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(PackingList::class, 'outbound_id', 'id');
+    }
 }

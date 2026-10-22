@@ -1074,9 +1074,12 @@ class OutboundController extends Controller
 
     public function packagingListCreate(Request $request): View
     {
-        $salesDoc = InventoryPackage::with('purchaseOrder', 'storage', 'purchaseOrder.customer')
-            ->where('qty', '!=', 0)
-            ->whereNotIn('storage_id', [2, 3, 4])
+        // Outbound yang sudah ter-outbound dan belum dibuatkan PL
+        $outbounds = Outbound::with('customer', 'user')
+            ->where('type', 'outbound')
+            ->where('status', 'outbound')
+            ->whereDoesntHave('packingList')
+            ->latest()
             ->get();
 
         $customer = Customer::all();
@@ -1087,10 +1090,33 @@ class OutboundController extends Controller
                 ->where('id', $request->get('id'))
                 ->where('status', 'draft')
                 ->firstOrFail();
+
+            // Jika edit, tampilkan juga outbound milik PL ini
+            if ($packingList->outbound_id) {
+                $currentOutbound = Outbound::with('customer', 'user')
+                    ->find($packingList->outbound_id);
+                if ($currentOutbound && !$outbounds->contains('id', $currentOutbound->id)) {
+                    $outbounds->prepend($currentOutbound);
+                }
+            }
         }
 
         $title = 'Packing List';
-        return view('outbound.packaging-list-create', compact('title', 'customer', 'salesDoc', 'packingList'));
+        return view('outbound.packaging-list-create', compact('title', 'customer', 'outbounds', 'packingList'));
+    }
+
+    public function packagingListOutboundItems(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $outbound = Outbound::with([
+            'customer',
+            'outboundDetail.inventoryPackageItem.purchaseOrderDetail',
+        ])->find($request->get('id'));
+
+        if (!$outbound) {
+            return response()->json(['data' => null]);
+        }
+
+        return response()->json(['data' => $outbound]);
     }
 
     /**
@@ -1144,6 +1170,7 @@ class OutboundController extends Controller
             }
 
             $packingList = PackingList::create([
+                'outbound_id' => $request->post('outboundId') ?: null,
                 'customer_id' => $customer->id,
                 'sales_docs' => json_encode(collect($rows)->pluck('sales_doc')->filter()->unique()->values()->all()),
                 'qty_item' => count($rows),
@@ -1209,6 +1236,7 @@ class OutboundController extends Controller
             $packingList->details()->createMany($rows);
 
             $packingList->update([
+                'outbound_id' => $request->post('outboundId') ?: $packingList->outbound_id,
                 'customer_id' => $customer->id,
                 'sales_docs' => json_encode(collect($rows)->pluck('sales_doc')->filter()->unique()->values()->all()),
                 'qty_item' => count($rows),

@@ -12,6 +12,7 @@ class PackingList extends Model
 
     protected $fillable = [
         'doc_no',
+        'outbound_id',
         'customer_id',
         'sales_docs',
         'qty_item',
@@ -51,6 +52,11 @@ class PackingList extends Model
     public function details(): HasMany
     {
         return $this->hasMany(PackingListDetail::class, 'packing_list_id', 'id');
+    }
+
+    public function outbound(): BelongsTo
+    {
+        return $this->belongsTo(Outbound::class, 'outbound_id', 'id');
     }
 
     public function customer(): BelongsTo

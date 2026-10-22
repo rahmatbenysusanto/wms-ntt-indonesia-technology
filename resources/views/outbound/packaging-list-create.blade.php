@@ -92,20 +92,33 @@
         <div class="col-4">
             <div class="card">
                 <div class="card-header">
-                    <h4 class="card-title mb-0">List Sales Doc</h4>
+                    <h4 class="card-title mb-0">List Outbound</h4>
                 </div>
                 <div class="card-body">
                     <table id="tabelSalesDoc" class="table table-striped align-middle">
                         <thead>
                             <tr>
                                 <th>#</th>
-                                <th>Sales Doc</th>
-                                <th>Data Box</th>
+                                <th>Outbound</th>
+                                <th>Customer</th>
                                 <th>QTY</th>
                                 <th>Action</th>
                             </tr>
                         </thead>
                         <tbody id="listSalesDoc">
+                            @foreach ($outbounds as $idx => $ob)
+                                <tr>
+                                    <td>{{ $idx + 1 }}</td>
+                                    <td>
+                                        <div><b>{{ $ob->number }}</b></div>
+                                        <div class="small text-muted">{{ $ob->purc_doc }}</div>
+                                        <div class="small text-muted">{{ $ob->outbound_date ? \Carbon\Carbon::parse($ob->outbound_date)->format('d M Y') : '' }}</div>
+                                    </td>
+                                    <td>{{ $ob->customer->name ?? '' }}</td>
+                                    <td>{{ $ob->qty }}</td>
+                                    <td><a class="btn btn-info btn-sm" onclick="pilihOutbound({{ $ob->id }}, {{ $ob->customer_id }})">Pilih</a></td>
+                                </tr>
+                            @endforeach
                         </tbody>
                     </table>
                 </div>
@@ -140,8 +153,6 @@
                                 <th></th>
                                 <th></th>
                                 <th></th>
-                                <th></th>
-                                <th></th>
                                 <th>
                                     <select class="form-control" id="changeMassQTY" onchange="changeMassQTY(this.value)">
                                         <option value="0">-- Choose QTY --</option>
@@ -155,8 +166,6 @@
                             <tr>
                                 <th>Material</th>
                                 <th>Item</th>
-                                <th class="text-center">Type</th>
-                                <th>Box</th>
                                 <th>Sales Doc</th>
                                 <th class="text-center">QTY</th>
                                 <th>Part Number</th>
@@ -195,21 +204,8 @@
             return row ? row.value : fallback;
         }
 
-        function normalizeSalesDocs(raw) {
-            if (raw == null) return [];
-            if (Array.isArray(raw)) return raw.filter(v => v != null && v !== '').map(String);
-            if (typeof raw === 'object') {
-                try { return Object.values(raw).filter(v => v != null && v !== '').map(String); } catch { return []; }
-            }
-            if (typeof raw === 'number' || typeof raw === 'boolean') return [String(raw)];
-            let s = String(raw).trim();
-            if (!s) return [];
-            if ((s.startsWith('[') && s.endsWith(']')) || (s.startsWith('"') && s.endsWith('"')))
-                try { const p = JSON.parse(s); return Array.isArray(p) ? p.filter(v => v != null && v !== '').map(String) : [String(p)]; } catch {}
-            if (s.startsWith('{') && s.endsWith('}'))
-                try { const p = JSON.parse(s); if (typeof p === 'object' && !Array.isArray(p)) return Object.values(p).filter(v => v != null && v !== '').map(String); return [String(p)]; } catch {}
-            if (s.includes(',')) return s.split(',').map(x => x.trim()).filter(v => v).map(String);
-            return [s];
+        async function kvDelete(key) {
+            return db.kv.delete(key);
         }
 
         function reinitSalesDocTable() {
@@ -225,129 +221,85 @@
                 width: '100%'
             });
 
-            try {
-                await kvSet('salesDoc', @json($salesDoc));
-            } catch (e) {
-                console.error('Gagal simpan salesDoc:', e);
-            }
-            await viewSalesDoc();
+            reinitSalesDocTable();
 
             // Pre-fill products when editing a draft
             const existingDetails = @json($isEdit ? $packingList->details : []);
+            const existingOutboundId = @json($isEdit && $packingList ? $packingList->outbound_id : null);
 
             if (isEdit && existingDetails.length) {
                 const products = existingDetails.map(d => {
-                return {
-                    inventoryPackageId: null,
-                    inventoryPackageItemId: d.inventory_package_item_id,
-                    purchaseOrderId: null,
-                    purchaseOrderDetailId: d.purchase_order_detail_id,
-                    isParent: 0,
-                    directOutbound: 0,
-                    qty: d.qty,
-                    qtySelect: d.qty,
-                    productId: d.product_id,
-                    material: d.material,
-                    poItemDesc: d.po_item_desc,
-                    partNumber: d.part_number,
-                    hsCode: d.hs_code,
-                    grossWeight: d.gross_weight,
-                    measurement: d.measurement,
-                    prodHierarchyDesc: '',
-                    salesDoc: d.sales_doc,
-                    purcDoc: '',
-                    number: '',
-                    reffNumber: '',
-                    loc: '',
-                    storageId: null,
-                    disable: 0,
-                    item: d.item,
-                };
-            });
+                    return {
+                        outboundDetailId: null,
+                        inventoryPackageItemId: d.inventory_package_item_id,
+                        purchaseOrderDetailId: d.purchase_order_detail_id,
+                        qty: d.qty,
+                        qtySelect: d.qty,
+                        productId: d.product_id,
+                        material: d.material,
+                        poItemDesc: d.po_item_desc,
+                        partNumber: d.part_number,
+                        hsCode: d.hs_code,
+                        grossWeight: d.gross_weight,
+                        measurement: d.measurement,
+                        salesDoc: d.sales_doc,
+                        item: d.item,
+                        disable: 0,
+                    };
+                });
                 await kvSet('salesDocProduct', products);
+                await kvSet('selectedOutboundId', existingOutboundId);
             } else {
                 await kvDelete('salesDocProduct');
+                await kvDelete('selectedOutboundId');
             }
+
             await viewProductPacking();
         });
 
-        async function viewSalesDoc() {
-            const salesDoc = await kvGet('salesDoc', []) ?? [];
-            let html = '';
-            let number = 1;
-
-            salesDoc.forEach((item) => {
-                const docs = normalizeSalesDocs(item?.sales_docs);
-                let salesDocHtml = docs.map(d => `<div>${d}</div>`).join('');
-
-                let storage = '';
-                if (item?.storage) {
-                    storage = `${item.storage.raw ?? ''} - ${item.storage.area ?? ''} - ${item.storage.rak ?? ''} - ${item.storage.bin ?? ''}`;
-                    if (parseInt(item.storage.id) === 1) storage = 'Cross Docking';
-                }
-
-                html += `
-                    <tr>
-                        <td>${number}</td>
-                        <td>${salesDocHtml}</td>
-                        <td>
-                            ${parseInt(item?.storage?.id) === 1 ? '<div><span class="badge bg-danger"> Cross Docking </span></div>' : ''}
-                            <div class="fw-bold mb-1">${item?.purchase_order?.customer?.name ?? ''}</div>
-                            <div><b>Purc Doc: </b>${item?.purchase_order?.purc_doc ?? ''}</div>
-                            <div>${item?.number ?? ''}</div>
-                            <div><b>Box: </b>${item?.reff_number ?? ''}</div>
-                            <div><b>Loc: </b>${storage}</div>
-                        </td>
-                        <td>${item?.qty ?? 0}</td>
-                        <td><a class="btn btn-info btn-sm" onclick="pilihSalesDoc(${item?.id ?? 'null'})">Pilih</a></td>
-                    </tr>
-                `;
-                number++;
-            });
-
-            const tbody = document.getElementById('listSalesDoc');
-            if (tbody) tbody.innerHTML = html;
-            reinitSalesDocTable();
-        }
-
-        window.pilihSalesDoc = function pilihSalesDoc(id) {
+        window.pilihOutbound = function pilihOutbound(outboundId, customerId) {
             $.ajax({
-                url: '{{ route('outbound.sales-doc') }}',
+                url: '{{ route('outbound.packaging-list.outbound-items') }}',
                 method: 'GET',
-                data: { id },
+                data: { id: outboundId },
                 success: async (res) => {
                     try {
-                        const products = [];
+                        const outbound = res?.data;
+                        if (!outbound) {
+                            Swal.fire({ title: 'Error', text: 'Data outbound tidak ditemukan', icon: 'error' });
+                            return;
+                        }
 
-                        (res?.data?.inventory_package_item ?? []).forEach((product) => {
+                        // Set customer sesuai outbound
+                        $('#customerId').val(customerId).trigger('change');
+
+                        const products = [];
+                        (outbound?.outbound_detail ?? []).forEach((detail) => {
+                            const pod = detail?.inventory_package_item?.purchase_order_detail;
                             products.push({
-                                inventoryPackageId: product.inventory_package_id,
-                                inventoryPackageItemId: product.id,
-                                purchaseOrderId: product?.purchase_order_detail?.purchase_order_id,
-                                purchaseOrderDetailId: product?.purchase_order_detail_id,
-                                isParent: product?.is_parent,
-                                directOutbound: product?.direct_outbound,
-                                qty: product?.qty,
-                                qtySelect: 0,
-                                productId: product?.product_id,
-                                material: product?.purchase_order_detail?.material,
-                                poItemDesc: product?.purchase_order_detail?.po_item_desc,
-                                prodHierarchyDesc: product?.purchase_order_detail?.prod_hierarchy_desc,
-                                salesDoc: product?.purchase_order_detail?.sales_doc,
-                                purcDoc: res?.data?.purchase_order?.purc_doc,
-                                number: res?.data?.number,
-                                reffNumber: res?.data?.reff_number,
-                                loc: `${res?.data?.storage?.raw ?? ''}-${res?.data?.storage?.area ?? ''}-${res?.data?.storage?.rak ?? ''}-${res?.data?.storage?.bin ?? ''}`,
-                                storageId: res?.data?.storage?.id,
+                                outboundDetailId: detail.id,
+                                inventoryPackageItemId: detail.inventory_package_item_id,
+                                purchaseOrderDetailId: detail?.purchase_order_detail_id ?? pod?.id ?? null,
+                                qty: detail.qty,
+                                qtySelect: detail.qty,
+                                productId: detail?.inventory_package_item?.product_id ?? null,
+                                material: pod?.material ?? '',
+                                poItemDesc: pod?.po_item_desc ?? '',
+                                salesDoc: pod?.sales_doc ?? '',
+                                item: pod?.item ?? '',
+                                partNumber: '',
+                                hsCode: '',
+                                grossWeight: '',
+                                measurement: '',
                                 disable: 0,
-                                item: product.purchase_order_detail?.item,
                             });
                         });
 
                         await kvSet('salesDocProduct', products);
+                        await kvSet('selectedOutboundId', outboundId);
                         await viewProductPacking();
                     } catch (e) {
-                        console.error('Gagal proses pilihSalesDoc:', e);
+                        console.error('Gagal proses pilihOutbound:', e);
                         Swal.fire({ title: 'Error', text: 'Gagal memproses data', icon: 'error' });
                     }
                 },
@@ -364,22 +316,10 @@
                     html += `
                         <tr>
                             <td>
-                                ${ parseInt(item?.directOutbound) === 1 ? '<div><span class="badge bg-danger"> Cross Docking </span></div>' : '' }
                                 <div>${item?.material ?? ''}</div>
                                 <div>${item?.poItemDesc ?? ''}</div>
-                                <div>${item?.prodHierarchyDesc ?? ''}</div>
                             </td>
                             <td>${item.item ?? ''}</td>
-                            <td class="text-center">
-                                ${parseInt(item?.isParent) === 1
-                                    ? '<span class="badge bg-danger-subtle text-danger">Parent</span>'
-                                    : '<span class="badge bg-secondary-subtle text-secondary">Child</span>'}
-                            </td>
-                            <td>
-                                <div><b>PA: </b>${item?.number ?? ''}</div>
-                                <div><b>Box: </b>${item?.reffNumber ?? ''}</div>
-                                <div><b>Loc: </b>${item?.loc ?? ''}</div>
-                            </td>
                             <td>${item?.salesDoc ?? ''}</td>
                             <td class="text-center fw-bold">${item?.qty ?? 0}</td>
                             <td><input type="text" class="form-control" onchange="changeField(${index}, 'partNumber', this.value)" value="${item?.partNumber ?? ''}"></td>
@@ -433,7 +373,7 @@
             if (!products[index]) return;
             const newVal = parseInt(value || 0);
             if (newVal > parseInt(products[index]?.qty || 0)) {
-                Swal.fire({ title: 'Warning!', text: 'QTY packing melebihi qty inventory', icon: 'warning' });
+                Swal.fire({ title: 'Warning!', text: 'QTY packing melebihi qty outbound', icon: 'warning' });
                 await viewProductPacking();
                 return;
             }
@@ -460,6 +400,7 @@
             });
             if (!t.value) return;
 
+            const selectedOutboundId = await kvGet('selectedOutboundId', null);
             const payload = products.map(p => {
                 const { dataSN, serialNumber, ...rest } = p;
                 return rest;
@@ -468,6 +409,7 @@
             const data = {
                 _token: '{{ csrf_token() }}',
                 products: payload,
+                outboundId: selectedOutboundId,
                 customerId: $('#customerId').val(),
                 delivLocation: $('#delivLocation').val(),
                 deliveryDest: $('#deliveryDest').val(),
