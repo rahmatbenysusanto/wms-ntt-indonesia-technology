@@ -2,7 +2,7 @@
 <div x-data="aiChatWidget" x-show="loaded" x-cloak class="ai-chat-root">
 
     <!-- Floating Button -->
-    <button @click="toggleChat" class="ai-fab" :class="{ 'd-none': isOpen }" title="TKS AI Assistant">
+    <button @click="toggleChat" class="ai-fab" :class="{ 'd-none': isOpen }" title="TransKargo AI Assistant">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
         </svg>
@@ -52,7 +52,7 @@
                     <i class="mdi mdi-history"></i>
                 </button>
                 <div class="ai-header-info">
-                    <h6 class="ai-header-name">TKS AI Assistant</h6>
+                    <h6 class="ai-header-name">TransKargo AI Assistant</h6>
                     <span class="ai-header-status" x-text="isTyping ? '⚡ Mengetik...' : '🟢 Online'"></span>
                 </div>
             </div>
@@ -134,7 +134,7 @@
 
 <style>
 /* ============================================
-   TKS AI Chat Widget — Clean & Modern
+   TransKargo AI Chat Widget — Clean & Modern
    ============================================ */
 .ai-chat-root {
     position: fixed;

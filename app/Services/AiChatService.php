@@ -32,9 +32,9 @@ class AiChatService
 
     public function __construct()
     {
-        $this->apiKey  = config('services.deepseek.api_key');
-        $this->baseUrl = config('services.deepseek.base_url', 'https://api.deepseek.com');
-        $this->model   = config('services.deepseek.model', 'deepseek-v4-flash');
+        $this->apiKey  = config('services.ai.api_key');
+        $this->baseUrl = rtrim(config('services.ai.base_url', 'https://ai.nabungmas.my.id/v1'), '/');
+        $this->model   = config('services.ai.model', 'TransKargo');
     }
 
     /**
@@ -58,7 +58,7 @@ class AiChatService
             $conversation->save();
         }
 
-        // Step 2: Classify intent + extract params via DeepSeek
+        // Step 2: Classify intent + extract params via AI
         $classification = $this->classifyIntent($userMessage, $conversation);
         $intent         = $classification['intent'] ?? 'general_chat';
         $params         = $classification['params'] ?? [];
@@ -93,7 +93,7 @@ class AiChatService
     }
 
     /**
-     * Call DeepSeek to classify the user's intent and extract parameters.
+     * Call AI to classify the user's intent and extract parameters.
      */
     private function classifyIntent(string $userMessage, ChatConversation $conversation): array
     {
@@ -109,30 +109,32 @@ class AiChatService
         );
 
         try {
-            $response = Http::timeout(15)
+            $response = Http::timeout(60)
                 ->withHeaders([
                     'Authorization' => 'Bearer ' . $this->apiKey,
                     'Content-Type'  => 'application/json',
                 ])
-                ->post($this->baseUrl . '/v1/chat/completions', [
+                ->post($this->baseUrl . '/chat/completions', [
                     'model'       => $this->model,
                     'messages'    => $messages,
                     'temperature' => 0.1,
-                    'max_tokens'  => 300,
+                    'max_tokens'  => 1500,
+                    'stream'      => false,
                 ]);
 
             if ($response->successful()) {
-                $content = $response->json('choices.0.message.content');
+                // ponytail: some routers return null content while only reasoning_content is filled
+                $content = (string) ($response->json('choices.0.message.content') ?? '');
                 return $this->parseJsonResponse($content);
             }
 
-            Log::error('DeepSeek intent classification failed', [
+            Log::error('AI intent classification failed', [
                 'status' => $response->status(),
                 'body'   => $response->body(),
             ]);
 
         } catch (\Exception $e) {
-            Log::error('DeepSeek API error: ' . $e->getMessage());
+            Log::error('AI API error: ' . $e->getMessage());
         }
 
         return ['intent' => 'general_chat', 'params' => []];
@@ -187,21 +189,24 @@ class AiChatService
         $material = $params['material'] ?? '';
         $product  = $params['product_name'] ?? '';
 
-        $query = DB::table('product')
-            ->join('inventory_item', 'product.id', '=', 'inventory_item.product_id')
-            ->join('inventory', 'inventory_item.purc_doc', '=', 'inventory.purchase_order_id')
-            ->leftJoin('storage', 'inventory_item.storage_id', '=', 'storage.id')
+        $query = DB::table('inventory_detail')
+            ->join('inventory', 'inventory_detail.inventory_id', '=', 'inventory.id')
+            ->join('inventory_package_item', 'inventory_detail.inventory_package_item_id', '=', 'inventory_package_item.id')
+            ->join('inventory_package', 'inventory_package_item.inventory_package_id', '=', 'inventory_package.id')
+            ->join('product', 'inventory_package_item.product_id', '=', 'product.id')
+            ->leftJoin('storage', 'inventory_detail.storage_id', '=', 'storage.id')
             ->select(
                 'product.material',
                 'product.po_item_desc',
-                'inventory_item.stock',
-                'inventory_item.type',
-                'inventory_item.sales_doc',
+                'inventory_detail.qty as stock',
+                'inventory.type',
+                'inventory_detail.sales_doc',
+                'inventory_package.number as box_number',
                 'storage.area',
                 'storage.rak',
                 'storage.bin'
             )
-            ->where('inventory_item.stock', '>', 0);
+            ->where('inventory_detail.qty', '>', 0);
 
         if ($material) {
             $query->where('product.material', 'like', "%{$material}%");
@@ -417,27 +422,29 @@ class AiChatService
             ->where('inventory_package.qty', '>', 0)
             ->count();
 
-        $byCustomer = DB::table('inventory_item')
-            ->where('inventory_item.type', $type)
-            ->where('inventory_item.stock', '>', 0)
+        $byCustomer = DB::table('inventory_detail')
+            ->join('inventory', 'inventory_detail.inventory_id', '=', 'inventory.id')
+            ->where('inventory.type', $type)
+            ->where('inventory_detail.qty', '>', 0)
             ->select(
-                'inventory_item.sales_doc',
-                DB::raw('SUM(inventory_item.stock) as total_stock')
+                'inventory_detail.sales_doc',
+                DB::raw('SUM(inventory_detail.qty) as total_stock')
             )
-            ->groupBy('inventory_item.sales_doc')
+            ->groupBy('inventory_detail.sales_doc')
             ->orderByDesc('total_stock')
             ->limit(10)
             ->get()
             ->toArray();
 
-        $byStorage = DB::table('inventory_item')
-            ->join('storage', 'inventory_item.storage_id', '=', 'storage.id')
-            ->where('inventory_item.type', $type)
-            ->where('inventory_item.stock', '>', 0)
+        $byStorage = DB::table('inventory_detail')
+            ->join('inventory', 'inventory_detail.inventory_id', '=', 'inventory.id')
+            ->join('storage', 'inventory_detail.storage_id', '=', 'storage.id')
+            ->where('inventory.type', $type)
+            ->where('inventory_detail.qty', '>', 0)
             ->select(
                 'storage.area',
                 'storage.rak',
-                DB::raw('SUM(inventory_item.stock) as total_stock')
+                DB::raw('SUM(inventory_detail.qty) as total_stock')
             )
             ->groupBy('storage.area', 'storage.rak')
             ->orderByDesc('total_stock')
@@ -486,7 +493,7 @@ class AiChatService
     }
 
     // ========================================================================
-    // Reply Formatting via DeepSeek
+    // Reply Formatting via AI
     // ========================================================================
 
     private function generateGeneralChatReply(string $userMessage, ChatConversation $conversation): string
@@ -494,28 +501,29 @@ class AiChatService
         $systemPrompt = $this->getGeneralChatPrompt();
 
         try {
-            $response = Http::timeout(15)
+            $response = Http::timeout(60)
                 ->withHeaders([
                     'Authorization' => 'Bearer ' . $this->apiKey,
                     'Content-Type'  => 'application/json',
                 ])
-                ->post($this->baseUrl . '/v1/chat/completions', [
+                ->post($this->baseUrl . '/chat/completions', [
                     'model'       => $this->model,
                     'messages'    => [
                         ['role' => 'system', 'content' => $systemPrompt],
                         ['role' => 'user', 'content' => $userMessage],
                     ],
                     'temperature' => 0.7,
-                    'max_tokens'  => 500,
+                    'max_tokens'  => 1500,
+                    'stream'      => false,
                 ]);
 
             if ($response->successful()) {
                 return $response->json('choices.0.message.content')
-                    ?? 'Maaf, saya tidak bisa menjawab pertanyaan itu saat ini.';
+                    ?: 'Maaf, saya tidak bisa menjawab pertanyaan itu saat ini.';
             }
 
         } catch (\Exception $e) {
-            Log::error('DeepSeek general chat error: ' . $e->getMessage());
+            Log::error('AI general chat error: ' . $e->getMessage());
         }
 
         return 'Maaf, terjadi kesalahan saat menghubungi AI. Silakan coba lagi nanti.';
@@ -537,28 +545,29 @@ class AiChatService
         }
 
         try {
-            $response = Http::timeout(15)
+            $response = Http::timeout(60)
                 ->withHeaders([
                     'Authorization' => 'Bearer ' . $this->apiKey,
                     'Content-Type'  => 'application/json',
                 ])
-                ->post($this->baseUrl . '/v1/chat/completions', [
+                ->post($this->baseUrl . '/chat/completions', [
                     'model'       => $this->model,
                     'messages'    => [
                         ['role' => 'system', 'content' => $systemPrompt],
                         ['role' => 'user', 'content' => "Pertanyaan user: \"{$userMessage}\"\n\nData hasil query:\n{$dataContext}\n\nTolong jawab pertanyaan user berdasarkan data di atas dalam Bahasa Indonesia yang natural dan mudah dipahami."],
                     ],
                     'temperature' => 0.5,
-                    'max_tokens'  => 600,
+                    'max_tokens'  => 1500,
+                    'stream'      => false,
                 ]);
 
             if ($response->successful()) {
                 return $response->json('choices.0.message.content')
-                    ?? 'Maaf, saya tidak bisa memproses data ini.';
+                    ?: 'Maaf, saya tidak bisa memproses data ini.';
             }
 
         } catch (\Exception $e) {
-            Log::error('DeepSeek data formatting error: ' . $e->getMessage());
+            Log::error('AI data formatting error: ' . $e->getMessage());
         }
 
         // Fallback: format data as simple text
@@ -602,12 +611,15 @@ Intent yang tersedia:
 1. stock_check - Cek stok produk/material. Params: material, product_name
 2. aging_check - Cek produk aging. Params: days (default 90), customer_name
 3. serial_number_lookup - Cari serial number. Params: serial_number
+   Contoh: "SN ACW302209KB sudah keluar belum?", "cek apakah SN X pernah outbound", "lacak serial number X", "SN X ada di mana?"
 4. box_status - Cek status box/PA. Params: box_number
 5. po_status - Cek status Purchase Order. Params: po_number
 6. outbound_summary - Ringkasan outbound. Params: customer_name, month, year
 7. inventory_summary - Ringkasan inventori. Params: type (inv/gr/pm/spare)
 8. product_history - Riwayat pergerakan produk. Params: material
-9. general_chat - Pertanyaan umum/FAQ/sapaan. Params: []
+9. general_chat - HANYA untuk sapaan, FAQ, atau cara pakai aplikasi. Params: []
+
+PENTING: Pertanyaan yang menyebut kode/nomor spesifik (SN, box/PA, PO, material) atau menanyakan keberadaan/status/riwayat data HARUS masuk intent data di atas, BUKAN general_chat.
 
 Di akhir response, berikan JSON dengan format:
 {"intent": "nama_intent", "params": {"key": "value"}}
@@ -620,7 +632,7 @@ PROMPT;
     {
         return <<<PROMPT
 Kamu adalah AI Assistant untuk Warehouse Management System Trans Kargo Indonesia (WMS 3PL).
-Nama kamu: "TKS AI Assistant".
+Nama kamu: "TransKargo AI Assistant".
 Kamu membantu user dengan pertanyaan seputar gudang, inventori, dan penggunaan aplikasi WMS.
 
 Konteks sistem:
@@ -631,8 +643,7 @@ Konteks sistem:
 
 Batasan:
 - Jawab dalam Bahasa Indonesia yang ramah dan profesional
-- Jika user bertanya data spesifik (stok, SN, box, PO), arahkan untuk bertanya dengan detail
-- Jangan mengarang data — cukup bilang "saya perlu mencarikan datanya dulu" jika tidak yakin
+- JANGAN pernah menyuruh user mengecek sendiri ke modul/aplikasi, dan jangan mengarang data. Sistem sudah punya akses data — jika user minta data spesifik, jawab bahwa datanya akan dicarikan.
 - Jawaban singkat dan to the point, maksimal 2-3 paragraf
 
 Kamu hanya menjawab pertanyaan terkait warehouse/gudang dan sistem WMS.
@@ -660,7 +671,7 @@ PROMPT;
     /**
      * Jelaskan error teknis ke user non-teknis dalam Bahasa Indonesia yang ramah.
      * Selalu mengembalikan teks aman; tidak pernah melempar exception.
-     * Tanpa DEEPSEEK_API_KEY → langsung return fallback (tidak ada panggilan AI).
+     * Tanpa AI_API_KEY → langsung return fallback (tidak ada panggilan AI).
      */
     public function explainError(string $technicalMessage, array $context = []): string
     {
@@ -671,12 +682,12 @@ PROMPT;
         }
 
         try {
-            $response = Http::timeout(15)
+            $response = Http::timeout(60)
                 ->withHeaders([
                     'Authorization' => 'Bearer ' . $this->apiKey,
                     'Content-Type'  => 'application/json',
                 ])
-                ->post($this->baseUrl . '/v1/chat/completions', [
+                ->post($this->baseUrl . '/chat/completions', [
                     'model'       => $this->model,
                     'messages'    => [
                         ['role' => 'system', 'content' => $this->getExplainErrorPrompt()],
@@ -686,7 +697,8 @@ PROMPT;
                         ], JSON_UNESCAPED_UNICODE)],
                     ],
                     'temperature' => 0.2,
-                    'max_tokens'  => 200,
+                    'max_tokens'  => 800,
+                    'stream'      => false,
                 ]);
 
             if ($response->successful()) {
@@ -695,9 +707,9 @@ PROMPT;
                     return $content;
                 }
             }
-            Log::error('DeepSeek explainError failed', ['status' => $response->status(), 'body' => $response->body()]);
+            Log::error('AI explainError failed', ['status' => $response->status(), 'body' => $response->body()]);
         } catch (\Exception $e) {
-            Log::error('DeepSeek explainError error: ' . $e->getMessage());
+            Log::error('AI explainError error: ' . $e->getMessage());
         }
 
         return $fallback;

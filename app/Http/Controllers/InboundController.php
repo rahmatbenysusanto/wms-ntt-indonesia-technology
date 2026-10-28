@@ -215,9 +215,9 @@ class InboundController extends Controller
 
             $response = ['status' => 'error', 'message' => $message];
 
-            // AI penjelasan = lapisan tipis OPSIONAL. Hanya aktif jika DEEPSEEK_API_KEY terisi;
+            // AI penjelasan = lapisan tipis OPSIONAL. Hanya aktif jika AI_API_KEY terisi;
             // kalau AI gagal → dilewati diam-diam, pesan deterministik tetap tampil ke user.
-            if (!empty(config('services.deepseek.api_key'))) {
+            if (!empty(config('services.ai.api_key'))) {
                 try {
                     $response['ai_message'] = app(\App\Services\AiChatService::class)->explainError(
                         $err->getMessage(),

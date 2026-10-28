@@ -28,10 +28,10 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
-    'deepseek' => [
-        'api_key'  => env('DEEPSEEK_API_KEY'),
-        'base_url' => env('DEEPSEEK_BASE_URL', 'https://api.deepseek.com'),
-        'model'    => env('DEEPSEEK_MODEL', 'deepseek-v4-flash'),
+    'ai' => [
+        'api_key'  => env('AI_API_KEY'),
+        'base_url' => env('AI_BASE_URL', 'https://ai.nabungmas.my.id/v1'),
+        'model'    => env('AI_MODEL', 'TransKargo'),
     ],
 
     'slack' => [
