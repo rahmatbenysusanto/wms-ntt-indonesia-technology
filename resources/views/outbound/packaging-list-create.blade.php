@@ -446,7 +446,7 @@
             });
 
             const data = {
-                _token: '{{ csrf_token() }}',
+                _token: $('meta[name="csrf-token"]').attr('content'),
                 products: payload,
                 outboundId: selectedOutboundId,
                 customerId: $('#customerId').val(),
@@ -476,6 +476,15 @@
                     }
                 },
                 error: (xhr) => {
+                    if (xhr.status === 419) {
+                        Swal.fire({
+                            title: 'Sesi Habis',
+                            text: 'Token keamanan kadaluarsa. Halaman akan di-refresh, silakan submit ulang.',
+                            icon: 'warning',
+                            confirmButtonText: 'OK'
+                        }).then(() => location.reload());
+                        return;
+                    }
                     let msg = 'Request failed';
                     try { msg = JSON.parse(xhr.responseText)?.message || msg; } catch {}
                     Swal.fire({ title: 'Error', text: msg, icon: 'error' });

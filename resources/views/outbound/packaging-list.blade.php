@@ -230,6 +230,17 @@
 
 @section('js')
     <script>
+        $(document).ajaxError(function(event, xhr) {
+            if (xhr.status === 419) {
+                Swal.fire({
+                    title: 'Sesi Habis',
+                    text: 'Token keamanan kadaluarsa. Halaman akan di-refresh.',
+                    icon: 'warning',
+                    confirmButtonText: 'OK'
+                }).then(() => location.reload());
+            }
+        });
+
         $(document).ready(function() {
             $('.select2Client').select2({
                 placeholder: '-- Select Client --',
@@ -252,7 +263,7 @@
                     url: '{{ route('outbound.packaging-list.release') }}',
                     method: 'POST',
                     data: {
-                        _token: '{{ csrf_token() }}',
+                        _token: $('meta[name="csrf-token"]').attr('content'),
                         id
                     },
                     success: (res) => {
@@ -281,7 +292,7 @@
                     url: '{{ route('outbound.packaging-list.destroy') }}',
                     method: 'DELETE',
                     data: {
-                        _token: '{{ csrf_token() }}',
+                        _token: $('meta[name="csrf-token"]').attr('content'),
                         id
                     },
                     success: (res) => {
@@ -313,7 +324,7 @@
                 url: '{{ route('outbound.packaging-list.repack') }}',
                 method: 'POST',
                 data: {
-                    _token: '{{ csrf_token() }}',
+                    _token: $('meta[name="csrf-token"]').attr('content'),
                     id: $('#repackId').val(),
                     koli_qty: $('#repackKoli').val(),
                     length: $('#repackLength').val(),
