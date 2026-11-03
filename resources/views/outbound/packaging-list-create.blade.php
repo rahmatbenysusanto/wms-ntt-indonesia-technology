@@ -247,6 +247,7 @@
                     salesDoc: d.sales_doc,
                     item: d.item,
                     disable: 0,
+                    isParent: parseInt(d.inventory_package_item?.is_parent ?? 0),
                 }));
                 await kvSet('salesDocProduct', products);
                 await kvSet('selectedOutboundId', existingOutboundId);
@@ -309,6 +310,7 @@
                             measurement: '',
                             disable: 0,
                             sourceType: 'outbound',
+                            isParent: parseInt(detail?.inventory_package_item?.is_parent ?? 0),
                         });
                     });
                 } else {
@@ -330,6 +332,7 @@
                             measurement: '',
                             disable: 0,
                             sourceType: 'inventory',
+                            isParent: parseInt(ipItem?.is_parent ?? 0),
                         });
                     });
                 }
@@ -363,10 +366,20 @@
                             <td>${item?.salesDoc ?? ''}</td>
                             <td class="text-center fw-bold">${item?.qty ?? 0}</td>
                             <td><input type="text" class="form-control" onchange="changeField(${index}, 'hsCode', this.value)" value="${item?.hsCode ?? ''}"></td>
-                            <td><input type="number" step="0.01" min="0" class="form-control" onchange="changeField(${index}, 'grossWeight', this.value)" value="${item?.grossWeight ?? ''}"></td>
-                            <td><input type="text" class="form-control" placeholder="P x L x T" onchange="changeField(${index}, 'measurement', this.value)" value="${item?.measurement ?? ''}"></td>
+                            <td>${parseInt(item?.isParent) === 1
+                                ? `<input type="number" step="0.01" min="0" class="form-control" onchange="changeField(${index}, 'grossWeight', this.value)" value="${item?.grossWeight ?? ''}">`
+                                : '<span class="text-muted">-</span>'}</td>
+                            <td>${parseInt(item?.isParent) === 1
+                                ? `<input type="text" class="form-control" placeholder="P x L x T" onchange="changeField(${index}, 'measurement', this.value)" value="${item?.measurement ?? ''}">`
+                                : '<span class="text-muted">-</span>'}</td>
                             <td><input type="number" class="form-control" onchange="changeQtySelect(${index}, this.value)" value="${item?.qtySelect ?? 0}"></td>
-                            <td><a class="btn btn-danger btn-sm" onclick="deleteProduct(${index})">Delete</a></td>
+                            <td>
+                                <div class="d-flex gap-1">
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="moveProduct(${index}, -1)">&uarr;</button>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="moveProduct(${index}, 1)">&darr;</button>
+                                    <a class="btn btn-danger btn-sm" onclick="deleteProduct(${index})">Delete</a>
+                                </div>
+                            </td>
                         </tr>
                     `;
                 }
@@ -396,6 +409,22 @@
             const products = await kvGet('salesDocProduct', []) ?? [];
             if (!products[index]) return;
             products[index].disable = 1;
+            await kvSet('salesDocProduct', products);
+            await viewProductPacking();
+        };
+
+        window.moveProduct = async function moveProduct(index, direction) {
+            const products = await kvGet('salesDocProduct', []) ?? [];
+            if (!products[index] || parseInt(products[index].disable) !== 0) return;
+
+            // Cari index item aktif terdekat pada arah yang dituju
+            let target = index + direction;
+            while (target >= 0 && target < products.length && parseInt(products[target]?.disable) !== 0) {
+                target += direction;
+            }
+            if (target < 0 || target >= products.length) return;
+
+            [products[index], products[target]] = [products[target], products[index]];
             await kvSet('salesDocProduct', products);
             await viewProductPacking();
         };

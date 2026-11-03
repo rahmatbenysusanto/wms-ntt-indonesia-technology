@@ -1115,7 +1115,7 @@ class OutboundController extends Controller
 
         $packingList = null;
         if ($request->get('id')) {
-            $packingList = PackingList::with('details')
+            $packingList = PackingList::with('details.inventoryPackageItem')
                 ->where('id', $request->get('id'))
                 ->where('status', 'draft')
                 ->firstOrFail();
