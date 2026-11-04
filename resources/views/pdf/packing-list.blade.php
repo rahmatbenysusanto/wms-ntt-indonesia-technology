@@ -84,26 +84,58 @@
     </table>
 
     @if ($isFinal)
-        <table class="tbl" style="margin-bottom:10px">
-            <thead>
-                <tr>
-                    <th>Total Koli</th>
-                    <th>Pallet Dimension (P x L x T) /CM</th>
-                    <th>Total Weight /Kg</th>
-                    <th>Repacked At</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td class="c">{{ $packingList->koli_qty }}</td>
-                    <td class="c">{{ $dims }}</td>
-                    <td class="c">{{ number_format((float) $packingList->repack_weight, 2, ',', '.') }}</td>
-                    <td class="c">
-                        {{ $packingList->repacked_at->format('d-M-y H:i') }} / {{ $packingList->repackedBy->name ?? '-' }}
-                    </td>
-                </tr>
-            </tbody>
-        </table>
+        @if ($packingList->repacks && $packingList->repacks->count() > 0)
+            <table class="tbl" style="margin-bottom:10px">
+                <thead>
+                    <tr>
+                        <th style="width:30px">No</th>
+                        <th>Koli No</th>
+                        <th>Dimension (P x L x T) /CM</th>
+                        <th>Weight /Kg</th>
+                        <th>Note</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach ($packingList->repacks as $r)
+                        <tr>
+                            <td class="c">{{ $loop->iteration }}</td>
+                            <td>{{ $r->koli_no ?? ('Koli ' . $loop->iteration) }}</td>
+                            <td class="c">{{ $fmt($r->length) }} x {{ $fmt($r->width) }} x {{ $fmt($r->height) }}</td>
+                            <td class="r">{{ number_format((float) $r->weight, 2, ',', '.') }}</td>
+                            <td>{{ $r->note ?? '-' }}</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="3" class="r"><strong>Total ({{ $packingList->repacks->count() }} Koli)</strong></td>
+                        <td class="r"><strong>{{ number_format((float) $packingList->repacks->sum('weight'), 2, ',', '.') }} kg</strong></td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </table>
+        @else
+            <table class="tbl" style="margin-bottom:10px">
+                <thead>
+                    <tr>
+                        <th>Total Koli</th>
+                        <th>Pallet Dimension (P x L x T) /CM</th>
+                        <th>Total Weight /Kg</th>
+                        <th>Repacked At</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="c">{{ $packingList->koli_qty }}</td>
+                        <td class="c">{{ $dims }}</td>
+                        <td class="c">{{ number_format((float) $packingList->repack_weight, 2, ',', '.') }}</td>
+                        <td class="c">
+                            {{ $packingList->repacked_at->format('d-M-y H:i') }} / {{ $packingList->repackedBy->name ?? '-' }}
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        @endif
     @endif
 
     <table class="tbl">

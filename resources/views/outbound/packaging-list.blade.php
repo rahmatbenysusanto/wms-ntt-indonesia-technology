@@ -121,6 +121,11 @@
                                         <td>{{ $item->created_at->format('d M Y H:i') }}</td>
                                         <td>
                                             <div class="d-flex gap-1">
+                                                <a class="btn btn-secondary btn-sm"
+                                                    href="{{ route('outbound.packaging-list.detail', ['id' => $item->id]) }}"
+                                                    title="Detail Packing List">
+                                                    <i class="mdi mdi-eye"></i> Detail
+                                                </a>
                                                 @if ($item->status === 'draft')
                                                     <a class="btn btn-warning btn-sm"
                                                         href="{{ route('outbound.packaging-list.edit', ['id' => $item->id]) }}"
@@ -151,8 +156,8 @@
                                                         <br>by {{ $item->releasedBy->name ?? '-' }}
                                                     </span>
                                                     <a class="btn btn-info btn-sm"
-                                                        onclick="openRepack({{ $item->id }}, {{ $item->koli_qty ?? 'null' }}, '{{ $item->repack_length }}', '{{ $item->repack_width }}', '{{ $item->repack_height }}', '{{ $item->repack_weight }}')"
-                                                        title="Input Repack / Koli Final">
+                                                        href="{{ route('outbound.packaging-list.detail', ['id' => $item->id]) }}"
+                                                        title="Input / Edit Repack">
                                                         <i class="mdi mdi-package-variant"></i> Repack
                                                     </a>
                                                     @if ($item->repacked_at)
@@ -187,45 +192,6 @@
         </div>
     </div>
 
-    <div id="repackModal" class="modal fade" tabindex="-1" aria-hidden="true" style="display: none;">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Repack Data (Koli Final)</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <input type="hidden" id="repackId">
-                    <div class="mb-3">
-                        <label class="form-label">Jumlah Koli</label>
-                        <input type="number" min="1" class="form-control" id="repackKoli">
-                    </div>
-                    <div class="row g-2 mb-3">
-                        <div class="col-4">
-                            <label class="form-label">Panjang (cm)</label>
-                            <input type="number" step="0.01" min="0.01" class="form-control" id="repackLength">
-                        </div>
-                        <div class="col-4">
-                            <label class="form-label">Lebar (cm)</label>
-                            <input type="number" step="0.01" min="0.01" class="form-control" id="repackWidth">
-                        </div>
-                        <div class="col-4">
-                            <label class="form-label">Tinggi (cm)</label>
-                            <input type="number" step="0.01" min="0.01" class="form-control" id="repackHeight">
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Total Berat (kg)</label>
-                        <input type="number" step="0.01" min="0.01" class="form-control" id="repackWeight">
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary" onclick="saveRepack()">Save</button>
-                </div>
-            </div>
-        </div>
-    </div>
 @endsection
 
 @section('js')
@@ -308,44 +274,5 @@
             });
         }
 
-        function openRepack(id, koli, length, width, height, weight) {
-            $('#repackId').val(id);
-            $('#repackKoli').val(koli ?? '');
-            $('#repackLength').val(length || '');
-            $('#repackWidth').val(width || '');
-            $('#repackHeight').val(height || '');
-            $('#repackWeight').val(weight || '');
-
-            new bootstrap.Modal(document.getElementById('repackModal')).show();
-        }
-
-        function saveRepack() {
-            $.ajax({
-                url: '{{ route('outbound.packaging-list.repack') }}',
-                method: 'POST',
-                data: {
-                    _token: $('meta[name="csrf-token"]').attr('content'),
-                    id: $('#repackId').val(),
-                    koli_qty: $('#repackKoli').val(),
-                    length: $('#repackLength').val(),
-                    width: $('#repackWidth').val(),
-                    height: $('#repackHeight').val(),
-                    weight: $('#repackWeight').val()
-                },
-                success: (res) => {
-                    if (res?.status) {
-                        Swal.fire({ title: 'Success', text: res.message, icon: 'success' })
-                            .then(() => location.reload());
-                    } else {
-                        Swal.fire({ title: 'Error', text: res.message, icon: 'error' });
-                    }
-                },
-                error: (xhr) => Swal.fire({
-                    title: 'Error',
-                    text: xhr.responseJSON?.message ?? 'Request failed',
-                    icon: 'error'
-                })
-            });
-        }
     </script>
 @endsection

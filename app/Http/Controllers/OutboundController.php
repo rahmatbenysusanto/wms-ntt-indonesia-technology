@@ -20,6 +20,7 @@ use App\Models\InventoryParentDetail;
 use App\Models\Outbound;
 use App\Models\PackingList;
 use App\Models\PackingListDetail;
+use App\Models\PackingListRepack;
 use App\Models\OutboundDetail;
 use App\Models\OutboundDetailSN;
 use App\Models\OutboundSerialNumber;
@@ -1145,6 +1146,24 @@ class OutboundController extends Controller
         return view('outbound.packaging-list-create', compact('title', 'customer', 'sourceList', 'packingList'));
     }
 
+    public function packagingListDetail(Request $request): View
+    {
+        $packingList = PackingList::with([
+            'customer',
+            'createdBy',
+            'updatedBy',
+            'releasedBy',
+            'repackedBy',
+            'details.inventoryPackageItem',
+            'details.purchaseOrderDetail.purchaseOrder',
+            'repacks',
+            'outbound',
+        ])->where('id', $request->query('id'))->firstOrFail();
+
+        $title = 'Detail Packing List';
+        return view('outbound.packaging-list-detail', compact('title', 'packingList'));
+    }
+
     public function packagingListOutboundItems(Request $request): \Illuminate\Http\JsonResponse
     {
         $outbound = Outbound::with([
@@ -1369,11 +1388,13 @@ class OutboundController extends Controller
     {
         $request->validate([
             'id' => 'required|integer',
-            'koli_qty' => 'required|integer|min:1',
-            'length' => 'required|numeric|min:0.01',
-            'width' => 'required|numeric|min:0.01',
-            'height' => 'required|numeric|min:0.01',
-            'weight' => 'required|numeric|min:0.01',
+            'repacks' => 'required|array|min:1',
+            'repacks.*.koli_no' => 'nullable|string|max:100',
+            'repacks.*.length' => 'required|numeric|min:0.01',
+            'repacks.*.width' => 'required|numeric|min:0.01',
+            'repacks.*.height' => 'required|numeric|min:0.01',
+            'repacks.*.weight' => 'required|numeric|min:0.01',
+            'repacks.*.note' => 'nullable|string|max:255',
         ]);
 
         try {
@@ -1381,25 +1402,40 @@ class OutboundController extends Controller
             Log::channel('outbound')->info('Packing List Repack Started', ['user_id' => Auth::id()]);
 
             $packingList = PackingList::where('id', $request->post('id'))
-                ->where('status', 'released')
+                ->whereIn('status', ['draft', 'released'])
                 ->first();
             if (!$packingList) {
                 DB::rollBack();
-                return response()->json(['status' => false, 'message' => 'Packing list not found or not released']);
+                return response()->json(['status' => false, 'message' => 'Packing list not found']);
             }
 
+            $repacks = collect($request->post('repacks'));
+
+            $packingList->repacks()->delete();
+
+            $packingList->repacks()->createMany(
+                $repacks->map(fn ($row, $i) => [
+                    'koli_no' => $row['koli_no'] ?? 'Koli ' . ($i + 1),
+                    'length' => $row['length'],
+                    'width' => $row['width'],
+                    'height' => $row['height'],
+                    'weight' => $row['weight'],
+                    'note' => $row['note'] ?? null,
+                ])->all()
+            );
+
             $packingList->update([
-                'koli_qty' => $request->post('koli_qty'),
-                'repack_length' => $request->post('length'),
-                'repack_width' => $request->post('width'),
-                'repack_height' => $request->post('height'),
-                'repack_weight' => $request->post('weight'),
+                'koli_qty' => $repacks->count(),
+                'repack_length' => $repacks->max('length'),
+                'repack_width' => $repacks->max('width'),
+                'repack_height' => $repacks->sum('height'),
+                'repack_weight' => $repacks->sum('weight'),
                 'repacked_at' => now(),
                 'repacked_by' => Auth::id(),
             ]);
 
             DB::commit();
-            Log::channel('outbound')->info('Packing List Repacked', ['id' => $packingList->id, 'user_id' => Auth::id()]);
+            Log::channel('outbound')->info('Packing List Repacked', ['id' => $packingList->id, 'koli' => $repacks->count(), 'user_id' => Auth::id()]);
 
             return response()->json(['status' => true, 'message' => 'Repack data saved']);
         } catch (\Exception $e) {
@@ -1436,7 +1472,8 @@ class OutboundController extends Controller
             'details.purchaseOrderDetail.purchaseOrder',
             'createdBy',
             'releasedBy',
-            'repackedBy'
+            'repackedBy',
+            'repacks'
         )
             ->where('id', $request->query('id'))
             ->first();

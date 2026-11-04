@@ -54,6 +54,11 @@ class PackingList extends Model
         return $this->hasMany(PackingListDetail::class, 'packing_list_id', 'id');
     }
 
+    public function repacks(): HasMany
+    {
+        return $this->hasMany(PackingListRepack::class, 'packing_list_id', 'id')->orderBy('id');
+    }
+
     public function outbound(): BelongsTo
     {
         return $this->belongsTo(Outbound::class, 'outbound_id', 'id');
