@@ -83,59 +83,28 @@
         </tr>
     </table>
 
-    @if ($isFinal)
-        @if ($packingList->repacks && $packingList->repacks->count() > 0)
-            <table class="tbl" style="margin-bottom:10px">
-                <thead>
-                    <tr>
-                        <th style="width:30px">No</th>
-                        <th>Koli No</th>
-                        <th>Dimension (P x L x T) /CM</th>
-                        <th>Weight /Kg</th>
-                        <th>Note</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach ($packingList->repacks as $r)
-                        <tr>
-                            <td class="c">{{ $loop->iteration }}</td>
-                            <td>{{ $r->koli_no ?? ('Koli ' . $loop->iteration) }}</td>
-                            <td class="c">{{ $fmt($r->length) }} x {{ $fmt($r->width) }} x {{ $fmt($r->height) }}</td>
-                            <td class="r">{{ number_format((float) $r->weight, 2, ',', '.') }}</td>
-                            <td>{{ $r->note ?? '-' }}</td>
-                        </tr>
-                    @endforeach
-                </tbody>
-                <tfoot>
-                    <tr>
-                        <td colspan="3" class="r"><strong>Total ({{ $packingList->repacks->count() }} Koli)</strong></td>
-                        <td class="r"><strong>{{ number_format((float) $packingList->repacks->sum('weight'), 2, ',', '.') }} kg</strong></td>
-                        <td></td>
-                    </tr>
-                </tfoot>
-            </table>
-        @else
-            <table class="tbl" style="margin-bottom:10px">
-                <thead>
-                    <tr>
-                        <th>Total Koli</th>
-                        <th>Pallet Dimension (P x L x T) /CM</th>
-                        <th>Total Weight /Kg</th>
-                        <th>Repacked At</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td class="c">{{ $packingList->koli_qty }}</td>
-                        <td class="c">{{ $dims }}</td>
-                        <td class="c">{{ number_format((float) $packingList->repack_weight, 2, ',', '.') }}</td>
-                        <td class="c">
-                            {{ $packingList->repacked_at->format('d-M-y H:i') }} / {{ $packingList->repackedBy->name ?? '-' }}
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        @endif
+    @if ($isFinal && $packingList->repacks && $packingList->repacks->count() > 0 && $packingList->details->whereNull('packing_list_repack_id')->count() === $packingList->details->count())
+        {{-- repack ada tapi belum ada item di-assign ke koli: tampil ringkasan saja --}}
+        <table class="tbl" style="margin-bottom:10px">
+            <thead>
+                <tr>
+                    <th>Total Koli</th>
+                    <th>Pallet Dimension (P x L x T) /CM</th>
+                    <th>Total Weight /Kg</th>
+                    <th>Repacked At</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="c">{{ $packingList->koli_qty }}</td>
+                    <td class="c">{{ $dims }}</td>
+                    <td class="c">{{ number_format((float) $packingList->repack_weight, 2, ',', '.') }}</td>
+                    <td class="c">
+                        {{ $packingList->repacked_at->format('d-M-y H:i') }} / {{ $packingList->repackedBy->name ?? '-' }}
+                    </td>
+                </tr>
+            </tbody>
+        </table>
     @endif
 
     <table class="tbl">
@@ -152,20 +121,61 @@
             </tr>
         </thead>
         <tbody>
-            @forelse ($packingList->details as $detail)
-                <tr>
-                    <td class="c">{{ $loop->iteration }}</td>
-                    <td>{{ $detail->part_number ?: ($detail->material ?? '-') }}</td>
-                    <td class="c">{{ $detail->hs_code ?: '-' }}</td>
-                    <td>{{ $detail->po_item_desc ?? '-' }}</td>
-                    <td class="c">{{ $detail->qty }}</td>
-                    <td class="c">{{ $detail->inventoryPackageItem?->qty ?? '-' }}</td>
-                    <td class="c">{{ $detail->gross_weight ?? '-' }}</td>
-                    <td class="c">{{ $detail->measurement ?: '-' }}</td>
-                </tr>
-            @empty
-                <tr><td colspan="8" class="c">No items</td></tr>
-            @endforelse
+            @php
+                // Final + repack: group items per koli, merge kolom Qty Box/Weight/Measurement (rowspan)
+                $groups = $isFinal && $packingList->details->whereNotNull('packing_list_repack_id')->count()
+                    ? $packingList->details->groupBy('packing_list_repack_id')
+                    : null;
+            @endphp
+            @if ($groups)
+                @foreach ($groups as $repackId => $rows)
+                    @php $repack = $packingList->repacks->firstWhere('id', $repackId); @endphp
+                    @foreach ($rows->values() as $i => $detail)
+                        <tr>
+                            @if ($i === 0)
+                                <td class="c" rowspan="{{ $rows->count() }}">{{ $loop->parent->iteration }}</td>
+                            @endif
+                            <td>{{ $detail->part_number ?: ($detail->material ?? '-') }}</td>
+                            <td class="c">{{ $detail->hs_code ?: '-' }}</td>
+                            <td>{{ $detail->po_item_desc ?? '-' }}</td>
+                            <td class="c">{{ $detail->qty }}</td>
+                            @if ($i === 0)
+                                <td class="c" rowspan="{{ $rows->count() }}">{{ $repack->qty_box ?? 1 }}</td>
+                                <td class="c" rowspan="{{ $rows->count() }}">{{ $fmt($repack->weight) }}</td>
+                                <td class="c" rowspan="{{ $rows->count() }}">{{ $fmt($repack->length) }} X {{ $fmt($repack->width) }} X {{ $fmt($repack->height) }}</td>
+                            @endif
+                        </tr>
+                    @endforeach
+                @endforeach
+                {{-- item yang belum di-assign ke koli, nomor lanjut setelah grup --}}
+                @foreach ($packingList->details->whereNull('packing_list_repack_id') as $detail)
+                    <tr>
+                        <td class="c">{{ $groups->count() + $loop->iteration }}</td>
+                        <td>{{ $detail->part_number ?: ($detail->material ?? '-') }}</td>
+                        <td class="c">{{ $detail->hs_code ?: '-' }}</td>
+                        <td>{{ $detail->po_item_desc ?? '-' }}</td>
+                        <td class="c">{{ $detail->qty }}</td>
+                        <td class="c">{{ $detail->inventoryPackageItem?->qty ?? '-' }}</td>
+                        <td class="c">{{ $detail->gross_weight ?? '-' }}</td>
+                        <td class="c">{{ $detail->measurement ?: '-' }}</td>
+                    </tr>
+                @endforeach
+            @else
+                @forelse ($packingList->details as $detail)
+                    <tr>
+                        <td class="c">{{ $loop->iteration }}</td>
+                        <td>{{ $detail->part_number ?: ($detail->material ?? '-') }}</td>
+                        <td class="c">{{ $detail->hs_code ?: '-' }}</td>
+                        <td>{{ $detail->po_item_desc ?? '-' }}</td>
+                        <td class="c">{{ $detail->qty }}</td>
+                        <td class="c">{{ $detail->inventoryPackageItem?->qty ?? '-' }}</td>
+                        <td class="c">{{ $detail->gross_weight ?? '-' }}</td>
+                        <td class="c">{{ $detail->measurement ?: '-' }}</td>
+                    </tr>
+                @empty
+                    <tr><td colspan="8" class="c">No items</td></tr>
+                @endforelse
+            @endif
         </tbody>
         <tfoot>
             <tr>

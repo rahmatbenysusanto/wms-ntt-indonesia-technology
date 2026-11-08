@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class PackingListRepack extends Model
 {
@@ -12,6 +13,7 @@ class PackingListRepack extends Model
     protected $fillable = [
         'packing_list_id',
         'koli_no',
+        'qty_box',
         'length',
         'width',
         'height',
@@ -32,5 +34,10 @@ class PackingListRepack extends Model
     public function packingList(): BelongsTo
     {
         return $this->belongsTo(PackingList::class, 'packing_list_id', 'id');
+    }
+
+    public function details(): HasMany
+    {
+        return $this->hasMany(PackingListDetail::class, 'packing_list_repack_id', 'id');
     }
 }

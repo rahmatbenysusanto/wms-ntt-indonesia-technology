@@ -1156,7 +1156,8 @@ class OutboundController extends Controller
             'repackedBy',
             'details.inventoryPackageItem',
             'details.purchaseOrderDetail.purchaseOrder',
-            'repacks',
+            'details.repack',
+            'repacks.details',
             'outbound',
         ])->where('id', $request->query('id'))->firstOrFail();
 
@@ -1395,6 +1396,9 @@ class OutboundController extends Controller
             'repacks.*.height' => 'required|numeric|min:0.01',
             'repacks.*.weight' => 'required|numeric|min:0.01',
             'repacks.*.note' => 'nullable|string|max:255',
+            'repacks.*.detail_ids' => 'nullable|array',
+            'repacks.*.detail_ids.*' => 'integer',
+            'repacks.*.qty_box' => 'nullable|integer|min:1',
         ]);
 
         try {
@@ -1411,18 +1415,27 @@ class OutboundController extends Controller
 
             $repacks = collect($request->post('repacks'));
 
+            $packingList->details()->update(['packing_list_repack_id' => null]);
             $packingList->repacks()->delete();
 
-            $packingList->repacks()->createMany(
-                $repacks->map(fn ($row, $i) => [
+            $detailIds = $packingList->details()->pluck('id')->all();
+
+            foreach ($repacks as $i => $row) {
+                $repack = $packingList->repacks()->create([
                     'koli_no' => $row['koli_no'] ?? 'Koli ' . ($i + 1),
+                    'qty_box' => $row['qty_box'] ?? 1,
                     'length' => $row['length'],
                     'width' => $row['width'],
                     'height' => $row['height'],
                     'weight' => $row['weight'],
                     'note' => $row['note'] ?? null,
-                ])->all()
-            );
+                ]);
+
+                $ids = array_intersect($detailIds, $row['detail_ids'] ?? []);
+                if ($ids) {
+                    $packingList->details()->whereIn('id', $ids)->update(['packing_list_repack_id' => $repack->id]);
+                }
+            }
 
             $packingList->update([
                 'koli_qty' => $repacks->count(),
@@ -1470,6 +1483,7 @@ class OutboundController extends Controller
             'customer',
             'details.inventoryPackageItem.inventoryPackageItemSn',
             'details.purchaseOrderDetail.purchaseOrder',
+            'details.repack',
             'createdBy',
             'releasedBy',
             'repackedBy',

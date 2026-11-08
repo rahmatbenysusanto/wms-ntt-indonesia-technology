@@ -91,6 +91,7 @@
                                 <th class="text-center">Qty</th>
                                 <th class="text-end">Gross Weight</th>
                                 <th class="text-end">Measurement</th>
+                                <th class="text-center">Koli</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -105,10 +106,17 @@
                                 <td class="text-center">{{ $detail->qty }}</td>
                                 <td class="text-end">{{ number_format((float) $detail->gross_weight, 2, ',', '.') }}</td>
                                 <td class="text-end">{{ number_format((float) $detail->measurement, 2, ',', '.') }}</td>
+                                <td class="text-center">
+                                    @if ($detail->repack)
+                                        <span class="badge bg-info">{{ $detail->repack->koli_no }}</span>
+                                    @else
+                                        <span class="badge bg-secondary">-</span>
+                                    @endif
+                                </td>
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="6" class="text-center py-4 text-muted">No item data</td>
+                                <td colspan="7" class="text-center py-4 text-muted">No item data</td>
                             </tr>
                             @endforelse
                         </tbody>
@@ -189,7 +197,7 @@
 
 {{-- Repack Modal --}}
 <div id="repackModal" class="modal fade" tabindex="-1" aria-hidden="true" style="display: none;">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-xl">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Repack Data (Koli Final)</h5>
@@ -197,7 +205,7 @@
             </div>
             <div class="modal-body">
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <span class="text-muted">Input per koli (dimensi & berat masing-masing koli)</span>
+                    <span class="text-muted">Input per koli. Pilih item parent yang di-merge ke koli ini, isi QTY Box, dimensi & berat hasil repack.</span>
                     <button type="button" class="btn btn-success btn-sm" onclick="addRepackRow()">
                         <i class="mdi mdi-plus"></i> Tambah Koli
                     </button>
@@ -206,7 +214,9 @@
                     <table class="table table-sm align-middle">
                         <thead>
                             <tr>
-                                <th style="width:130px">Koli No.</th>
+                                <th style="width:110px">Koli No.</th>
+                                <th style="min-width:280px">Items (parent yang di-merge)</th>
+                                <th style="width:80px">Qty Box</th>
                                 <th>Length</th>
                                 <th>Width</th>
                                 <th>Height</th>
@@ -218,6 +228,7 @@
                         <tbody id="repackRows"></tbody>
                     </table>
                 </div>
+                <div class="text-muted small">Item yang belum dipilih di koli mana pun akan tampil di tabel terpisah pada PDF Final.</div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
@@ -231,12 +242,32 @@
 @section('js')
 <script>
     let repackModalInstance = null;
-    const existingRepacks = @json($packingList->repacks);
+    @php
+        $repackJson = $packingList->repacks->map(fn ($r) => [
+            'koli_no' => $r->koli_no,
+            'qty_box' => $r->qty_box,
+            'length' => $r->length,
+            'width' => $r->width,
+            'height' => $r->height,
+            'weight' => $r->weight,
+            'note' => $r->note,
+            'details' => $r->details->map(fn ($d) => ['id' => $d->id])->values(),
+        ])->values();
+        $detailJson = $packingList->details->map(fn ($d) => [
+            'id' => $d->id,
+            'label' => ($d->part_number ?: $d->material) . ' — ' . $d->po_item_desc,
+        ])->values();
+    @endphp
+    const existingRepacks = @json($repackJson);
+    let allDetails = @json($detailJson);
 
-    function rowTemplate(koli = '') {
+    function rowTemplate() {
+        const opts = allDetails.map(d => `<option value="${d.id}">${d.label}</option>`).join('');
         return `
             <tr>
-                <td><input type="text" class="form-control form-control-sm koli-no" value="${koli}" placeholder="Koli 1"></td>
+                <td><input type="text" class="form-control form-control-sm koli-no" placeholder="Koli 1"></td>
+                <td><select class="form-select form-select-sm koli-items" multiple style="min-width:260px">${opts}</select></td>
+                <td><input type="number" min="1" class="form-control form-control-sm koli-qty-box" value="1"></td>
                 <td><input type="number" step="0.01" min="0.01" class="form-control form-control-sm koli-length" placeholder="0.00"></td>
                 <td><input type="number" step="0.01" min="0.01" class="form-control form-control-sm koli-width" placeholder="0.00"></td>
                 <td><input type="number" step="0.01" min="0.01" class="form-control form-control-sm koli-height" placeholder="0.00"></td>
@@ -252,11 +283,17 @@
 
     function fillRow(row, data) {
         row.querySelector('.koli-no').value = data.koli_no ?? '';
+        row.querySelector('.koli-qty-box').value = data.qty_box ?? 1;
         row.querySelector('.koli-length').value = data.length ?? '';
         row.querySelector('.koli-width').value = data.width ?? '';
         row.querySelector('.koli-height').value = data.height ?? '';
         row.querySelector('.koli-weight').value = data.weight ?? '';
         row.querySelector('.koli-note').value = data.note ?? '';
+
+        const ids = (data.details ?? []).map(d => String(d.id));
+        [...row.querySelector('.koli-items').options].forEach(o => {
+            o.selected = ids.includes(o.value);
+        });
     }
 
     function addRepackRow(data = {}) {
@@ -283,6 +320,8 @@
     function saveRepack() {
         const rows = [...document.querySelectorAll('#repackRows tr')].map(tr => ({
             koli_no: tr.querySelector('.koli-no').value || null,
+            qty_box: tr.querySelector('.koli-qty-box').value || 1,
+            detail_ids: [...tr.querySelector('.koli-items').selectedOptions].map(o => Number(o.value)),
             length: tr.querySelector('.koli-length').value,
             width: tr.querySelector('.koli-width').value,
             height: tr.querySelector('.koli-height').value,

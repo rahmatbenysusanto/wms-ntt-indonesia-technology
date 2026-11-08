@@ -11,6 +11,7 @@ class PackingListDetail extends Model
 
     protected $fillable = [
         'packing_list_id',
+        'packing_list_repack_id',
         'purchase_order_detail_id',
         'inventory_package_item_id',
         'product_id',
@@ -28,6 +29,11 @@ class PackingListDetail extends Model
     public function packingList(): BelongsTo
     {
         return $this->belongsTo(PackingList::class, 'packing_list_id', 'id');
+    }
+
+    public function repack(): BelongsTo
+    {
+        return $this->belongsTo(PackingListRepack::class, 'packing_list_repack_id', 'id');
     }
 
     public function purchaseOrderDetail(): BelongsTo
