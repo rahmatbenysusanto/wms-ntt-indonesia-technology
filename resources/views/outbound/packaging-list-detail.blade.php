@@ -74,13 +74,35 @@
         </div>
     </div>
 
-    {{-- Items --}}
+    {{-- Items + Repack dalam satu tabel --}}
     <div class="col-12">
         <div class="card">
-            <div class="card-header">
+            <div class="card-header d-flex justify-content-between align-items-center">
                 <h4 class="card-title mb-0">Item Packing</h4>
+                @if (in_array($packingList->status, ['draft', 'released']))
+                    <button type="button" class="btn btn-info btn-sm" onclick="openRepack()">
+                        <i class="mdi mdi-package-variant"></i> {{ $packingList->repacked_at ? 'Edit Repack' : 'Input Repack' }}
+                    </button>
+                @endif
             </div>
             <div class="card-body">
+                @php
+                    $groups = collect();
+                    if ($packingList->repacks->isNotEmpty()) {
+                        $firstRepack = $packingList->repacks->first();
+                        $unassigned = $packingList->details->whereNull('packing_list_repack_id')->values();
+
+                        foreach ($packingList->repacks as $repack) {
+                            $rows = $packingList->details->where('packing_list_repack_id', $repack->id)->values();
+                            if ($repack->is($firstRepack)) {
+                                $rows = $rows->concat($unassigned);
+                            }
+                            if ($rows->isNotEmpty()) {
+                                $groups->push(['repack' => $repack, 'rows' => $rows]);
+                            }
+                        }
+                    }
+                @endphp
                 <div class="table-responsive">
                     <table class="table table-striped align-middle">
                         <thead>
@@ -89,93 +111,69 @@
                                 <th>Material / Item</th>
                                 <th>Part Number</th>
                                 <th class="text-center">Qty</th>
-                                <th class="text-end">Gross Weight</th>
-                                <th class="text-end">Measurement</th>
-                                <th class="text-center">Koli</th>
+                                @if ($groups->isNotEmpty())
+                                    <th class="text-center">Koli</th>
+                                    <th class="text-center">Qty Box</th>
+                                    <th class="text-end">Gross Weight</th>
+                                    <th class="text-end">Measurement</th>
+                                    <th>Note</th>
+                                @else
+                                    <th class="text-end">Gross Weight</th>
+                                    <th class="text-end">Measurement</th>
+                                @endif
                             </tr>
                         </thead>
                         <tbody>
-                            @forelse ($packingList->details as $index => $detail)
-                            <tr>
-                                <td>{{ $index + 1 }}</td>
-                                <td>
-                                    <strong>{{ $detail->material }}</strong><br>
-                                    <small class="text-muted">{{ $detail->item }} — {{ $detail->po_item_desc }}</small>
-                                </td>
-                                <td>{{ $detail->part_number ?? '-' }}</td>
-                                <td class="text-center">{{ $detail->qty }}</td>
-                                <td class="text-end">{{ number_format((float) $detail->gross_weight, 2, ',', '.') }}</td>
-                                <td class="text-end">{{ number_format((float) $detail->measurement, 2, ',', '.') }}</td>
-                                <td class="text-center">
-                                    @if ($detail->repack)
-                                        <span class="badge bg-info">{{ $detail->repack->koli_no }}</span>
-                                    @else
-                                        <span class="badge bg-secondary">-</span>
-                                    @endif
-                                </td>
-                            </tr>
-                            @empty
-                            <tr>
-                                <td colspan="7" class="text-center py-4 text-muted">No item data</td>
-                            </tr>
-                            @endforelse
+                            @if ($groups->isNotEmpty())
+                                @foreach ($groups as $group)
+                                    @foreach ($group['rows'] as $i => $detail)
+                                    <tr>
+                                        @if ($i === 0)
+                                            <td rowspan="{{ $group['rows']->count() }}">{{ $loop->parent->iteration }}</td>
+                                        @endif
+                                        <td>
+                                            <strong>{{ $detail->material }}</strong><br>
+                                            <small class="text-muted">{{ $detail->item }} — {{ $detail->po_item_desc }}</small>
+                                        </td>
+                                        <td>{{ $detail->part_number ?? '-' }}</td>
+                                        <td class="text-center">{{ $detail->qty }}</td>
+                                        @if ($i === 0)
+                                            <td class="text-center" rowspan="{{ $group['rows']->count() }}">
+                                                <span class="badge bg-info">{{ $group['repack']->koli_no }}</span>
+                                            </td>
+                                            <td class="text-center" rowspan="{{ $group['rows']->count() }}">{{ $group['repack']->qty_box ?? 1 }}</td>
+                                            <td class="text-end" rowspan="{{ $group['rows']->count() }}">{{ number_format((float) $group['repack']->weight, 2, ',', '.') }}</td>
+                                            <td class="text-end" rowspan="{{ $group['rows']->count() }}">{{ $group['repack']->length }} x {{ $group['repack']->width }} x {{ $group['repack']->height }}</td>
+                                            <td rowspan="{{ $group['rows']->count() }}">{{ $group['repack']->note ?? '-' }}</td>
+                                        @endif
+                                    </tr>
+                                    @endforeach
+                                @endforeach
+                            @else
+                                @forelse ($packingList->details as $index => $detail)
+                                <tr>
+                                    <td>{{ $index + 1 }}</td>
+                                    <td>
+                                        <strong>{{ $detail->material }}</strong><br>
+                                        <small class="text-muted">{{ $detail->item }} — {{ $detail->po_item_desc }}</small>
+                                    </td>
+                                    <td>{{ $detail->part_number ?? '-' }}</td>
+                                    <td class="text-center">{{ $detail->qty }}</td>
+                                    <td class="text-end">{{ number_format((float) $detail->gross_weight, 2, ',', '.') }}</td>
+                                    <td class="text-end">{{ $detail->measurement }}</td>
+                                </tr>
+                                @empty
+                                <tr>
+                                    <td colspan="6" class="text-center py-4 text-muted">No item data</td>
+                                </tr>
+                                @endforelse
+                            @endif
                         </tbody>
                     </table>
                 </div>
-            </div>
-        </div>
-    </div>
-
-    {{-- Repack --}}
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h4 class="card-title mb-0">Repack (Koli Final)</h4>
-                @if (in_array($packingList->status, ['draft', 'released']))
-                    <button type="button" class="btn btn-info btn-sm" onclick="openRepack()">
-                        <i class="mdi mdi-package-variant"></i> {{ $packingList->repacked_at ? 'Edit Repack' : 'Input Repack' }}
-                    </button>
-                @endif
-            </div>
-            <div class="card-body">
-                @if ($packingList->repacks->count())
-                <div class="table-responsive">
-                    <table class="table table-striped align-middle">
-                        <thead>
-                            <tr>
-                                <th>Koli No.</th>
-                                <th class="text-end">Length (cm)</th>
-                                <th class="text-end">Width (cm)</th>
-                                <th class="text-end">Height (cm)</th>
-                                <th class="text-end">Weight (kg)</th>
-                                <th>Note</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach ($packingList->repacks as $repack)
-                            <tr>
-                                <td>{{ $repack->koli_no }}</td>
-                                <td class="text-end">{{ number_format((float) $repack->length, 2, ',', '.') }}</td>
-                                <td class="text-end">{{ number_format((float) $repack->width, 2, ',', '.') }}</td>
-                                <td class="text-end">{{ number_format((float) $repack->height, 2, ',', '.') }}</td>
-                                <td class="text-end">{{ number_format((float) $repack->weight, 2, ',', '.') }}</td>
-                                <td>{{ $repack->note ?? '-' }}</td>
-                            </tr>
-                            @endforeach
-                            <tr class="fw-bold">
-                                <td>TOTAL ({{ $packingList->koli_qty }} koli)</td>
-                                <td colspan="3"></td>
-                                <td class="text-end">{{ number_format((float) $packingList->repacks->sum('weight'), 2, ',', '.') }} kg</td>
-                                <td></td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-                @else
-                <div class="text-center py-4 text-muted">
-                    <i class="mdi mdi-package-variant-closed fs-3 d-block mb-2"></i>
-                    Belum ada data repack.
-                    Klik tombol <strong>Input Repack</strong> di atas.
+                @if ($groups->isNotEmpty())
+                <div class="text-end fw-bold mt-2">
+                    Total {{ $packingList->repacks->count() }} koli — {{ number_format((float) $packingList->repacks->sum('weight'), 2, ',', '.') }} kg
                 </div>
                 @endif
             </div>

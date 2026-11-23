@@ -83,30 +83,6 @@
         </tr>
     </table>
 
-    @if ($isFinal && $packingList->repacks && $packingList->repacks->count() > 0 && $packingList->details->whereNull('packing_list_repack_id')->count() === $packingList->details->count())
-        {{-- repack ada tapi belum ada item di-assign ke koli: tampil ringkasan saja --}}
-        <table class="tbl" style="margin-bottom:10px">
-            <thead>
-                <tr>
-                    <th>Total Koli</th>
-                    <th>Pallet Dimension (P x L x T) /CM</th>
-                    <th>Total Weight /Kg</th>
-                    <th>Repacked At</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td class="c">{{ $packingList->koli_qty }}</td>
-                    <td class="c">{{ $dims }}</td>
-                    <td class="c">{{ number_format((float) $packingList->repack_weight, 2, ',', '.') }}</td>
-                    <td class="c">
-                        {{ $packingList->repacked_at->format('d-M-y H:i') }} / {{ $packingList->repackedBy->name ?? '-' }}
-                    </td>
-                </tr>
-            </tbody>
-        </table>
-    @endif
-
     <table class="tbl">
         <thead>
             <tr>
@@ -122,43 +98,42 @@
         </thead>
         <tbody>
             @php
-                // Final + repack: group items per koli, merge kolom Qty Box/Weight/Measurement (rowspan)
-                $groups = $isFinal && $packingList->details->whereNotNull('packing_list_repack_id')->count()
-                    ? $packingList->details->groupBy('packing_list_repack_id')
-                    : null;
+                // Repack selalu tampil di tabel yang sama: item dikelompokkan per koli,
+                // kolom Qty Box/Weight/Measurement di-merge (rowspan). Item tanpa koli ikut koli pertama.
+                $groups = collect();
+                if ($isFinal && $packingList->repacks->isNotEmpty()) {
+                    $firstRepack = $packingList->repacks->first();
+                    $unassigned = $packingList->details->whereNull('packing_list_repack_id')->values();
+
+                    foreach ($packingList->repacks as $repack) {
+                        $rows = $packingList->details->where('packing_list_repack_id', $repack->id)->values();
+                        if ($repack->is($firstRepack)) {
+                            $rows = $rows->concat($unassigned);
+                        }
+                        if ($rows->isNotEmpty()) {
+                            $groups->push(['repack' => $repack, 'rows' => $rows]);
+                        }
+                    }
+                }
             @endphp
-            @if ($groups)
-                @foreach ($groups as $repackId => $rows)
-                    @php $repack = $packingList->repacks->firstWhere('id', $repackId); @endphp
-                    @foreach ($rows->values() as $i => $detail)
+            @if ($groups->isNotEmpty())
+                @foreach ($groups as $group)
+                    @foreach ($group['rows'] as $i => $detail)
                         <tr>
                             @if ($i === 0)
-                                <td class="c" rowspan="{{ $rows->count() }}">{{ $loop->parent->iteration }}</td>
+                                <td class="c" rowspan="{{ $group['rows']->count() }}">{{ $loop->parent->iteration }}</td>
                             @endif
                             <td>{{ $detail->part_number ?: ($detail->material ?? '-') }}</td>
                             <td class="c">{{ $detail->hs_code ?: '-' }}</td>
                             <td>{{ $detail->po_item_desc ?? '-' }}</td>
                             <td class="c">{{ $detail->qty }}</td>
                             @if ($i === 0)
-                                <td class="c" rowspan="{{ $rows->count() }}">{{ $repack->qty_box ?? 1 }}</td>
-                                <td class="c" rowspan="{{ $rows->count() }}">{{ $fmt($repack->weight) }}</td>
-                                <td class="c" rowspan="{{ $rows->count() }}">{{ $fmt($repack->length) }} X {{ $fmt($repack->width) }} X {{ $fmt($repack->height) }}</td>
+                                <td class="c" rowspan="{{ $group['rows']->count() }}">{{ $group['repack']->qty_box ?? 1 }}</td>
+                                <td class="c" rowspan="{{ $group['rows']->count() }}">{{ $fmt($group['repack']->weight) }}</td>
+                                <td class="c" rowspan="{{ $group['rows']->count() }}">{{ $fmt($group['repack']->length) }} X {{ $fmt($group['repack']->width) }} X {{ $fmt($group['repack']->height) }}</td>
                             @endif
                         </tr>
                     @endforeach
-                @endforeach
-                {{-- item yang belum di-assign ke koli, nomor lanjut setelah grup --}}
-                @foreach ($packingList->details->whereNull('packing_list_repack_id') as $detail)
-                    <tr>
-                        <td class="c">{{ $groups->count() + $loop->iteration }}</td>
-                        <td>{{ $detail->part_number ?: ($detail->material ?? '-') }}</td>
-                        <td class="c">{{ $detail->hs_code ?: '-' }}</td>
-                        <td>{{ $detail->po_item_desc ?? '-' }}</td>
-                        <td class="c">{{ $detail->qty }}</td>
-                        <td class="c">{{ $detail->inventoryPackageItem?->qty ?? '-' }}</td>
-                        <td class="c">{{ $detail->gross_weight ?? '-' }}</td>
-                        <td class="c">{{ $detail->measurement ?: '-' }}</td>
-                    </tr>
                 @endforeach
             @else
                 @forelse ($packingList->details as $detail)

@@ -1419,6 +1419,7 @@ class OutboundController extends Controller
             $packingList->repacks()->delete();
 
             $detailIds = $packingList->details()->pluck('id')->all();
+            $assignedIds = [];
 
             foreach ($repacks as $i => $row) {
                 $repack = $packingList->repacks()->create([
@@ -1434,7 +1435,15 @@ class OutboundController extends Controller
                 $ids = array_intersect($detailIds, $row['detail_ids'] ?? []);
                 if ($ids) {
                     $packingList->details()->whereIn('id', $ids)->update(['packing_list_repack_id' => $repack->id]);
+                    $assignedIds = array_merge($assignedIds, $ids);
                 }
+            }
+
+            // Item yang tidak dicentang tetap masuk koli pertama supaya dokumen selalu satu tabel.
+            $leftover = array_diff($detailIds, $assignedIds);
+            if ($leftover && $packingList->repacks()->exists()) {
+                $packingList->details()->whereIn('id', $leftover)
+                    ->update(['packing_list_repack_id' => $packingList->repacks()->orderBy('id')->value('id')]);
             }
 
             $packingList->update([
